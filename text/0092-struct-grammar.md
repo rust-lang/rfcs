@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#92](https://github.com/rust-lang/rfcs/pull/92)
 - Rust Issue: [rust-lang/rust#14803](https://github.com/rust-lang/rust/issues/14803)
 
-# Summary
+## Summary
 
 Do not identify struct literals by searching for `:`. Instead define a sub-
 category of expressions which excludes struct literals and re-define `for`,
@@ -10,7 +10,7 @@ category of expressions which excludes struct literals and re-define `for`,
 non-terminal which can be replaced by a block) to take this sub-category,
 instead of all expressions.
 
-# Motivation
+## Motivation
 
 Parsing by looking ahead is fragile - it could easily be broken if we allow `:`
 to appear elsewhere in types (e.g., type ascription) or if we change struct
@@ -27,7 +27,7 @@ should not be much fallout. Any problems can be easily fixed by assigning the
 struct literal into a variable. However, this is a backwards incompatible
 change, so it should block 1.0.
 
-# Detailed design
+## Detailed design
 
 Here is a simplified version of a subset of Rust's abstract syntax:
 
@@ -79,12 +79,12 @@ called `RESTRICT_BLOCK` or something, which puts us into a mode which reflects
 `e'`. We would drop in to this mode when parsing `e'` position expressions and
 drop out of it for all but the last sub-expression of an expression.
 
-# Drawbacks
+## Drawbacks
 
 It makes the formal grammar and parsing a little more complicated (although it
 is simpler in terms of needing less lookahead and avoiding a special case).
 
-# Alternatives
+## Alternatives
 
 Don't do this.
 
@@ -94,7 +94,7 @@ believe it will be much rarer to have structs in these positions than to have an
 identifier in the first position, followed by two blocks (i.e., parse as `(for N
 {}) {}`).
 
-# Unresolved questions
+## Unresolved questions
 
 Do we need to expose this distinction anywhere outside of the parser? E.g.,
 macros?

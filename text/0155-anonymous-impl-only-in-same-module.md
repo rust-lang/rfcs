@@ -2,11 +2,11 @@
 - RFC PR #: [rust-lang/rfcs#155](https://github.com/rust-lang/rfcs/pull/155)
 - Rust Issue #: [rust-lang/rust#17059](https://github.com/rust-lang/rust/issues/17059)
 
-# Summary
+## Summary
 
 Require "anonymous traits", i.e. `impl MyStruct` to occur only in the same module that `MyStruct` is defined.
 
-# Motivation
+## Motivation
 
 Before I can explain the motivation for this, I should provide some background
 as to how anonymous traits are implemented, and the sorts of bugs we see with
@@ -96,7 +96,7 @@ A secondary motivation is to enforce consistency in code layout; anonymous trait
 are used the way that class methods are used in other languages, and the data
 and methods of a struct should be defined nearby.
 
-# Detailed design
+## Detailed design
 
 I propose three changes to the language:
 
@@ -107,7 +107,7 @@ I propose three changes to the language:
   This is to prevent the above problems with `impl`-across-modules.
   Migration path is for users to just move code between source files.
 
-# Drawbacks
+## Drawbacks
 
 Static methods on `impl`s-away-from-definition never worked, while non-static
 methods can be implemented using non-anonymous traits. So there is no loss in
@@ -123,12 +123,12 @@ alongside `Path` in the prelude.
 It is worth noting that this is the only instance of this RFC conflicting with
 current usage in the stdlib or compiler.
 
-# Alternatives
+## Alternatives
 
 - Leaving this alone and fixing the bugs directly. This is really hard. To do it
   properly, we would need to seriously refactor resolve.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 

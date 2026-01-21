@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#141](https://github.com/rust-lang/rfcs/pull/141)
 - Rust Issue: [rust-lang/rust#15552](https://github.com/rust-lang/rust/issues/15552)
 
-# Summary
+## Summary
 
 This RFC proposes to
 
@@ -12,7 +12,7 @@ This RFC proposes to
 By doing so, we can avoid writing lifetime annotations ~87% of the time that
 they are currently required, based on a survey of the standard library.
 
-# Motivation
+## Motivation
 
 In today's Rust, lifetime annotations make code more verbose, both for methods
 
@@ -35,9 +35,9 @@ required.
 
 Doing so is a clear ergonomic win.
 
-# Detailed design
+## Detailed design
 
-## Today's lifetime elision rules
+### Today's lifetime elision rules
 
 Rust currently supports eliding lifetimes in functions, so that you can write
 
@@ -67,9 +67,9 @@ off the lifetime in output position an error for this reason.
 
 Moreover, lifetimes cannot be elided in `impl` headers.
 
-## The proposed rules
+### The proposed rules
 
-### Overview
+#### Overview
 
 This RFC proposes two changes to the lifetime elision rules:
 
@@ -78,7 +78,7 @@ This RFC proposes two changes to the lifetime elision rules:
 
 2. Interpret elided lifetimes for `impl` headers analogously to `fn` definitions.
 
-### Lifetime positions
+#### Lifetime positions
 
 A _lifetime position_ is anywhere you can write a lifetime in a type:
 
@@ -109,7 +109,7 @@ Lifetime positions can appear as either "input" or "output":
   SomeTrait<'b, 'c> for Foo<'a, 'c>` has `'a` in input position, `'b`
   in output position, and `'c` in both input and output positions.
 
-### The rules
+#### The rules
 
 * Each elided lifetime in input position becomes a distinct lifetime
   parameter. This is the current behavior for `fn` definitions.
@@ -125,7 +125,7 @@ Lifetime positions can appear as either "input" or "output":
 Notice that the _actual_ signature of a `fn` or `impl` is based on the expansion
 rules above; the elided form is just a shorthand.
 
-### Examples
+#### Examples
 
 ```rust
 fn print(s: &str);                                      // elided
@@ -191,7 +191,7 @@ impl Bar for &str {
 
 ```
 
-## Error messages
+### Error messages
 
 Since the shorthand described above should eliminate most uses of explicit
 lifetimes, there is a potential "cliff". When a programmer first encounters a
@@ -201,7 +201,7 @@ gently guide them toward the concept of lifetimes.
 An error can arise with the above shorthand only when the program elides an
 output lifetime and neither of the rules can determine how to annotate it.
 
-### For `fn`
+#### For `fn`
 
 The error message should guide the programmer toward the concept of lifetime by
 talking about borrowed values:
@@ -215,7 +215,7 @@ This message is slightly inaccurate, since the presence of a lifetime parameter
 does not necessarily imply the presence of a borrowed value, but there are no
 known use-cases of phantom lifetime parameters.
 
-### For `impl`
+#### For `impl`
 
 The error case on `impl` is exceedingly rare: it requires (1) that the `impl` is
 for a trait with a lifetime argument, which is uncommon, and (2) that the `Self`
@@ -230,7 +230,7 @@ already understand lifetimes.
 > lifetime parameters of TypeName to use. Mark the parameters explicitly,
 > e.g. [generated example]. See [url] for an introduction to lifetimes.
 
-## The impact
+### The impact
 
 To assess the value of the proposed rules, we conducted a survey of the code
 defined _in_ `libstd` (as opposed to the code it reexports). This corpus is
@@ -246,9 +246,9 @@ already elided with today's rules._
 The detailed data is available at:
 https://gist.github.com/aturon/da49a6d00099fdb0e861
 
-# Drawbacks
+## Drawbacks
 
-## Learning lifetimes
+### Learning lifetimes
 
 The main drawback of this change is pedagogical. If lifetime annotations are
 rarely used, newcomers may encounter error messages about lifetimes long before
@@ -272,7 +272,7 @@ Programmers learn lifetimes once, but will use them many times. Better to favor
 long-term ergonomics, if a simple elision rule can cover 87% of current lifetime
 uses (let alone the currently elided cases).
 
-## Subtlety for non-`&` types
+### Subtlety for non-`&` types
 
 While the rules are quite simple and regular, they can be subtle when applied to
 types with lifetime positions. To determine whether the signature
@@ -286,7 +286,7 @@ is actually using lifetimes via the elision rules, you have to know whether
 current elision rules. The benefit is that library types like `Ref<'a, T>` get
 the same status and ergonomics as built-ins like `&'a T`.
 
-# Alternatives
+## Alternatives
 
 * Do not include _output_ lifetime elision for `impl`. Since traits with lifetime
   parameters are quite rare, this would not be a great loss, and would simplify
@@ -298,12 +298,12 @@ the same status and ergonomics as built-ins like `&'a T`.
   mentioned above. Doing so would impose an ergonomic penalty on abstractions,
   though: `Ref` would be more painful to use than `&`.
 
-# Unresolved questions
+## Unresolved questions
 
 The `fn` and `impl` cases tackled above offer the biggest bang for the buck for
 lifetime elision. But we may eventually want to consider other opportunities.
 
-## Double lifetimes
+### Double lifetimes
 
 Another pattern that sometimes arises is types like `&'a Foo<'a>`. We could
 consider an additional elision rule that expands `&Foo` to `&'a Foo<'a>`.
@@ -311,7 +311,7 @@ consider an additional elision rule that expands `&Foo` to `&'a Foo<'a>`.
 However, such a rule could be easily added later, and it is unclear how common
 the pattern is, so it seems best to leave that for a later RFC.
 
-## Lifetime elision in `struct`s
+### Lifetime elision in `struct`s
 
 We may want to allow lifetime elision in `struct`s, but the cost/benefit
 analysis is much less clear. In particular, it could require chasing an

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2338](https://github.com/rust-lang/rfcs/pull/2338)
 - Rust Issue: [rust-lang/rust#49683](https://github.com/rust-lang/rust/issues/49683)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes to allow access to enum variants through type aliases. This
@@ -11,7 +11,7 @@ enables better abstraction/information hiding by encapsulating enums in aliases
 without having to create another enum type and requiring the conversion from
 and into the "alias" enum.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 While type aliases provide a useful means of encapsulating a type definition in
@@ -27,7 +27,7 @@ about this capability before.
 Since `Self` also works as an alias, this should also enable the use of `Self`
 in more places.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 In general, the simple explanation here is that type aliases can be used in
@@ -55,7 +55,7 @@ fn main() {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 If a path refers into an alias, the behavior for enum variants should be as
@@ -87,13 +87,13 @@ paths:
   be specified after the variant, not after the aliased type. This extends the
   current behavior to enum aliases.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 We should not do this if the edge cases make the implemented behavior too
 complex or surprising to reason about the alias substitution.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 This design seems like a straightforward extension of what type aliases are
@@ -114,7 +114,7 @@ nothing. Currently, there are two ways to work around this:
 As such, not implementing aliased enum variants this makes it harder to
 encapsulate or hide parts of an API.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 As far as I know, there are no unresolved questions at this time.

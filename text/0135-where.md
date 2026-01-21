@@ -2,7 +2,7 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/135
 - Rust Issue #: https://github.com/rust-lang/rust/issues/17657
 
-# Summary
+## Summary
 
 Add `where` clauses, which provide a more expressive means of
 specifying trait parameter bounds. A `where` clause comes after a
@@ -28,7 +28,7 @@ to the following:
 
 The full grammar can be found in the detailed design.
 
-# Motivation
+## Motivation
 
 The high-level bit is that the current bounds syntax does not scale to
 complex cases. Introducing `where` clauses is a simple extension that
@@ -296,7 +296,7 @@ The usual solution to this problem is to employ a where clause:
 We can also employ where clauses with object types via a syntax like
 `&Iterator<where E=int>` (admittedly somewhat wordy)
 
-## Readability
+### Readability
 
 When writing very generic code, it is common to have a large number of
 parameters with a large number of bounds. Here is some example
@@ -340,7 +340,7 @@ to focus on the types and signatures, and come to the bounds
 later. Where clauses help to separate these distinctions. Naturally,
 your mileage may vary. - nmatsakis
 
-# Detailed design
+## Detailed design
 
 ### Where can where clauses appear?
 
@@ -413,11 +413,11 @@ particular meaning, since the callee knows all types involved. This is
 a conservative choice: if we find that we do desire a particular
 interpretation for them, we can always make them legal later.
 
-# Drawbacks
+## Drawbacks
 
 This RFC introduces two ways to declare a bound.
 
-# Alternatives
+## Alternatives
 
 **Remove the existing trait bounds.** I decided against this both to
 avoid breaking lots of existing code and because the existing syntax

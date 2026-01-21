@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#888](https://github.com/rust-lang/rfcs/pull/888)
 - Rust Issue: [rust-lang/rust#24118](https://github.com/rust-lang/rust/issues/24118)
 
-# Summary
+## Summary
 
 Add intrinsics for single-threaded memory fences.
 
-# Motivation
+## Motivation
 
 Rust currently supports memory barriers through a set of intrinsics,
 `atomic_fence` and its variants, which generate machine instructions and are
@@ -22,7 +22,7 @@ avoided.
 
 The C++ equivalent of this feature is `std::atomic_signal_fence`.
 
-# Detailed design
+## Detailed design
 
 Add four language intrinsics for single-threaded fences:
 
@@ -43,7 +43,7 @@ confusion on which fences are appropriate in a given situation, while still
 providing the capability for users to opt in to a single-threaded fence when
 appropriate.
 
-# Alternatives
+## Alternatives
 
  * Do nothing. The existing fence intrinsics support all use cases, but with a
    negative impact on performance in some situations where a compiler-only fence
@@ -55,7 +55,7 @@ appropriate.
    most appropriate, since its semantics are more rigorously defined and less
    likely to yield unexpected (but not necessarily wrong) behavior.
 
-# Unresolved questions
+## Unresolved questions
 
 These intrinsics may be better represented with a different name, such as
 `atomic_signal_fence` or `atomic_singlethread_fence`. The existing

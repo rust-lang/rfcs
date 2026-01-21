@@ -3,17 +3,17 @@
 - RFC PR: [rust-lang/rfcs#2930](https://github.com/rust-lang/rfcs/pull/2930)
 - Rust Issue: [rust-lang/rust#78485](https://github.com/rust-lang/rust/issues/78485)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The current design of the `Read` trait is nonoptimal as it requires that the buffer passed to its various methods be
 pre-initialized even though the contents will be immediately overwritten. This RFC proposes an interface to allow
 implementors and consumers of `Read` types to robustly and soundly work with uninitialized buffers.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Background
+### Background
 [motivation-background]: #motivation-background
 
 The core of the `Read` trait looks like this:
@@ -79,7 +79,7 @@ dangerous (and often misunderstood) beast. Uninitialized memory does not have an
 [Ralf's blog post](https://www.ralfj.de/blog/2019/07/14/uninit.html) for a more extensive discussion of uninitialized
 memory.
 
-## But how bad are undefined values really?
+### But how bad are undefined values really?
 [motivation-badness]: #motivation-badness
 
 Are undefined values *really* that bad in practice? Consider a function that tries to use an uninitialized buffer with
@@ -120,7 +120,7 @@ Because the value that `unsound_read_u32_be` returned was undefined, the compile
 We want to be able to take advantage of the improved performance of avoiding buffer initialization without triggering
 undefined behavior in safe code.
 
-## Why not just initialize?
+### Why not just initialize?
 [motivation-why]: #motivation-why
 
 If working with uninitialized buffers carries these risks, why should we bother with it at all? Code dealing with IO in
@@ -143,7 +143,7 @@ insufficiently careful management of buffer sizes because it was initializing th
 [The fix](https://github.com/rust-lang/rust/pull/23820) improved the performance of small reads by over 4,000x! If
 the buffer did not need to be initialized, the simpler implementation would have been fine.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `ReadBuf` type manages a *progressively initialized* buffer of bytes. It is primarily used to avoid buffer
@@ -242,7 +242,7 @@ impl Read for TcpStream {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ```rust
@@ -573,14 +573,14 @@ pub trait Read {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This introduces a nontrivial amount of complexity to one of the standard library's core traits, and results in sets of
 almost-but-not-quite identical methods (`read`/`read_buf`, `read_exact`/`read_buf_exact`, etc). It's unfortunate that
 an implementor of `Read` based on `read_buf` needs to add a boilerplate `read` implementation.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Any solution to this problem needs to satisfy a set of constraints:
@@ -622,7 +622,7 @@ The concept of `ReadBuf` is not inherently tied to working with `u8` buffers;  i
 over the value type and hypothetically used in other contexts. However, the API for such a type can be iterated on
 in an external crate.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The standard library currently has the concept of a buffer "initializer". The `Read` trait has an (unstable) method
@@ -636,14 +636,14 @@ if necessary.
 Refer to the links in the "Rationale and alternatives" section above for a discussion of the issues with these
 approaches.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Should `read_buf` return the number of bytes read like `read` does or should the `ReadBuf` track it instead? Some
 operations, like checking for EOF, are a bit simpler if `read_buf` returns the value, but the confusion around what is
 and is not trustworthy is worrysome for unsafe code working with `Read` implementations.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Some of the complexity in the implementation of `read_to_end` above is due to having to manually track how much of the

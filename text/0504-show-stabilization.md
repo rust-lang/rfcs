@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#504](https://github.com/rust-lang/rfcs/pull/504)
 - Rust Issue: [rust-lang/rust#20013](https://github.com/rust-lang/rust/issues/20013)
 
-# Summary
+## Summary
 
 Today's `Show` trait will be tasked with the purpose of providing the ability to
 inspect the representation of implementors of the trait. A new trait, `String`,
@@ -13,7 +13,7 @@ internal state of the implementor.
 The `String` trait will take over the `{}` format specifier and the `Show` trait
 will move to the now-open `{:?}` specifier.
 
-# Motivation
+## Motivation
 
 The formatting traits today largely provide clear guidance to what they are
 intended for. For example the `Binary` trait is intended for printing the binary
@@ -48,7 +48,7 @@ The purpose of this RFC is to clearly define what the `Show` trait is intended
 to be used for, as well as providing guidelines to implementors of what
 implementations should do.
 
-# Detailed Design
+## Detailed Design
 
 As described in the motivation section, the intended use cases for the current
 `Show` trait are actually motivations for two separate formatting traits. One
@@ -61,7 +61,7 @@ just developers.
 
 This RFC proposes naming these two traits `Show` and `String`, respectively.
 
-## The `String` trait
+### The `String` trait
 
 A new formatting trait will be added to `std::fmt` as follows:
 
@@ -107,7 +107,7 @@ debugging will occur).
 The compiler will **not** provide an implementation of `#[deriving(String)]` for
 types.
 
-## The `Show` trait
+### The `Show` trait
 
 The current `Show` trait will not change location nor definition, but it will
 instead move to the `{:?}` specifier instead of the `{}` specifier (which
@@ -138,7 +138,7 @@ produce valid UTF-8 data. The compiler will continue to provide a
 `#[deriving(Show)]` implementation to facilitate printing and debugging
 user-defined structures.
 
-## The `ToString` trait
+### The `ToString` trait
 
 Today the `ToString` trait is connected to the `Show` trait, but this RFC
 proposes wiring it to the newly-proposed `String` trait instead. This switch
@@ -149,7 +149,7 @@ not intended to have one.
 It is strongly discouraged to provide an implementation of the `ToString` trait
 and not the `String` trait.
 
-# Drawbacks
+## Drawbacks
 
 It is inherently easier to understand fewer concepts from the standard library
 and introducing multiple traits for common formatting implementations may lead
@@ -174,7 +174,7 @@ make it the "default" via `{}`.
 It may be too ambitious to define that `String` is a non-lossy representation of
 a type, eventually motivating other formatting traits.
 
-# Alternatives
+## Alternatives
 
 The names `String` and `Show` may not necessarily imply "user readable" and
 "debuggable". An alternative proposal would be to use `Show` for user
@@ -186,6 +186,6 @@ represented as a `String`. Additionally, this RFC considers the name `Show`
 roughly on par with other alternatives and would help reduce churn for code
 migrating today.
 
-# Unresolved Questions
+## Unresolved Questions
 
 None at this time.

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#114](https://github.com/rust-lang/rfcs/pull/114)
 - Rust Issue: [rust-lang/rust#16095](https://github.com/rust-lang/rust/issues/16095)
 
-# Summary
+## Summary
 
 - Convert function call `a(b, ..., z)` into an overloadable operator
   via the traits `Fn<A,R>`, `FnShare<A,R>`, and `FnOnce<A,R>`, where `A`
@@ -40,7 +40,7 @@ as closures are today. A description of this change is described below
 under *Unresolved questions* and the details will come in a
 forthcoming RFC.
 
-# Motivation
+## Motivation
 
 Over time we have observed a very large number of possible use cases
 for closures. The goal of this RFC is to create a unified closure
@@ -57,7 +57,7 @@ As a side benefit, though not a direct goal, the RFC reduces the
 size/complexity of the language's core type system by unifying
 closures and traits.
 
-## The core idea: unifying closures and traits
+### The core idea: unifying closures and traits
 
 The core idea of the RFC is to unify closures, procs, and
 traits. There are a number of reasons to do this. First, it simplifies
@@ -117,7 +117,7 @@ Basically, in this design there is nothing special about a closure.
 Closure expressions are simply a convenient way to generate a struct
 that implements a suitable `Fn` trait.
 
-## Bind by reference vs bind by value
+### Bind by reference vs bind by value
 
 When creating a closure, it is now possible to specify whether the
 closure should capture variables from its environment ("upvars") by
@@ -128,7 +128,7 @@ keyword `ref`:
     
     ref || foo(a, b)  // captures `a` and `b` by reference, as today
 
-### Reasons to bind by value
+#### Reasons to bind by value
 
 Bind by value is useful when creating closures that will escape from
 the stack frame that created them, such as task bodies (`spawn(||
@@ -136,7 +136,7 @@ the stack frame that created them, such as task bodies (`spawn(||
 closure, though it should be possible to enable that with bind by
 reference as well in the future.
 
-### Reasons to bind by reference
+#### Reasons to bind by reference
 
 Bind by reference is useful for any case where the closure is known
 not to escape the creating stack frame. This frequently occurs
@@ -161,9 +161,9 @@ reference" closures, but we will have to extend the inference to
 selectively identify those variables that must be moved and take those
 "by value".
 
-# Detailed design
+## Detailed design
 
-## Closure expression syntax
+### Closure expression syntax
 
 Closure expressions will have the following form (using EBNF notation,
 where `[]` denotes optional things and `{}` denotes a comma-separated
@@ -183,7 +183,7 @@ reborrows, see below). In a by-reference closure, the types of these
 fields will be a suitable reference (`&`, `&mut`, etc) to the
 variables being borrowed.
 
-### By-value closures
+#### By-value closures
 
 The default form for a closure is by-value. This implies that all
 upvars which are referenced are copied/moved into the closure as
@@ -196,7 +196,7 @@ which is to aggressively reborrow wherever possible; moreover, this
 rule cannot introduce additional compilation errors, it can only make
 more programs successfully typecheck.
 
-### By-reference closures
+#### By-reference closures
 
 A *by-reference* closure is a convenience form in which values used in
 the closure are converted into references before being captured. 
@@ -266,7 +266,7 @@ extensions follow:
   that rather than borrowing `context` to create the closure, we would
   borrow `context.variable_map` directly.
 
-## Closure sugar in trait references
+### Closure sugar in trait references
 
 The current type for closures, `|T1, T2| -> R`, will be repurposed as
 syntactic sugar for a reference to the appropriate `Fn` trait. This
@@ -289,12 +289,12 @@ references, respectively:
 Note that the bound lifetimes `'a...'z` are not in scope for the bound
 `K`.
 
-# Drawbacks
+## Drawbacks
 
 This model is more complex than the existing model in some respects
 (but the existing model does not serve the full set of desired use cases).
 
-# Alternatives
+## Alternatives
 
 There is one aspect of the design that is still under active
 discussion:
@@ -362,11 +362,11 @@ inference is not possible.
 **Default to something other than `&mut self`.** It is our belief that
 this is the most common use case for closures.
 
-# Transition plan
+## Transition plan
 
 TBD. pcwalton is working furiously as we speak.
 
-# Unresolved questions
+## Unresolved questions
 
 **What relationship should there be between the closure
 traits?** On the one hand, there is clearly a relationship between the
@@ -419,7 +419,7 @@ function as one need not indirect through the vtable. The actual
 implications of this on performance are unclear, but it might be a
 reason to keep the closure traits to a single method.
 
-## Closures that are quantified over lifetimes
+### Closures that are quantified over lifetimes
 
 A separate RFC is needed to describe bound lifetimes in trait
 references. For example, today one can write a type like `<'a> |&'a A|

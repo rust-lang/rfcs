@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1422](https://github.com/rust-lang/rfcs/pull/1422)
 - Rust Issue: [rust-lang/rust#32409](https://github.com/rust-lang/rust/issues/32409)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Expand the current `pub`/non-`pub` categorization of items with the
@@ -14,7 +14,7 @@ The current `crate` is one such tree, and would be expressed via:
 `pub(crate) item`. Other trees can be denoted via a path employed in a
 `use` statement, e.g. `pub(a::b) item`, or `pub(super) item`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Right now, if you have a definition for an item `X` that you want to
@@ -105,7 +105,7 @@ This RFC seeks to remedy the above problem via two main changes.
   2. Modify the privacy rules so that `pub`-restricted items cannot be
      used nor re-exported outside of their respective restricted areas.
 
-## Impact
+### Impact
 
 This difficulty in reasoning about the "publicness" of a name is not
 just a problem for users; it also complicates efforts within the
@@ -158,7 +158,7 @@ certain patterns of interest to developers.
 [RFC amendment 200]: https://github.com/rust-lang/rfcs/pull/200
 
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The main problem identified in the [motivation][] section is this:
@@ -178,7 +178,7 @@ main changes.
   2. Modify the privacy rules so that `pub`-restricted items cannot be
      used nor re-exported outside of their respective restricted areas.
 
-## Syntax
+### Syntax
 
 The new feature is to restrict the scope by adding the module subtree
 (which acts as the restricted area) in parentheses after the `pub`
@@ -223,7 +223,7 @@ currently use `pub`. In particular, one can use them on item
 definitions, methods in an impl, the fields of a struct
 definition, and on `pub use` re-exports.
 
-## Semantics
+### Semantics
 
 The meaning of `pub(restriction)` is as follows: The definition of
 every item, method, field, or name (e.g. a re-export) is associated
@@ -263,7 +263,7 @@ it. In particular, we will still keep our existing rules regarding
 restriction, but still may be inaccessible if they are not re-exported in
 some manner.
 
-## Revised Example
+### Revised Example
 [revised]: #revised-example
 
 In the running example, one could instead write:
@@ -333,7 +333,7 @@ pub mod a {
 "better"; a toy example like this does not provide enough context to
 judge.)
 
-## Restrictions
+### Restrictions
 [restrictions]: #restrictions
 
 Lets discuss what the restrictions actually mean.
@@ -388,7 +388,7 @@ Validating (2.) requires traversing the surface API for each item and
 comparing the restriction for every reference to the restriction of
 the item itself.
 
-## Trait methods
+### Trait methods
 
 Currently, trait associated item syntax carries no `pub` modifier.
 
@@ -463,14 +463,14 @@ items.
    discussion of whether this rule actually makes sense as phrased
    here.
 
-## More examples!
+### More examples!
 [examples]: #more-examples
 
 These examples meant to explore the syntax a bit. They are *not* meant
 to provide motivation for the feature (i.e. I am not claiming that the
 feature is making this code cleaner or easier to reason about).
 
-### Impl item example
+#### Impl item example
 [impl item example]: #impl-item-example
 
 ```rust
@@ -502,7 +502,7 @@ fn rejected(s: &S) {
 top-level, out of `mod a`?" Well ... see discussion in the
 [unresolved questions][def-outside-restriction].)
 
-### Restricting fields example
+#### Restricting fields example
 [restricting fields example]: #restricting-fields-example
 
 ```rust
@@ -538,7 +538,7 @@ mod k {
 ```
 
 
-### Fields and inherent methods more public than self
+#### Fields and inherent methods more public than self
 [parts-more-public-than-whole]: #fields-and-inherent-methods-more-public-than-self
 
 In Rust today, one can write
@@ -602,7 +602,7 @@ In particular:
  * We are allowed to restrict an inherent method, `fn only_in_c`, to
    a subtree of the module tree where `X` is itself visible.
 
-### Re-exports
+#### Re-exports
 
 Here is an example of a `pub use` re-export using the new
 feature, including both correct and invalid uses of the extended form.
@@ -636,7 +636,7 @@ mod a {
 }
 ```
 
-### Crate restricted visibility
+#### Crate restricted visibility
 
 This is a concrete illusration of how one might use the `pub(crate) item` form,
 (which is perhaps quite similar to Java's default "package visibility").
@@ -670,14 +670,14 @@ use c1::a::S; // ok: `S` is unrestricted
 use c1::a::R; //~ ERROR: `c1::a::R` not visible outside of its crate
 ```
 
-## Precedent
+### Precedent
 
 When I started on this I was not sure if this form of delimited access
 to a particular module subtree had a precedent; the closest thing I
 could think of was C++ `friend` modifiers (but `friend` is far more
 ad-hoc and free-form than what is being proposed here).
 
-### Scala
+#### Scala
 
 It has since been pointed out to me that Scala has scoped access
 modifiers `protected[Y]` and `private[Y]`, which specify that access
@@ -701,7 +701,7 @@ Even if there is some distinction drawn between the two forms in
 Scala, I suspect Rust does not need an analogous distinction in it's
 `pub(restricted)`
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Obviously,
@@ -737,10 +737,10 @@ innards of other modules.
    policies.
 
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Do not extend the language!
+### Do not extend the language!
 
  * Change privacy rules and make privacy analysis "smarter"
    (e.g. global reachabiliy analysis)
@@ -772,7 +772,7 @@ being made in the [motivation][] section: one cannot tell exactly how
 "public" a `pub` item is, without working backwards through the module
 tree for all of its re-exports.
 
-## Curb your ambitions!
+### Curb your ambitions!
 
  * Instead of adding support for restricting to arbitrary module
    subtrees, narrow the feature to just `pub(crate) item`, so that one
@@ -796,7 +796,7 @@ tree for all of its re-exports.
    do the inline refactoring, rewriting each `pub(crate)` as `pub(A1)`
    as necessary.
 
-## Be more ambitious!
+### Be more ambitious!
 
 This feature could be extended in various ways.
 
@@ -822,10 +822,10 @@ For example:
    actual choice to add such an extension (and what syntax to use
    for it) up to a later amendment in the future.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
-## Can definition site fall outside restriction?
+### Can definition site fall outside restriction?
 [def-outside-restriction]: #can-definition-site-fall-outside-restriction
 
 For example, is it illegal to do the following:
@@ -844,7 +844,7 @@ pnkfelix is personally inclined to make this sort of thing illegal,
 mainly because he finds it totally unintuitive, but is interested in
 hearing counter-arguments.
 
-## Implicit Restriction Satisfaction (IRS:PUNPM)
+### Implicit Restriction Satisfaction (IRS:PUNPM)
 
 If a re-export occurs within a non-`pub` module, can we treat it as
 implicitly satisfying a restriction to `super` imposed by the item it
@@ -908,7 +908,7 @@ even in the context of a non-pub module like `mod b`. In particular,
 `pub(super) use item` may be imposing a new restriction on the
 re-exported name that was not part of its original definition.)
 
-## Interaction with Globs
+### Interaction with Globs
 
 Glob re-exports
 currently only re-export `pub` (as in `pub(universe)` items).
@@ -951,9 +951,9 @@ other changes that may come in future RFCs), we will be in a better
 position to evaluate what to do here.
 
 
-# Appendices
+## Appendices
 
-## Associated Items Digression
+### Associated Items Digression
 [associated items digression]: #associated-items-digression
 
 If associated items were implicitly `pub`, in the sense that they are

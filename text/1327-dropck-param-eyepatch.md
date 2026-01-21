@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1327](https://github.com/rust-lang/rfcs/pull/1327)
 - Rust Issue: [rust-lang/rust#34761](https://github.com/rust-lang/rust/issues/34761)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Refine the unguarded-escape-hatch from [RFC 1238][] (nonparametric
@@ -30,7 +30,7 @@ proposed in a follow-up RFC.
 [RFC 1238]: https://github.com/rust-lang/rfcs/blob/master/text/1238-nonparametric-dropck.md
 [RFC 769]: https://github.com/rust-lang/rfcs/blob/master/text/0769-sound-generic-drop.md
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The unguarded escape hatch (UGEH) from [RFC 1238] is a blunt
@@ -63,7 +63,7 @@ behind a *subset* of the type parameters.
 
 Here are two concrete examples of where the need for this arises:
 
-## Example: `CheckedHashMap`
+### Example: `CheckedHashMap`
 
 The original Sound Generic Drop proposal ([RFC 769][])
 had an [appendix][RFC 769 CheckedHashMap] with an example of a
@@ -85,7 +85,7 @@ cannot express this today: There is no way to say that the
 
 [RFC 769 CheckedHashMap]: https://github.com/rust-lang/rfcs/blob/master/text/0769-sound-generic-drop.md#appendix-a-why-and-when-would-drop-read-from-borrowed-data
 
-## Example: `Vec<T, A:Allocator=DefaultAllocator>`
+### Example: `Vec<T, A:Allocator=DefaultAllocator>`
 
 The Rust developers have been talking for [a long time][RFC Issue 538]
 about adding an `Allocator` trait that would allow users to override
@@ -142,7 +142,7 @@ storage for [cyclic graph structures][dropck_legal_cycles.rs]).
 
 [dropck_legal_cycles.rs]: https://github.com/rust-lang/rust/blob/098a7a07ee6d11cf6d2b9d18918f26be95ee2f66/src/test/run-pass/dropck_legal_cycles.rs
 
-# Detailed design
+## Detailed design
 [detailed design]: #detailed-design
 
 First off: The proposal in this RFC is intended as a *temporary*
@@ -174,7 +174,7 @@ Having said that, here is the proposed short-term solution:
  4. Remove `unsafe_destructor_blind_to_params`, since all uses of it
     should be expressible via `#[may_dangle]`.
 
-## Attributes on lifetime or type parameters
+### Attributes on lifetime or type parameters
 
 This is a simple extension to the syntax.
 
@@ -225,7 +225,7 @@ unsafe impl<'a, X, Y> Drop for Foo<'a, #[may_dangle] X, Y> {
 ```
 
 
-## The "eyepatch" attribute
+### The "eyepatch" attribute
 
 Add a new attribute, `#[may_dangle]` (the "eyepatch").
 
@@ -263,7 +263,7 @@ accessed by the destructor. Thus, no fields will be accessed nor
 methods called on values of type `&'a Struct`, ensuring that again no
 dangling references are ever accessed by the destructor.
 
-## Require `unsafe` on Drop implementations using the eyepatch
+### Require `unsafe` on Drop implementations using the eyepatch
 
 The final detail is to add an additional check to the compiler
 to ensure that any use of `#[may_dangle]` on a `Drop` implementation
@@ -276,7 +276,7 @@ implementation that must be valided manually by the programmer.
 It is analogous to other uses of `unsafe impl` (apart from the
 fact that the `Drop` trait itself is not an `unsafe trait`).
 
-### Examples adapted from the Rustonomicon
+#### Examples adapted from the Rustonomicon
 
 [nomicon dropck]: https://doc.rust-lang.org/nightly/nomicon/dropck.html
 
@@ -313,7 +313,7 @@ unsafe impl<#[may_dangle] T: fmt::Display> Drop for InspectorB<T> {
 Both of the above two examples are much the same as if we had used the
 old `unsafe_destructor_blind_to_params` UGEH attribute.
 
-### Example: RawVec
+#### Example: RawVec
 
 To generalize `RawVec` from the [motivation](#motivation) with an
 `Allocator` correctly (that is, soundly and without breaking existing
@@ -339,7 +339,7 @@ The latter is not expressible today even with
 type will not access `T` in its destructor while also ensuring the
 proper drop-ordering relationship between `RawVec<T, A>` and `A`.
 
-### Example; Multiple Lifetimes
+#### Example; Multiple Lifetimes
 
 Example: The above `InspectorA` carried a `&'static str` that was
 always safe to access from the destructor.
@@ -391,7 +391,7 @@ fn this_will_not_work() {
 }
 ```
 
-## Semantics
+### Semantics
 
 How does this work, you might ask?
 
@@ -430,7 +430,7 @@ constraint that `'name` must strictly outlive the `Vec` (because we
 continue to consider all `D` that is data owned by a value `v`,
 including when `D` == `InspectorC<'a,'name,'c>`).
 
-## Prototype
+### Prototype
 [prototype]: #prototype
 
 pnkfelix has implemented a proof-of-concept
@@ -438,7 +438,7 @@ pnkfelix has implemented a proof-of-concept
 It uses the substitution machinery we already have in the compiler
 to express the semantics above.
 
-## Limitations of prototype (not part of design)
+### Limitations of prototype (not part of design)
 
 Here we note a few limitations of the current prototype. These
 limitations are *not* being proposed as part of the specification of
@@ -454,15 +454,15 @@ context of the language.
 
 [pnkfelix prototype]: https://github.com/pnkfelix/rust/commits/dropck-eyepatch
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## Ugliness
+### Ugliness
 
 This attribute, like the original `unsafe_destructor_blind_to_params`
 UGEH attribute, is ugly.
 
-## Unchecked assertions boo
+### Unchecked assertions boo
 
 It would be nicer if to actually change the language in a way where we
 could check the assertions being made by the programmer, rather than
@@ -471,14 +471,14 @@ reflected in what he wrote in the [RFC 1238 alternatives][].)
 
 [RFC 1238 alternatives]: https://github.com/rust-lang/rfcs/blob/master/text/1238-nonparametric-dropck.md#continue-supporting-parametricity
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Note: The alternatives section for this RFC is particularly
 note-worthy because the ideas here may serve as the basis for a more
 comprehensive long-term approach.
 
-## Make dropck "see again" via (focused) where-clauses
+### Make dropck "see again" via (focused) where-clauses
 
 The idea is that we keep the UGEH attribute, blunt hammer that it is.
 You first opt out of the dropck ordering constraints via that, and
@@ -551,7 +551,7 @@ the eyepatch attribute and fn-drop-with-where-clauses are capable of
 resolving the real issues that I face today, and I would be happy for
 either proposal to be accepted.)
 
-## Wait for proper parametricity
+### Wait for proper parametricity
 [wait-for-proper-parametricity]: #wait-for-proper-parametricity
 
 As alluded to in the [drawbacks][], in principle we could provide
@@ -588,11 +588,11 @@ this RFC rather than waiting for a sound compiler analysis):
     than just reasoning about the container on its own without any consideration
     of each type/lifetime parameter.
 
-## Do nothing
+### Do nothing
 
 If we do nothing, then we cannot add `Vec<T, A:Allocator>` soundly.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Is the definition of the drop-check rule sound with this `patched(D)`

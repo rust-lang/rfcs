@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#3389](https://github.com/rust-lang/rfcs/pull/3389)
 - Tracking Issue: [rust-lang/cargo#12115](https://github.com/rust-lang/cargo/issues/12115)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a `[lints]` table to `Cargo.toml` to configure reporting levels for
 rustc and other tool lints.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, you can configure lints through
@@ -35,7 +35,7 @@ See also
 - [EmbarkStudios/rust-ecosystem#59](https://github.com/EmbarkStudios/rust-ecosystem/issues/59)
 - [Proposal: Cargo Lint configuration](https://internals.rust-lang.org/t/proposal-cargo-lint-configuration/9135)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 A new `lints` table would be added to configure lints:
@@ -55,9 +55,9 @@ workspace = true
 unsafe_code = "forbid"
 ```
 
-## Documentation Updates
+### Documentation Updates
 
-## The `lints` section
+### The `lints` section
 
 *as a new ["Manifest Format" entry](https://doc.rust-lang.org/cargo/reference/manifest.html#the-manifest-format)*
 
@@ -90,7 +90,7 @@ name.  If there isn't a `::`, then the tool is `rust`.  For example a warning
 about `unsafe_code` would be `lints.rust.unsafe_code` but a lint about
 `clippy::enum_glob_use` would be `lints.clippy.enum_glob_use`.
 
-## The `lints` table
+### The `lints` table
 
 *as a new [`[workspace]` entry](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-workspace-section)*
 
@@ -119,7 +119,7 @@ version = "0.1.0"
 workspace = true
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When parsing a manifest, cargo will resolve workspace inheritance for
@@ -166,7 +166,7 @@ Addition of third-party tools would fall under their
 
 **Note:** This reserves the tool name `workspace` to allow workspace inheritance.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Since `[lints]` only affects the associated package, and not dependencies, it
@@ -199,7 +199,7 @@ possibilities" section, we mention direct support for tying lints to rust versio
 
 This does not allow sharing lints across workspaces.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 When designing this, we wanted to keep in mind how things work today, including
@@ -212,7 +212,7 @@ However, we also need to consider how decisions might limit us in the future and
 - Whether existing decisions will be revisited
 - When new tools are added, like `cargo` and `cargo-semver-check`, which haven't had lint levels and configuration long enough (or at all) to explore their problem and design space.
 
-## Misc
+### Misc
 
 This could be left to `clippy.toml` but that leaves `rustc`, `rustdoc`, and future linters without a solution.
 
@@ -222,7 +222,7 @@ and other fields that are more workspace related.  Instead, we used
 
 `[lints]` could be `[lint]` but we decided to follow the precedence of `[dependencies]`.
 
-## Schema
+### Schema
 
 In evaluating prior art, we saw two major styles for configuring lint levels:
 
@@ -278,7 +278,7 @@ We ended up favoring more of the ESLint-style because:
   the workspace, it is easier for users to map out this relationship with
   ESLint-style.
 
-## Linter Tables vs Linter Namespaces
+### Linter Tables vs Linter Namespaces
 
 We started off with lints being referenced with their tool as a namespace (e.g.
 `"clipp::enum_glob_use"`) like in diagnostic messages, making copy/paste easy.
@@ -293,7 +293,7 @@ If we add lint/linter config in the future
   harder for cargo to collect all the lints to pass down into the compiler
   driver.
 
-## Lint Precedence
+### Lint Precedence
 
 Currently, `rustc` allows lints to be controlled on the command-line with the
 last level for a lint winning.  They may also be specified as attributes with
@@ -400,7 +400,7 @@ unsafe_code = "deny"
 - Does not solve the intersecting group problem
 - Names aren't validated as being from a group without duplicating the work needed for Option 1 (auto-sort)
 
-## Workspace Inheritance
+### Workspace Inheritance
 
 Instead of using workspace inheritance for `[lint]`, we could make it
 workspace-level configuration, like `[patch]` which is automatically applied to
@@ -414,7 +414,7 @@ inherit with `workspace = true`, we could have `[workspace.lints.<preset>]`
 which defines presets and the user could do `lints.<preset> = true`.  The user
 could then name them as they wish to avoid collision with rustc lints.
 
-## `rustfmt`
+### `rustfmt`
 
 We could possibly extend this new field to `rustfmt` by shifting the focus from
 "lints" to "rules" (see
@@ -431,7 +431,7 @@ that it is divorced from any context.  In eslint, it is in an eslint-specific
 config file but a `[rules]` table is not a clear as a `[lints]` table as to
 what role it fulfills.
 
-## Target-specific lint
+### Target-specific lint
 
 We could support platform or feature specific settings, like with
 `[lints.<target>]` or `[target.<target>.lints]` but
@@ -443,7 +443,7 @@ We could support platform or feature specific settings, like with
 - We have not yet defined semantics for sharing something like this across a
   workspace
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Rust
@@ -469,7 +469,7 @@ Ruby
 - [rubocop](https://docs.rubocop.org/rubocop/1.45/configuration.html)
   - Format is `Lint: Enabled: true`
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Blocking for stablization
@@ -477,10 +477,10 @@ Blocking for stablization
 - Are we still comfortable with our precedence choice?
 - Can we fingerprint only the lints for the tool being run?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Help the user with `priority`
+### Help the user with `priority`
 
 When running linters through cargo, we could warn the user when there is ambiguity, including
 - A group and a lint at the same priority
@@ -506,7 +506,7 @@ One thing to keep in mind is the potential for [custom
 tools](https://rust-lang.github.io/rfcs/2103-tool-attributes.html) in the
 future.
 
-## rustc reporting `Cargo.toml` as lint-level source
+### rustc reporting `Cargo.toml` as lint-level source
 
 Currently Rust tells you where a lint level was enabled when it emits a lint.
 `rustc` only sees that these lints are coming in from the command-line and
@@ -515,13 +515,13 @@ It would be nice if it could also point to Cargo.toml for this.  This could be
 as simple as a `--lint-source=Cargo.toml` with rustc knowing just enough about
 the `[lints]` table to process it directly.
 
-## External file
+### External file
 
 Like with `package.license`, users might want to refer to an external file for
 their lints.  This especially becomes useful for copy/pasting lints between
 projects.
 
-## Configurable lints
+### Configurable lints
 
 We can extend basic lint syntax:
 ```toml
@@ -552,7 +552,7 @@ configuration.  `lints.clippy.cyclomatic_complexity` exists for illustrative
 purposes of what linters could support and is not indicative of any future
 plans for clippy itself.
 
-## Packages overriding inherited lints
+### Packages overriding inherited lints
 
 Currently, it is a hard error to mix `workspace = true` and lints.  We could
 open this up in the future for the package to override lints from the
@@ -561,7 +561,7 @@ case into a working case.  We should consider the possibility of adding
 configurable lints in the future and what that would look like with
 overridin of lints.
 
-## Extending the syntax to `.cargo/config.toml`
+### Extending the syntax to `.cargo/config.toml`
 
 Similar to `profile` and `patch` being in both files, we could support
 `[lints]` in both files.  This allows more flexibility for experimentation with
@@ -574,7 +574,7 @@ set it in `Cargo.toml` or if it also affects dependencies.
 In doing so, we would need to define how `priority` interacts with different
 sources of `[lints]`.
 
-## Cargo Lints
+### Cargo Lints
 
 The cargo team has expressed interest in producing warnings for more situations
 but this requires defining a lint control system for it.  The overhead of doing

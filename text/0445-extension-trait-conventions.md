@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#445](https://github.com/rust-lang/rfcs/pull/445)
 - Rust Issue: [rust-lang/rust#19324](https://github.com/rust-lang/rust/issues/19324)
 
-# Summary
+## Summary
 
 This is a conventions RFC establishing a definition and naming
 convention for *extension traits*: `FooExt`.
 
-# Motivation
+## Motivation
 
 This RFC is part of the ongoing API conventions and stabilization
 effort.
@@ -19,9 +19,9 @@ defining that type. While they should be used sparingly, the new
 increased the need for this kind of trait, and hence the need for a
 clear convention.
 
-# Detailed design
+## Detailed design
 
-## What is an extension trait?
+### What is an extension trait?
 
 Rust currently allows inherent methods to be defined on a type only in
 the crate where that type is defined. But it is often the case that
@@ -89,7 +89,7 @@ it is also more flexible: because `Box<Iterator<A>>` will implement
 in `IteratorExt` on trait objects, even though they are not object
 safe.
 
-## The convention
+### The convention
 
 The proposed convention is, first of all, to (1) prefer adding default
 methods to existing traits or (2) prefer generically useful traits to
@@ -106,13 +106,13 @@ should follow a similar convention, putting together the type/trait
 name and the qualifications, together with the `Ext` suffix:
 `IteratorAddExt`.
 
-### What about `Prelude`?
+#### What about `Prelude`?
 
 A [previous convention](https://github.com/rust-lang/rfcs/pull/344)
 used a `Prelude` suffix for extension traits that were also part of
 the `std` prelude; this new convention deprecates that one.
 
-## Future proofing
+### Future proofing
 
 In the future, the need for many of these extension traits may
 disappear as other languages features are added. For example,
@@ -125,13 +125,13 @@ need to stabilize the 1.0 libraries prior to these language features
 landing. So this is the proposed convention for now, and in the future
 it may be possible to deprecate some of the resulting traits.
 
-# Alternatives
+## Alternatives
 
 It seems clear that we need *some* convention here. Other possible
 suffixes would be `Util` or `Methods`, but `Ext` is both shorter and
 connects to the name of the pattern.
 
-# Drawbacks
+## Drawbacks
 
 In general, extension traits tend to require additional imports --
 especially painful when dealing with object safety. However, this is

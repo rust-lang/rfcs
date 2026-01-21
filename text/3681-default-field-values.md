@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3681](https://github.com/rust-lang/rfcs/pull/3681)
 - Tracking Issue: [rust-lang/rust#132162](https://github.com/rust-lang/rust/issues/132162)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow `struct` definitions to provide default values for individual fields and
@@ -37,12 +37,12 @@ Derived `Default` `impl` also uses struct field defaults if present:
 let _ = Pet::default();
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Boilerplate reduction
+### Boilerplate reduction
 
-### For `struct`s
+#### For `struct`s
 
 [update-syntax]: https://doc.rust-lang.org/book/ch05-01-defining-structs.html#creating-instances-from-other-instances-with-struct-update-syntax
 
@@ -231,7 +231,7 @@ fn main() {
 The builder pattern is quite common in the Rust ecosystem, but as shown above its need is greatly
 reduced with `struct` field defaults.
 
-## `#[derive(Default)]` in more cases
+### `#[derive(Default)]` in more cases
 
 The `#[derive(..)]` ("custom derive") mechanism works by defining procedural
 *macros*. Because they are macros, these operate on abstract *syntax* and
@@ -257,7 +257,7 @@ addition of a single field, expands the code written by the `struct` author from
 a single `derive` line to a whole `Default` `impl`, which becomes more verbose
 linearly with the number of fields.
 
-### Imperfect derives
+#### Imperfect derives
 
 [perfect derives]: https://smallcultfollowing.com/babysteps/blog/2022/04/12/implied-bounds-and-perfect-derive/
 
@@ -315,13 +315,13 @@ impl<T> Default for Foo<T> {
 }
 ```
 
-## Usage by other `#[derive(..)]` macros
+### Usage by other `#[derive(..)]` macros
 
 [`serde`]: https://serde.rs/attributes.html
 
 Custom derive macros exist that have a notion of or use default values.
 
-### `serde`
+#### `serde`
 
 For example, the [`serde`] crate provides a `#[serde(default)]` attribute that
 can be used on `struct`s, and fields. This will use the field's or type's
@@ -330,7 +330,7 @@ either continue to rely on `Default` implementations in which case this RFC
 facilitates specification of field defaults; or it can directly use the default
 values provided in the type definition.
 
-### `structopt`
+#### `structopt`
 
 Another example is the `structopt` crate with which you can write:
 
@@ -358,7 +358,7 @@ struct Opt {
 }
 ```
 
-### `derive_builder`
+#### `derive_builder`
 
 [`derive_builder`]: https://docs.rs/derive_builder/0.7.0/derive_builder/#default-values
 
@@ -373,16 +373,16 @@ struct Lorem {
 }
 ```
 
-### Conclusion
+#### Conclusion
 
 As seen in the previous sections, rather than make deriving `Default`
 more magical, by allowing default field values in the language,
 user-space custom derive macros can make use of them.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Providing field defaults
+### Providing field defaults
 
 Consider a data-type such as (1):
 
@@ -409,7 +409,7 @@ initializer and leave `value` out to use the default (3):
 let prob = Probability { .. };
 ```
 
-## Deriving `Default`
+### Deriving `Default`
 
 Previously, you might have instead implemented the `Default` trait like so (4):
 
@@ -445,7 +445,7 @@ pub struct Probability {
 Having done this, a `Default` implementation equivalent to the one in (5)
 will be generated for you.
 
-## More fields
+### More fields
 
 As you saw in the [summary], you are not limited to a single field and all
 fields need not have any defaults associated with them. Instead, you can freely
@@ -481,7 +481,7 @@ let ls_cmd2 = LaunchCommand {
 };
 ```
 
-## Default fields values are [`const` context]s
+### Default fields values are [`const` context]s
 
 [`const` context]: https://github.com/rust-lang-nursery/reference/blob/66ef5396eccca909536b91cad853f727789c8ebe/src/const_eval.md#const-context
 
@@ -511,7 +511,7 @@ Since launching missiles interacts with the real world and has *side-effects*
 in it, it is not possible to do that in a `const` context since it may violate
 deterministic compilation.
 
-## Privacy interactions
+### Privacy interactions
 
 The same privacy interactions that the struct update syntax has when a base is
 present are still at place under this RFC: if a type can't be constructed from
@@ -519,7 +519,7 @@ another base expression due to private fields, then it can't be constructed from
 field defaults either. See [Future Possibilities][future-privacy] for additional
 context.
 
-## `#[non_exhaustive]` interactions
+### `#[non_exhaustive]` interactions
 
 [RFC 2008]: https://github.com/rust-lang/rfcs/blob/master/text/2008-non-exhaustive.md#structs-1
 
@@ -602,7 +602,7 @@ Some alternatives present for the case mentioned above can be:
   while also allowing precisely that syntax within the API-internal constructions of
   `Config`.
 
-## Defaults for `enum`s
+### Defaults for `enum`s
 
 The ability to give fields default values is not limited to `struct`s.
 Fields of `enum` variants can also be given defaults (16):
@@ -639,7 +639,7 @@ variants of said enum. However, as specified by [RFC 2008], `#[non_exhaustive]`
 is permitted on variants. When that occurs, the behaviour is the same as if
 it had been attached to a `struct` with the same fields and field visibility.
 
-### Interaction with `#[default]`
+#### Interaction with `#[default]`
 
 [default]: https://github.com/rust-lang/rfcs/pull/3107
 
@@ -678,17 +678,17 @@ impl Default for Ingredient {
 }
 ```
 
-## Defaults on tuple `struct`s and tuple `enum` variants
+### Defaults on tuple `struct`s and tuple `enum` variants
 
 Default values are only allowed on named fields. There is no syntax provided for
 tuple types like `struct S(i32)` or `enum E { V(i32), }`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Field default values
+### Field default values
 
-### Grammar
+#### Grammar
 
 Let the grammar of record fields in `struct`s and `enum` variants be defined
 like so (in the `.lyg` notation):
@@ -731,9 +731,9 @@ StructExprFieldsAndBase =| FieldsAndDefault:{ fields:StructExprField+ % "," "," 
 StructExprFieldsAndBase =| Default:{ ".." }
 ```
 
-### Static semantics
+#### Static semantics
 
-#### Defining defaults
+##### Defining defaults
 
 Given a `RecordField` where the default is specified, i.e.:
 
@@ -782,12 +782,12 @@ all the following rules apply when type-checking:
 When lints check attributes such as `#[allow(lint_name)]` are placed on a
 `RecordField`, it also applies to `def` if it exists.
 
-#### Initialization expressions
+##### Initialization expressions
 
 `Path { fields, .. }` is `const` since the defaulted fields are initialized
 from constants.
 
-## `#[derive(Default)]`
+### `#[derive(Default)]`
 
 When generating an implementation of `Default` for a `struct` named `$s` on
 which `#[derive(Default)]` has been attached, the compiler will omit all fields
@@ -801,7 +801,7 @@ fn default() -> Self {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The usual drawback of increasing the complexity of the language applies.
@@ -862,13 +862,13 @@ particular value. This means that, with the unstable `inline_const_pat`, the arm
 type like `struct Foo { a: i32 = 1 }`). A way to mitigate this might be to use
 an alternative syntax, like `...` or `..kw#default`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Besides the given [motivation], there are some specific design choices
 worthy of more in-depth discussion, which is the aim of this section.
 
-## Provided associated items as precedent
+### Provided associated items as precedent
 
 While Rust does not have any support for default values for fields or for
 formal parameters of functions, the notion of defaults are not foreign to Rust.
@@ -897,7 +897,7 @@ trait Foo {
 Thus, to extend Rust with a notion of field defaults is not an entirely alien
 concept.
 
-## Pattern matching follows construction
+### Pattern matching follows construction
 
 [dual]: https://en.wikipedia.org/wiki/Duality_(mathematics)
 
@@ -949,7 +949,7 @@ unimportant going on. For patterns, `_` matches everything and doesn't give
 access to the value; for types, the placeholder is just an unbounded inference
 variable.
 
-## On `const` contexts
+### On `const` contexts
 
 To recap, the expression a default value is computed with must be constant one.
 There are many reasons for this restriction:
@@ -1043,7 +1043,7 @@ There are many reasons for this restriction:
   Therefore, constant expressions should be enough to satisfy most expressive
   needs.
 
-## Instead of `Foo { ..Default::default() }`
+### Instead of `Foo { ..Default::default() }`
 
 As an alternative to the proposed design is either explicitly writing out
 `..Default::default()` or extending the language such that `Foo { .. }` becomes
@@ -1074,7 +1074,7 @@ However, it has some notable problems:
 Thus in conclusion, while desugaring `..` to `Default::default()` has lower cost,
 it also provides significantly less value to the point of not being worth it.
 
-## `..` is useful as a marker
+### `..` is useful as a marker
 
 One possible change to the current design is to permit filling in defaults
 by simply writing `Foo {}`; in other words, `..` is simply dropped from the
@@ -1105,7 +1105,7 @@ literal expression so that when a user adds a field they get compilation errors
 on every use -- just like is currently possible in patterns by not including
 `..` in the struct pattern.
 
-## Named function arguments with default values
+### Named function arguments with default values
 
 A frequently requested feature is named function arguments. Today, the way to
 design around the lack of these in the language are:
@@ -1116,7 +1116,7 @@ design around the lack of these in the language are:
   `foo(mandatory, Optionals { bar: 42, ..Default::default() })`
 + Provide multiple methods: `fn foo(mandatory)` *and* `fn foo_with_bar(mandatory, bar)`
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 A prior version of this RFC, from which part of the contents in this version
@@ -1127,12 +1127,12 @@ from a few years prior.
 
 Another prior RFC for the same feature is at https://github.com/rust-lang/rfcs/pull/1806.
 
-## Other languages
+### Other languages
 
 This selection of languages are not exhaustive; rather, a few notable or
 canonical examples are used instead.
 
-### Java
+#### Java
 
 In Java it is possible to assign default values, computed by any expression,
 to an instance variable; for example, you may write:
@@ -1174,7 +1174,7 @@ Two things are worth noting here:
    constructor-like and because this RFC also permits the usage of defaults
    for private fields where the fields are not visible.
 
-### Scala
+#### Scala
 
 Being a JVM language, Scala builds upon Java and retains the notion of default
 field values. For example, you may write:
@@ -1193,7 +1193,7 @@ System.out.println(p.name);
 
 As expected, this prints `foo` and then `bar` to the terminal.
 
-### Kotlin
+#### Kotlin
 
 Kotlin is similar to both Java and Scala; here too can you use defaults:
 
@@ -1213,7 +1213,7 @@ fun main() {
 Similar to Java and Scala, Kotlin does also permit side-effects in the default
 values because both languages have no means of preventing the effects.
 
-### C#
+#### C#
 
 Another language with defaults of the object-oriented variety is C#.
 The is behaviour similar to Java:
@@ -1224,7 +1224,7 @@ class Foo {
 }
 ```
 
-### C++
+#### C++
 
 Another language in the object-oriented family is C++. It also affords default
 values like so:
@@ -1257,7 +1257,7 @@ And while the language has `constexpr` to enforce the ability to evaluate
 something at compile time, as can be seen in the snippet above, no such
 requirement is placed on default field values.
 
-### Swift
+#### Swift
 
 [Swift]: https://docs.swift.org/swift-book/LanguageGuide/Initialization.html
 
@@ -1280,7 +1280,7 @@ struct Person {
 }
 ```
 
-### Agda
+#### Agda
 
 Having defaults for record fields is not the sole preserve of OO languages.
 The pure, total, and dependently typed functional programming language Agda
@@ -1324,12 +1324,12 @@ Note that this is explicitly typed as `bar : IO Nat` and that `record {}` won't
 actually run the action. To do that, you will need take the `bar` value and run
 it in an `IO` context.
 
-## Procedural macros
+### Procedural macros
 
 There are a number of crates which to varying degrees afford macros for
 default field values and associated facilities.
 
-### `#[derive(Builder)]`
+#### `#[derive(Builder)]`
 
 A third example comes from the crate [`derive_builder`]. As the name implies,
 you can use it to `#[derive(Builder)]`s for your types. An example is:
@@ -1352,7 +1352,7 @@ struct Lorem {
 ```
 
 
-### `#[derive(Derivative)]`
+#### `#[derive(Derivative)]`
 
 [`derivative`]: https://crates.io/crates/derivative
 
@@ -1434,7 +1434,7 @@ There a few aspects to note:
    removing or adding bounds can remain the same. Similar mechanisms could
    also be added to the language itself.
 
-### `#[derive(SmartDefault)]`
+#### `#[derive(SmartDefault)]`
 
 [`smart-default`]: https://crates.io/crates/smart-default
 
@@ -1482,7 +1482,7 @@ enum Foo {
   However, for users who aren't aware of this, it may seem strange that
   `SmartDefault` should derive for the `Default` trait.
 
-### `#[derive(new)]`
+#### `#[derive(new)]`
 
 [`derive-new`]: https://crates.io/crates/derive-new
 
@@ -1556,10 +1556,10 @@ The constructor functions `new_first_variant(..)` are not provided for you.
 However, it should be possible to tweak `#[derive(new)]` to interact with
 this RFC so that constructor functions are regained if so desired.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## `#[non_exhaustive]`
+### `#[non_exhaustive]`
 1. What is the right interaction wrt. `#[non_exhaustive]`?
 
    In particular, if given the following definition:
@@ -1593,7 +1593,7 @@ this RFC so that constructor functions are regained if so desired.
    private fields is allowed. If they are not, then the attribute is still
    relevant and needed to control the accepted code to force `..`.
 
-## `enum` variants
+### `enum` variants
 
 [RFC-3683]: https://github.com/rust-lang/rfcs/pull/3683
 
@@ -1603,10 +1603,10 @@ the symmetry with `struct`s and support `#[derive(Default)]` on them, but it is
 not absolutely necessary. [RFC-3683] proposes that support. These two features
 are technically orthogonal, but work well together.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## `#[non_exhaustive]` interactions
+### `#[non_exhaustive]` interactions
 
 This RFC doesn't allow mixing default field values and `#[non_exhaustive]`
 because of the interaction with the allowance to build struct literals
@@ -1652,7 +1652,7 @@ pub struct Foo;
 let _ = Foo { .. }; // Currently forbidden
 ```
 
-## Privacy: building `struct`s with private defaulted fields
+### Privacy: building `struct`s with private defaulted fields
 
 [future-privacy]: #future-privacy
 
@@ -1737,7 +1737,7 @@ pub mod foo {
 Additionally, the interaction between this privacy behavior and
 `#[non_exhaustive]` is fraught and requires additional discussion.
 
-## "Empty" types and types without default field values
+### "Empty" types and types without default field values
 
 Under this RFC, the following code isn't specified one way or the other:
 
@@ -1763,7 +1763,7 @@ pub struct Foo;
 let _ = Foo { .. }; // ok
 ```
 
-## Use of `_` on struct literals
+### Use of `_` on struct literals
 
 On patterns, one can currently use `field: _` to explicitly ignore a single
 named field, in order to force a compilation error at the pattern use place
@@ -1782,7 +1782,7 @@ let _ = Foo {
 };
 ```
 
-## Tuple structs and tuple variants
+### Tuple structs and tuple variants
 
 Although it could, this proposal does not offer a way to specify default values
 for tuple struct / variant fields. For example, you may not write:
@@ -1827,7 +1827,7 @@ there are some tricky design choices; in particular:
 For these reasons, default values for positional fields are not included in
 this RFC and are instead left as a possible future extension.
 
-## Integration with structural records
+### Integration with structural records
 
 [RFC 2584]: https://github.com/rust-lang/rfcs/pull/2584
 
@@ -1896,7 +1896,7 @@ figuring out designs for how to extend this RFC to them is left
 as possible work for the future.
 
 
-## Integration with struct literal type inference
+### Integration with struct literal type inference
 
 Yet another common requested feature is the introduction of struct literal type
 inference in the form of elision of the name of an ADT literal when it can be
@@ -1919,7 +1919,7 @@ fn open_window(config: Config) {
 open_window(_ { width: 800, .. });
 ```
 
-## Accessing default values from the type
+### Accessing default values from the type
 
 If one were to conceptualize default field values in the following way:
 
@@ -1956,7 +1956,7 @@ impl Config {
     const WIDTH: u32 = 1920,
 }
 ```
-## Non-const values
+### Non-const values
 
 [strong reasons]: #on-const-contexts
 
@@ -1968,7 +1968,7 @@ can be expanded in the future.
 Of note, `Default` implementations are not currently `~const`, but that is
 something to be addressed by making them `~const` when suitable instead.
 
-## Lint against explicit `impl Default` when `#[derive(Default)]` would be ok
+### Lint against explicit `impl Default` when `#[derive(Default)]` would be ok
 
 As a future improvement, we could nudge implementors towards leveraging the
 feature for less verbosity, but care will have to be taken in not being overly

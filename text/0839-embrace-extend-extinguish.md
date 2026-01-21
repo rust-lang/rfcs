@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#839](https://github.com/rust-lang/rfcs/pull/839)
 - Rust Issue: [rust-lang/rust#25976](https://github.com/rust-lang/rust/issues/25976)
 
-# Summary
+## Summary
 
 Make all collections `impl<'a, T: Copy> Extend<&'a T>`.
 
@@ -11,7 +11,7 @@ This enables both `vec.extend(&[1, 2, 3])`, and `vec.extend(&hash_set_of_ints)`.
 This partially covers the usecase of the awkward `Vec::push_all` with
 literally no ergonomic loss, while leveraging established APIs.
 
-# Motivation
+## Motivation
 
 Vec::push_all is kinda random and specific. Partially motivated by performance concerns,
 but largely just "nice" to not have to do something like
@@ -27,7 +27,7 @@ and copy out of the reference. So, do exactly that.
 As a bonus, this is more expressive than `push_all`, because you can feed in *any*
 collection by-reference to clone the data out of it, not just slices.
 
-# Detailed design
+## Detailed design
 
 * For sequences and sets: `impl<'a, T: Copy> Extend<&'a T>`
 * For maps: `impl<'a, K: Copy, V: Copy> Extend<(&'a K, &'a V)>`
@@ -55,7 +55,7 @@ fn main() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 * Mo' generics, mo' magic. How you gonna discover it?
 
@@ -80,10 +80,10 @@ not always be sufficient to determine the type of a `vec![]`.
 
 * This design does not fully replace the push_all, as it takes `T: Clone`.
 
-# Alternatives
+## Alternatives
 
 
-## The Cloneian Candidate
+### The Cloneian Candidate
 This proposal is artificially restricting itself to `Copy` rather than full
 `Clone` as a concession to the general Rustic philosophy of Clones being
 explicit. Since this proposal is largely motivated by simple shuffling of
@@ -91,7 +91,7 @@ primitives, this is sufficient. Also, because `Copy: Clone`, it would be
 backwards compatible to upgrade to `Clone` in the future if demand is
 high enough.
 
-## The New Method
+### The New Method
 It is theoretically plausible to add a new defaulted method to Extend called
 `extend_cloned` that provides this functionality. This removes any concern of
 accidental clones and makes inference totally work. However this design cannot
@@ -99,7 +99,7 @@ simultaneously support Sequences and Maps, as the signature for sequences would
 mean Maps can only Copy through &(K, V), rather than (&K, &V). This would make
 it impossible to copy-chain Maps through Extend.
 
-## Why not FromIterator?
+### Why not FromIterator?
 
 FromIterator could also be extended in the same manner, but this is less useful for
 two reasons:
@@ -113,7 +113,7 @@ Of course, context might disambiguate in many cases, and
 `let foo: Vec<_> = [1, 2, 3].iter().cloned().collect()`.
 
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 

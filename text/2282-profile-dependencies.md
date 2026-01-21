@@ -4,12 +4,12 @@
 - Rust Issue: [rust-lang/rust#48683](https://github.com/rust-lang/rust/issues/48683)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow overriding profile keys for certain dependencies, as well as providing a way to set profiles in `.cargo/config`
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently the "stable" way to tweak build parameters like "debug symbols", "debug assertions", and "optimization level" is to edit Cargo.toml.
@@ -26,7 +26,7 @@ in release". Also, your program may have large dependencies that it doesn't use 
 being able to ask for just these dependencies to be run in debug mode would be nice.
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 
@@ -57,7 +57,7 @@ opt-level = 3
 Additionally, profiles may be listed in `.cargo/config`. When building, cargo will calculate the
 current profile, and if it has changed, it will do a fresh/clean build.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 In case of overlapping rules, the precedence order is that `overrides.foo`
@@ -105,12 +105,12 @@ apply things to workspace members with `[profile.dev.overrides.membername]`.
 The `panic` key cannot be specified in an override; only in the top level of a profile. Rust does not allow
 the linking together of crates with different `panic` settings.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This complicates cargo.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 There are really two or three concerns here:
@@ -135,7 +135,7 @@ that you can ask it for a build plan and then execute it yourself). Such build s
 provide the ability to override profiles themselves instead. It's unclear if the general Rust
 community needs the ability to override profiles.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Bikeshedding the naming of the keys

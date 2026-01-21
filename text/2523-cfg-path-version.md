@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2523](https://github.com/rust-lang/rfcs/pull/2523)
 - Rust Issue: [rust-lang/rust#64796](https://github.com/rust-lang/rust/issues/64796) and [rust-lang/rust#64797](https://github.com/rust-lang/rust/issues/64797)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Permit users to `#[cfg(..)]` on whether:
@@ -12,7 +12,7 @@ Permit users to `#[cfg(..)]` on whether:
 + a certain external path is accessible
   (`#[cfg(accessible(::std::mem::ManuallyDrop))]`).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [stability_stagnation]: https://blog.rust-lang.org/2014/10/30/Stability.html
@@ -69,10 +69,10 @@ Another use case this RFC supports is to work around compiler bugs by
 checking if we are on a particular version. An example where this occurred
 is documented in [rust-lang-nursery/error-chain#101].
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## `#[cfg(accessible($path))]`
+### `#[cfg(accessible($path))]`
 
 Consider for a moment that we would like to use the `Iterator::flatten` method
 of the standard library if it exists (because it has become soon in a certain 
@@ -184,7 +184,7 @@ to test if a path exists in some library in the ecosystem. This can for example
 be useful if you need to support lower minor versions of a library but also
 add support for features in a higher minor version.
 
-## `#[cfg(version(1.27.0))]`
+### `#[cfg(version(1.27.0))]`
 
 Until now, we have only improved our support for library features but never
 any language features. By checking if we are on a certain minimum version of
@@ -228,10 +228,10 @@ get stabilized. This means that you can't for example add `version(1.28)`
 to your code and expect Rust 1.28 compilers to enable the code.
 However, there will be features in the future to use this mechanism on.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `#[cfg(version(<semver>))]`
+### `#[cfg(version(<semver>))]`
 
 To the `cfg` attribute, a `version` flag is added.
 This flag has the following grammar (where `\d` is any digit in `0` to `9`):
@@ -249,11 +249,11 @@ greater or equal to the version in the `semver` string will the
 `#[cfg(version(<semver>)]` flag be considered active.
 Greater or equal is defined in terms of [caret requirements].
 
-## `#[cfg(accessible($path))]`
+### `#[cfg(accessible($path))]`
 
 To the `cfg` attribute, an `accessible` flag is added.
 
-### Syntactic form
+#### Syntactic form
 
 This flag requires that a `path` fragment be specified in it inside parenthesis
 but not inside a string literal. The `$path` must start with leading `::`
@@ -263,12 +263,12 @@ This restriction exists to ensure that the user does not try to
 conditionally compile against parts of their own crate because that crate
 has not been compiled when the `accessible` flag is checked on an item.
 
-### Basic semantics
+#### Basic semantics
 
 If and only if the path referred to by `$path` does exist and is public
 will the `#[cfg(accessible($path))]` flag be considered active.
 
-### `#![feature(..)]` gating 
+#### `#![feature(..)]` gating 
 
 In checking whether the path exists or not, the compiler will consider
 feature gated items to exist if the gate has been enabled.
@@ -287,7 +287,7 @@ With respect to such usage:
    delay releases or un-stabilize features because they broke a crate using
    `accessible(..)` to gate on those features.
 
-### Inherent implementations
+#### Inherent implementations
 
 If a path refers to an item inside an inherent implementation,
 the path will be considered to exist if any configuration of generic
@@ -295,7 +295,7 @@ parameters can lead to the item. To check whether an item exists for
 an implementation with a specific sequence of concrete types applied to
 a type constructor, it is possible to use the `::foo::bar::<T>::item` syntax.
 
-### Fields
+#### Fields
 
 It is also possible to refer to fields of `struct`s, `enum`s, and `unions`.
 Assuming that we have the following definitions in the `foobar` crate:
@@ -324,26 +324,26 @@ fn do_stuff() {
 }
 ```
 
-### Macros
+#### Macros
 
 Finally, bang macros, derive macros, attributes of all sorts including
 built-in, user provided, as well as latent derive helper attributes,
 will be considered when determining if a path is accessible.
 
-## `cfg_attr` and `cfg!`
+### `cfg_attr` and `cfg!`
 
 Note that the above sections also apply to the attribute `#[cfg_attr(..)]` as
 well as the special macro `cfg!(..)` in that `version(..)` and `accessible(..)`
 are added to those as well.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 One argument is that hypothetically, if the standard library removed
 some unstable item, then we might "not notice" if everyone uses it through
 `#[cfg(accessible(..))]`.
 
-## Incremental garbage code and its collection
+### Incremental garbage code and its collection
 
 It sometimes happens that feature gates never make it to stable and
 that they instead get scrapped. This occurs infrequently.
@@ -355,10 +355,10 @@ However, if we provide LTS channels in the style of [RFC 2483],
 then there are opportunities to perform some "garbage collection"
 of definitions that won't be used when the LTS version changes.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
-## `accessible(..)`
+### `accessible(..)`
 
 The primary rationale for the `accessible` mechanism is that when you
 want to support some library feature, it is some path you are thinking of
@@ -383,7 +383,7 @@ Another use case `accessible(..)` supports that `version(..)` doesn't is checkin
 support for atomic types, e.g. `accessible(::std::sync::atomic::AtomicU8)`.
 This subsumes the proposed `#[cfg(target_has_atomic = "..")]` construct.
 
-### Preventing relative paths
+#### Preventing relative paths
 
 The reason why we have enforced that all paths must start with `::` inside
 `accessible(..)` is that if we allow relative paths, and users write
@@ -426,7 +426,7 @@ Also do note that requiring absolute paths with leading `::` is fully
 forward-compatible with not requiring leading `::`. If we experience that
 this restriction is a problem in the future, we may remove the restriction.
 
-### `#[cfg(accessible(..))` or `#[cfg(accessible = ..)`
+#### `#[cfg(accessible(..))` or `#[cfg(accessible = ..)`
 
 We need to decide between the syntax `accessible(..)` or `accessible = ..`.
 The reason we've opted for the former rather than the latter is that the
@@ -463,7 +463,7 @@ meta_list : "(" meta_or_lit_list ")" ;
 meta : path ( named_value | meta_list )? ;
 ```
 
-### The bikeshed
+#### The bikeshed
 
 One might consider other names for the flag instead of `accessible`.
 Some contenders are:
@@ -480,7 +480,7 @@ Some contenders are:
 + `item_reachable`
 + `item_exists`
 
-#### `accessible`
+##### `accessible`
 
 Currently `accessible` is the choice because it clearly signals the intent
 while also being short enough to remain ergonomic to use.
@@ -489,7 +489,7 @@ we argue that from the context of seeing `accessible(::std::foo::bar)`
 it is clear that it is paths we are talking about because the argument
 is a path and not something else.
 
-#### `reachable`
+##### `reachable`
 
 The word `reachable` is also a synonym of `accessible` and is one character 
 shorter. However, it tends to have a different meaning in code. Examples include:
@@ -500,7 +500,7 @@ shorter. However, it tends to have a different meaning in code. Examples include
 All in all, we have chosen to go with `accessible` instead as the
 more intuitive option.
 
-#### `usable`
+##### `usable`
 
 While `can_use` and `usable` are also strong contenders, we reject these options
 because they may imply to the user that only things that you may `use $path;` can
@@ -508,7 +508,7 @@ go in there. Meanwhile, you may `#[cfg(accessible(::foo::MyTrait::my_method))`
 which is *not* possible as `use ::foo::MyTrait::my_method;`. This also applies
 to other associated items and inherent methods as well as `struct` fields.
 
-#### `has_path`
+##### `has_path`
 
 Another strong contender is `has_path` or `have_path`.
 
@@ -530,7 +530,7 @@ or `__has_feature(c_generic_selections)`.
 Another benefit is that `has_` gives us the opportunity to introduce a family
 of `has_path`, `has_feature`, and `has_$thing` if we so wish.
 
-## `#[cfg(version(..))`
+### `#[cfg(version(..))`
 
 When it comes to `version(..)`, it is needed to support conditional compilation
 of language features as opposed to library features as previously shown.
@@ -546,7 +546,7 @@ too unreasonable as we can expect `rustc` to be the reference implementation
 and that other ones will probably lag behind. Indeed, this is the experience
 with `GHC` and alternative Haskell compilers.
 
-### The bikeshed - Argument syntax
+#### The bikeshed - Argument syntax
 
 We have roughly two options with respect to how the `version` flag may be specified:
 
@@ -591,7 +591,7 @@ this interpretation is not the one in this RFC.
 
 However, one reason to pick syntax 1. is that `version(..)` looks like a list.
 
-### The bikeshed - Attribute name
+#### The bikeshed - Attribute name
 
 Naturally, there are other possible names for the flag. For example:
 
@@ -610,7 +610,7 @@ checking (`==`) as well as checking if the compiler is below a certain version
 that Cargo features that we could add. However, as a first iteration,
 `version(1.27.0)` is simple and covers most use cases.
 
-## [version_check] as an alternative
+### [version_check] as an alternative
 
 Using the crate `version_check` we may conditionally compile using a `build.rs`
 file. For example, the [dbg] crate does this:
@@ -673,7 +673,7 @@ You will also need to repeat this per version you want to support.
 This causes the mechanism to scale poorly as compared to `version(1.27)`
 which we argue is simple and intuitive.
 
-## Conditional compilation on feature gates
+### Conditional compilation on feature gates
 
 An alternative to `version(..)` and `accessible(..)` is to allow users
 to query where a certain feature gate is stable or not.
@@ -684,10 +684,10 @@ We also argue that `accessible(..)` is more intuitive because it is more
 natural to think of a feature in terms of how you would make use of it
 (via its path) rather than the sometimes somewhat arbitrarily named feature gate.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## Crates
+### Crates
 
 [rustc_version]: https://crates.io/crates/rustc_version
 
@@ -696,7 +696,7 @@ doing the desired conditional compilation in this RFC. There is also the
 [rustc_version] crate. Together, these crates have 18 + 67 direct reverse
 dependencies. This suggests that the feature is both desired and used.
 
-## Haskell
+### Haskell
 
 Using the Glasgow Haskell Compiler (GHC), it is possible to conditionally
 compile using it's provided preprocessor:
@@ -717,7 +717,7 @@ main :: IO ()
 main = putStrLn version
 ```
 
-## Clang
+### Clang
 
 [clang_check]: https://clang.llvm.org/docs/LanguageExtensions.html#feature-checking-macros
 
@@ -749,7 +749,7 @@ For example, you may write:
 
 This is similar in spirit to `accessible($path)`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 The ability to have optional cargo dependencies is out of scope for this RFC.
@@ -813,10 +813,10 @@ The ability to have optional cargo dependencies is out of scope for this RFC.
    We consider this unresolved question to be a matter of implementation detail
    which may be resolved during implementation.
 
-# Possible future work
+## Possible future work
 [possible future work]: #possible-future-work
 
-## `#[cfg(rust_feature(..))]`
+### `#[cfg(rust_feature(..))]`
 
 [GAT]: https://github.com/rust-lang/rust/issues/44265
 
@@ -845,7 +845,7 @@ However, there are some drawbacks as well:
    their names. Being more principled could potentially add an undue burden
    on the library and compiler teams.
 
-## `#[cfg(has_attr($attribute))]`
+### `#[cfg(has_attr($attribute))]`
 
 One possible extension would be to introduce a `has_attr(..)` feature.
 `has_attr` would check if the specified attribute would be usable on the
@@ -875,7 +875,7 @@ However, as attribute names already have to be standardized,
 `has_attr(..)` would not suffer the same problems wherefore
 it may be the better solution.
 
-## `#[cfg(nightly)]`
+### `#[cfg(nightly)]`
 
 In a previous iteration of this RFC, a `#[cfg(nightly)]` flag was included.
 However, this flag has since been removed from the RFC.
@@ -883,14 +883,14 @@ We may still add such a feature in the future if we wish.
 Therefore, we have outlined what `nightly` would have meant
 and some upsides and drawbacks to adding it.
 
-### Technical specification
+#### Technical specification
 
 To the `cfg` attribute, a `nightly` flag is added.
 
 If and only if a Rust compiler permits a user to specify `#![feature(..)]`
 will the `nightly` flag be considered active.
 
-### Drawbacks: Combining `nightly` and `accessible(..)`
+#### Drawbacks: Combining `nightly` and `accessible(..)`
 
 Consider that a popular library writes:
 
@@ -936,7 +936,7 @@ but this would be anti-modular).
 This is the fundamental reason that for the time being,
 we have not included `nightly` in the proposal.
 
-### Upsides
+#### Upsides
 
 [dbg]: https://crates.io/crates/dbg
 
@@ -945,7 +945,7 @@ own to conditionally compile based on nightly/not as opposed to providing
 an `unstable` feature in `Cargo.toml`. An example of this is provided by the
 [dbg] crate which currently uses [version_check] to provide this automation.
 
-### Alternative `#![if_possible_feature(<feature>)]`
+#### Alternative `#![if_possible_feature(<feature>)]`
 
 As an alternative to `#[cfg_attr(nightly, feature(<feature>))]`
 we could permit the user to write `#![if_possible_feature(<feature>)]`.
@@ -956,7 +956,7 @@ using `any`, `not`, and `all`.
 
 This alternative also suffers from the problems previously noted.
 
-### Naming of the attribute
+#### Naming of the attribute
 
 If this flag were to be proposed again, it would probably be proposed under
 a different name than `nightly`. Instead, a more apt name with respect to intent

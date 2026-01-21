@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2307](https://github.com/rust-lang/rfcs/pull/2307)
 - Rust Issue: [rust-lang/rust#49137](https://github.com/rust-lang/rust/issues/49137)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add `std::num::NonZeroU32` and eleven other concrete types (one for each primitive integer type)
@@ -11,7 +11,7 @@ to replace and deprecate `core::nonzero::NonZero<T>`.
 (Non-zero/non-null raw pointers are available through
 [`std::ptr::NonNull<U>`](https://doc.rust-lang.org/nightly/std/ptr/struct.NonNull.html).)
 
-# Background
+## Background
 [background]: #background
 
 The `&T` and `&mut T` types are represented in memory as pointers,
@@ -54,7 +54,7 @@ The tracking issue for these unstable APIs is
 was stabilized in [in Rust 1.25](https://github.com/rust-lang/rust/pull/46952),
 wrapping `NonZero` further for raw pointers and adding pointer-specific APIs.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 With `NonNull` covering pointers, the remaining use cases for `NonZero` are integers.
@@ -70,7 +70,7 @@ this RFC proposes replacing the generic type and trait with twelve concrete type
 one for each primitive integer type.
 This is similar to the existing atomic integer types like `std::sync::atomic::AtomicU32`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When an integer value can never be zero because of the way an algorithm works,
@@ -83,7 +83,7 @@ This may also enable the compiler to make some memory optimizations,
 for example `Option<NonZeroU32>` might take no more space than `u32`
 (with `None` represented as zero).
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 A new private `macro_rules!` macro is defined and used in `core::num` that expands to
@@ -145,12 +145,12 @@ For example, `size_of::<Option<NonZeroU32>>() == size_of::<NonZeroU32>()` may or
 It happens to be in current rustc,
 but an alternative Rust implementation could define `num::NonZero*` purely as library types.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This adds to the ever-expanding API surface of the standard library.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 * Memory layout optimization for non-zero integers mostly exist in rustc today
@@ -198,7 +198,7 @@ This adds to the ever-expanding API surface of the standard library.
   but every use of non-zero integers the author has seen so far has been with unsigned ones.
   This would cut the number of new types from 12 to 6.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Should the memory layout of e.g. `Option<NonZeroU32>` be a language guarantee?

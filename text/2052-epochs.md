@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2052](https://github.com/rust-lang/rfcs/pull/2052)
 - Rust Issue: [rust-lang/rust#44581](https://github.com/rust-lang/rust/issues/44581)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Rust's ecosystem, tooling, documentation, and compiler are constantly improving. To make it easier to follow development, and to provide a clear, coherent "rallying point" for this work, this RFC proposes that we declare a *edition* every two or three years. Editions are designated by the year in which they occur, and represent a release in which several elements come together:
@@ -19,10 +19,10 @@ Rust's ecosystem, tooling, documentation, and compiler are constantly improving.
 
 Sometimes a feature we want to make available in a new edition would require backwards-incompatible changes, like introducing a new keyword. In that case, the feature is only available by explicitly opting in to the new edition. Existing code continues to compile, and crates can freely mix dependencies using different editions.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## The status quo
+### The status quo
 
 Today, Rust evolution happens steadily through a combination of several mechanisms:
 
@@ -44,7 +44,7 @@ All told, the tools work together quite nicely to allow Rust to change and grow
 over time, while keeping old code working (with only occasional, very minor
 adjustments to account for things like changes to type inference.)
 
-## What's missing
+### What's missing
 
 So, what's the problem?
 
@@ -88,10 +88,10 @@ or their benefits.
 This RFC proposes *editions* as a mechanism we can layer on top of our existing
 release process, keeping its guarantees while addressing its gaps.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## The basic idea
+### The basic idea
 
 To make it easier to follow Rust's evolution, and to provide a clear, coherent
 "rallying point" for the community, the project declares a *edition* every
@@ -143,7 +143,7 @@ compiler releases indefinitely, but your code may not have access to new
 features that require new keywords and the like. New features that *are*
 backwards compatible, however, will be available on older editions.
 
-## Edition timing, stabilizations, and the roadmap process
+### Edition timing, stabilizations, and the roadmap process
 
 As mentioned above, we want to retain our rapid release model, in which new
 features and other improvements are shipped on the stable release channel as
@@ -178,7 +178,7 @@ In short, editions are striking a delicate balance: they're not a cutoff for
 stabilization, which continues every six weeks, but they still provide a strong
 impetus for coming together as a community and putting together a polished product.
 
-### The preview period
+#### The preview period
 
 There's an important tension around stabilization and editions:
 
@@ -201,7 +201,7 @@ period* for the edition, which ends when a release is produced that
 synchronizes all of the elements that go into an edition and the edition is
 formally announced.
 
-## A broad policy on edition changes
+### A broad policy on edition changes
 
 There are numerous reasons to limit the scope of changes for new editions, among them:
 
@@ -213,7 +213,7 @@ There are numerous reasons to limit the scope of changes for new editions, among
 
 These lead to some hard and soft constraints.
 
-### Hard constraints
+#### Hard constraints
 
 **TL;DR: Warning-free code on edition N must compile on edition N+1 and have the
 same behavior.**
@@ -228,7 +228,7 @@ The second option is to be preferred whenever possible. Note that warning-free c
 
 The Rust compiler supports multiple editions, but **must only support a single version of "core Rust"**. We identify "core Rust" as being, roughly, MIR and the core trait system; this specification will be made more precise over time.  The implication is that the "edition modes" boil down to keeping around multiple desugarings into this core Rust, which greatly limits the complexity and technical debt involved. Similar, core Rust encompasses the core *conceptual* model of the language, and this constraint guarantees that, even when working with multiple editions, those core concepts remain fixed.
 
-### Soft constraints
+#### Soft constraints
 
 **TL;DR: *Most* code *with* warnings on edition N should, after running `rustfix`, compile on edition N+1 and have the same behavior.**
 
@@ -240,13 +240,13 @@ In addition, migrations that affect a large percentage of code must be "small tw
 
 These are "soft constraints" because they use terms like "small minority" and "small tweaks", which are open for interpretation. More broadly, the more disruption involved, the higher the bar for the change.
 
-### Positive examples: What edition opt-ins can do
+#### Positive examples: What edition opt-ins can do
 
 Given those principles, let's look in more detail at a few examples of the
 kinds of changes edition opt-ins enable. **These are just examples---this RFC
 doesn't entail any commitment to these language changes**.
 
-#### Example: new keywords
+##### Example: new keywords
 
 We've taken as a running example introducing new keywords, which sometimes
 cannot be done backwards compatibly (because a contextual keyword isn't
@@ -304,7 +304,7 @@ identifier.
 - However, if you leave it at `2015`, you can upgrade to Rust 1.27 **and
   use libraries that opt in to the `2019` edition** with no problem.
 
-#### Example: repurposing corner cases
+##### Example: repurposing corner cases
 
 A similar story plays out for more complex modifications that repurpose existing
 usages. For example, some suggested module system improvements deduce the module
@@ -317,7 +317,7 @@ then make it an error during the preview period. The module system change could
 then be made available (and ultimately stabilized) within the preview period,
 before fully shipping on the next edition.
 
-#### Example: repurposing syntax
+##### Example: repurposing syntax
 
 A more radical example: changing the syntax for trait objects and `impl
 Trait`. In particular, we have
@@ -341,7 +341,7 @@ Of course, this RFC isn't suggesting that such a course of action is a *good*
 one, just that it is *possible* to do without breakage. The policy around such
 changes is left as an open question.
 
-#### Example: type inference changes
+##### Example: type inference changes
 
 There are a number of details about type inference that seem suboptimal:
 
@@ -357,13 +357,13 @@ enough effort, we could probably deprecate cases where type inference rules
 might change and request explicit type annotations, and then—in the new
 edition—tweak those rules.
 
-### Negative examples: What edition opt-ins can't do
+#### Negative examples: What edition opt-ins can't do
 
 There are also changes that editions don't help with, due to the constraints
 we impose. These limitations are extremely important for keeping the compiler
 maintainable, the language understandable, and the ecosystem compatible.
 
-#### Example: changes to coherence rules
+##### Example: changes to coherence rules
 
 Trait coherence rules, like the "orphan" rule, provide a kind of protocol about
 which crates can provide which `impl`s. It's not possible to change protocol
@@ -375,7 +375,7 @@ language that are applicable *crate-locally*; they cannot impose new
 requirements or semantics on external crates, since we want to retain
 compatibility with the existing ecosystem.
 
-#### Example: `Error` trait downcasting
+##### Example: `Error` trait downcasting
 
 See [rust-lang/rust#35943](https://github.com/mozilla/rust/issues/35943). Due to
 a silly oversight, you can’t currently downcast the “cause” of an error to
@@ -388,7 +388,7 @@ This is essentially another example of a non-crate-local change.
 
 More generally, breaking changes to the standard library are not possible.
 
-## The full mechanics
+### The full mechanics
 
 We'll wrap up with the full details of the mechanisms at play.
 
@@ -400,7 +400,7 @@ We'll wrap up with the full details of the mechanisms at play.
 - `cargo new` will produce a `Cargo.toml` with the latest `edition` value
   (including an edition currently in its preview period).
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 First and foremost, if we accept this RFC, we should publicize the plan widely,
@@ -421,7 +421,7 @@ including:
 
 [previous posts]: https://blog.rust-lang.org/2014/10/30/Stability.html
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are several drawbacks to this proposal:
@@ -456,10 +456,10 @@ These downsides are most problematic in cases that involve "breakage" if they
 were done without opt in. They indicate that, even if we do adopt editions, we
 should use them judiciously.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Within the basic edition structure
+### Within the basic edition structure
 
 There was a significant amount of discussion on the RFC thread about using "2.0"
 rather than "2019". It's difficult to concisely summarize this discussion, but
@@ -513,7 +513,7 @@ that avoid "preview" editions:
     usage of "ready to go" feature on the stable channel until the edition is
     shipped.
 
-## Alternatives to editions
+### Alternatives to editions
 
 The larger alternatives include, of course, not trying to solve the problems
 laid out in the motivation, and instead finding creative alternatives.
@@ -535,7 +535,7 @@ what kinds of changes we want to allow. Downsides:
 - Much greater temptation to make sweeping changes, and continuous litigation
   over what those changes should be.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - What impact is there, if any, on breakage permitted today for bug fixing or

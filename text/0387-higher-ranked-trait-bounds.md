@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#387](https://github.com/rust-lang/rfcs/pull/387)
 - Rust Issue: [rust-lang/rust#18639](https://github.com/rust-lang/rust/issues/18639)
 
-# Summary
+## Summary
 
 - Add the ability to have trait bounds that are polymorphic over lifetimes.
 
-# Motivation
+## Motivation
 
 Currently, closure types can be polymorphic over lifetimes. But
 closure types are deprecated in favor of traits and object types as
@@ -121,9 +121,9 @@ fn with(callback: &mut for<'a> FnMut<(&'a Data,),()>)
 
 The syntax for `fn` types must be updated as well to use `for`.
 
-# Detailed design
+## Detailed design
 
-## For syntax
+### For syntax
 
 We modify the grammar for a trait reference to include
 
@@ -136,12 +136,12 @@ impls, the distinction between early and late-bound lifetimes are
 inferred. In qualified paths, which are used to select a member from
 an impl, no bound lifetimes are permitted.
 
-## Update syntax of fn types
+### Update syntax of fn types
 
 The existing bare fn types will be updated to use the same `for`
 notation. Therefore, `<'a> fn(&'a int)` becomes `for<'a> fn(&'a int)`.
 
-## Implicit binders when using parentheses notation and in fn types
+### Implicit binders when using parentheses notation and in fn types
 
 When using the `Trait(T1, ..., Tn)` notation, implicit binders are
 introduced for omitted lifetimes. In other words, `FnMut(&int)` is
@@ -153,7 +153,7 @@ the usual way, and hence `FnMut(&Foo) -> &Bar` is shorthand for
 `for<'a> FnMut(&'a Foo) -> &'a Bar`. The same is all true (and already
 true) for fn types.
 
-## Distinguishing early vs late bound lifetimes in impls
+### Distinguishing early vs late bound lifetimes in impls
 
 We will distinguish early vs late-bound lifetimes on impls in the same
 way as we do for fns. Background on this process can be found in these
@@ -203,7 +203,7 @@ foo::<SomeOtherType<'static>>(...) // not ok
 [1]: http://smallcultfollowing.com/babysteps/blog/2013/10/29/intermingled-parameter-lists/
 [2]: http://smallcultfollowing.com/babysteps/blog/2013/11/04/intermingled-parameter-lists/
 
-## Instantiating late-bound lifetimes in a trait reference
+### Instantiating late-bound lifetimes in a trait reference
 
 Whenever
 an associated item from a trait reference is accessed, all late-bound
@@ -233,7 +233,7 @@ is equivalent to:
         <t as FnMut<(&&'b Foo,),()>::call_mut(&mut t, ...);
     }
     
-## Subtyping of trait references
+### Subtyping of trait references
 
 The subtyping rules for trait references that involve higher-ranked
 lifetimes will be defined in an analogous way to the current subtyping
@@ -254,12 +254,12 @@ wherever a trait reference with a concrete lifetime, like
    
 [spj]: http://research.microsoft.com/en-us/um/people/simonpj/papers/higher-rank/
 
-# Drawbacks
+## Drawbacks
 
 This feature is needed. There isn't really any particular drawback beyond
 language complexity.
 
-# Alternatives
+## Alternatives
 
 **Drop the keyword.** The `for` keyword is used due to potential
 ambiguities surrounding UFCS notation. Under UFCS, it is legal to
@@ -278,6 +278,6 @@ and not in types. For example, one might write:
 
     fn foo<IDENTITY>(t: IDENTITY) where IDENTITY : for<U> FnMut(U) -> U { ... }
     
-# Unresolved questions
+## Unresolved questions
 
 None. Implementation is underway though not complete.

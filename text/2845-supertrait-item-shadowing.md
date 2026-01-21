@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2845](https://github.com/rust-lang/rfcs/pull/2845)
 - Rust Issue: [rust-lang/rust#89151](https://github.com/rust-lang/rust/issues/89151)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Change item resolution for generics and trait objects so that a trait bound does not bring its supertraits' items into scope if the subtrait defines an item with this name itself.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Consider the following situation:
@@ -29,7 +29,7 @@ A trait `Sub` with a supertrait `Super` defines a method with the same name as o
 
 If `Sub` is used as a generic bound, or as a trait object, trying to use the `foo` method raises an error:
 
-#### Generics:
+### Generics:
 
 ```rust
 use traits::Sub;
@@ -39,7 +39,7 @@ fn generic_fn<S: Sub>(x: S) {
 }
 ```
 
-#### Trait objects:
+### Trait objects:
 
 ```rust
 use traits::Sub;
@@ -71,7 +71,7 @@ Note that the trait bound is always `Sub`, `Super` is not mentioned in the user 
 
 As the diagnostic mentions, Universal function call syntax (UFCS) will work to resolve the ambiguity, but this is unergonomic. More pressingly, this ambiguity can in fact create a [Fragile base class problem](https://en.wikipedia.org/wiki/Fragile_base_class) that can break library users' code. Consider the following scenario:
 
-#### Initial situation:
+### Initial situation:
 [fragile-base-class]: #fragile-base-class
 
 There are three crates in this scenario: A low-level library, a high-level library that depends on the low-level one, and user code that uses the high-level library. The high-level library uses the trait from the low-level library as a supertrait, and the user code then uses the high-level library's trait as a generic bound:
@@ -106,7 +106,7 @@ fn generic_fn<S: Sub>(x: S) {
 }
 ```
 
-#### Library change:
+### Library change:
 
 At some point in time, the low-level library's supertrait gets refactored to have a method that also happens to be called `foo`:
 ```rust
@@ -136,7 +136,7 @@ This kind of change is acknowledged as breaking but minor by the [API Evolution 
 
 To resolve this issue, this RFC proposes the following: If the user does not explicitly bring the supertrait into scope themselves, the subtrait should "shadow" the supertrait, resolving the current ambiguity in favor of the subtrait.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When using a trait as a bound in generics, or using a trait object, a trait with a supertrait will only bring the supertrait's items into scope if it does not define an item with the same name itself. Items on the object in question that were previously ambiguous now resolve to the subtrait's implementation. While it is still possible to refer to the conflicting supertrait's items, it requires UFCS. Supertrait items that were not previously ambiguous continue to be in scope and are usable without UFCS.
@@ -180,7 +180,7 @@ Choosing not to resolve ambiguities when both traits are explicitly requested si
 
 The feature is backwards-compatible: Anything changed by this proposal was previously rejected by the compiler. As seen in the motivation section, it also improves forwards-compatibility for libraries.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Currently, when a trait is brought into scope through generics or trait objects, all of its supertrait's items are brought into scope as well. Under this proposal, a supertrait's items would only be brought into scope if an item with that name is not already present in the subtrait. This extends to the case of multiple supertraits without special provisions, the rule is simply applied for each supertrait.
@@ -253,14 +253,14 @@ trait Sub: Super {
 
 Using `self.foo()` is an error today, and it is reasonable to expect it to be, since it is not clear which trait it refers to. Under the rule laid out above, this will continue to raise an error, since `Super` is explicitly mentioned and brought into scope.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This change makes the implementation of bringing supertrait items into scope a bit more complex.
 
 While it is not the intent of this RFC, the resolution strategy it introduces is somewhat similar to how inheritance in object-oriented languages works. Users coming from those languages may be confused when they realize that Rust actually works differently. Specifically, items in Rust aren't inherited, and methods with the same name will only shadow and not override. (See also [Prior art](#prior-art) for this distinction.)
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The simplest alternative is to continue with the status quo, and require the user to explicitly disambiguate items with the same name using UFCS.
@@ -271,7 +271,7 @@ However, the current behavior seems to go against the spirit of why supertrait i
 
 Moreover, as demonstrated in the Motivation section, it is currently possible to inadvertently introduce downstream breakage by changing a supertrait. As outlined in the example, this can cause breakage to bubble down multiple layers of dependencies and cause errors far from the origin of the change. The breakage is especially unexpected by the user because they didn't mention the supertrait or its library themselves.
 
-## Alternatives
+### Alternatives
 [alternatives]: #alternatives
 
 #### Resolving in favor of the *super*trait instead
@@ -297,10 +297,10 @@ Another possibility in the face of ambiguity would be to resolve in favor of the
 
 All in all, rejecting to resolve ambiguity seems like the right way to go.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-#### Typeclasses in Haskell
+### Typeclasses in Haskell
 [haskell-typeclasses]: #haskell-typeclasses
 
 Haskell's typeclasses are closely related to Rust's traits, so it's worth seeing what the situation looks like in Haskell.
@@ -309,7 +309,7 @@ In Haskell, defining a typeclass constraint on a function does not automatically
 
 As a result, this RFC's issue doesn't arise in Haskell in the first place, similarly to how it doesn't arise when `use` notation is used in Rust.
 
-#### Inheritance in object-oriented languages
+### Inheritance in object-oriented languages
 [oop-inheritance]: #oop-inheritance
 
 The general idea of a method call on an object resolving to the most derived class's implementation is typically the way inheritance works in object-oriented languages. A notable distinction is that in object-oriented languages, defining a method with the same name (actually, signature) typically *overrides* the base class's method, meaning that the derived implementation will be selected even in a context that only references the base class. This is not how traits work in Rust, supertraits have no way of calling subtrait implementations, and this will not be changed by this RFC. Instead, the subtrait will only *shadow* the supertrait's items, and `Super::foo` and `Sub::foo` will still be two distinct functions.
@@ -319,10 +319,10 @@ Similar distinctions exist in
 - [C#](https://en.wikipedia.org/wiki/Method_overriding#C#), (called "hiding"),
 - [Java](https://docs.oracle.com/javase/tutorial/java/IandI/override.html), (called "hiding", however the concept is more limited, with instance methods always overriding and static methods always hiding).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-#### Terminology
+### Terminology
 [terminology]: #terminology
 
 It's not immediately clear which terminology to use for this behavior. Both "shadowing" and "hiding" are used for immediately related  behaviors in object-oriented languages,  with ["variable shadowing"](https://en.wikipedia.org/wiki/Variable_shadowing) also being used more generally for variable scopes, and ["name masking"](https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Name_masking) used for the same concept as "variable shadowing" but from a different perspective. The concept of variable shadowing also already exists in Rust today, and the similar name could be a source of confusion.
@@ -331,7 +331,7 @@ There's also some clarification needed on how the term should be used: Should sh
 
 Note: using "hiding" may lead to a different interpretation here: "subtraits hide supertraits" sounds like the entirety of the supertrait is hidden.
 
-#### Further fragile base class situations
+### Further fragile base class situations
 [further-fragile-base-class]: #further-fragile-base-class
 
 The situation laid out above is actually not the only fragile base class situation in Rust. Consider the following:
@@ -378,15 +378,15 @@ fn generic_fn<S: Sub>(x: S) {
 
 By manually resolving the ambiguity the error can be avoided. This RFC's part here is to make it possible to resolve the ambiguity close to where it originates, instead of having to do it at the level of `generic_fn`, where the supertraits were never explicitly mentioned. However, this RFC is not able to resolve the fundamental issue, and it is considered out of scope for this RFC, which is intended to deal only with single "inheritance".
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-#### `use` declarations
+### `use` declarations
 [use-declarations]: #use-declarations
 
 As mentioned before, `use` declarations work differently from trait bounds in generics and trait objects. There may be some benefit in unifying their behavior, so that `use` declarations bring supertrait items into scope as well. However this would be a breaking change, since it has the potential to introduce ambiguity. It could however still be considered for an edition.
 
-#### Further resolution of ambiguity
+### Further resolution of ambiguity
 [further-resolution]: #further-resolution
 
 As demonstrated above, there are other fragile base class problems unaddressed by this RFC. There are [some possibilities of addressing this](https://en.wikipedia.org/wiki/Multiple_inheritance#Mitigation), for example by considering the order of supertraits. However, it may be reasonable to explicitly reject resolving the ambiguity, as a resolution could mean a subtle change in behavior when a supertrait changes. It may be preferable to keep this an error instead, and ask the user to explicitly specify.

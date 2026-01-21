@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#1434](https://github.com/rust-lang/rfcs/pull/1434)
 - Rust Issue: [rust-lang/rust#32311](https://github.com/rust-lang/rust/issues/32311)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Implement a method, `contains()`, for `Range`, `RangeFrom`, and `RangeTo`, checking if a number is in the range.
 
 Note that the alternatives are just as important as the main proposal.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The motivation behind this is simple: To be able to write simpler and more expressive code. This RFC introduces a "syntactic sugar" without doing so.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Implement a method, `contains()`, for `Range`, `RangeFrom`, and `RangeTo`. This method will check if a number is bound by the range. It will yield a boolean based on the condition defined by the range.
@@ -45,25 +45,25 @@ impl<Idx> RangeFrom<Idx> where Idx: PartialOrd<Idx> {
 
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Lacks of generics (see Alternatives).
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Add a `Contains` trait
+### Add a `Contains` trait
 
 This trait provides the method `.contains()` and implements it for all the Range types.
 
-## Add a `.contains<I: PartialEq<Self::Item>>(i: I)` iterator method
+### Add a `.contains<I: PartialEq<Self::Item>>(i: I)` iterator method
 
 This method returns a boolean, telling if the iterator contains the item given as parameter. Using method specialization, this can achieve the same performance as the method suggested in this RFC.
 
 This is more flexible, and provide better performance (due to specialization) than just passing a closure comparing the items to a `any()` method.
 
-## Make `.any()` generic over a new trait
+### Make `.any()` generic over a new trait
 
 Call this trait, `ItemPattern<Item>`. This trait is implemented for `Item` and `FnMut(Item) -> bool`. This is, in a sense, similar to `std::str::pattern::Pattern`.
 
@@ -71,7 +71,7 @@ Then let `.any()` generic over this trait (`T: ItemPattern<Self::Item>`) to allo
 
 This will not achieve the same performance as the other proposals.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

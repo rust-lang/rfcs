@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2436](https://github.com/rust-lang/rfcs/pull/2436)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC defines an official Rust style guide. The style is a specification for the default behaviour of [Rustfmt](https://github.com/rust-lang-nursery/rustfmt), is required for official Rust projects (including the compiler and standard libraries), and is recommended for all Rust projects. The style guide in this RFC only covers the formatting of code, it does not have any recommendations about how to write idiomatic or high quality Rust code.
@@ -12,7 +12,7 @@ The formatting guidelines in the style guide have been decided on in the [format
 
 Thanks to the style team for their work on the guidelines: Brian Anderson, Jorge Aparicio, Nick Cameron, Steve Klabnik, Nicole Mazzuca, Scott Olson, and Josh Triplett.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Formatting code is a mostly mechanical task which takes both time and mental effort. By using an automatic formatting tool, a programmer is relieved of this task and can concentrate on more important things.
@@ -23,11 +23,11 @@ Humans comprehend information through pattern matching. By ensuring that all Rus
 
 Thus, there are productivity benefits to using a formatting tool (such as rustfmt), and even larger benefits by using a community-consistent formatting, typically by using a formatting tool's default settings.
 
-## Options
+### Options
 
 Rustfmt has many options for customising formatting. The behaviour of those options is outside the scope of this RFC. We recommend that users do not configure Rustfmt using the available options and use the default settings. The reason for doing so is consistency in code formatting across the ecosystem - this lowers the bar for developers to move from one project to another because they don't need to get used to reading a new style of formatting.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 See the [guide text](https://doc.rust-lang.org/nightly/style-guide/).
@@ -36,7 +36,7 @@ The style guide formerly lived in the RFC repo, since it was an appendix to this
 
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 One can level some criticisms at having a style guide:
@@ -47,7 +47,7 @@ One can level some criticisms at having a style guide:
 However, these are heavily out-weighed by the benefits.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Many alternative formatting guidelines were discussed in the [formatting RFC process](https://github.com/rust-lang-nursery/fmt-rfcs/issues?utf8=%E2%9C%93&q=is%3Aissue). The guiding principles behind that process are outlined in [that repo](https://github.com/rust-lang-nursery/fmt-rfcs#guiding-principles).
@@ -57,7 +57,7 @@ A possible alternative to this style of style guide would be to try and provide 
 We could also not have a written style guide and state that the output of Rustfmt is the official Rust style, however, that would not have permitted the community input that the formatting RFC process facilitated, and would not give a good way to judge breaking changes in Rustfmt.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Rust has [API design guidelines](https://rust-lang-nursery.github.io/api-guidelines/); an early version ('the Rust style guide') contained both formatting and API design guidelines.
@@ -65,7 +65,7 @@ Rust has [API design guidelines](https://rust-lang-nursery.github.io/api-guideli
 Some language have official style guides (e.g., [Python](https://www.python.org/dev/peps/pep-0008/) and [Kotlin](https://kotlinlang.org/docs/reference/coding-conventions.html#formatting)). For those that do not, several unofficial guides usually appear, for example, there are several style guides for C++, such as [Google's](https://google.github.io/styleguide/cppguide.html) and [Mozilla's](https://developer.mozilla.org/en-US/docs/Mozilla/Developer_guide/Coding_Style).
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 

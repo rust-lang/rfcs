@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#109](https://github.com/rust-lang/rfcs/pull/109)
 - Rust Issue: [rust-lang/rust#14470](https://github.com/rust-lang/rust/issues/14470)
 
-# Summary
+## Summary
 
 * Remove the `crate_id` attribute and knowledge of versions from rustc.
 * Add a `#[crate_name]` attribute similar to the old `#[crate_id]` attribute
@@ -10,7 +10,7 @@
 * A new flag, `--extern`, will be used to override searching for external crates
 * A new flag, `-C metadata=foo`, used when hashing symbols
 
-# Motivation
+## Motivation
 
 The intent of CrateId and its support has become unclear over time as the
 initial impetus, `rustpkg`, has faded over time. With `cargo` on the horizon,
@@ -23,7 +23,7 @@ This new crate identification is designed to not compromise on the usability of
 the compiler independent of cargo. Additionally, all use cases support today
 with a CrateId should still be supported.
 
-# Detailed design
+## Detailed design
 
 A new `#[crate_name]` attribute will be accepted by the compiler, which is the
 equivalent of the old `#[crate_id]` attribute, except without the "crate id"
@@ -39,7 +39,7 @@ A crate name must be a valid rust identifier with the exception of allowing the
 pub fn foo() { /* ... */ }
 ```
 
-## Naming library filenames
+### Naming library filenames
 
 Currently, rustc creates filenames for library following this pattern:
 
@@ -87,7 +87,7 @@ rationalize some of these conclusions.
 Additionally, with a predictable filename output external tooling should be
 easier to write.
 
-## Loading crates
+### Loading crates
 
 The goal of the crate loading phase of the compiler is to map a set of `extern
 crate` statements to (dylib,rlib) pairs that are present on the filesystem. To
@@ -136,7 +136,7 @@ in the library.
 This scheme is strictly less powerful than the previous, but it moves a good
 deal of logic from the compiler to cargo.
 
-### Manually specifying dependencies
+#### Manually specifying dependencies
 
 Cargo is often seen as "expert mode" in its usage of the compiler. Cargo will
 always have prior knowledge about what exact versions of a library will be used
@@ -163,7 +163,7 @@ is the file stem).
 This will enable cargo to drive how the compiler loads crates by manually
 specifying where files are located and exactly what corresponds to what.
 
-## Symbol mangling
+### Symbol mangling
 
 Today, mangled symbols contain the version number at the end of the symbol
 itself. This was originally intended to tie into Linux's ability to version
@@ -175,14 +175,14 @@ hash at the end of each symbol would only include the crate name and metadata
 from the command line. Metadata from the command line will be passed via a new
 command line flag, `-C metadata=foo`, which specifies a string to hash.
 
-## The standard rust distribution
+### The standard rust distribution
 
 The standard distribution would continue to put hashes in filenames manually
 because the libraries are intended to occupy a privileged space on the system.
 The build system would manually move a file after it was compiled to the correct
 destination filename.
 
-# Drawbacks
+## Drawbacks
 
 * The compiler is able to operate fairly well independently of cargo today, and
   this scheme would hamstring the compiler by limiting the number of "it just
@@ -195,7 +195,7 @@ destination filename.
   manifest will contain the same identifier for each dependency that the source
   code will contain.
 
-# Alternatives
+## Alternatives
 
 * The compiler could go in the opposite direction of this proposal, enhancing
   `extern crate` instead of simplifying it. The compiler could learn about
@@ -204,7 +204,7 @@ destination filename.
   paired with a large enough gain in usability of the compiler independent of
   cargo.
 
-# Unresolved questions
+## Unresolved questions
 
 * An implementation for the more advanced features of cargo does not currently
   exist, to it is unknown whether `--extern` will be powerful enough for cargo

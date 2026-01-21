@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3399](https://github.com/rust-lang/rfcs/pull/3399)
 - Rust Issue: [rust-lang/rust#115590](https://github.com/rust-lang/rust/issues/115590)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Let's make it more elegant to conditionally compile trait bounds by allowing cfg-attributes directly in where clauses.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, there is limited support for conditionally compiling trait bounds. Rust already supports using cfg-attributes in 
@@ -66,7 +66,7 @@ impl<T: DummyA + DummyB> SomeTrait<T> for Thing {}
 Other alternative ways of achieving this also exist, but are typically macro heavy and difficult to implement or check. Importantly, this 
 functionality already exists in the language, but quickly grows out of reasonable scope to ergonomically implement.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 `where` clauses can use cfg-attributes on individual trait bounds, like so:
@@ -97,7 +97,7 @@ compiled and the bound does not apply to the given type. This may cause errors i
 conditionally compiled. For anyone familiar with cfg-attributes already, this should behave similarly to how they are used in, say, struct 
 fields or on function signatures.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 In positions that accept where clauses, such as trait implementations and function signatures, individual clauses can now be decorated with 
@@ -106,14 +106,14 @@ applies to that one bound, up to the comma or end of the where section. Each bou
 conditions specified in the cfg arguments. Note that this may cause a where clause to conditionally compile as having no bound entries 
 (i.e. an empty where clause), but this has been allowed in Rust since 1.16 and already occurs from time to time when using macros.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 As with any feature, this adds complication to the language and grammar. In general, conditionally compiled trait bounds can create 
 unintended interactions or constraints on code based on compilation targets or combinations of features. The drawbacks to this proposed 
 code path already apply to the existing workarounds used to achieve the same functionality.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This functionality can already be achieved in Rust, but not elegantly, and without a clear relationship between the written code and its
@@ -130,7 +130,7 @@ compile where clauses, but these also introduce at least one level of obfuscatio
 duplicated under different cfg-attributes, but this scales poorly with both the size and intricacy of the trait and the number of 
 interacting attributes (which may grow combinatorically), and can introduce a maintenance burden from repeated code.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 I'm not aware of any prior work in adding this to the language. Languages with preprocessors could support this with something like:
@@ -145,7 +145,7 @@ where
 ```
 but that's not the way I would expect Rust to provide this kind of functionality.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * In theory, I don't see any harm in cfg-attributes decorating individual bounds on the right hand side of the colon. Is it worth adding that
@@ -155,7 +155,7 @@ bounds either.
 
 * rustfmt is supposed to be able to format the where clause somehow, do we expect it to (try to) put the attribute on the same line, or would it always prefer the attribute on separate lines?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Conditional bounds on where clauses could also be used for [trivial bounds](https://github.com/rust-lang/rust/issues/48214). I don't believe 

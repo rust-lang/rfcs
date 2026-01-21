@@ -3,18 +3,18 @@
 - RFC PR: [rust-lang/rfcs#1679](https://github.com/rust-lang/rfcs/pull/1679)
 - Rust Issue: [rust-lang/rfcs#35729](https://github.com/rust-lang/rust/issues/35729)
 
-# Summary
+## Summary
 
 Add "panic-safe" or "total" alternatives to the existing panicking indexing syntax.
 
-# Motivation
+## Motivation
 
 `SliceExt::get` and `SliceExt::get_mut` can be thought as non-panicking versions of the simple
 indexing syntax, `a[idx]`, and `SliceExt::get_unchecked` and `SliceExt::get_unchecked_mut` can
 be thought of as unsafe versions with bounds checks elided. However, there is no such equivalent for
 `a[start..end]`, `a[start..]`, or `a[..end]`. This RFC proposes such methods to fill the gap.
 
-# Detailed design
+## Detailed design
 
 The `get`, `get_mut`, `get_unchecked`, and `get_unchecked_mut` will be made generic over `usize`
 as well as ranges of `usize` like slice's `Index` implementation currently is. This will allow e.g.
@@ -96,7 +96,7 @@ impl<T, I> IndexMut<I> for [T]
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 - The `SliceIndex` trait is unfortunate - it's tuned for exactly the set of methods it's used by.
   It only exists because inherent methods cannot be overloaded the same way that trait
@@ -107,7 +107,7 @@ impl<T, I> IndexMut<I> for [T]
   information to newcomers rather than the trait bound, and that will still be present with this
   change.
 
-# Alternatives
+## Alternatives
 
 - Stay as is.
 - A previous version of this RFC introduced new `get_slice` etc methods rather than overloading
@@ -117,6 +117,6 @@ impl<T, I> IndexMut<I> for [T]
   more surface area. Replacing an unstable `SliceIndex` trait with a collection would be
   backwards compatible.
 
-# Unresolved questions
+## Unresolved questions
 
 None

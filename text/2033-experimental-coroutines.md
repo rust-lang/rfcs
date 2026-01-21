@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2033](https://github.com/rust-lang/rfcs/pull/2033)
 - Rust Issue: [rust-lang/rust#43122](https://github.com/rust-lang/rust/issues/43122)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This is an **experimental RFC** for adding a new feature to the language,
@@ -14,7 +14,7 @@ is to make sure everyone's on board with the *general idea* of
 coroutines/generators being added to the Rust compiler and available for use on
 the nightly channel.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 One of Rust's 2017 roadmap goals is ["Rust should be well-equipped for writing
@@ -302,7 +302,7 @@ with coroutines. This means that if we can all broadly agree on async/await
 there's no need to bikeshed and delay coroutines. Any implementation of
 coroutines should be easily adaptable to async/await syntax.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Alright hopefully now we're all pumped to get coroutines into the compiler so we
@@ -424,7 +424,7 @@ to coroutines which likely wish to be considered before stabilization
 
 Suggestions for more test are always welcome!
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Coroutines are not, and will not become a stable language feature as a result of
@@ -437,7 +437,7 @@ Nightly-only documentation will be available as part of the unstable book about
 basic usage of coroutines and their abilities, but it likely won't be exhaustive
 or the best learning for resource for coroutines yet.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Coroutines are themselves a significant feature for the compiler. This in turns
@@ -446,7 +446,7 @@ otherwise be difficult to design around. It is thought, though, that coroutines
 are highly likely to pan out successfully with futures and async/await notation
 and are likely to be coalesced around as a stable compiler feature.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The alternatives to list here, as this is an experimental RFC, are more targeted
@@ -485,7 +485,7 @@ alternatives can also be found [in a comment on the RFC thread][comment].
 
 [comment]: https://github.com/rust-lang/rfcs/pull/2033#issuecomment-309603972
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 The precise semantics, timing, and procedure of an experimental RFC are still

@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2539](https://github.com/rust-lang/rfcs/pull/2539)
 - Rust Issue: [rust-lang/rust#54881](https://github.com/rust-lang/rust/issues/54881)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Change `cfg_attr` to allow multiple attributes after the configuration
 predicate, instead of just one. When the configuration predicate is true,
 replace the attribute with all following attributes.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Simply put, ergonomics and intent. When you have multiple attributes you
@@ -20,7 +20,7 @@ entire predicates with each other to make sure they're the same. By allowing
 multiple attributes it removes that duplication and shows explicitly that the
 author wanted those attributes configured behind the same predicate.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `cfg_attr` attribute takes a configuration predicate and then a list of
@@ -46,14 +46,14 @@ fn bewitche() {}
 The list of attributes may be empty, but will warn if the actual source code
 contains an empty list.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The next section replaces what's in the Conditional Compilation Chapter for the
 `cfg_attr` attribute. It explains both current and new behavior, mainly because
 the current reference material needs improvement.
 
-## `cfg_attr` Attribute
+### `cfg_attr` Attribute
 
 The `cfg_attr` attribute conditionally includes attributes based on a
 configuration predicate. 
@@ -104,12 +104,12 @@ Note: The `cfg_attr` can expand to another `cfg_attr`. For example,
 is valid. This example would be equivalent to
 `#[cfg_attr(all(linux, feaure ="multithreaded"), some_other_attribute)]`.
 
-## Warning When Zero Attributes
+### Warning When Zero Attributes
 
 This RFC allows `#[cfg_attr(predicate,)]`. This is so that macros can generate
 it. Having it in the source text emits an `unused_attributes` warning.
 
-## Attribute Syntax Opportunity Cost
+### Attribute Syntax Opportunity Cost
 
 This would be the first place attributes would be allowed in a comma-separated
 list. As such, it adds a restriction that attributes cannot have a non-delimited
@@ -135,7 +135,7 @@ Arguably, we could allow `(name, option)`, but we shouldn't.
 This restriction is also useful if we want to put multiple attributes in a
 single `#[]` container, which has been suggested, but this RFC will not tackle.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It's another thing that has to be learned. Though even there, it's just learning
@@ -143,7 +143,7 @@ that the attribute takes 1+, and not just 1 attribute.
 
 It restricts the future allowable syntaxes for attributes.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 We could require that multiple attributes must be within in a delimiter to make
@@ -168,13 +168,13 @@ The original draft of this RFC only allowed one or more attributes and did not
 allow the trailing comma. Because it helps macros and fits the rest of the
 language, it now allows those.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 I cannot think of any prior art specifically, but changing something from taking
 one of something to one or more of something is pretty common.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.

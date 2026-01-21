@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3308](https://github.com/rust-lang/rfcs/pull/3308)
 - Rust Issue: [rust-lang/rust#106655](https://github.com/rust-lang/rust/issues/106655)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a new macro `core::mem::offset_of!`, which evaluates to a constant
@@ -34,7 +34,7 @@ mod inner {
 }
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Type layout information is very frequently needed in low level code, especially
@@ -80,7 +80,7 @@ flawlessly performed by library code, it's the opinion of the author of this RFC
 that this operation is fundamental enough that at a minimum, that the standard
 library should provide the implementation.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 In low level code, you may find you need to know the byte offset of a field
@@ -130,7 +130,7 @@ example! Thankfully, by using `core::mem::offset_of!`, this code is correct
 either way, and will continue to be correct, even if the layout algorithm
 changes in the future.
 
-## `offset_of!` On Other Types
+### `offset_of!` On Other Types
 
 If your type doesn't have named fields, `offset_of!` can still be used. For
 tuples and tuple structs, the "name" of the field is the numeral value you use
@@ -160,7 +160,7 @@ union Buffer {
 const METADATA_OFFSET: usize = offset_of!(Buffer, metadata);
 ```
 
-## Limitations
+### Limitations
 
 There are a few limitations worth mentioning. Some of these may be relaxed in
 the future, however.
@@ -178,7 +178,7 @@ the future, however.
 4. Finally, types other than tuples, structs, and unions are currently
    unsupported.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `offset_of` is a new macro exported from `core::mem` which has a signature
@@ -217,7 +217,7 @@ resource usage dependent on the values of `$Container` or `$field`. In
 particular, the implementation should not allocate space for an instance of
 `$Container` on the runtime stack.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 1. This exposes layout information at compile time which is otherwise not
@@ -241,7 +241,7 @@ particular, the implementation should not allocate space for an instance of
 3. This is a feature most code won't need to use, and it may be confusing to
    users unfamiliar with low level programming.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The general rationale is that it should remove the need to hardcode, hand-roll,
@@ -331,7 +331,7 @@ considered:
     limited. Such a type-safe API can be implemented on top of a `offset_of!`
     which returns integers.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 There is quite a bit of prior art here, which I've grouped into:
@@ -341,7 +341,7 @@ There is quite a bit of prior art here, which I've grouped into:
 2. Languages: Other languages that provide access to this information either as
    a language builtin, or via a library.
 
-## Prior Art: Crates
+### Prior Art: Crates
 
 Several crates in the ecosystem have `offset_of!` implementations.
 [`memoffset`][memoffset] and [`bytemuck`][bmuckcrate] are probably the two most
@@ -387,7 +387,7 @@ popular, and provide this functionality in different ways.
 [bmuckoffset]: https://docs.rs/bytemuck/1.12.1/bytemuck/macro.offset_of.html
 [fieldoffset]: https://crates.io/crates/field-offset/0.3.4
 
-## Prior Art: Languages
+### Prior Art: Languages
 
 Many languages which support low level programming have some equivalent to this
 functionality.
@@ -447,18 +447,18 @@ functionality.
 [doffsetof]: https://dlang.org/spec/struct.html#struct_field_properties
 [swiftoffset]: https://github.com/apple/swift-evolution/blob/ec2028964daeda2600e49aa89fd9e59d2363433b/proposals/0210-key-path-offset.md
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 1. Should any of the features listed as "Future possibilities" be supported initially?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This proposal is intentionally minimal, so there are a number of future
 possibilities.
 
-## Nested Field Access
+### Nested Field Access
 
 In C, expressions like `offsetof(struct some_struct, foo.bar.baz[3].quux)` are
 allowed, where `foo.bar.baz[3].quux` denotes a path to a derived field. This can
@@ -480,7 +480,7 @@ comma-separated, as in `offset_of!(SomeStruct, foo, bar, baz, [3], quux)`.
 Note that while this example shows a combination that supports array indexing,
 it's unclear if this is actually desirable for Rust.
 
-## Enum support (`offset_of!(SomeEnum::StructVariant, field_on_variant)`)
+### Enum support (`offset_of!(SomeEnum::StructVariant, field_on_variant)`)
 
 Eventually, it may be desirable to allow `offset_of!` to access the fields
 inside the struct and tuple variants of certain enums (possibly limited to enums
@@ -515,7 +515,7 @@ A drawback is that it is unclear how to support these types in the "Nested Field
 Access" proposed above, so in the future should we decide to support one of
 these, a decision may need to be made about the other.
 
-## `memoffset::span_of!` Functionality
+### `memoffset::span_of!` Functionality
 
 The `memoffset` crate has support for a [`span_of!`][spanof] macro (used like
 `memoffset::span_of!(SomeType, some_field)`), which expands to a `Range<usize>`
@@ -527,9 +527,9 @@ would be simple to add a similar macro to `core::mem` in the future.
 
 [spanof]: https://docs.rs/memoffset/0.6.5/memoffset/macro.span_of.html
 
-## Support for types with unsized fields
+### Support for types with unsized fields
 
-### ... via `offset_of_val!`
+#### ... via `offset_of_val!`
 
 Currently, we don't support use with unsized types. That is, `(A, B, ... [T])`
 and/or `(A, B, ..., dyn Foo)`, or their equivalent in structs.
@@ -547,7 +547,7 @@ support this case.
 
 It would be reasonable to add this in the future, but is left out for now.
 
-### ... by only forbidding the edge case
+#### ... by only forbidding the edge case
 
 The only case where we currently do *not* know the offset of a field statically
 is when the user has requested the offset of the unsized field, and the unsized
@@ -575,7 +575,7 @@ might want to add).
 
 As such, it's left for future work.
 
-## Fields in Traits
+### Fields in Traits
 
 If support for fields in traits is ever added, then it would be an open question
 how `offset_of!` behaves when applied to a generic value of a trait type which

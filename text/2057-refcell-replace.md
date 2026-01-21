@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2057](https://github.com/rust-lang/rfcs/pull/2057)
 - Rust Issue: [rust-lang/rust#43570](https://github.com/rust-lang/rust/issues/43570)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add dedicated methods to RefCell for replacing and swapping the contents.
 These functions will panic if the RefCell is currently borrowed,
 but will otherwise behave exactly like their cousins on Cell.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The main problem this intends to solve is that doing a replace by hand
@@ -28,7 +28,7 @@ even though plain `Cell` is strictly a less powerful abstraction.
 Usually, people explain `RefCell` as being a superset of `Cell`,
 but `RefCell` doesn't actually offer all of the functionality as seamlessly as `Cell`.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 ```rust
@@ -42,7 +42,7 @@ impl<T> RefCell<T> {
 }
 ```
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 The nicest aspect of this is that it maintains this story behind `Cell` and `RefCell`:
@@ -50,7 +50,7 @@ The nicest aspect of this is that it maintains this story behind `Cell` and `Ref
 > `RefCell` supports everything that `Cell` does. However, it has runtime overhead,
 > and it can panic.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Depending on how we want people to use RefCell,
@@ -77,7 +77,7 @@ counter.replace(counter.replace(0) - 1);
 Also, we're adding more specific functions to a core type.
 That comes with cost in documentation and maintenance.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Besides just-write-the-reborrow,
@@ -95,7 +95,7 @@ That alternative is *massively* more general,
 but it also has knock-on effects throughout the rest of the language.
 It also still doesn't do anything about the asymetry between Cell and RefCell.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Should we add `RefCell::get()` and `RefCell::set()`?

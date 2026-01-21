@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#921](https://github.com/rust-lang/rfcs/pull/921)
 - Rust Issue: [rust-lang/rust#23508](https://github.com/rust-lang/rust/issues/23508)
 
-# Summary
+## Summary
 
 Replace `Entry::get` with `Entry::or_insert` and
 `Entry::or_insert_with` for better ergonomics and clearer code.
 
-# Motivation
+## Motivation
 
 Entry::get was introduced to reduce a lot of the boiler-plate involved in simple Entry usage. Two
 incredibly common patterns in particular stand out:
@@ -56,7 +56,7 @@ to a "only one way". However this is still fairly tedious and arcane. `get` prov
 meaning for what is done; `unwrap_or_else` is long and scary-sounding; and VacantEntry literally
 *only* supports `insert`, so having to call it seems redundant.
 
-# Detailed design
+## Detailed design
 
 Replace `Entry::get` with the following two methods:
 
@@ -105,17 +105,17 @@ usage later.
 Oh hey look this entire RFC is already implemented with all of `rust-lang/rust`'s `entry`
 usage audited and updated: https://github.com/rust-lang/rust/pull/22930
 
-# Drawbacks
+## Drawbacks
 
 Replaces the composability of just mapping to a Result with more ad hoc specialty methods. This
 is hardly a drawback for the reasons stated in the RFC. Maybe someone was really leveraging
 the Result-ness in an exotic way, but it was likely an abuse of the API. Regardless, the `get`
 method is trivial to write as a consumer of the API.
 
-# Alternatives
+## Alternatives
 
 Settle for `Result` chumpsville or abandon this sugar altogether. Truly, fates worse than death.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

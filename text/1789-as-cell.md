@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1789](https://github.com/rust-lang/rfcs/pull/1789)
 - Rust Issue: [rust-lang/rust#43038](https://github.com/rust-lang/rust/issues/43038)
 
-# Summary
+## Summary
 [summary]: #summary
 
 - Change `Cell<T>` to allow `T: ?Sized`.
@@ -15,7 +15,7 @@
 > Note: https://github.com/rust-lang/rfcs/pull/1651 has been accepted recently,
 > so no `T: Copy` bound is needed anymore.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust's iterators offer a safe, fast way to iterate over collections while avoiding
@@ -113,10 +113,10 @@ for (i, j) in v_slice[n..].iter().zip(v_slice) {
 
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Language
+### Language
 
 The core of this proposal is the ability to convert a `&T` to a `&Cell<T>`,
 so in order for it to be safe, __it needs to be guaranteed that
@@ -132,9 +132,9 @@ fall out of the semantic of `Cell` and Rusts/llvms notion of aliasing:
 - `&mut T -> &U` is a sub borrow, which prevents access to the original `&mut T`
   for its duration, thus no aliasing.
 
-## Std library
+### Std library
 
-### `from_mut`
+#### `from_mut`
 
 We add a constructor to the cell API that enables the `&mut T -> &Cell<T>`
 conversion, implemented with the equivalent of a `transmute()` of the two
@@ -153,7 +153,7 @@ impl<T> Cell<T> {
 In the future this could also be provided through `AsRef`, `Into` or `From`
 impls.
 
-### Unsized `Cell<T>`
+#### Unsized `Cell<T>`
 
 We extend `Cell<T>` to allow `T: ?Sized`, and move all compatible methods
 to a less restricted impl block:
@@ -173,7 +173,7 @@ impl<T: ?Sized> Cell<T> {
 This is purely done to enable cell slicing below, and should otherwise have no
 effect on any existing code.
 
-### Cell Slicing
+#### Cell Slicing
 
 We enable a conversion from `&Cell<[T]>` to `&[Cell<T>]`. This seems like it violates
 the "no interior references" API of `Cell` at first glance, but is actually
@@ -260,7 +260,7 @@ for (i, j) in v_slice[n..].iter().zip(v_slice) {
 
 ```
 
-## Possible extensions
+### Possible extensions
 
 The proposal only covers the base case `&mut T -> &Cell<T>`
 and the trivially implementable extension to `[T]`,
@@ -272,7 +272,7 @@ See https://play.rust-lang.org/?gist=d012cebf462841887323185cff8ccbcc&version=st
 an example implementation and a more complex use case, and
 https://crates.io/crates/alias for an existing crate providing these features.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 > What names and terminology work best for these concepts and why?
@@ -324,7 +324,7 @@ of ownership and change it to a "rule of four".
 - Rust by Example could have a few basic examples of situations where this API
   is useful, eg the ones mention in the motivation section above.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 > Why should we *not* do this?
@@ -332,10 +332,10 @@ of ownership and change it to a "rule of four".
 - More complexity around the `Cell` API.
 - `T` -> `Cell<T>` transmute compatibility might not be a desired guarantee.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Removing cell slicing
+### Removing cell slicing
 
 Instead of allowing unsized types in `Cell` and adding the `Index` impls,
 there could just be a single `&mut [T] -> &[Cell<T>]` conversions function:
@@ -376,19 +376,19 @@ for (i, j) in v_slice[n..].iter().zip(v_slice) {
 This would be less modular than the `&mut [T] -> &Cell<[T]> -> &[Cell<T>]`
 conversions steps, while still offering essentially the same API.
 
-## Just the language guarantee
+### Just the language guarantee
 
 The conversion could be guaranteed as correct, but not be provided by std
 itself. This would serve as legitimization of external implementations like
 [alias](https://crates.io/crates/alias).
 
-## No guarantees
+### No guarantees
 
 If the safety guarantees of the conversion can not be granted,
 code would have to use direct indexing as today, with either possible
 bound checking costs or the use of unsafe code to avoid them.
 
-## Replacing `Index` impls with `Deref`
+### Replacing `Index` impls with `Deref`
 
 Instead of the `Index` impls, have only this `Deref` impl:
 
@@ -414,7 +414,7 @@ Cons:
 - `Cell<[T]> -> [Cell<T>]` conversion does not seem like a good usecase
   for `Deref`, since `Cell<[T]>` isn't a smartpointer.
 
-## Cast to `&mut Cell<T>` instead of `&Cell<T>`
+### Cast to `&mut Cell<T>` instead of `&Cell<T>`
 
 Nothing that makes the `&mut T -> &Cell<T>` conversion safe would prevent
 `&mut T -> &mut Cell<T>` from being safe either, and the latter can be
@@ -427,7 +427,7 @@ into a `&mut [T]`.
 However, this does not seem to be actually useful since the only reason to use
 this API is to make use of shared internal mutability.
 
-## Exposing the functions differently
+### Exposing the functions differently
 
 Instead of `Cell` constructors, we could just have freestanding functions
 in, say, `std::cell`:
@@ -472,7 +472,7 @@ But given the issues of adding methods to pointer-like types,
 this approach in general would probably be not a good idea
 (See the situation with `Rc` and `Arc`).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None so far.

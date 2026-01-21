@@ -2,13 +2,13 @@
 - RFC PR #: [#136](https://github.com/rust-lang/rfcs/pull/136)
 - Rust Issue #: [#16463](https://github.com/rust-lang/rust/issues/16463)
 
-# Summary
+## Summary
 
 Require a feature gate to expose private items in public APIs, until we grow the
 appropriate language features to be able to remove the feature gate and forbid
 it entirely.
 
-# Motivation
+## Motivation
 
 Privacy is central to guaranteeing the invariants necessary to write
 correct code that employs unsafe blocks. Although the current language
@@ -21,9 +21,9 @@ type (though they still could not invoke public methods or access
 public fields). This access could undermine the reasoning of the
 author of the module. Fortunately, it is not hard to prevent.
 
-# Detailed design
+## Detailed design
 
-## Overview
+### Overview
 
 The general idea is that:
 
@@ -33,12 +33,12 @@ The general idea is that:
 
 Details follow.
 
-## The rules
+### The rules
 
 These rules apply as long as the feature gate is not enabled. After the feature
 gate has been removed, they will apply always.
 
-### When is an item "public"?
+#### When is an item "public"?
 
 Items that are explicitly declared as `pub` are always public. In
 addition, items in the `impl` of a trait (not an inherent impl) are
@@ -51,7 +51,7 @@ considered public if all of the following conditions are met:
    the impl. They cannot name the types nor they can get direct access
    to a value of those types.
    
-### What restrictions apply to public items?
+#### What restrictions apply to public items?
 
 The rules for various kinds of public items are as follows:
 
@@ -70,11 +70,11 @@ The rules for various kinds of public items are as follows:
    trait bounds of its type parameters, and in the signatures of its methods
    (see `fn` case above) must be public.
    
-### Examples
+#### Examples
 
 Here are some examples to demonstrate the rules.
 
-#### Struct fields
+##### Struct fields
 
 ````
 // A private struct may refer to any type in any field.
@@ -108,7 +108,7 @@ pub struct Item {
 pub struct Pub { ... }
 ````
 
-#### Methods
+##### Methods
 
 ```
 struct Priv { .. }
@@ -121,7 +121,7 @@ impl Foo {
 }
 ```
 
-#### Trait bounds
+##### Trait bounds
 
 ```
 trait PrivTrait { ... }
@@ -133,7 +133,7 @@ pub struct Foo<X: PrivTrait> { ... }
 struct Foo<X: PrivTrait> { ... }
 ```
 
-#### Trait definitions
+##### Trait definitions
 
 ```
 struct PrivStruct { ... }
@@ -149,7 +149,7 @@ trait PrivTrait {
 }
 ```
 
-#### Implementations
+##### Implementations
 
 To some extent, implementations are prevented from exposing private
 types because their types must match the trait. However, that is not
@@ -180,7 +180,7 @@ impl PubTrait<PrivStruct> for PubStruct {
 }
 ```
 
-#### Type aliases
+##### Type aliases
 
 Note that the path to the public item does not have to be private.
 
@@ -191,11 +191,11 @@ mod impl {
 pub type Bar = self::impl::Foo;
 ```
 
-### Negative examples
+#### Negative examples
 
 The following examples should fail to compile under these rules.
 
-#### Non-public items referenced by a pub use
+##### Non-public items referenced by a pub use
 
 These examples are illegal because they use a `pub use` to re-export
 a private item:
@@ -225,7 +225,7 @@ mod impl {
 pub use Item = self::impl::ItemPriv;
 ```
 
-# Drawbacks
+## Drawbacks
 
 Adds a (temporary) feature gate.
 
@@ -234,7 +234,7 @@ transitioning to a more explicit alternative.
 
 Requires effort to implement.
 
-# Alternatives
+## Alternatives
 
 If we stick with the status quo, we'll have to resolve several bizarre questions
 and keep supporting its behavior indefinitely after 1.0.

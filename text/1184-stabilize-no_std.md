@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1184](https://github.com/rust-lang/rfcs/pull/1184)
 - Rust Issue: [rust-lang/rust#27394](https://github.com/rust-lang/rust/issues/27394)
 
-# Summary
+## Summary
 
 Tweak the `#![no_std]` attribute, add a new `#![no_core]` attribute, and
 pave the way for stabilizing the libcore library.
 
-# Motivation
+## Motivation
 
 Currently all stable Rust programs must link to the standard library (libstd),
 and it is impossible to opt out of this. The standard library is not appropriate
@@ -39,7 +39,7 @@ defined when libstd is not used. These language items are:
 To be able to usefully leverage `#![no_std]` in stable Rust these lang items
 must be available in a stable fashion.
 
-# Detailed Design
+## Detailed Design
 
 This RFC proposes a number of changes:
 
@@ -47,7 +47,7 @@ This RFC proposes a number of changes:
 * Introduce a `#![no_core]` attribute.
 * Pave the way to stabilize the `core` module.
 
-## `no_std`
+### `no_std`
 
 The `#![no_std]` attribute currently provides two pieces of functionality:
 
@@ -63,7 +63,7 @@ This RFC proposes adding the following behavior to the `#![no_std]` attribute:
 Most uses of `#![no_std]` already want behavior along these lines as they want
 to use libcore, just not the standard library.
 
-## `no_core`
+### `no_core`
 
 A new attribute will be added to the compiler, `#![no_core]`, which serves two
 purposes:
@@ -75,14 +75,14 @@ purposes:
 Users of `#![no_std]` today who do *not* use libcore would migrate to moving
 this attribute instead of `#![no_std]`.
 
-## Stabilization of libcore
+### Stabilization of libcore
 
 This RFC does not yet propose a stabilization path for the contents of libcore,
 but it proposes readying to stabilize the name `core` for libcore, paving the
 way for the rest of the library to be stabilized. The exact method of
 stabilizing its contents will be determined with a future RFC or pull requests.
 
-## Stabilizing lang items
+### Stabilizing lang items
 
 As mentioned above, there are three separate lang items which are required by
 the libcore library to link correctly. These items are:
@@ -104,7 +104,7 @@ reasons:
 Stabilization of these lang items (in any form) will be considered in a future
 RFC.
 
-# Drawbacks
+## Drawbacks
 
 The current distribution provides precisely one library, the standard library,
 for general consumption of Rust programs. Adding a new one (libcore) is adding
@@ -133,7 +133,7 @@ Unfortunately, however, there are known cases where this is not possible. For
 example if a macro is exported from a `#![no_std]` crate which references items
 from `core` it won't work by default with a `std` library.
 
-# Alternatives
+## Alternatives
 
 Most of the strategies taken in this RFC have some minor variations on what can
 happen:
@@ -148,7 +148,7 @@ happen:
   downside of selecting a name for this crate, however, and also inflating the
   crates in our distribution again.
 
-# Unresolved Questions
+## Unresolved Questions
 
 * How important/common are `#![no_std]` executables? Should this RFC attempt to
   stabilize that as well?

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1331](https://github.com/rust-lang/rfcs/pull/1331)
 - Rust Issue: [rust-lang/rust#30942](https://github.com/rust-lang/rust/issues/30942)
 
-# Summary
+## Summary
 [summary]: #summary
 [src/grammar]: https://github.com/rust-lang/rust/tree/master/src/grammar
 
@@ -11,7 +11,7 @@ Grammar of the Rust language should not be rustc implementation-defined. We have
 at [src/grammar] which is to be used as the canonical and formal representation of the Rust
 language.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 [#1228]: https://github.com/rust-lang/rfcs/blob/master/text/1228-placement-left-arrow.md
 [#1219]: https://github.com/rust-lang/rfcs/blob/master/text/1219-use-group-as.md
@@ -27,7 +27,7 @@ discussion and implementation of the RFCs. Using a formal grammar also allows us
 rule out existence of various issues with the grammar changes (e.g. grammar ambiguities) during
 design phase rather than implementation phase or, even worse, after the stabilisation.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 [A-grammar]: https://github.com/rust-lang/rust/issues?utf8=✓&q=is:issue+is:open+label:A-grammar
 
@@ -41,7 +41,7 @@ This RFC proposes following approach to making [src/grammar] the canonical Rust 
 2. Make [src/grammar] a [semi-canonical grammar];
 3. After a period of time transition [src/grammar] to a [fully-canonical grammar].
 
-## Semi-canonical grammar
+### Semi-canonical grammar
 [semi-canonical grammar]: #semi-canonical-grammar
 
 Once all known discrepancies between the [src/grammar] and rustc parser implementation are
@@ -61,7 +61,7 @@ This process is sure to become ambiguous over time as syntax is increasingly adj
 to “blame” syntax changes compared to syntax additions), therefore the resolution process of
 discrepancies will also depend more on a decision from the Rust team.
 
-## Fully-canonical grammar
+### Fully-canonical grammar
 [fully-canonical grammar]: #fully-canonical-grammar
 
 After some time passes, [src/grammar] will transition to the state of fully canonical grammar.
@@ -69,20 +69,20 @@ After [src/grammar] transitions into this state, for any discovered discrepancie
 rustc parser implementation must be adjusted to match the [src/grammar], unless decided otherwise
 by the RFC process.
 
-## RFC process changes for syntactic changes and additions
+### RFC process changes for syntactic changes and additions
 
 Once the [src/grammar] enters semi-canonical state, all RFCs must describe syntax additions and
 changes in terms of the formal [src/grammar]. Discussion about these changes are also expected (but
 not necessarily will) to become more formal and easier to follow.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC introduces a period of ambiguity during which neither implementation nor [src/grammar] are
 truly canonical representation of the Rust language. This will be less of an issue over time as
 discrepancies are resolved, but its an issue nevertheless.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 One alternative would be to immediately make [src/grammar] a fully-canonical grammar of the Rust
@@ -91,7 +91,7 @@ language at some arbitrary point in the future.
 Another alternative is to simply forget idea of having a formal grammar be the canonical grammar of
 the Rust language.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 How much time should pass between [src/grammar] becoming semi-canonical and fully-canonical?

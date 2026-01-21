@@ -2,17 +2,17 @@
 - RFC PR: [rust-lang/rfcs#111](https://github.com/rust-lang/rfcs/pull/111)
 - Rust Issue: [rust-lang/rust#6515](https://github.com/rust-lang/rust/issues/6515)
 
-# Summary
+## Summary
 
 `Index` should be split into `Index` and `IndexMut`.
 
-# Motivation
+## Motivation
 
 Currently, the `Index` trait is not suitable for most array indexing tasks. The slice functionality cannot be replicated using it, and as a result the new `Vec` has to use `.get()` and `.get_mut()` methods.
 
 Additionally, this simply follows the `Deref`/`DerefMut` split that has been implemented for a while.
 
-# Detailed design
+## Detailed design
 
 We split `Index` into two traits (borrowed from @nikomatsakis):
 
@@ -26,7 +26,7 @@ We split `Index` into two traits (borrowed from @nikomatsakis):
         fn index_mut<'a>(&'a mut self, element: &E) -> &'a mut R;
     }
 
-# Drawbacks
+## Drawbacks
 
 * The number of lang. items increases.
 
@@ -34,10 +34,10 @@ We split `Index` into two traits (borrowed from @nikomatsakis):
 
 * This design doesn't support hash tables because there is no assignment operator. This can be added backwards compatibly.
 
-# Alternatives
+## Alternatives
 
 The impact of not doing this is that the `[]` notation will not be available to `Vec`.
 
-# Unresolved questions
+## Unresolved questions
 
 None that I'm aware of.

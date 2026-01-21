@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2316](https://github.com/rust-lang/rfcs/pull/2316)
 - Rust Issue: [rust-lang/rust#87919](https://github.com/rust-lang/rust/issues/87919)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC allows safe implementations of `unsafe` trait methods.
@@ -13,7 +13,7 @@ marking the methods in the `impl` as `unsafe`. This is referred to as
 method is called on a specific type where the method is known to be safe,
 that call does not require an `unsafe` block.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 A trait which includes unsafe methods in its definition permits its impls to
@@ -35,7 +35,7 @@ an `impl` uses no unsafe code. This is can currently be overcome by defining a
 safe free function or inherent method somewhere else and then simply delegate
 to that function or method. Such a solution, however, has two problems.
 
-## 1. Needless complexity and poor ergonomics.
+### 1. Needless complexity and poor ergonomics.
 
 When an `unsafe` method doesn't rely on any unsafe invariants, it still
 must be marked `unsafe`. Marking methods as `unsafe` increases the amount of
@@ -49,7 +49,7 @@ separate safe function. Creating a separate function which is only used
 at a single place is cumbersome, and does not encourage the keeping of
 `unsafe` to a minimum. The edit distance is also somewhat increased.
 
-## 2. `unsafe` method `impl`s might not require any `unsafe` invariants
+### 2. `unsafe` method `impl`s might not require any `unsafe` invariants
 
 The implemented trait method for that specific type, which you know only has
 a safe implementation and does not really need `unsafe`, can't be used in a
@@ -57,18 +57,18 @@ safe context. This invites the use of an `unsafe { .. }` block in that context,
 which is unfortunate since the compiler could know that the method is really
 safe for that specific type.
 
-## In summation
+### In summation
 
 The changes proposed in this RFC are intended to increase ergonomics and
 encourage keeping `unsafe` to a minimum. By doing so, a small push in favor
 of correctness is made.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Concretely, this RFC will permit scenarios like the following:
 
-## *Overconstraining*
+### *Overconstraining*
 
 First consider a trait with one or more unsafe methods.
 For simplicity, we consider the case with one method as in:
@@ -116,7 +116,7 @@ This general approach of giving up (restricting) capabilities that a trait
 provides to you, such as the ability to rely on caller-upheld invariants
 for memory safety, is known as *overconstraining*.
 
-## Taking advantage of *overconstraining*
+### Taking advantage of *overconstraining*
 
 You now want to use `.foo_computation()` for `Bar`, and proceed to do so as in:
 
@@ -137,13 +137,13 @@ This is permitted since although `foo_computation` is an `unsafe` method as
 specified by `Foo`, the compiler knows that for the specific concrete type `Bar`,
 it is defined as being safe, and may thus be called within a safe context.
 
-## Regarding API stability and breaking changes
+### Regarding API stability and breaking changes
 
 Note however, that the ability to call *overconstrained* methods with
 the absence of `unsafe` in a safe context means that introducing `unsafe`
 later is a breaking change if the type is part of a public API.
 
-## Impls for generic types
+### Impls for generic types
 
 Consider the type `Result<T, E>` in the standard library defined as:
 
@@ -171,7 +171,7 @@ impl<T, E> Foo for Result<T, E> {
 Since `Result<T, E>` did not use `unsafe` in its implementation of `Foo`, you
 can still use `my_result.foo_computation()` in a safe context as shown above.
 
-## Recommendations
+### Recommendations
 
 If you do not plan on introducing `unsafe` for a trait implementation of
 your specific type that is part of a public API, you should avoid marking
@@ -182,7 +182,7 @@ change later, you can always mark impls for internal types as `unsafe` then.
 Tools such as `clippy` should preferably lint for use of `unsafe`,
 where it is not needed, to promote the reduction of needless `unsafe`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Assuming a `trait` which defines some `fn`s marked as `unsafe`, an `impl`
@@ -202,7 +202,7 @@ unsafe methods, calling any method of `Trait` marked as `unsafe` for `T` is
 only permitted within an `unsafe` context such as an `unsafe fn` or within an
 `unsafe { .. }` block.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 While this introduces no additional syntax, it makes the rule-set of the
@@ -211,7 +211,7 @@ language. The largest additional complexity is probably for the compiler
 in this case, as additional state needs to be kept to check if the method
 was marked as safe or `unsafe` for an `impl`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 [RFC 2237]: https://github.com/rust-lang/rfcs/pull/2237
@@ -226,7 +226,7 @@ alternative of not implementing the changes proposed in any RFC. For this RFC,
 the impact of not accepting it would be too keep the problems as explained
 in the [motivation] around.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are currently no unresolved questions.

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#458](https://github.com/rust-lang/rfcs/pull/458)
 - Rust Issue: [rust-lang/rust#22251](https://github.com/rust-lang/rust/issues/22251)
 
-# Summary
+## Summary
 
 I propose altering the `Send` trait as proposed by RFC #17 as
 follows:
@@ -17,7 +17,7 @@ follows:
 *   Evaluate each `Send` bound currently in `libstd` and either leave it as-is, add an
     explicit `'static` bound, or bound it with another lifetime parameter.
 
-# Motivation
+## Motivation
 
 Currently, Rust has two types that deal with concurrency: `Sync` and `Send`
 
@@ -49,9 +49,9 @@ in current Rust.  Specifically:
 *   Because `Send` has a `'static` bound, most concurrency constructs cannot be used if they have any non-static references in them, even in a thread with a bounded lifetime.  It seems like there should be a way to extend `Send` to shorter lifetimes.  But
     naively removing the `'static` bound causes memory unsafety in existing APIs like Mutex.
 
-# Detailed Design
+## Detailed Design
 
-## Proposal
+### Proposal
 
 Extend the current meaning of `Send` in a (mostly) backwards-compatible way that
 retains memory-safety, but allows for existing concurrent types like `Arc` and `Mutex` to be
@@ -99,7 +99,7 @@ sensible defaults.  For example, the `spawn()` APIs should all have `'static` bo
 preserving current behavior.  I don't think this would be too difficult, but it may be that there
 are some edge cases here where it's tricky to determine what the right solution is.
 
-## More unusual types
+### More unusual types
 
 We discussed whether a type with a destructor that manipulated thread-local data could be non-`Send` even though `&mut T` was.  In general it could not, because you can call a destructor through `&mut` references (through `swap` or simply assigning a new value to `*x` where `x: &mut T`).  It was noted that since `&uniq T` cannot be dropped, this suggests a role for such types.
 
@@ -185,11 +185,11 @@ impl<T> Deref<T> for RcMut<T> {
 // fn main() {}
 ```
 
-# Drawbacks
+## Drawbacks
 
 Libraries get a bit more complicated to write, since you may have to write `Send + 'static` where previously you just wrote `Send`.
 
-# Alternatives
+## Alternatives
 
 We could accept the status quo.  This would mean that any existing `Sync` `NoSend`
 type like those described above would be unsafe (that is, it would not be possible to write a non-`'static` closure with the correct bounds to make it safe to use), and it would not be possible to write a type like `Arc<T>` for a `T` with a bounded lifetime, as well as other safe concurrency constructs for fork-join concurrency.  I do not think this is a good alternative.
@@ -203,7 +203,7 @@ get a `'static` bound would not break.  However, I don't think it makes a lot of
 current `Send` type around if this is implemented, since the new type should be backwards compatible
 with it where it was being used semantically correctly.
 
-# Unresolved questions
+## Unresolved questions
 
 *   Is the new scheme actually safe?  I *think* it is, but I certainly haven't proved it.
 

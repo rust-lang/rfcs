@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1510](https://github.com/rust-lang/rfcs/pull/1510)
 - Rust Issue: [rust-lang/rust#33132](https://github.com/rust-lang/rust/issues/33132)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a new crate type accepted by the compiler, called `cdylib`, which
 corresponds to exporting a C interface from a Rust dynamic library.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently the compiler supports two modes of generating dynamic libraries:
@@ -48,7 +48,7 @@ cdylibs:
 The purpose of this RFC is to solve these drawbacks with a new crate-type to
 represent the more rarely used form of dynamic library (rdylibs).
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 A new crate type will be accepted by the compiler, `cdylib`, which can be passed
@@ -75,7 +75,7 @@ specifically:
   example the standard library will be linked dynamically by default. On the
   other hand, cdylibs will link all Rust dependencies statically by default.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Rust's ephemeral and ill-defined "linkage model" is... well... ill defined and
@@ -83,7 +83,7 @@ ephemeral. This RFC is an extension of this model, but it's difficult to reason
 about extending that which is not well defined. As a result there could be
 unforeseen interactions between this output format and where it's used.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Originally this RFC proposed adding a new crate type, `rdylib`, instead of
@@ -93,7 +93,7 @@ unforeseen interactions between this output format and where it's used.
   plugins. In the end it didn't seem worth it for the benefit of "cdylib is
   probably what you want".
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Should the existing `dylib` format be considered unstable? (should it require

@@ -2,13 +2,13 @@
 - RFC PR #: [rust-lang/rfcs#160](https://github.com/rust-lang/rfcs/pull/160)
 - Rust Issue #: [rust-lang/rust#16779](https://github.com/rust-lang/rust/issues/16779)
 
-# Summary
+## Summary
 
 Introduce a new `if let PAT = EXPR { BODY }` construct. This allows for refutable pattern matching
 without the syntactic and semantic overhead of a full `match`, and without the corresponding extra
 rightward drift. Informally this is known as an "if-let statement".
 
-# Motivation
+## Motivation
 
 Many times in the past, people have proposed various mechanisms for doing a refutable let-binding.
 None of them went anywhere, largely because the syntax wasn't great, or because the suggestion
@@ -63,7 +63,7 @@ if let Some(x) = optVal {
 }
 ```
 
-# Detailed design
+## Detailed design
 
 The `if let` construct is based on the precedent set by Swift, which introduced its own `if let`
 statement. In Swift, `if let var = expr { ... }` is directly tied to the notion of optional values,
@@ -104,7 +104,7 @@ Due to some uncertainty regarding potentially-surprising fallout of AST rewrites
 about exhaustiveness-checking (e.g. a tautological `if let` would be an error, which may be
 unexpected), this is put behind a feature gate named `if_let`.
 
-## Examples
+### Examples
 
 Source:
 
@@ -206,11 +206,11 @@ match foo() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 It's one more addition to the grammar.
 
-# Alternatives
+## Alternatives
 
 This could plausibly be done with a macro, but the invoking syntax would be pretty terrible and
 would largely negate the whole point of having this sugar.
@@ -218,7 +218,7 @@ would largely negate the whole point of having this sugar.
 Alternatively, this could not be done at all. We've been getting alone just fine without it so far,
 but at the cost of making `Option` just a bit more annoying to work with.
 
-# Unresolved questions
+## Unresolved questions
 
 It's been suggested that alternates or pattern guards should be allowed. I think if you need those
 you could just go ahead and use a `match`, and that `if let` could be extended to support those in

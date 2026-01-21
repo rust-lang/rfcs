@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3671](https://github.com/rust-lang/rfcs/pull/3671)
 - Rust Issue: [rust-lang/rust#73908](https://github.com/rust-lang/rust/issues/73908)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Promote aarch64-apple-darwin to Tier 1.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Approximately [33% of Rust users][survey-2023] use macOS for
@@ -17,7 +17,7 @@ performant than previous x86\_64 Apple hardware and many developers
 have already transitioned to using aarch64-apple-darwin. This number
 is expected to increase as Apple no longer produces x86\_64 hardware.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This change will not require additional explanation to Rust
@@ -25,7 +25,7 @@ programmers as many people believe that aarch64-apple-darwin is
 _already_ Tier 1. As such, I expect this change will reduce potential
 confusion.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Tier 1 targets must adhere to the [Tier 1 Target
@@ -76,7 +76,7 @@ faster than x86\_64-apple-darwin. As a recent example,
 No material difference exists between the x86\_64-apple-darwin and
 aarch64-apple-darwin targets in this regard.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Tier 1 status requires that we are able to build and run binaries for
@@ -93,22 +93,22 @@ aarch64-apple-darwin target has been treated as Tier 1 since
 [2024-02-06][enabled-m1] without causing financial concern.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Apple Silicon is the _de facto_ path forward for macOS.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [RFC 2959][rfc-2959] promoted `aarch64-unknown-linux-gnu` to Tier 1.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 It is expected that **x86\_64**-apple-darwin will be demoted to Tier 2

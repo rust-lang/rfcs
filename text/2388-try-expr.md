@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2388](https://github.com/rust-lang/rfcs/pull/2388)
 - Rust Issue: [rust-lang/rust#50412](https://github.com/rust-lang/rust/issues/50412)
 
-# Summary
+## Summary
 [summary]: #summary
 
 [RFC 243]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#choice-of-keywords
@@ -15,7 +15,7 @@ This RFC settles the choice of keyword. Namely, it:
 2. replaces `do catch { .. }` with `try { .. }`
 3. does **not** reserve `catch` as a keyword.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [catch_rfc]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md
@@ -25,7 +25,7 @@ This RFC settles the choice of keyword. Namely, it:
 This RFC does not motivate `catch { .. }` or `try { .. }` expressions.
 To read the motivation for that, please consult [the original `catch` RFC][catch_rfc_motivation].
 
-## For reserving a keyword
+### For reserving a keyword
 
 Whatever keyword is chosen, it can't be contextual.
 
@@ -42,7 +42,7 @@ fn main() {
 }
 ```
 
-### Aside note:
+#### Aside note:
 
 The snippet above emits the following warning:
 
@@ -54,11 +54,11 @@ which is also the case for `catch`.
 This warning decreases the risk that someone has defined a type named `try`
 anywhere in the ecosystem which happens to be beneficial to us.
 
-## For reserving `try` specifically
+### For reserving `try` specifically
 
 This is discussed in the [rationale for `try`][rationale for try].
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The keyword `try` will be reserved.
@@ -74,7 +74,7 @@ try {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 [list of keywords]: https://doc.rust-lang.org/book/second-edition/appendix-01-keywords.html#keywords-currently-in-use
@@ -84,12 +84,12 @@ in Rust edition 2018 and later editions.
 
 The keyword `try` is used in "try expressions" of the form `try { .. }`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are two main drawbacks to the `try` keyword.
 
-## Association with exception handling - Both a pro and con
+### Association with exception handling - Both a pro and con
 
 > I think that there is a belief – one that I have shared from time to time – that it is not helpful to use familiar keywords unless the semantics are a perfect match, the concern being that they will setup an intuition that will lead people astray. I think that is a danger, but it works both ways: those intuitions also help people to understand, particularly in the early days. So it’s a question of “how far along will you get before the differences start to matter” and “how damaging is it if you misunderstand for a while”.
 >
@@ -121,7 +121,7 @@ concepts to learn.
 
 [`try!`]: https://doc.rust-lang.org/nightly/std/macro.try.html
 
-## Breakage of the [`try!`] macro
+### Breakage of the [`try!`] macro
 
 One possible result of introducing `try` as a keyword be that the old `try!`
 macro would break. This could potentially be avoided but with great technical
@@ -156,7 +156,7 @@ In the RFC author's opinion however, the sum total benefits of `try { .. }`
 seem to outweigh the drawbacks of the difficulty with purging [`try!`] from
 our collective memory.
 
-## Inverse semantics of `?`
+### Inverse semantics of `?`
 
 The `?` postfix operator is sometimes referred to as the "try operator",
 and can be seen as having the inverse semantics as `try { .. }`.
@@ -169,10 +169,10 @@ There is currently some ongoing debate about renaming the `?` operator to
 something other than the "try operator". This could help in mitigating the
 effects of picking `try` as the keyword.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Review considerations
+### Review considerations
 
 Among the considerations when picking a keyword are, ordered by importance:
 
@@ -206,7 +206,7 @@ Among the considerations when picking a keyword are, ordered by importance:
    If the first clause is called `try`,
    then `try { }` and `try!()` would have essentially inverse meanings.
 
-## Rationale for `try`
+### Rationale for `try`
 [rationale for try]: #rationale-for-try
 
 1. **Fidelity to the construct's actual behavior:** Very high
@@ -227,7 +227,7 @@ Among the considerations when picking a keyword are, ordered by importance:
     ```
 7. **Consistency with old learning material:** Inconsistent ([`try!`])
 
-### Review
+#### Review
 
 This is our choice of keyword, because it:
 
@@ -242,7 +242,7 @@ This is our choice of keyword, because it:
    a programmers intent, i.e: "I want to try a bunch of stuff in this block".
 5. it can be further extended with `catch { .. }` handlers if we wish.
 
-## Alternative: reserving `catch`
+### Alternative: reserving `catch`
 
 1. **Fidelity to the construct's actual behavior:** High
 2. **Precedent from existing languages:** Erlang and Tcl, see [prior-art]
@@ -259,7 +259,7 @@ This is our choice of keyword, because it:
     ```
 7. **Consistency with old learning material:** Untaught
 
-### Review
+#### Review
 
 We believe `catch` to be a poor choice of keyword, because it:
 
@@ -278,7 +278,7 @@ We believe `catch` to be a poor choice of keyword, because it:
 However, `catch` has high fidelity wrt. the operational semantics of "catching"
 any exceptions in the `try { .. }` block.
 
-## Alternative: keeping `do catch { .. }`
+### Alternative: keeping `do catch { .. }`
 
 1. **Fidelity to the construct's actual behavior:** Middle
 2. **Precedent from existing languages:**
@@ -297,7 +297,7 @@ An alternative would be to simply use the `do catch { ... }` syntax we have
 in the nightly compiler. However, this syntax was not in the accepted `catch`
 RFC and was only a temporary fix around `catch { .. }` not working.
 
-## Alternative: `do try { .. }`
+### Alternative: `do try { .. }`
 
 1. **Fidelity to the construct's actual behavior:** High
 2. **Precedent from existing languages:**
@@ -315,7 +315,7 @@ RFC and was only a temporary fix around `catch { .. }` not working.
     - **Usage (sourcegraph):** **0** regex: N/A
 7. **Consistency with old learning material:** Untaught
 
-### Review
+#### Review
 
 We could in fact decide to keep the `do`-prefix but change the suffix to `try`.
 The benefit here would be two-fold:
@@ -341,7 +341,7 @@ The drawbacks would be:
 Other than this, the argument for `do try` over `do catch` boils down to an
 argument of `try` over `catch`.
 
-## Alternative: using `do { .. }`
+### Alternative: using `do { .. }`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** Haskell, Idris
@@ -354,7 +354,7 @@ argument of `try` over `catch`.
 6. **Risk of breakage:** Impossible (already reserved keyword)
 7. **Consistency with old learning material:** Untaught
 
-### Review
+#### Review
 
 The keyword `do` was probably originally reserved for two use cases:
 
@@ -467,7 +467,7 @@ problematic as it:
 2. is in the way of use for monads in general.
 3. `do` is generic and unclear wrt. semantics.
 
-## Alternative: reserving `trap`
+### Alternative: reserving `trap`
 
 1. **Fidelity to the construct's actual behavior:** Good
 2. **Precedent from existing languages:** None
@@ -484,7 +484,7 @@ problematic as it:
     ```
 7. **Consistency with old learning material:** Untaught
 
-### Review
+#### Review
 
 Arguably, this candidate keyword is a somewhat a good choice.
 
@@ -496,7 +496,7 @@ However, `trap` is used as an error handler in at least one language.
 It also does not have the familiarity that `try` does have and is entirely
 inconsistent wrt. naming in the standard library.
 
-## Alternative: reserving `wrap`
+### Alternative: reserving `wrap`
 
 1. **Fidelity to the construct's actual behavior:** Somewhat good
 2. **Precedent from existing languages:** None
@@ -513,7 +513,7 @@ inconsistent wrt. naming in the standard library.
     ```
 7. **Consistency with old learning material:** Untaught
 
-### Review
+#### Review
 
 With `wrap { .. }` we can say that it "wraps" the result of the block as a
 `Result` / `Option`, etc. and it is logically related to `.unwrap()`,
@@ -522,7 +522,7 @@ which is however a partial function, wherefore the connotation might be bad.
 Also, `wrap` could be considered too generic as with `do` in that it could
 fit for any monad.
 
-## Alternative: reserving `result`
+### Alternative: reserving `result`
 
 1. **Fidelity to the construct's actual behavior:** Somewhat good
 2. **Precedent from existing languages:** None
@@ -539,7 +539,7 @@ fit for any monad.
     ```
 7. **Consistency with old learning material:** Untaught
 
-## Review
+### Review
 
 [final encoding]: http://okmij.org/ftp/tagless-final/course/lecture.pdf
 
@@ -552,11 +552,11 @@ and thus it does not fit `Option` and other types well.
 The breakage of the `result` module is however quite problematic,
 making this particular choice of keyword more or less a non-starter.
 
-## Alternative: a smattering of other possible keywords
+### Alternative: a smattering of other possible keywords
 
 There are a host of other keywords which have been suggested.
 
-### `fallible`
+#### `fallible`
 
 On an [internals thread](https://internals.rust-lang.org/t/bikeshed-rename-catch-blocks-to-fallible-blocks/7121/), `fallible` was suggested. However, this keyword lacks the verb-form that
 is the convention in Rust. Breaking with this convention should only be done
@@ -575,11 +575,11 @@ for constructions which are oft used.
     - **Usage (sourcegraph)** [*None*](https://sourcegraph.com/search?q=repogroup:crates+case:yes++%5Cb%28%28let%7Cconst%7Ctype%7C%29%5Cs%2Bfallible%5Cs%2B%3D%7C%28fn%7Cimpl%7Cmod%7Cstruct%7Cenum%7Cunion%7Ctrait%29%5Cs%2Bfallible%29%5Cb+max:400)
 7. **Consistency with old learning material:** Untaught
 
-### Synonyms of `catch`:
+#### Synonyms of `catch`:
 
 Some synonyms of `catch` [have been suggested](https://internals.rust-lang.org/t/bikeshed-rename-catch-blocks-to-fallible-blocks/7121/2):
 
-#### `accept`
+##### `accept`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -596,7 +596,7 @@ Some synonyms of `catch` [have been suggested](https://internals.rust-lang.org/t
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `capture`
+##### `capture`
 
 1. **Fidelity to the construct's actual behavior:** Good.
 2. **Precedent from existing languages:** None
@@ -613,7 +613,7 @@ Some synonyms of `catch` [have been suggested](https://internals.rust-lang.org/t
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `collect`
+##### `collect`
 
 1. **Fidelity to the construct's actual behavior:** Very much not at all.
 2. **Precedent from existing languages:** None
@@ -630,7 +630,7 @@ Some synonyms of `catch` [have been suggested](https://internals.rust-lang.org/t
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `recover`
+##### `recover`
 
 1. **Fidelity to the construct's actual behavior:** Good
 2. **Precedent from existing languages:** None
@@ -647,7 +647,7 @@ Some synonyms of `catch` [have been suggested](https://internals.rust-lang.org/t
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `resolve`
+##### `resolve`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -664,7 +664,7 @@ Some synonyms of `catch` [have been suggested](https://internals.rust-lang.org/t
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `take`
+##### `take`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -681,7 +681,7 @@ Some synonyms of `catch` [have been suggested](https://internals.rust-lang.org/t
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### Review
+##### Review
 
 Of these, only `recover` and `capture` seem reasonable semantically.
 But `recover` is even more problematic than `catch` because it enhances
@@ -689,9 +689,9 @@ the feeling of exception-handling instead of exception-boundaries.
 However, `capture` is reasonable as a substitute for `try`,
 but it seems obscure and lacks familiarity, which is counted as a strong downside.
 
-### [and some other keywords:](https://internals.rust-lang.org/t/bikeshed-rename-catch-blocks-to-fallible-blocks/7121/13)
+#### [and some other keywords:](https://internals.rust-lang.org/t/bikeshed-rename-catch-blocks-to-fallible-blocks/7121/13)
 
-#### `coalesce`
+##### `coalesce`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -708,7 +708,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `fuse`
+##### `fuse`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -725,7 +725,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `unite`
+##### `unite`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -742,7 +742,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `cohere`
+##### `cohere`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -759,7 +759,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `consolidate`
+##### `consolidate`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -776,7 +776,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `unify`
+##### `unify`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -793,7 +793,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `combine`
+##### `combine`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -810,7 +810,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `resultof`
+##### `resultof`
 
 1. **Fidelity to the construct's actual behavior:** Somewhat
 2. **Precedent from existing languages:** None
@@ -827,7 +827,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### `returned`
+##### `returned`
 
 1. **Fidelity to the construct's actual behavior:**  Not at all.
 2. **Precedent from existing languages:** None
@@ -844,7 +844,7 @@ but it seems obscure and lacks familiarity, which is counted as a strong downsid
     ```
 7. **Consistency with old learning material:** Untaught
 
-#### Review
+##### Review
 
 Of these, only `resultof` seems to be semantically descriptive and has some support. However, it has three major drawbacks:
 
@@ -856,7 +856,7 @@ Of these, only `resultof` seems to be semantically descriptive and has some supp
 
 + `Result<T, E>` oriented: `resultof` is too tied to `Result<T, E>` and fits poorly with `Option<T>` or other types that implement `Try`.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 All of the languages listed below have a `try { .. } <handler_kw> { .. }` concept
@@ -910,7 +910,7 @@ part and not for the handler, these languages are:
 However, the combined popularity of these languages are not significant as
 compared to that for `try { .. }`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None as of yet.

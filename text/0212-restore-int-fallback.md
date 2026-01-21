@@ -2,16 +2,16 @@
 - RFC PR: [rust-lang/rfcs#212](https://github.com/rust-lang/rfcs/pull/212)
 - Rust Issue: [rust-lang/rust#16968](https://github.com/rust-lang/rust/issues/16968)
 
-# Summary
+## Summary
 
 Restore the integer inference fallback that was removed. Integer
 literals whose type is unconstrained will default to `i32`, unlike the
 previous fallback to `int`.
 Floating point literals will default to `f64`.
 
-# Motivation
+## Motivation
 
-## History lesson
+### History lesson
 
 Rust has had a long history with integer and floating-point
 literals. Initial versions of Rust required *all* literals to be
@@ -47,7 +47,7 @@ does). Some time later, we did [various measurements][m] and found
 that in real world code this fallback was rarely used. Therefore, we
 decided that to remove the fallback.
 
-## Experience with lack of fallback
+### Experience with lack of fallback
 
 Unfortunately, when doing the measurements that led us to decide to
 remove the `int` fallback, we neglected to consider coding "in the
@@ -97,7 +97,7 @@ m.insert(3, 4);
 assert_eq(m.find(&3).map(|&i| i).unwrap(), 4);
 ```
 
-## Lack of bugs
+### Lack of bugs
 
 To our knowledge, there has not been a single bug exposed by removing
 the fallback to the `int` type. Moreover, such bugs seem to be
@@ -112,7 +112,7 @@ used to print out and do assertions with. Specifically, any integer
 that is passed as a parameter, returned from a function, or stored in
 a struct or array, must wind up with a specific type.
 
-## Rationale for the choice of defaulting to `i32`
+### Rationale for the choice of defaulting to `i32`
 
 In contrast to the first revision of the RFC, the fallback type
 suggested is `i32`. This is justified by a case analysis which showed
@@ -131,7 +131,7 @@ cache consumption and twice as much vectorization – additionally
 arithmetic (like multiplication and division) is faster on some of the
 modern CPUs.
 
-## Case analysis
+### Case analysis
 
 This is an analysis of cases where `int` inference might be thought of
 as useful:
@@ -163,7 +163,7 @@ In addition to all the points above, having a platform-independent type
 obviously results in less differences between the platforms in which the
 programmer "doesn't care" about the integer type they are using.
 
-## Future-proofing for overloaded literals
+### Future-proofing for overloaded literals
 
 It is possible that, in the future, we will wish to allow vector and
 strings literals to be overloaded so that they can be resolved to
@@ -171,7 +171,7 @@ user-defined types. In that case, for backwards compatibility, it will
 be necessary for those literals to have some sort of fallback type.
 (This is a relatively weak consideration.)
 
-# Detailed design
+## Detailed design
 
 Integral literals are currently type-checked by creating a special
 class of type variable. These variables are subject to unification as
@@ -186,7 +186,7 @@ employ, a new lint (`unconstrained_literal`) will be added which
 defaults to `allow`. This lint is triggered whenever the type of an
 integer or floating point literal is unconstrained.
 
-# Downsides
+## Downsides
 
 Although there seems to be little motivation for `int` to be the
 default, there might be use cases where `int` is a more correct fallback
@@ -197,7 +197,7 @@ Additionally, it might seem weird to some that `i32` is a default, when
 however is not in the scope of this RFC.
 
 
-# Alternatives
+## Alternatives
 
 - **No fallback.** Status quo.
 
@@ -217,7 +217,7 @@ however is not in the scope of this RFC.
   the `range` function itself could specify a fallback type. However,
   this does not help with many other examples.
 
-# History
+## History
 
 2014-11-07: Changed the suggested fallback from `int` to `i32`, add
 rationale.

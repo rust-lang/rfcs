@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1174](https://github.com/rust-lang/rfcs/pull/1174)
 - Rust Issue: [rust-lang/rust#27062](https://github.com/rust-lang/rust/issues/27062)
 
-# Summary
+## Summary
 
 Introduce and implement `IntoRaw{Fd, Socket, Handle}` traits to complement the
 existing `AsRaw{Fd, Socket, Handle}` traits already in the standard library.
 
-# Motivation
+## Motivation
 
 The `FromRaw{Fd, Socket, Handle}` traits each take ownership of the provided
 handle, however, the `AsRaw{Fd, Socket, Handle}` traits do not give up
@@ -21,7 +21,7 @@ Traits such as `IntoRaw{Fd, Socket, Handle}` will allow for easily transferring
 ownership of OS handles, and it will allow wrappers to perform any
 cleanup/setup as they find necessary.
 
-# Detailed design
+## Detailed design
 
 The `IntoRaw{Fd, Socket, Handle}` traits will behave exactly like their
 `AsRaw{Fd, Socket, Handle}` counterparts, except they will consume the wrapper
@@ -49,11 +49,11 @@ pub trait IntoRawHandle {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 This adds three new traits and methods which would have to be maintained.
 
-# Alternatives
+## Alternatives
 
 Instead of defining three new traits we could instead use the
 `std::convert::Into<T>` trait over the different OS handles. However, this
@@ -63,6 +63,6 @@ approach will not offer a duality between methods such as
 Another possibility is defining both the newly proposed traits as well as the
 `Into<T>` trait over the OS handles letting the caller choose what they prefer.
 
-# Unresolved questions
+## Unresolved questions
 
 None at the moment.

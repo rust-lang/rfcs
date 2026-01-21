@@ -2,13 +2,13 @@
 - RFC PR: [rust-lang/rfcs#546](https://github.com/rust-lang/rfcs/pull/546)
 - Rust Issue: [rust-lang/rust#20497](https://github.com/rust-lang/rust/issues/20497)
 
-# Summary
+## Summary
 
 1. Remove the `Sized` default for the implicitly declared `Self`
    parameter on traits.
 2. Make it "object unsafe" for a trait to inherit from `Sized`.
 
-# Motivation
+## Motivation
 
 The primary motivation is to enable a trait object `SomeTrait` to
 implement the trait `SomeTrait`. This was the design goal of enforcing
@@ -27,7 +27,7 @@ This change has been implemented. Fallout within the standard library
 was quite minimal, since the default only affects default method
 implementations.
 
-# Detailed design
+## Detailed design
 
 Currently, all type parameters are `Sized` by default, including the
 implicit `Self` parameter that is part of a trait definition. To avoid
@@ -78,14 +78,14 @@ object `Foo` implements the trait `Foo`.
 [this branch]: https://github.com/nikomatsakis/rust/tree/impl-trait-for-trait-2
 [this commit]: https://github.com/nikomatsakis/rust/commit/d08a08ab82031b6f935bdaf160a28d9520ded1ab
 
-# Drawbacks
+## Drawbacks
 
 The `Self` parameter is inconsistent with other type parameters if we
 adopt this RFC. We believe this is acceptable since it is
 syntactically distinguished in other ways (for example, it is not
 declared), and the benefits are substantial.
 
-# Alternatives
+## Alternatives
 
 - Leave `Self` as it is. The change to object safety must be made in
   any case, which would mean that for a trait object `Foo` to
@@ -101,6 +101,6 @@ declared), and the benefits are substantial.
   without success thus far (beyond the idea of doing global
   inference).
 
-# Unresolved questions
+## Unresolved questions
 
 - None.

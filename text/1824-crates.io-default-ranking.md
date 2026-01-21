@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1824](https://github.com/rust-lang/rfcs/pull/1824)
 - Rust Issue: [rust-lang/rust#41616](https://github.com/rust-lang/rust/issues/41616)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Crates.io has many useful libraries for a variety of purposes, but it's
@@ -20,7 +20,7 @@ about which crates are likely to deserve further manual evaluation.**
 [cat-pr]: https://github.com/rust-lang/crates.io/pull/473
 [badge-pr]: https://github.com/rust-lang/crates.io/pull/481
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Finding and evaluating crates can be time consuming. People already familiar
@@ -40,7 +40,7 @@ crates" as stated in the [Rust 2017 Roadmap][roadmap].
 
 [roadmap]: https://github.com/rust-lang/rfcs/pull/1774
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Please see the [Appendix: Comparative Research][comparative-research] section
@@ -71,7 +71,7 @@ A few assumptions we made:
   crates noticeably. If this does not turn out to be the case, we will have to
   adjust the formula.
 
-## Order by recent downloads
+### Order by recent downloads
 
 Through the iterations of this RFC, there was no consensus around a way to order
 crates that would be useful, understandable, resistant to being gamed, and not
@@ -107,7 +107,7 @@ says "Downloads". We will:
 "All-time Downloads" could become another sort option in the menu, alongside
 "Alphabetical".
 
-## Add more badges, filters, and sorting options
+### Add more badges, filters, and sorting options
 
 Crates.io now has badges for master branch CI status, and [will soon have a
 badge indicating the version(s) of Rust a particular version builds
@@ -135,7 +135,7 @@ Secondary signals that were used to infer the primary signals:
 - Popularity (covered by the default ordering by recent downloads)
 - Credibility
 
-### Ease of use
+#### Ease of use
 
 By far, the most common attribute people said they considered in the survey was
 whether a crate had good documentation. Frequently mentioned when discussing
@@ -143,7 +143,7 @@ documentation was the desire to quickly find an example of how to use the crate.
 
 This would be addressed in two ways.
 
-#### Render README on a crate's page
+##### Render README on a crate's page
 
 [Render README files on a crate's page on crates.io][render-readme] so that
 people can quickly see for themselves the information that a crate author
@@ -154,7 +154,7 @@ section [in what `cargo new` generates][cargo-new].
 [render-readme]: https://github.com/rust-lang/crates.io/issues/81
 [cargo-new]: https://github.com/rust-lang/cargo/issues/3506
 
-#### "Well Documented" badge
+##### "Well Documented" badge
 
 For each crate published, in a background job, unpack the crate files and
 calculate the ratio of lines of documentation to lines of code as follows:
@@ -218,13 +218,13 @@ potential gaming of the system.
 If we assume these are all the crates on crates.io for this example, then
 combine is the top 20% and would get a badge.
 
-### Maintenance
+#### Maintenance
 
 We will add a way for maintainers to communicate their intended level of
 maintenance and support. We will add indicators of issues resolved from the
 various code hosting services.
 
-#### Self-reported maintenance intention
+##### Self-reported maintenance intention
 
 We will add an optional attribute to Cargo.toml that crate authors could use to
 self-report their maintenance intentions. The valid values would be along the
@@ -287,7 +287,7 @@ If I had to guess for the maintainers of the parsing crates, I would assume:
 * peg: actively developed
 * peresil: passively maintained
 
-#### GitHub issue badges
+##### GitHub issue badges
 
 [isitmaintained.com][] provides badges indicating the time to resolution of GitHub issues and percentage of GitHub issues that are open.
 
@@ -303,7 +303,7 @@ We will enable maintainers to add these badges to their crate.
 | peg | [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/kevinmehall/rust-peg.svg)](http://isitmaintained.com/project/kevinmehall/rust-peg "Average time to resolve an issue") | [![Percentage of issues still open](http://isitmaintained.com/badge/open/kevinmehall/rust-peg.svg)](http://isitmaintained.com/project/kevinmehall/rust-peg "Percentage of issues still open") |
 | peresil | [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/shepmaster/peresil.svg)](http://isitmaintained.com/project/shepmaster/peresil "Average time to resolve an issue") | [![Percentage of issues still open](http://isitmaintained.com/badge/open/shepmaster/peresil.svg)](http://isitmaintained.com/project/shepmaster/peresil "Percentage of issues still open") |
 
-### Quality
+#### Quality
 
 We will enable maintainers to add [Coveralls][] badges to indicate the
 crate's test coverage. If there are other services offering test coverage
@@ -319,7 +319,7 @@ Jenkins, Semaphore, or Codeship.
 
 nom has coveralls.io configured: [![Coverage Status](https://coveralls.io/repos/Geal/nom/badge.svg?branch=master)](https://coveralls.io/r/Geal/nom?branch=master)
 
-### Credibility
+#### Credibility
 
 We have [an idea for a "favorite authors" list][favs] that we
 think would help indicate credibility. With this proposed feature, each person
@@ -328,14 +328,14 @@ and less of a popularity contest.
 
 [favs]: https://github.com/rust-lang/crates.io/issues/494
 
-## Out of scope
+### Out of scope
 
 This proposal is not advocating to change the default order of **search
 results**; those should still be ordered by relevancy to the query based on the
 indexed content. We will add the ability to sort search results by recent
 downloads.
 
-# Evaluation
+## Evaluation
 
 If ordering by number of recent downloads and providing more indicators is not
 helpful, we expect to get bug reports from the community and feedback on the
@@ -349,7 +349,7 @@ tweaks need to be made, the process will be managed through crates.io's issues.
 We will consult with the tools team and core team to determine whether a change
 is significant enough to warrant a new RFC.
 
-# How do we teach this?
+## How do we teach this?
 
 We will change the label on the default ordering button to read "Recent
 Downloads" rather than "Downloads".
@@ -360,7 +360,7 @@ We will also add a page to doc.crates.io that details all possible indicators
 and their values, and explains to crate authors how to configure or earn the
 different badges.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 We might create a system that incentivizes attributes that are not useful, or
@@ -373,10 +373,10 @@ game the badges will be easily discoverable. We could have a reporting
 mechanism for crates that are attempting to gain badges artificially, and
 implement a way for administrators to remove badges from those crates.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Manual curation
+### Manual curation
 
 1. We could keep the default ranking as number of downloads, and leave further
 curation to sites like [Awesome Rust][].
@@ -396,7 +396,7 @@ ratings. This could have the usual problems that come with online rating
 systems, such as spam, paid reviews, ratings influenced by personal
 disagreements, etc.
 
-## More sorting and filtering options
+### More sorting and filtering options
 
 There are even more options for interacting with the metadata that crates.io
 has than we are proposing in this RFC at this time. For example:
@@ -413,18 +413,18 @@ We would probably want to implement saved search configurations per user, so
 that people wouldn't have to re-enter their criteria every time they wanted to
 do a similar search.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 All questions have now been resolved.
 
-# Appendix: Comparative Research
+## Appendix: Comparative Research
 [comparative-research]: #appendix-comparative-research
 
 This is how other package hosting websites handle default sorting within
 categories.
 
-## Django Packages
+### Django Packages
 
 [Django Packages][django] has the concept of [grids][], which are large tables
 of packages in a particular category. Each package is a column, and each row is
@@ -436,7 +436,7 @@ be GitHub stars.
 
 <img src="http://i.imgur.com/YAp9WYf.png" alt="Example of a Django Packages grid" width="800" />
 
-## Libhunt
+### Libhunt
 
 [Libhunt][libhunt] pulls libraries and categories from [Awesome Rust][], then
 adds some metadata and navigation.
@@ -455,7 +455,7 @@ You can also choose to compare two libraries on a number of attributes:
 
 <img src="http://i.imgur.com/HBtCH2E.png" alt="Example of comparing two crates on Libhunt" width="800" />
 
-## Maven Repository
+### Maven Repository
 
 [Maven Repository][mvn] appears to order by the number of reverse dependencies
 ("# usages"):
@@ -464,7 +464,7 @@ You can also choose to compare two libraries on a number of attributes:
 
 <img src="http://i.imgur.com/nZEQdAr.png" alt="Example of a maven repository category" width="800" />
 
-## Pypi
+### Pypi
 
 [Pypi][pypi] lets you choose multiple categories, which are not only based on
 topic but also other attributes like library stability and operating system:
@@ -480,7 +480,7 @@ case.
 
 <img src="http://i.imgur.com/xEKGTsQ.jpg" alt="Example of Pypi ordering" width="800" />
 
-## GitHub Showcases
+### GitHub Showcases
 
 To get incredibly meta, GitHub has the concept of [showcases][] for a variety
 of topics, and they have [a showcase of package managers][show-pkg]. The
@@ -491,7 +491,7 @@ default ranking is by GitHub stars (cargo is 17/27 currently).
 
 <img src="http://i.imgur.com/SCvKQi2.png" alt="Example of a GitHub showcase" width="800" />
 
-## Ruby toolbox
+### Ruby toolbox
 
 [Ruby toolbox][rb] sorts by a relative popularity score, which is calculated
 from a combination of GitHub stars/watchers and number of downloads:
@@ -513,7 +513,7 @@ page load/reload:
 
 <img src="http://i.imgur.com/0NPi6ct.png" alt="Expanded Ruby Toolbox info" width="800" />
 
-## npms
+### npms
 
 While [npms][] doesn't have categories, its search appears to do some exact
 matching of the query and then rank the rest of the results [weighted][] by
@@ -542,7 +542,7 @@ to be added in the future. Implementation details are available in the
 
 <img src="http://i.imgur.com/0i897ts.png" alt="Explanation of the data analyzed by npms" width="800" />
 
-## Package Control (Sublime)
+### Package Control (Sublime)
 
 [Package Control][] is for Sublime Text packages. It has Labels that are
 roughly equivalent to categories:
@@ -557,10 +557,10 @@ compatibility, Top 25/100, and new/trending:
 
 <img src="http://i.imgur.com/KtWcOXV.png" alt="Sample Package Control list of packages within a label, sorted alphabetically" width="800" />
 
-# Appendix: User Research
+## Appendix: User Research
 [user-research]: #appendix-user-research
 
-## Demographics
+### Demographics
 
 We ran a survey for 1 week and got 134 responses. The responses we got seem to
 be representative of the current Rust community: skewing heavily towards more
@@ -578,7 +578,7 @@ this survey is representative. Given the bias towards more experience
 programming, we think the answers are worthy of using to inform recommendations
 crates.io will be making to programmers of all experience levels.
 
-## Crate ranking agreement
+### Crate ranking agreement
 
 The community ranking of the 5 crates presented in the survey for which order
 people would try them out for parsing comes out to be:
@@ -607,7 +607,7 @@ so we should display other information and provide alternate filtering and
 sorting mechanisms so that people who prioritize different attributes than the
 majority of the community will be able to find what they are looking for.
 
-## Factors considered when ranking crates
+### Factors considered when ranking crates
 
 The following table shows the top 25 mentioned factors for the two free answer
 sections. We asked both "Please explain what information you used to evaluate
@@ -649,9 +649,9 @@ evaluate which crates to try.
 | 24 | CI results                                                                     | 15                   | 2                                  | 17                        | Depends on CI service |
 | 25 | Whether the crate works on nightly, stable, particular stable versions         | 8                    | 8                                  | 16                        |                       |
 
-## Relevant quotes motivating our choice of factors
+### Relevant quotes motivating our choice of factors
 
-### Easy to use
+#### Easy to use
 
 > 1) Documentation linked from crates.io  2) Documentation contains decent
 > example on front page
@@ -711,7 +711,7 @@ Ok, this one isn't from the survey, it's from [a Sept 2015 internals thread][]:
 > to each crate with the proportion of public items with at least some docs
 > would be a great starting point.
 
-### Maintenance
+#### Maintenance
 
 > On nom's crates.io page I checked the version (2.0.0) and when the latest
 > version came out (less than a month ago). I know that versioning is
@@ -735,7 +735,7 @@ Ok, this one isn't from the survey, it's from [a Sept 2015 internals thread][]:
 > prefer active projects.);
 
 
-### Quality
+#### Quality
 
 > Tests:
 > - Is critical functionality well tested?
@@ -745,7 +745,7 @@ Ok, this one isn't from the survey, it's from [a Sept 2015 internals thread][]:
 > - Does the project have CI?
 > - Is master green?
 
-### Popularity/credibility
+#### Popularity/credibility
 
 > 2) I look  at the number of download. If it is too small (~ <1000), I assume
 > the crate has not yet reached a good quality. nom catches my attention
@@ -762,7 +762,7 @@ Ok, this one isn't from the survey, it's from [a Sept 2015 internals thread][]:
 > when one is more popular or well supported than another when all other
 > factors are close.
 
-### Overall
+#### Overall
 
 > I can't pick a most important trait because certain ones outweigh others when
 > combined, etc. I.e. number of downloads is OK, but may only suggest that it's
@@ -772,7 +772,7 @@ Ok, this one isn't from the survey, it's from [a Sept 2015 internals thread][]:
 > active (i.e. a release within the past 6 months?), and it helps when it's a
 > prominent author (but that I feel is an unfair metric).
 
-## Relevant bugs capturing other feedback
+### Relevant bugs capturing other feedback
 
 There was a wealth of good ideas and feedback in the survey answers, but not
 all of it pertained to crate ranking directly. Commonly mentioned improvements

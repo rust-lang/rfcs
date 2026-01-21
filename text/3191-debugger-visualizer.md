@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#3191](https://github.com/rust-lang/rfcs/pull/3191)
 - Rust Issue: [rust-lang/rust#95939](https://github.com/rust-lang/rust/issues/95939)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC aims to improve the debugging experience for Rust developers, by
 enabling Rust developers to package debugger visualizer scripts with their
 crates.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Most, if not all, Rust developers will at some point have to debug an issue
@@ -85,7 +85,7 @@ integrate debugger visualizations with their crates. This would mean:
 * No impact on code quality or size.
 * No impact on crates that do not use debugger visualizations.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This RFC explores making debugger visualizations extensible in Rust via Natvis and/or pretty printers.
@@ -107,7 +107,7 @@ The scenario that we want to enable is:
 
 The same should be applied to pretty printers defined and viewed under LLDB and GDB.
 
-## An example: The `regex` crate
+### An example: The `regex` crate
 
 To make this less hypothetical, let's consider an important community crate,
 one which would benefit from debugger visualizations, such as the `regex`
@@ -187,7 +187,7 @@ Pretty printers are supported by:
 It should be easy for Rust developers to add debugger visualizations to their
 crates.
 
-## Supporting Natvis
+### Supporting Natvis
 
 This section describes how Microsoft's Natvis is supported in Rust.
 
@@ -270,7 +270,7 @@ When viewed under WinDbg, the `fancy_rect` variable would be shown as follows:
     > LowerRight: (15, 10)
 ```
 
-## Supporting Pretty Printers
+### Supporting Pretty Printers
 
 This section describes how GDB's pretty printers are supported in Rust.
 
@@ -291,7 +291,7 @@ above and reference it via the `#![debugger_visualizer]` attribute as follows:
 #![debugger_visualizer(gdb_script_file = "../foo.py")]
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 In rustc, a new built-in attribute `#[debugger_visualizer]` will be added which
@@ -411,7 +411,7 @@ were specified will be written to new files in a temp directory where they will
 be included from. The path of these files in the temp directory is what will be
 passed to the `/NATVIS` MSVC linker flag.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 One drawback here is that a lot of types implement the Debug trait which
@@ -421,10 +421,10 @@ Natvis for a type that may already have implemented the Debug trait which
 would be redundant. Currently, running the Debug trait in the debugger directly
 is not possible and so a manual definition would be required to have a debugger view.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Rationale
+### Rationale
 
 This design provides a simple mechanism to specify a debugger visualizer file
 for a given crate and embed them in the resulting PDB or ELF depending on the
@@ -438,9 +438,9 @@ to many Rust developers which may lead to a period of learning the syntax. Since
 this feature would be optional, a consumer of a crate that has debugger visualizer
 for types would not need to go through this learning curve.
 
-## Alternatives
+### Alternatives
 
-### Alternative 1: existing -C link-arg flag
+#### Alternative 1: existing -C link-arg flag
 
 Supporting this option would mean that changes to rustc are not necessary.
 The changes would be limited to Cargo, which would be responsible for collecting
@@ -452,7 +452,7 @@ top-most manifest. This will not walk the dependency graph and find all relevant
 Natvis files so this will only work for targets that produce a `DLL` or `EXE` and
 not an `.rlib`.
 
-### Alternative 2: custom build script to set /NATVIS linker flag
+#### Alternative 2: custom build script to set /NATVIS linker flag
 
 Supporting this option would mean that changes to cargo and rustc are not necessary.
 Each individual crate would be able to create a custom build script that would set
@@ -468,7 +468,7 @@ linker argument in order to embed Natvis into the generated PDB. Also, for crate
 generate an `rlib`, this would also run into an issue since a PDB isn't generated for
 an `rlib`.
 
-### Alternative 3: inline Natvis XML fragments via attributes only
+#### Alternative 3: inline Natvis XML fragments via attributes only
 
 Supporting this option would mean that changes to cargo are not necessary.
 This option could be implemented via an attribute and/or proc-macro which
@@ -489,7 +489,7 @@ Also, if/when other debugger visualization formats are supported, it could becom
 very obscure to read the source with large amounts of visualization scripts from
 multiple schemas all being directly embedded in source code.
 
-### Alternative 4: miri executes the MIR of a Debug impl within a debugger
+#### Alternative 4: miri executes the MIR of a Debug impl within a debugger
 
 Supporting this option would mean that changes to cargo and rustc are not necessary.
 This would have the added benefit of taking full advantage of existing implementations
@@ -505,7 +505,7 @@ I would assume supporting debugging in the systems that are already heavily used
 by the Rust community to be a higher priority. If/when this option becomes a bit
 more viable, there would be nothing stopping it from becoming a true feature.
 
-### Alternative 5: #[link] attribute to implement this feature
+#### Alternative 5: #[link] attribute to implement this feature
 
 ```rust
 #[cfg_attr(target_platform="msvc",link(file="foo.natvis", arg="/NATVIS"))]
@@ -524,7 +524,7 @@ case. Having a more targeted attribute, i.e. `#![debugger_visualizer]` allows fo
 author to simply specify which debugger visualizer file should be included and allow
 the compiler to select the right one under the covers.
 
-## Impact
+### Impact
 
 By not implementing the feature described by this RFC, the debugging quality of Rust,
 especially on Windows, will be continue to be a difficult experience. The only
@@ -532,7 +532,7 @@ visualizations that exist today are for parts of the standard library. External 
 being consumed will not have debugging visualizations available and would make it
 difficult to understand what is being debugged.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Many debuggers and languages already address this problem. Some do so in a way
@@ -544,7 +544,7 @@ Briefly, we cover some of the known systems for debugger views:
 * Visual Studio Debugger (VS Debugger)
 * GDB/LLDB
 
-## Windows Debugger (WinDbg)
+### Windows Debugger (WinDbg)
 
 Natvis is a framework that customizes how native types appear when viewed under
 a debugger. The Visual Studio Natvis framework is supported out of the box on
@@ -555,7 +555,7 @@ serve up the resulting views after applying those visualizations as well. This
 allows for a very smooth debugging experience which would not depend on any manual
 loading of Natvis files.
 
-## Visual Studio Debugger (VS Debugger)
+### Visual Studio Debugger (VS Debugger)
 
 The Visual Studio Debugger also supports Natvis. Similar to WinDbg, the VS Debugger
 is also able to apply Natvis on the fly by loading user-specified `.natvis` files.
@@ -573,7 +573,7 @@ added to the `.vcxproj` file:
 </ItemGroup>
 ```
 
-## GDB/LLDB
+### GDB/LLDB
 
 GDB and LLDB also support debugger views but in a different way than WinDbg and the
 VS debugger. Natvis is not supported by either GDB or LLDB but they do support pretty
@@ -584,15 +584,15 @@ debugger. When a type is viewed under the debugger that has a pretty printer, th
 is automatically shown. The Rust compiler currently defines a pretty printer for a
 limited set of types from within the standard library.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Inline Natvis XML fragments via an attribute
+### Inline Natvis XML fragments via an attribute
 
 Debugger visualizer support for Rust could be improved upon by adding support
 for in-source visualizer definitions via the `#![debugger_visualizer]` attribute
@@ -621,7 +621,7 @@ which includes being used as crate-level attribute when targeting the top-level
 `*.rs` source file. This can be updated to allow targeting types as well if the
 same attribute was to be re-used to support this.
 
-## Inline Natvis XML fragments via a macro
+### Inline Natvis XML fragments via a macro
 
 We may want to allow developers to provide Natvis descriptions using a
 pseudo macro-call syntax, rather than an attribute. One disadvantage of
@@ -657,7 +657,7 @@ to, along with the XML fragment. This would give developers the freedom to
 place visualizations anywhere in their crate, rather than at the definition
 of each type.
 
-# References
+## References
 
 * Natvis
   + [Create custom views of C++ objects in the debugger using the Natvis framework](https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects)

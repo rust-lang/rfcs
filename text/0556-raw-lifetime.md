@@ -2,13 +2,13 @@
 - RFC PR: [rust-lang/rfcs#556](https://github.com/rust-lang/rfcs/pull/556)
 - Rust Issue: [rust-lang/rust#21923](https://github.com/rust-lang/rust/issues/21923)
 
-# Summary
+## Summary
 
 Establish a convention throughout the core libraries for unsafe functions
 constructing references out of raw pointers. The goal is to improve usability
 while promoting awareness of possible pitfalls with inferred lifetimes.
 
-# Motivation
+## Motivation
 
 The current library convention on functions constructing borrowed
 values from raw pointers has the pointer passed by reference, which
@@ -35,7 +35,7 @@ impl Outer {
 ```
 Raw pointer casts also discard the lifetime of the original pointed-to value.
 
-# Detailed design
+## Detailed design
 
 The signature of `from_raw*` constructors will be changed back to what it
 once was, passing a pointer by value:
@@ -48,7 +48,7 @@ The current usage can be mechanically changed, while keeping an eye on
 possible lifetime leaks which need to be worked around by e.g. providing
 safe helper functions establishing lifetime guarantees, as described below.
 
-## Document the unsafety
+### Document the unsafety
 
 In many cases, the lifetime parameter will come annotated or elided from the
 call context. The example above, adapted to the new convention, is safe
@@ -92,7 +92,7 @@ the example above. The lifetime can also be explicitly assigned with
 `std::mem::copy_lifetime` or `std::mem::copy_lifetime_mut`, or annotated when
 possible.
 
-## Fix copy_mut_lifetime
+### Fix copy_mut_lifetime
 
 To improve composability in cases when the lifetime does need to be assigned
 explicitly, the first parameter of `std::mem::copy_mut_lifetime`
@@ -103,14 +103,14 @@ breed tedious, mut-happy, or transmute-happy code, when e.g. a container
 providing the lifetime for a mutable view into its contents is not itself
 necessarily mutable.
 
-# Drawbacks
+## Drawbacks
 
 The implicitly inferred lifetimes are unsafe in sneaky ways, so care is
 required when using the borrowed values.
 
 Changing the existing functions is an API break.
 
-# Alternatives
+## Alternatives
 
 An earlier revision of this RFC proposed adding a generic input parameter to
 determine the lifetime of the returned reference:
@@ -125,11 +125,11 @@ to favor composability, `std::mem::copy_lifetime` and
 `std::mem::copy_lifetime_mut` should be the principal methods to explicitly
 adjust a lifetime.
 
-# Unresolved questions
+## Unresolved questions
 
 Should the change in function parameter signatures be done before 1.0?
 
-# Acknowledgements
+## Acknowledgements
 
 Thanks to Alex Crichton for shepherding this proposal in a constructive and
 timely manner. He has in fact rationalized the convention in its present form.

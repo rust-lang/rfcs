@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2797](https://github.com/rust-lang/rfcs/pull/2797)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 * To create a "project group" with the purpose of designing subsequent RFCs to
@@ -20,7 +20,7 @@
     * We do not plan to allow catching or throwing foreign exceptions from Rust
       code
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Unwinding through Rust's `extern "C"` ABI is [Undefined Behavior]. There is an
@@ -51,14 +51,14 @@ We would also like to demonstrate the Rust lang team's commitment to providing
 such a mechanism without needing to agree in advance on what language changes
 will be stabilized in order to do so.
 
-# Prototyping 'shepherded' project groups
+## Prototyping 'shepherded' project groups
 [prototyping-project-groups]: #prototyping-shepherded-project-groups
 
 With this RFC, we formally announce the formation of a project-specific,
 shepherded "project group" to adopt responsibility for driving progress on
 specifying unwinding behavior at FFI boundaries.
 
-## What is a "project group"?
+### What is a "project group"?
 
 The "project group" term has not previously been used: it is intended to
 formalize a concept that has existed informally for some time, under a number
@@ -78,14 +78,14 @@ behest of an official Rust team. Project groups must have:
 [This blog post][shepherds-3.0] explains in detail the role of the
 shepherds.
 
-## Project group roadmap and RFCs
+### Project group roadmap and RFCs
 
 The first step of the project group is to define a **roadmap** indicating the
 planned sequence in which it will design and propose particular behaviors and
 features.  Once the project group feels it has completed work on some item in
 the roadmap, that item will be submitted as an RFC or FCP for review by the lang team and the community at large.
 
-## Stabilizing unspecified "TBD" behavior
+### Stabilizing unspecified "TBD" behavior
 [stabilizing-tbd]: stabilizing-unspecified-tbd-behavior
 
 We would like to be able to provide features in stable Rust where some
@@ -105,7 +105,7 @@ intental to the working group, however; such behavior would remain
 formally unspecified until an RFC or other binding decision is
 reached.
 
-## Details of the FFI-unwind project group
+### Details of the FFI-unwind project group
 
 [Repository][ffi-unwind project]
 
@@ -119,7 +119,7 @@ Lang team liaisons:
 * [nikmoatsakis (Niko)](https://github.com/nikmoatsakis)
 * [joshtriplett (Josh)](https://github.com/joshtriplett)
 
-### Charter
+#### Charter
 [charter]: #charter
 
 The FFI-unwind project group has the following initial scope:
@@ -139,7 +139,7 @@ Certain elements are considered out of scope, at least to start:
       new mechanisms.
 
 
-### Constraints and considerations
+#### Constraints and considerations
 
 In its work, the project-group should consider various constraints and
 considerations:
@@ -149,13 +149,13 @@ considerations:
   in particular, the project group must not propose a design that would
   constrain Rust's unwinding implementation on any target.
 
-### Participation in the project group
+#### Participation in the project group
 
 Like any Rust group, the FFI-unwind project group intends to operate
 in a public and open fashion and welcomes participation. Visit the
 [repository][ffi-unwind project] for more details.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * The adoption of project groups for major language design efforts is a change
@@ -166,7 +166,7 @@ in a public and open fashion and welcomes participation. Visit the
   confusing to users, and it will encourage reliance on (some) unspecified
   behavior.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Although the term "project group" is new, some existing efforts, such as the
@@ -184,14 +184,14 @@ RFCs"][staged-rfc]; this may be considered a precursor to the current
 "shepherded project group" proposal.
 
 
-# Unresolved questions and Future possibilities
+## Unresolved questions and Future possibilities
 [unresolved-questions]: #unresolved-questions
 
 Since this RFC merely formalizes the creation of the project group, it
 intentionally leaves all technical details within the project's scope
 unresolved.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The project group will start with a fairly [limited scope][charter], but if the

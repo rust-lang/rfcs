@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#69](https://github.com/rust-lang/rfcs/pull/69)
 - Rust Issue: [rust-lang/rust#14646](https://github.com/rust-lang/rust/issues/14646)
 
-# Summary
+## Summary
 
 Add ASCII byte literals and ASCII byte string literals to the language,
 similar to the existing (Unicode) character and string literals.
@@ -10,7 +10,7 @@ Before the RFC process was in place,
 this was discussed in [#4334](https://github.com/mozilla/rust/issues/4334).
 
 
-# Motivation
+## Motivation
 
 Programs dealing with text usually should use Unicode,
 represented in Rust by the `str` and `char` types.
@@ -27,13 +27,13 @@ but can contain UTF-16 strings and raw binary data.
 There is a precedent at least in Python, which has both Unicode and byte strings.
 
 
-# Drawbacks
+## Drawbacks
 
 The language becomes slightly more complex,
 although that complexity should be limited to the parser.
 
 
-# Detailed design
+## Detailed design
 
 Using terminology from [the Reference Manual](http://static.rust-lang.org/doc/master/rust.html#character-and-string-literals):
 
@@ -61,7 +61,7 @@ match buffer[i] {
 ```
 
 
-# Alternatives
+## Alternatives
 
 Status quo: patterns must use numeric literals for ASCII values,
 or (for a single byte, not a byte string) cast to char
@@ -100,7 +100,7 @@ but assuming UTF-8 is not always appropriate when working with bytes.
 See also previous discussion in [#4334](https://github.com/mozilla/rust/issues/4334).
 
 
-# Unresolved questions
+## Unresolved questions
 
 Should there be "raw byte string" literals?
 E.g. `pdf_file.write(rb"<< /Title (FizzBuzz \(Part one\)) >>")`

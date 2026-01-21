@@ -2,7 +2,7 @@
 title = "The Rust RFC Book"
 
 [output.html]
-curly-quotes = true
+smart-punctuation = true
 no-section-label = true
 git-repository-url = "https://github.com/rust-lang/rfcs"
 site-url = "/rfcs/"
@@ -12,3 +12,6 @@ heading-split-level = 0
 
 [output.html.playground]
 runnable = false
+
+[build]
+extra-watch-dirs = ["text"]

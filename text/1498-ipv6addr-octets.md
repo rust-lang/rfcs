@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1498](https://github.com/rust-lang/rfcs/pull/1498)
 - Rust Issue: [rust-lang/rust#32313](https://github.com/rust-lang/rust/issues/32313)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add constructor and conversion functions for `std::net::Ipv6Addr` and
 `std::net::Ipv4Addr` that are oriented around arrays of octets.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, the interface for `std::net::Ipv6Addr` is oriented around 16-bit
@@ -22,7 +22,7 @@ bitwise arithmetic with careful attention to byte order in order to convert
 between the on-wire format of 16 octets and the eight segments format used
 by `std::net::Ipv6Addr`.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The following method would be added to `impl std::net::Ipv6Addr`:
@@ -58,14 +58,14 @@ impl From<[u8; 4]> for Ipv4Addr {
 
 Note: `Ipv4Addr` already has an `octets` method that returns a `[u8; 4]`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It adds additional functions to the API, which increases cognitive load
 and maintenance burden.  That said, the functions are conceptually very simple
 and their implementations short.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Do nothing.  The downside is that developers will need to resort to
@@ -74,6 +74,6 @@ respect to byte ordering) to convert between `Ipv6Addr` and the on-wire
 representation of IPv6 addresses.  Or they will use their alternative
 implementations of `Ipv6Addr`, fragmenting the ecosystem.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 

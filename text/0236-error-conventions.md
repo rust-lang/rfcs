@@ -2,7 +2,7 @@
 - RFC PR #: [rust-lang/rfcs#236](https://github.com/rust-lang/rfcs/pull/236)
 - Rust Issue #: [rust-lang/rust#18466](https://github.com/rust-lang/rust/issues/18466)
 
-# Summary
+## Summary
 
 This is a *conventions* RFC for formalizing the basic conventions around error
 handling in Rust libraries.
@@ -24,7 +24,7 @@ This RFC follows up on [two](https://github.com/rust-lang/rfcs/pull/204)
 [earlier](https://github.com/rust-lang/rfcs/pull/220) attempts by giving more
 leeway in when to fail the task.
 
-# Motivation
+## Motivation
 
 Rust provides two basic strategies for dealing with errors:
 
@@ -43,7 +43,7 @@ consistency as we stabilize library APIs. That is the purpose of this RFC.
 For the most part, the RFC proposes guidelines that are already followed today,
 but it tries to motivate and clarify them.
 
-# Detailed design
+## Detailed design
 
 Errors fall into one of three categories:
 
@@ -58,7 +58,7 @@ recovered at a *coarse grain*, i.e. a task boundary.
 * Obstructions preventing an operation should be reported at a maximally *fine
 grain* -- to the immediate invoker of the operation.
 
-## Catastrophic errors
+### Catastrophic errors
 
 An error is _catastrophic_ if there is no meaningful way for the current task to
 continue after the error occurs.
@@ -67,13 +67,13 @@ Catastrophic errors are _extremely_ rare, especially outside of `libstd`.
 
 **Canonical examples**: out of memory, stack overflow.
 
-### For catastrophic errors, fail the task.
+#### For catastrophic errors, fail the task.
 
 For errors like stack overflow, Rust currently aborts the process, but
 could in principle fail the task, which (in the best case) would allow
 reporting and recovery from a supervisory task.
 
-## Contract violations
+### Contract violations
 
 An API may define a contract that goes beyond the type checking enforced by the
 compiler. For example, slices support an indexing operation, with the contract
@@ -83,14 +83,14 @@ Contracts can be complex and involve more than a single function invocation. For
 example, the `RefCell` type requires that `borrow_mut` not be called until all
 existing borrows have been relinquished.
 
-### For contract violations, fail the task.
+#### For contract violations, fail the task.
 
 A contract violation is always a bug, and for bugs we follow the Erlang
 philosophy of "let it crash": we assume that software *will* have bugs, and we
 design coarse-grained task boundaries to report, and perhaps recover, from these
 bugs.
 
-### Contract design
+#### Contract design
 
 One subtle aspect of these guidelines is that the contract for a function is
 chosen by an API designer -- and so the designer also determines what counts as
@@ -120,7 +120,7 @@ contracts. However, here are some rough guidelines:
 
 * When in doubt, use loose contracts and instead return a `Result` or `Option`.
 
-## Obstructions
+### Obstructions
 
 An operation is *obstructed* if it cannot be completed for some reason, even
 though the operation's contract has been satisfied. Obstructed operations may
@@ -134,7 +134,7 @@ aspects of the input that are not covered by the contract.
 
 **Canonical examples**: file not found, parse error.
 
-### For obstructions, use `Result`
+#### For obstructions, use `Result`
 
 The
 [`Result<T,E>` type](http://static.rust-lang.org/doc/master/std/result/index.html)
@@ -142,7 +142,7 @@ represents either a success (yielding `T`) or failure (yielding `E`). By
 returning a `Result`, a function allows its clients to discover and react to
 obstructions in a fine-grained way.
 
-#### What about `Option`?
+##### What about `Option`?
 
 The `Option` type should not be used for "obstructed" operations; it
 should only be used when a `None` return value could be considered a
@@ -160,7 +160,7 @@ vector can be viewed as asking for the contents of the first element,
 with the side effect of removing it if it exists -- with an `Option`
 return value.
 
-## Do not provide both `Result` and `fail!` variants.
+### Do not provide both `Result` and `fail!` variants.
 
 An API should not provide both `Result`-producing and `fail`ing versions of an
 operation. It should provide just the `Result` version, allowing clients to use
@@ -196,7 +196,7 @@ The main examples in `libstd` that *currently* provide both variants are:
 
 (Note: it is unclear whether these APIs will continue to provide both variants.)
 
-# Drawbacks
+## Drawbacks
 
 The main drawbacks of this proposal are:
 
@@ -210,7 +210,7 @@ The main drawbacks of this proposal are:
 The alternatives mentioned below do not suffer from these problems, but have
 drawbacks of their own.
 
-# Alternatives
+## Alternatives
 
 [Two](https://github.com/rust-lang/rfcs/pull/204)
 [alternative](https://github.com/rust-lang/rfcs/pull/220) designs have been
@@ -223,7 +223,7 @@ however, mixing what might be seen as contract violations with obstructions can
 make it much more difficult to write obstruction-robust code; see the linked
 comment for more detail.
 
-## Naming
+### Naming
 
 There are numerous possible suffixes for a `Result`-producing variant:
 

@@ -1,11 +1,11 @@
-# Shorter temporary lifetimes in tail expressions
+## Shorter temporary lifetimes in tail expressions
 
 - Feature Name: `shorter_tail_lifetimes`
 - Start Date: 2023-05-04
 - RFC PR: [rust-lang/rfcs#3606](https://github.com/rust-lang/rfcs/pull/3606)
 - Tracking Issue: [rust-lang/rust#123739](https://github.com/rust-lang/rust/issues/123739)
 
-# Summary
+## Summary
 
 In the next edition, drop temporaries in tail expressions *before* dropping locals, rather than after.
 
@@ -15,7 +15,7 @@ Before: x is created first, then temp is created, then x is dropped, then temp i
 After: x is created first, then temp is created, then temp is dropped, then x is dropped.
 ](3606-temporary-lifetimes-in-tail-expressions/diagram.svg)
 
-# Motivation
+## Motivation
 
 Temporaries in the tail expression in a block live longer than the block itself,
 so that e.g. `{expr;}` and `{expr}` can behave very differently.
@@ -48,7 +48,7 @@ fn main() {
 
 Both of these examples will compile fine after the proposed change.
 
-# Guide-level explanation
+## Guide-level explanation
 
 Temporaries are normally dropped at the end of the statement.
 
@@ -73,12 +73,12 @@ The `.borrow()` method returns a (temporary) `Ref` object that borrows `c`.
 Starting in Rust 2024, this will compile fine,
 because the temporary `Ref` is dropped before dropping local variable `c`.
 
-# Reference-level explanation
+## Reference-level explanation
 
 For blocks/bodies/arms whose `{}` tokens come from Rust 2024 code,
 temporaries in the tail expression will be dropped *before* the locals of the block are dropped.
 
-# Breakage
+## Breakage
 
 It is tricky to come up with examples that will stop compiling.
 
@@ -137,7 +137,7 @@ After the proposed change, this code will still panic, but leave the mutex unpoi
 (Because the mutex is unlocked *before* dropping the `PanicOnDrop`,
 which probably better matches expectations.)
 
-# Edition migration
+## Edition migration
 
 Since this is a breaking change, this should be an edition change,
 even though we expect the impact to be minimal.
@@ -153,26 +153,26 @@ Depending on this investigation, we can either:
 We highly doubt the last option is necessary.
 If it turns out to be necessary, that might be a reason to not continue with this change.
 
-# Drawbacks
+## Drawbacks
 
 - It introduces another subtle difference between editions.
   (That's kind of the point of editions, though.)
 
 - There's a very small chance this breaks existing code in a very subtle way. However, we can detect these cases and issue warnings.
 
-# Prior art
+## Prior art
 
 - There has been an earlier attempt at changing temporary lifetimes with [RFC 66](https://rust.tf/rfc66).
   However, it turned out to be too complicated to resolve types prematurely and
   it introduced inconsistency when generics are involved.
 
-# Unresolved questions
+## Unresolved questions
 
 - How uncommon are the situations where this change could affect existing code?
 - How advanced should the edition lint and migration be?
 - Can we make sure a lint catches the cases with unsafe code that could result in undefined behaviour?
 
-# Future possibilities
+## Future possibilities
 
 - Not really "future" but more "recent past":
   Making temporary lifetime extension consistent between block expressions and

@@ -3,18 +3,18 @@
 - RFC PR: [rust-lang/rfcs#1201](https://github.com/rust-lang/rfcs/pull/1201)
 - Rust Issue: [rust-lang/rust#32408](https://github.com/rust-lang/rust/issues/32408)
 
-# This RFC was previously approved, but later **withdrawn**
+## This RFC was previously approved, but later **withdrawn**
 
 In short this RFC was superseded by RFC 2972. For details see the [summary comment].
 
 [summary comment]: https://github.com/rust-lang/rust/issues/32408#issuecomment-1016931986
 
-# Summary
+## Summary
 
 Add support for generating naked (prologue/epilogue-free) functions via a new
 function attribute.
 
-# Motivation
+## Motivation
 
 Some systems programming tasks require that the programmer have complete control
 over function stack layout and interpretation, generally in cases where the
@@ -83,7 +83,7 @@ reference](http://llvm.org/docs/LangRef.html#function-attributes) describes this
 feature as having "very system-specific consequences", which the programmer must
 be aware of.
 
-# Detailed design
+## Detailed design
 
 Add a new function attribute to the language, `#[naked]`, indicating the
 function should have prologue/epilogue emission disabled.
@@ -139,7 +139,7 @@ extern "C" fn correct2(x: &mut u8) {
 }
 ```
 
-## Example
+### Example
 
 The following example illustrates the possible use of a naked function for
 implementation of an interrupt service routine on 32-bit x86.
@@ -173,7 +173,7 @@ fn main() {
 }
 ```
 
-## Implementation Considerations
+### Implementation Considerations
 
 The current support for `extern` functions in `rustc` generates a minimum of two
 basic blocks for any function declared in Rust code with a non-default calling
@@ -188,20 +188,20 @@ convention. In cases where calling a naked function from Rust is permitted, the
 compiler must be able to use the target calling convention directly rather than
 call the same function with the Rust convention.
 
-# Drawbacks
+## Drawbacks
 
 The utility of this feature is extremely limited to most users, and it might be
 misused if the implications of writing a naked function are not carefully
 considered.
 
-# Alternatives
+## Alternatives
 
 Do nothing. The required functionality for the use case outlined can be
 implemented outside Rust code and linked in as needed. Support for additional
 calling conventions could be added to the compiler as needed, or emulated with
 external libraries such as `libffi`.
 
-# Unresolved questions
+## Unresolved questions
 
 It is easy to quietly generate wrong code in naked functions, such as by causing
 the compiler to allocate stack space for temporaries where none were

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2920](https://github.com/rust-lang/rfcs/pull/2920)
 - Rust Issue: [rust-lang/rust#76001](https://github.com/rust-lang/rust/issues/76001)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Adds a new syntactical element called an "inline `const`", written as
@@ -36,7 +36,7 @@ fn main() {
 }
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust has `const` items, which are guaranteed to be initialized at compile-time.
@@ -88,7 +88,7 @@ impl need to use a named `const` declaration.
 
 [prom-rules]: https://github.com/rust-lang/const-eval/blob/master/promotion.md#promotability
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This proposal is a middle ground, which is less verbose than named constants
@@ -115,7 +115,7 @@ fn foo() -> &u32 {
 }
 ```
 
-## Patterns
+### Patterns
 
 Patterns are another context that require a named `const` when using complex
 expressions.  Unlike in the expression context, where promotion is sometimes
@@ -143,7 +143,7 @@ fn foo(x: i32) {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This RFC extends the [grammar for expressions] to be,
@@ -201,7 +201,7 @@ In both the expression and pattern context, an inline `const` behaves as if the
 user had declared a uniquely named constant in the containing scope and
 referenced it.
 
-## Generic Parameters
+### Generic Parameters
 
 For now, inline `const` expressions and patterns cannot refer to in-scope
 generic parameters. As of this writing, the same restriction applies to array
@@ -218,7 +218,7 @@ fn foo<T>() {
 }
 ```
 
-## Containing `unsafe`
+### Containing `unsafe`
 
 At present, containing `unsafe` blocks do not apply to array length expressions inside:
 
@@ -247,7 +247,7 @@ inline `const` expressions and patterns.
 
 [#72359]: https://github.com/rust-lang/rust/issues/72359
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This excludes other uses of the `const` keyword in expressions and patterns.
@@ -259,7 +259,7 @@ blockers for this were technical, so I think this is possible.
 
 [RFC 1349]: https://github.com/rust-lang/rfcs/issues/1349
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The main alternative is the status quo. Maintaining it will likely result in
@@ -270,7 +270,7 @@ instead.
 It would also possible to separate out the parts of this RFC relating to patterns
 so that they can be decided upon separately.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Zig has the `comptime` keyword that [works similarly][zig] when it appears
@@ -283,10 +283,10 @@ AFAIK, this was [first proposed] by **@scottmcm**.
 [zig]: https://kristoff.it/blog/what-is-zig-comptime/#compile-time-function-calls
 [first proposed]: https://internals.rust-lang.org/t/quick-thought-const-blocks/7803/9
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Naming
+### Naming
 
 I prefer the name inline `const`, since it signals that there is no difference
 between a named `const` and an inline one.
@@ -303,7 +303,7 @@ that this could be confused with the `const _: () = ...;` syntax introduced in
 
 [RFC 2526]: https://github.com/rust-lang/rfcs/pull/2526
 
-## Lints about placement of inline `const`
+### Lints about placement of inline `const`
 
 An inline `const` is eligible for promotion in an implicit context (just like a
 named `const`), so the following are all guaranteed to work:
@@ -329,7 +329,7 @@ Inline `const`s are allowed within `const` and `static` initializers, just as we
 currently allow nested `const` declarations. Whether to lint against inline
 `const` expressions inside a `const` or `static` is also an open question.
 
-# Future possibilities
+## Future possibilities
 [future possibilities]: #future-possibilities
 
 It would be possible to allow the syntax `const expr` for an inline `const` that

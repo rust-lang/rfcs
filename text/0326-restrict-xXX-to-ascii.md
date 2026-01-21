@@ -2,14 +2,14 @@
 - RFC PR: [rust-lang/rfcs#326](https://github.com/rust-lang/rfcs/pull/326)
 - Rust Issue: [rust-lang/rust#18062](https://github.com/rust-lang/rust/issues/18062)
 
-# Summary
+## Summary
 
 In string literal contexts, restrict `\xXX` escape sequences to just
 the range of ASCII characters, `\x00` -- `\x7F`.  `\xXX` inputs in
 string literals with higher numbers are rejected (with an error
 message suggesting that one use an `\uNNNN` escape).
 
-# Motivation
+## Motivation
 [Motivation]: #motivation
 
 In a string literal context, the current `\xXX` character escape
@@ -73,7 +73,7 @@ is, after all, our primary target audience for conversion), and any
 other language where `\xXX` never results in more than one byte.
 The error message will point them to the syntax they need to adopt.
 
-# Detailed design
+## Detailed design
 
 In string literal contexts, `\xXX` inputs with `XX > 0x7F`  are
 rejected (with an error message that mentions either, or both, of
@@ -91,7 +91,7 @@ formatter) are updated so that string inputs that previously would
 previously have printed `\xXX` with `XX > 0x7F` are updated to use
 `\uNNNN` escapes instead.
 
-# Drawbacks
+## Drawbacks
 
 Some reasons not to do this:
 
@@ -119,7 +119,7 @@ thus everything is up for change.
 
 This RFC makes no comment on the validity of the fourth bullet.
 
-# Alternatives
+## Alternatives
 
 * We could remove `\xXX` entirely from string literals.  This would
   require people to use the `\uNNNN` escape format even for bytes in the
@@ -130,13 +130,13 @@ This RFC makes no comment on the validity of the fourth bullet.
   was previously considered and explicitly rejected in an earlier
   meeting, as discussed in the [Motivation] section.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 
-# Appendices
+## Appendices
 
-## Behavior of xXX in C
+### Behavior of xXX in C
 [Behavior of xXX in C]: #behavior-of-xxx-in-c
 
 Here is a C program illustrating how `xXX` escape sequences are treated
@@ -180,7 +180,7 @@ s[0]: -128
 s[1]: 0
 ```
 
-## Rust example
+### Rust example
 [Rust example]: #rust-example
 
 Here is a Rust program that explores the various ways `\xXX` sequences are
@@ -290,7 +290,7 @@ in string-literal contexts, namely in the fourth and fifth examples
 where the `.as_bytes()` invocations are showing that the underlying
 byte array has two elements instead of one.
 
-## Racket example
+### Racket example
 [Racket example]: #racket-example
 
 ```
@@ -314,7 +314,7 @@ The above code illustrates that in Racket, the `\xXX` escape sequence
 denotes a code unit in byte-string context (`#".."` in that language),
 while it denotes a code point in string context (`".."`).
 
-## Python example
+### Python example
 [Python example]: #python-example
 
 ```

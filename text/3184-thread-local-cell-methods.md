@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3184](https://github.com/rust-lang/rfcs/pull/3184)
 - Rust Issue: [rust-lang/rust#92122](https://github.com/rust-lang/rust/issues/92122)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Adding methods to `LocalKey` for `LocalKey<Cell<T>>` and `LocalKey<RefCell<T>>` to make thread local cells easier to use.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Almost all real-world usages of `thread_local! {}` involve a `Cell` or `RefCell`.
@@ -48,7 +48,7 @@ fn f() {
 }
 ```
 
-# Proposed additions
+## Proposed additions
 
 We add `.set()`, `.get()`\*, `.take()` and `.replace()` on `LocalKey<Cell<T>>` and `LocalKey<RefCell<T>>` such that they can used directly without using `.with()`:
 
@@ -98,7 +98,7 @@ fn f() {
 }
 ```
 
-# Full reference of the proposed additions
+## Full reference of the proposed additions
 
 ```rust
 impl<T: 'static> LocalKey<Cell<T>> {
@@ -343,7 +343,7 @@ impl<T: 'static> LocalKey<RefCell<T>> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - We can no longer use the method names `set`, `get`, etc. on `LocalKey<T>` (if `T` can include `Cell` or `RefCell`).
@@ -352,7 +352,7 @@ impl<T: 'static> LocalKey<RefCell<T>> {
   A single `THREAD_LOCAL.with(|x| ..)` is more efficient than using multiple `.set()` and `.get()` (etc.),
   since it needs to look up the thread local address every time, which is not free on all platforms.
 
-# Alternatives
+## Alternatives
 
 Alternatives for making it easier to work with thread local cells:
 
@@ -384,13 +384,13 @@ Alternatives for avoiding the initializer:
 
   - Even if this function existed, it would still be nice to have a simple `THREAD_LOCAL.set(..)`.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [`scoped-tls`](https://docs.rs/scoped-tls/1.0.0/scoped_tls/struct.ScopedKey.html)
   provides 'scoped thread locals' which must be `.set()` before using them. (They will panic otherwise.)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should we use the names `with_borrow` and `with_borrow_mut` instead of `with_ref` and `with_mut`, to match `RefCell`'s method names?

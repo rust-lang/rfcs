@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1521](https://github.com/rust-lang/rfcs/pull/1521)
 - Rust Issue: [rust-lang/rust#33416](https://github.com/rust-lang/rust/issues/33416)
 
-# Summary
+## Summary
 [summary]: #summary
 
 With specialization on the way, we need to talk about the semantics of
@@ -14,7 +14,7 @@ equivalent to a `memcpy` of that type; however, that fact is not documented
 anywhere. This fact should be in the documentation for the `Clone` trait, just
 like the fact that `T: Eq` should implement `a == b == c == a` rules.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, `Vec::clone()` is implemented by creating a new `Vec`, and then
@@ -31,7 +31,7 @@ suffices, basically." This idea was also implicit in accepting
 [rfc #0839][rfc-extend] where "[B]ecause Copy: Clone, it would be backwards
 compatible to upgrade to Clone in the future if demand is high enough."
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Specify that `<T as Clone>::clone(t)` shall be equivalent to `ptr::read(t)`
@@ -44,20 +44,20 @@ Also add something like the following sentence to the documentation for the
 "If `T: Copy`, `x: T`, and `y: &T`, then `let x = y.clone();` is equivalent to
 `let x = *y;`. Manual implementations must be careful to uphold this."
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is a breaking change, technically, although it breaks code that was
 malformed in the first place.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The alternative is that, for each type and function we would like to specialize
 in this way, we document this separately. This is how we started off with
 `clone_from_slice`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 What the exact wording should be.

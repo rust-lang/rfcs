@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#3338](https://github.com/rust-lang/rfcs/pull/3338)
 - Rust Issue: [rust-lang/rust#105336](https://github.com/rust-lang/rust/issues/105336)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC defines a mechanism for evolving the default Rust style over time
 without breaking backwards compatibility, via the Rust edition mechanism.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The current Rust style, as defined in the Rust Style Guide and as implemented
@@ -28,7 +28,7 @@ does *not* define any specific style changes. Future RFCs or style-guide PRs
 will define future style editions. This RFC does not propose or define any
 specific future style editions or other formatting changes.
 
-# Explanation
+## Explanation
 [explanation]: #explanation
 
 `rustfmt`, and `cargo fmt`, will format code according to the default Rust
@@ -76,7 +76,7 @@ still format all constructs valid in that Rust edition, with the style of those
 constructs coming from the first subsequent style edition providing formatting
 rules for that construct.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 We could have a completely separate configuration mechanism, unrelated to
@@ -110,7 +110,7 @@ This would result in churn in people's repositories if collaborating
 developers have different versions of Rust, and would break
 continuous-integration checks that check formatting.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The Rust edition mechanism itself serves as prior art, as does the mechanism of
@@ -122,7 +122,7 @@ formatting, though the exact changes this makes are not documented.
 `rustfmt`'s stability guarantees are documented in [RFC
 2437](https://github.com/rust-lang/rfcs/pull/2437/).
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Actual changes to the Rust style for Rust 2024 or future editions.

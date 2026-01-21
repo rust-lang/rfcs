@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#592](https://github.com/rust-lang/rfcs/pull/592)
 - Rust Issue: [rust-lang/rust#22469](https://github.com/rust-lang/rust/issues/22469)
 
-# Summary
+## Summary
 
 Make `CString` dereference to a token type `CStr`, which designates
 null-terminated string data.
@@ -19,7 +19,7 @@ fn main() {
 }
 ```
 
-# Motivation
+## Motivation
 
 The type `std::ffi::CString` is used to prepare string data for passing
 as null-terminated strings to FFI functions. This type dereferences to a
@@ -47,7 +47,7 @@ throughout other modules (see e.g.
 [path reform](https://github.com/rust-lang/rfcs/pull/474)),
 it makes sense that `CString` gets its own borrowed counterpart.
 
-# Detailed design
+## Detailed design
 
 This proposal introduces `CStr`, a type to designate a null-terminated
 string. This type does not implement `Sized`, `Copy`, or `Clone`.
@@ -57,7 +57,7 @@ no size information, as there is intent to turn `CStr` into an
 [unsized type](https://github.com/rust-lang/rfcs/issues/813),
 pending resolution on that proposal.
 
-## Stage 1: CStr, a DST with a weight problem
+### Stage 1: CStr, a DST with a weight problem
 
 As current Rust does not have unsized types that are not DSTs, at this stage
 `CStr` is defined as a newtype over a character slice:
@@ -88,7 +88,7 @@ In implementation, the `CStr` value needs a length for the internal slice.
 This RFC provides no guarantees that the length will be equal to the length
 of the string, or be any particular value suitable for safe use.
 
-## Stage 2: unsized CStr
+### Stage 2: unsized CStr
 
 If unsized types are enabled later one way of another, the definition
 of `CStr` would change to an unsized type with statically sized contents.
@@ -96,7 +96,7 @@ The authors of this RFC believe this would constitute no breakage to code
 using `CStr` safely. With a view towards this future change, it's recommended
 to avoid any unsafe code depending on the internal representation of `CStr`.
 
-## Returning C strings
+### Returning C strings
 
 In cases when an FFI function returns a pointer to a non-owned C string,
 it might be preferable to wrap the returned string safely as a 'thin'
@@ -124,19 +124,19 @@ impl CStr {
 An odd consequence is that it is valid, if wasteful, to call `to_bytes` on
 a `CString` via auto-dereferencing.
 
-## Remove c_str_to_bytes
+### Remove c_str_to_bytes
 
 The functions `c_str_to_bytes` and `c_str_to_bytes_with_nul`, with their
 problematic lifetime semantics, are deprecated and eventually removed
 in favor of composition of the functions described above:
 `c_str_to_bytes(&ptr)` becomes `CStr::from_ptr(ptr).to_bytes()`.
 
-## Proof of concept
+### Proof of concept
 
 The described interface changes are implemented in crate
 [c_string](https://github.com/mzabaluev/rust-c-str).
 
-# Drawbacks
+## Drawbacks
 
 The change of the deref target type is another breaking change to `CString`.
 In practice the main purpose of borrowing from `CString` is to obtain a
@@ -151,7 +151,7 @@ This is countered by the fact that there are general purpose byte containers
 in the core libraries, whereas `CString` addresses the specific need to
 convey string data from Rust to C-style APIs.
 
-# Alternatives
+## Alternatives
 
 If the proposed enhancements or other equivalent facilities are not adopted,
 users of Rust can turn to third-party libraries for better convenience
@@ -159,6 +159,6 @@ and safety when working with C strings. This may result in proliferation of
 incompatible helper types in public APIs until a dominant de-facto solution
 is established.
 
-# Unresolved questions
+## Unresolved questions
 
 Need a `Cow`?

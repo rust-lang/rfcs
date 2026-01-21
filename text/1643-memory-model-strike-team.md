@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1643](https://github.com/rust-lang/rfcs/pull/1643)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Incorporate a strike team dedicated to preparing rules and guidelines
@@ -15,7 +15,7 @@ details (though some back and forth is expected). The strike team will
 produce various intermediate documents that will be submitted as
 normal RFCs.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust's safe type system offers very strong aliasing information that
@@ -109,10 +109,10 @@ interactions across threads. But there may well be subtle cases that
 arise we delve deeper. For more on the C++ memory model, see
 [Hans Boehm's excellent webpage](http://www.hboehm.info/c++mm/).
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Scope
+### Scope
 
 Here are some of the issues that should be resolved as part of these
 unsafe code guidelines. The following list is not intended as
@@ -135,14 +135,14 @@ that roughly correspond to C++11 atomics, and the intention is that we
 can layer our rules for sequential execution atop those rules for
 parallel execution.
 
-## Termination conditions
+### Termination conditions
 
 The unsafe code guidelines team is intended as a temporary strike team
 with the goal of producing the documents described below. Once the RFC
 for those documents have been approved, responsibility for maintaining
 the documents falls to the lang team.
 
-## Time frame
+### Time frame
 
 Working out a a set of rules for unsafe code is a detailed process and
 is expected to take months (or longer, depending on the level of
@@ -164,7 +164,7 @@ even once a memory model is adopted, it can be unclear whether
 under the model. The hope is that by focusing on sequential and
 Rust-specific issues we can sidestep some of these quandries.
 
-## Intermediate documents
+### Intermediate documents
 
 Because hammering out the finer points of the memory model is expected
 to possibly take some time, it is important to produce intermediate
@@ -187,7 +187,7 @@ Note that both the "high-level design" and "detailed rules", once
 considered complete, will be submitted as RFCs and undergo the usual
 final comment period.
 
-### Key examples and optimizations
+#### Key examples and optimizations
 
 Probably a good first step is to agree on some key examples and
 overall principles. Examples would fall into several categories:
@@ -235,7 +235,7 @@ It is also expected that we will gather examples in the following ways:
   - scenarios where they would like an official judgement; 
   - interesting questions involving the standard library.
 
-### High-level design
+#### High-level design
 
 The next document to produce is to settle on a high-level
 design. There have already been several approaches floated. This phase
@@ -257,7 +257,7 @@ to be adjusted to match.
 
 It is expected that the lang team will be **highly involved** in this discussion.
 
-### Detailed rules
+#### Detailed rules
 
 Once we've settled on a high-level path -- and, no doubt, while in the
 process of doing so as well -- we can begin to enumerate more detailed
@@ -265,14 +265,14 @@ rules. It is also expected that working out the rules may uncover
 contradictions or other problems that require revisiting the
 high-level design.
 
-### Lints and other checkers
+#### Lints and other checkers
 
 Ideally, the team will also consider whether automated checking for
 conformance is possible. It is not a responsibility of this strike
 team to produce such automated checking, but automated checking is
 naturally a big plus!
 
-## Repository
+### Repository
 
 In general, the memory model discussion will be centered on a specific
 repository (perhaps
@@ -283,7 +283,7 @@ as well as storing the various proposals and litmus tests in their own
 directories. We'll work out and document the procedures and
 conventions here as we go.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The main drawback is that this discussion will require time and energy
@@ -299,7 +299,7 @@ continue to adopt a conservative course, but this risks growing an
 ever larger body of code dependent on the compiler not performing
 aggressive optimization, which may close those doors forever.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Adopt a memory model in one fell swoop:
@@ -307,7 +307,7 @@ aggressive optimization, which may close those doors forever.
 - Defer adopting a memory model for longer:
   - considered too risky
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

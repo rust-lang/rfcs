@@ -3,20 +3,20 @@
 - RFC PR: [#2509](https://github.com/rust-lang/rfcs/pull/2509)
 - Rust Issue: [#87555](https://github.com/rust-lang/rust/issues/87555)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a macro `concat_bytes!()` to join byte sequences onto an `u8` array,
 the same way `concat!()` currently supports for `str` literals.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 `concat!()` is convenient and useful to create compile time `str` literals
 from `str`, `bool`, numeric and `char` literals in the code. This RFC adds an
 equivalent capability for `[u8]` instead of `str`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `concat_bytes!()` macro concatenates literals into a byte string literal
@@ -41,12 +41,12 @@ supported as inputs:
 For example, `concat_bytes!(42, b"va", b'l', [1, 2])` evaluates to
 `[42, 118, 97, 108, 1, 2]`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None known.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 `concat!` could instead be changed to sometimes produce byte literals instead of
@@ -59,7 +59,7 @@ arrays, but that was rejected since it would make the output of
 `byte_concat!(123, b"\n")` inconsistent with the equivalent `concat!`
 invocation.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should additional literal types be supported? Byte string literals are

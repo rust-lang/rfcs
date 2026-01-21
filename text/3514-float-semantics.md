@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3514](https://github.com/rust-lang/rfcs/pull/3514)
 - Tracking Issue: [rust-lang/rust#128288](https://github.com/rust-lang/rust/issues/128288)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes a specification for how our floating point operations are expected to behave.
@@ -18,7 +18,7 @@ That means the only way to ever see a signaling NaN in a program is to create on
 Floating-point operations at compile-time follow the same specification. In particular, since operations involving NaN bit patterns are non-deterministic, the same operation can lead to different NaN bit patterns when executed at compile-time (in a `const` context) vs at run-time.
 Of course, the compile-time interpreter is still deterministic. It is entirely possible to implement a non-deterministic language on a deterministic machine, by simply making some fixed choices. However, we will not specify a particular choice, and we will not guarantee it to remain the same in the future.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 We have a plethora of open issues that boil down to "is this sequence of float operations allowed to produce the given result".
@@ -26,7 +26,7 @@ This is caused by a combination of surprising effects introduced by LLVM optimiz
 
 It's time to stop leaving our users in the dark about what actually is and is not guaranteed.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Primitive operations on floating-point types generally produce results that exactly match IEEE 754-2008:
@@ -44,7 +44,7 @@ In particular, the bit pattern produced at compile-time can differ from the bit 
 Certain targets unfortunately are known to not implement these semantics precisely (see [below](#target-specific-problems)).
 The [platform support page](https://doc.rust-lang.org/rustc/platform-support.html) will list those caveats.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This RFC specifies the behavior of `+`, `-` (unary and binary), `*`, `/`, `%`, `abs`, `copysign`, `mul_add`, `sqrt`, `as`-casts that involve floating-point types, and all comparison operations on floating-point types.
@@ -154,7 +154,7 @@ However, for all the RFC author knows, this is currently the worst possible cons
 Programmers that use trap-on-NaN as a debugging technique can still use this technique as long as they are aware of these caveats.
 That said, this is not a stable guarantee, and it is hard to figure out how exactly a stable guaranteed could be worded.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - This RFC is too restrictive for some targets and too vague for some users: it is too vague since NaN signs are still left completely non-deterministic, which is not actually the case on hardware.
@@ -179,12 +179,12 @@ We should consider documenting on the "platform support" page (and we probably w
 - On old MIPS, the interpretation of "signaling" and "quiet" is the opposite of what has been specified above. The effective spec on those targets is that any NaN-producing operation can non-deterministically produce an arbitrary (signaling or quiet) NaN. Currently, LLVM does not have a way of implementing their own NaN semantics for this target, so there's not a lot we can do on the Rust side. [LLVM issue](https://github.com/llvm/llvm-project/issues/60796)
 - On 32bit ARM, NEON SIMD operations [always flush-to-zero](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Pre-RFC.3A.20floating.20point.20guarantees/near/376893307). *If* LLVM auto-vectorizes code for that target, that would lead to divergence from IEEE semantics. It is currently unclear whether this is the case; people keep bringing this up as a cause of potential non-conformance but the author was unable to find concrete records of any actual misbehavior. However, this will become an issue if NEON operations are ever exposed to Rust users: we would expect SIMD operations to follow the same NaN rules as their non-SIMD counterparts, but ARM NEON would violate those semantics.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Alternative options for run-time semantics
+### Alternative options for run-time semantics
 
-### Alternative: a spec that actually works for all targets, or at least all tier 1 targets
+#### Alternative: a spec that actually works for all targets, or at least all tier 1 targets
 
 To achieve this we would at least have to make the i686 targets compliant, i.e., we'd have to say that NaN bit patterns are allowed to change when a floating-point value is returned from a function.
 That is certainly not a sane semantics, and not something we want to impose on targets that are not aflicted by x87.
@@ -198,7 +198,7 @@ This doesn't preclude code from going out of its way to be portable to targets w
 Meanwhile, any effort to improve these targets' compliance is certainly very welcome, such as [this recent PR](https://github.com/rust-lang/rust/pull/115919) that would fix the unstable-NaN-bits-in-return-values issue at least for the Rust ABI.
 However, given the seeming impossibility of getting targets fully into compliance, that should not block this RFC.
 
-### Alternative: a fully deterministic specification
+#### Alternative: a fully deterministic specification
 
 Why don't we "just" say that NaNs in Rust behave exactly like they do on the underlying hardware?
 
@@ -209,13 +209,13 @@ It is pragmatically very hard for us to provide guarantees that LLVM does not in
 
 Also note that in some cases even the underlying target behavior is non-deterministic, namely on wasm.
 
-### Alternative: operations can never produce a signaling NaN
+#### Alternative: operations can never produce a signaling NaN
 
 An operation that returns a signaling NaN violates the basic IEEE guarantee that floating-point operations never produce signaling NaNs. However, LLVM considers it legal to fold `x * 1.0` to `x`, so if `x` is a signaling NaN then the multiplication can have that signaling NaN as the output.
 Similarly, `(x: f32) as f64 as f32` may get folded into `x`, so even casts can produce signaling NaNs.
 Given that signaling NaNs are basically useless in Rust since we do not consider the exception status flag to be observable (and hence optimizations can change whether an exception is triggered ot not), there is no point in constraining optimizations just to achieve a guarantee about signaling NaNs.
 
-### Alternative: don't make any guarantee about the signaling/quiet bit ever
+#### Alternative: don't make any guarantee about the signaling/quiet bit ever
 
 This alternative would simplify the spec and make old MIPS hardware compliant.
 The signaling/quiet distinction also basically does not matter since floating-point exception flags are not exposed.
@@ -225,7 +225,7 @@ In other words, `pow` *does* [make a difference](https://play.rust-lang.org/?ver
 So, if we say that any operation can arbitrairly produce signaling NaNs, then it becomes impossible to rely on `pow`'s property that "`pow(+1, exponent)` returns `1` for any `exponent`".
 Since the quiet/signaling distinction matters, we provide a guarantee which ensures that programs will almost always only ever deal with quiet NaNs (the only safe way to get a signaling NaN is to use `from_bits`).
 
-### Alternative: no strict semantic guarantees
+#### Alternative: no strict semantic guarantees
 
 Providing strict IEEE 754-2008 guarantees precludes many transformations, such as turning `a*b + c` into FMA operations (since the result can change due to different rounding).
 We could provide weaker guarantees to allow such transformations.
@@ -235,9 +235,9 @@ There is also no "monotonicity of precision": while e.g. an FMA instead of mul-t
 
 Given all these caveats, it seems preferable to have explicit opt-in for such semantics-alternating transformations, e.g. via "fast" floating point operation intrinsics that don't provide strict IEEE semantics (and a type that uses those intrinsics for its operations).
 
-## Alternative options for `const` semantics
+### Alternative options for `const` semantics
 
-### Alternative: `const` must be deterministic, and match runtime behavior
+#### Alternative: `const` must be deterministic, and match runtime behavior
 
 This RFC proposes that we accept, for the first time, that a `const fn` can behave non-deterministically at run-time, and produce target/version/flag-specific results at compile-time. It can also produce different results when called at compile-time and at run-time.
 [Another proposed RFC](https://github.com/rust-lang/rfcs/pull/3352) gathers some general arguments for why we should allow such behavior in a `const fn`.
@@ -249,7 +249,7 @@ To summarize, achieving deterministic floating-point behavior is too hard with t
 
 Note that this RFC does *not* imply a reliable way for code to detect whether it runs at compile-time or run-time.
 
-### Alternative: `const` just fails when a NaN would be produced
+#### Alternative: `const` just fails when a NaN would be produced
 
 Another alternative to handling floating-point operations in `const` is to just fail when a non-deterministic choice would occur at runtime, i.e., each time a NaN is produced.
 However, this is a breaking change: `const C: f32 = 0.0 / 0.0;` has worked on stable Rust since Rust 1.0.
@@ -260,7 +260,7 @@ The core advantage of this option is that it avoids having `const` results chang
 However, having `const` results depend on NaN bits should be very rare, and we already have other (more common) cases of `const` results depending on unspecified implementation details that can and sometimes do change on compiler updates, namely the layout of `repr(Rust)` types (observable via `size_of` and `offset_of`).
 We can also consider adding a lint against accidentally producing a NaN in CTFE.
 
-### Alternative: `const` tracks NaN values, fails when their bits matter during compile-time
+#### Alternative: `const` tracks NaN values, fails when their bits matter during compile-time
 
 `const` could in principle track NaNs symbolically, similar to how it tracks pointers, and delay choosing NaN payload bits until codegen.
 Const-evaluation would then abort if the bits of a NaN are observed (eg. if `to_bits` is called during const-evaluation).
@@ -270,7 +270,7 @@ That effort should only be invested if there is a significant payoff.
 The RFC author considers the downsides of unspecified NaN bit patterns being observable in const-evaluation to be minimal, and hence the payoff of this alternative to be low.
 A less invasive approach to dealing with potential problems from NaN non-determinism is to lint against producing NaNs in `const` evaluation.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 C23 clarifies its stance on signaling NaNs:
@@ -299,7 +299,7 @@ The sign bit is left unspecified, i.e., there are two canonical NaNs (and both a
 In Rust itself, questions around float semantics have been discussed for a long time.
 [This issue](https://github.com/rust-lang/unsafe-code-guidelines/issues/237) collects a lot of that discussion, which culminated in this RFC.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should we be concerned that LLVM does [not actually document](https://github.com/llvm/llvm-project/issues/60942) that it uses IEEE float semantics?
@@ -311,7 +311,7 @@ In Rust itself, questions around float semantics have been discussed for a long 
   On the other hand, we implement some platform intrinsics with the portable LLVM `simd` intrinsics, and those are subject to the NaN-non-determinism described above.
   So the current de-facto semantics of at least some platform intrinsics is that they do *not* match what the platform does.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - Currently this RFC only talks about scalar `f32`/`f64` operations. What about their (unstable) SIMD equivalents in `std::simd`? Presumably we want all the same rules to apply. The main problem here seems to be 32bit ARM, whose NEON SIMD operations do not follow the usual semantics (they always flush to zero). We can either document this as an errata for that target, or avoid using NEON for `std::simd`.

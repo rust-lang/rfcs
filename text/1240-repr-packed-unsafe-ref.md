@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1240](https://github.com/rust-lang/rfcs/pull/1240)
 - Rust Issue: [rust-lang/rust#27060](https://github.com/rust-lang/rust/issues/27060)
 
-# Summary
+## Summary
 
 Taking a reference into a struct marked `repr(packed)` should become
 `unsafe`, because it can lead to undefined behaviour. `repr(packed)`
 structs need to be banned from storing `Drop` types for this reason.
 
-# Motivation
+## Motivation
 
 Issue [#27060](https://github.com/rust-lang/rust/issues/27060) noticed
 that it was possible to trigger undefined behaviour in safe code via
@@ -130,7 +130,7 @@ case). Similarly, it is only correct to take a reference to `y` if the
 struct is at an odd address, so that the `u16` starts at an even one
 (i.e. is 2-byte aligned).
 
-# Detailed design
+## Detailed design
 
 It is `unsafe` to take a reference to the field of a `repr(packed)`
 struct. It is still possible, but it is up to the programmer to ensure
@@ -205,13 +205,13 @@ qux.t[0] = 10; // ditto
 the packed field's value onto the stack, and then accessing the
 desired value.)
 
-## Staging
+### Staging
 
 This change will first land as warnings indicating that code will be
 broken, with the warnings switched to the intended errors after one
 release cycle.
 
-# Drawbacks
+## Drawbacks
 
 This will cause some functionality to stop working in
 possibly-surprising ways (NB. the drawback here is mainly the
@@ -235,7 +235,7 @@ not being a visible reference (`println!` takes one internally),
 however, this can be resolved by, for instance, assigning to a
 temporary.
 
-# Alternatives
+## Alternatives
 
 - A short-term solution would be to feature gate `repr(packed)` while
   the kinks are worked out of it
@@ -251,13 +251,13 @@ temporary.
   - using a subfield of a field of a `repr(packed)` struct by-value
     could be OK.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 
-# Appendix
+## Appendix
 
-## Crater analysis
+### Crater analysis
 
 Crater was run on 2015/07/23 with a patch that feature gated `repr(packed)`.
 
@@ -288,21 +288,21 @@ High-level summary:
 
 More detailed analysis inline with broken crates. (Don't miss `kiss3d` in the non-root section.)
 
-### Regression report c85ba3e9cb4620c6ec8273a34cce6707e91778cb vs. 7a265c6d1280932ba1b881f31f04b03b20c258e5
+#### Regression report c85ba3e9cb4620c6ec8273a34cce6707e91778cb vs. 7a265c6d1280932ba1b881f31f04b03b20c258e5
 
 * From: c85ba3e9cb4620c6ec8273a34cce6707e91778cb
 * To: 7a265c6d1280932ba1b881f31f04b03b20c258e5
 
-#### Coverage
+##### Coverage
 
 * 2617 crates tested: 1404 working / 1151 broken / 40 regressed / 0 fixed / 22 unknown.
 
-#### Regressions
+##### Regressions
 
 * There are 11 root regressions
 * There are 40 regressions
 
-#### Root regressions, sorted by rank:
+##### Root regressions, sorted by rank:
 
 * [image-0.3.11](https://crates.io/crates/image)
   ([before](https://tools.taskcluster.net/task-inspector/#V6QBA9LfTT6mhFJ0Yo7nJg))
@@ -402,7 +402,7 @@ More detailed analysis inline with broken crates. (Don't miss `kiss3d` in the no
 
   Requires nightly.
 
-#### Non-root regressions, sorted by rank:
+##### Non-root regressions, sorted by rank:
 
 * [glium-0.8.0](https://crates.io/crates/glium) ([before](https://tools.taskcluster.net/task-inspector/#m5yEIEu-QEeM_2t4_11Opg)) ([after](https://tools.taskcluster.net/task-inspector/#Wztxoh9SQ-GqA4F3inaR9Q))
 * [mio-0.4.1](https://crates.io/crates/mio) ([before](https://tools.taskcluster.net/task-inspector/#RtT-HmwbTYuG0djpAkVLvA)) ([after](https://tools.taskcluster.net/task-inspector/#Lx1d3ukPSGyRIwIDt_w0gw))

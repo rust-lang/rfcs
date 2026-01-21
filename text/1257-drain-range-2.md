@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1257](https://github.com/rust-lang/rfcs/pull/1257)
 - Rust Issue: [rust-lang/rust#27711](https://github.com/rust-lang/rust/issues/27711)
 
-# Summary
+## Summary
 
 Implement `.drain(range)` and `.drain()` respectively as appropriate on collections.
 
-# Motivation
+## Motivation
 
 The `drain` methods and their draining iterators serve to mass remove elements
 from a collection, receiving them by value in an iterator, while the collection
@@ -21,7 +21,7 @@ from a vector.
 consuming the collection itself. The ranged `drain` allows bulk removal of
 elements, more efficiently than any other safe API.
 
-# Detailed design
+## Detailed design
 
 - Implement `.drain(a..b)` where `a` and `b` are indices, for all
   collections that are sequences.
@@ -35,7 +35,7 @@ elements, more efficiently than any other safe API.
   or not.
 - Drain preserves the collection's capacity where it is possible.
 
-## Collections
+### Collections
 
 `Vec` and `String` already have ranged drain, so they are complete.
 
@@ -54,13 +54,13 @@ does.
 like the other sequences, this is a `O(n)` operation, and `LinkedList` already
 has other indexed methods (`.split_off()`).
 
-## `BTreeMap` and `BTreeSet`
+### `BTreeMap` and `BTreeSet`
 
 `BTreeMap` already has a ranged iterator, `.range(a, b)`, and `drain` for
 `BTreeMap` and `BTreeSet` should have arguments completely consistent the range
 method. This will be addressed separately.
 
-## Stabilization
+### Stabilization
 
 The following can be stabilized as they are:
 
@@ -77,12 +77,12 @@ The following will be heading towards stabilization after changes:
 
 - `VecDeque::drain`
 
-# Drawbacks
+## Drawbacks
 
 - Collections disagree on if they are drained with a range (`Vec`) or not (`HashMap`)
 - No trait for the drain method.
 
-# Alternatives
+## Alternatives
 
 - Use a trait for the drain method and let all collections implement it. This
   will force all collections to use a single parameter (a range) for the drain
@@ -118,7 +118,7 @@ The following will be heading towards stabilization after changes:
 - `BinaryHeap::drain` could drain the heap in sorted order. The primary proposal
   is arbitrary order, to match preexisting `BinaryHeap` iterators.
 
-# Unresolved questions
+## Unresolved questions
 
 - Concrete shape of the `BTreeMap` API is not resolved here
 - Will closed ranges be used for the `drain` API?

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#344](https://github.com/rust-lang/rfcs/pull/344)
 - Rust Issue: [rust-lang/rust#18074](https://github.com/rust-lang/rust/issues/18074)
 
-# Summary
+## Summary
 
 This is a conventions RFC for settling a number of remaining naming conventions:
 
@@ -19,18 +19,18 @@ This is a conventions RFC for settling a number of remaining naming conventions:
 It also proposes to standardize on lower case error messages within the compiler
 and standard library.
 
-# Motivation
+## Motivation
 
 As part of the ongoing API stabilization process, we need to settle naming
 conventions for public APIs. This RFC is a continuation of that process,
 addressing a number of smaller but still global naming issues.
 
-# Detailed design
+## Detailed design
 
 The RFC includes a number of unrelated naming conventions, broken down into
 subsections below.
 
-## Referring to types in method names
+### Referring to types in method names
 
 Function names often involve type names, the most common example being conversions
 like `as_slice`. If the type has a purely textual name (ignoring parameters), it
@@ -62,7 +62,7 @@ references. This abbreviation is already a fairly common convention
 (e.g. `as_ref` and `as_mut` methods), and is meant to keep this very common case
 short.
 
-## Iterator type names
+### Iterator type names
 
 The current convention for iterator *type* names is the following:
 
@@ -131,7 +131,7 @@ Disadvantages:
   conventions.  In most cases, this situation should be taken as an indication
   that a more refined module hierarchy is called for.
 
-## Additional iterator method names
+### Additional iterator method names
 
 An [earlier RFC](https://github.com/rust-lang/rfcs/pull/199) settled the
 conventions for the "standard" iterator methods: `iter`, `iter_mut`,
@@ -160,7 +160,7 @@ This RFC proposes the following convention:
   producing mutable references, and the `into_` prefix for variants consuming
   the data in order to produce owned values.
 
-## Getter/setter APIs
+### Getter/setter APIs
 
 Some data structures do not wish to provide direct access to their fields, but
 instead offer "getter" and "setter" methods for manipulating the field state
@@ -176,7 +176,7 @@ Note that this convention is about getters/setters on ordinary data types, *not*
 on [builder objects](http://aturon.github.io/ownership/builders.html). The
 naming conventions for builder methods are still open.
 
-## Associated types
+### Associated types
 
 Unlike type parameters, the *names* of
 [associated types](https://github.com/rust-lang/rfcs/pull/195) for a trait are a
@@ -186,7 +186,7 @@ Associated types should be given concise, but meaningful names, generally
 following the convention for type names rather than generic. For example, use
 `Err` rather than `E`, and `Item` rather than `T`.
 
-## Trait naming
+### Trait naming
 
 The wiki guidelines have long suggested naming traits as follows:
 
@@ -205,7 +205,7 @@ According to these rules, `Encodable` should probably be `Encode`.
 
 There are some open questions about these rules; see Unresolved Questions below.
 
-## Lints
+### Lints
 
 Our lint names are
 [not consistent](https://github.com/rust-lang/rust/issues/16545). While this may
@@ -236,7 +236,7 @@ Specifically, this RFC proposes that:
 
 * Use snake case in the same way you would for function names.
 
-## Suffix ordering
+### Suffix ordering
 
 Very occasionally, conventions will require a method to have multiple suffixes,
 for example `get_unchecked_mut`. When feasible, design APIs so that this
@@ -250,7 +250,7 @@ However, the *mut* suffix is so common, and is now entrenched as showing up in
 final position, that this RFC does propose one simple rule: if there are
 multiple suffixes including `mut`, place `mut` last.
 
-## Prelude traits
+### Prelude traits
 
 It is not currently possible to define inherent methods directly on basic data
 types like `char` or slices. Consequently, `libcore` and other basic crates
@@ -273,7 +273,7 @@ functions are the one case where you would need to mention the trait by name,
 today. Hopefully, this situation will change before 1.0; otherwise we may need a
 separate plan for dealing with associated functions.)
 
-## Error messages
+### Error messages
 
 Error messages -- including those produced by `fail!` and those placed in the
 `desc` or `detail` fields of e.g. `IoError` -- should in general be in all lower
@@ -281,15 +281,15 @@ case. This applies to both `rustc` and `std`.
 
 This is already the predominant convention, but there are some inconsistencies.
 
-# Alternatives
+## Alternatives
 
-## Iterator type names
+### Iterator type names
 
 The iterator type name convention could instead basically stick with today's
 convention, but using suffixes instead of prefixes, and `IntoItems` rather than
 `MoveItems`.
 
-# Unresolved questions
+## Unresolved questions
 
 How far should the rules for trait names go? Should we avoid "-er" suffixes,
 e.g. have `Read` rather than `Reader`?

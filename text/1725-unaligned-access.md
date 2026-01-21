@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1725](https://github.com/rust-lang/rfcs/pull/1725)
 - Rust Issue: [rust-lang/rust#37955](https://github.com/rust-lang/rust/issues/37955)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add two functions, `ptr::read_unaligned` and `ptr::write_unaligned`, which allows reading/writing to an unaligned pointer. All other functions that access memory (`ptr::{read,write}`, `ptr::copy{_nonoverlapping}`, etc) require that a pointer be suitably aligned for its type.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 One major use case is to make working with packed structs easier:
@@ -26,7 +26,7 @@ unsafe {
 
 Other use cases generally involve parsing some file formats or network protocols that use unaligned values.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The implementation of these functions are simple wrappers around `ptr::copy_nonoverlapping`. The pointers are cast to `u8` to ensure that LLVM does not make any assumptions about the alignment.
@@ -47,17 +47,17 @@ pub unsafe fn write_unaligned<T>(p: *mut T, v: T) {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There functions aren't *strictly* necessary since they are just convenience wrappers around `ptr::copy_nonoverlapping`.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could simply not add these, however figuring out how to do unaligned access properly is extremely unintuitive: you need to cast the pointer to `*mut u8` and then call `ptr::copy_nonoverlapping`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None

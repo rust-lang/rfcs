@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2137](https://github.com/rust-lang/rfcs/pull/2137)
 - Rust Issue: [rust-lang/rust#44930](https://github.com/rust-lang/rust/issues/44930)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Support defining C-compatible variadic functions in Rust, via new intrinsics.
@@ -14,7 +14,7 @@ avoid requiring C stubs and error-prone reimplementation of platform-specific
 code, improve incremental translation of C codebases to Rust, and allow
 implementation of variadic callbacks.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust can currently call any possible C interface, and export *almost* any
@@ -32,7 +32,7 @@ variable numbers of arguments to a native Rust function, nor an interface that
 provides any kind of type safety. This proposal exists primarily to allow Rust
 to provide interfaces callable from C code.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 C code allows declaring a function callable with a variable number of
@@ -168,7 +168,7 @@ Compiling and linking these two together will produce a program that prints:
 5 10 15 20
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 LLVM already provides a set of intrinsics, implementing `va_start`, `va_arg`,
@@ -206,7 +206,7 @@ the use of `VaList::arg` only to specific types. The compiler should provide
 errors similar to those associated with passing types through FFI function
 calls.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This feature is highly unsafe, and requires carefully written code to extract
@@ -216,7 +216,7 @@ this feature provides no more unsafety than the equivalent C code, and in fact
 provides several additional safety mechanisms, such as automatic handling of
 type promotions, lifetimes, copies, and cleanup.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 This represents one of the few C-compatible interfaces that Rust does not
@@ -242,7 +242,7 @@ signature, including `...args`, or listing the `VaList` or `VaList<'a>` type
 explicitly. The latter, however, would require care to ensure that code could
 not reference or alias the lifetime.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 When implementing this feature, we will need to determine whether the compiler

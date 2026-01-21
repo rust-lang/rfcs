@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1193](https://github.com/rust-lang/rfcs/pull/1193)
 - Rust Issue: [rust-lang/rust#27259](https://github.com/rust-lang/rust/issues/27259)
 
-# Summary
+## Summary
 
 Add a new flag to the compiler, `--cap-lints`, which set the maximum possible
 lint level for the entire crate (and cannot be overridden). Cargo will then pass
 `--cap-lints allow` to all upstream dependencies when compiling code.
 
-# Motivation
+## Motivation
 
 > Note: this RFC represents issue [#1029][issue]
 
@@ -36,7 +36,7 @@ never represent a memory safety issue (otherwise it'd be a real error) so it
 should be safe to ignore any new instances of a warning that didn't show up
 before.
 
-# Detailed design
+## Detailed design
 
 There are two primary changes propsed by this RFC, the first of which is a new
 flag to the compiler:
@@ -62,7 +62,7 @@ the compiler in a backwards compatible fashion. Modifications to existing lints
 to emit new warnings will not get triggered, and new lints will also be entirely
 suppressed **only for upstream dependencies**.
 
-## Cargo Backwards Compatibility
+### Cargo Backwards Compatibility
 
 This flag would be first non-1.0 flag that Cargo would be passing to the
 compiler. This means that Cargo can no longer drive a 1.0 compiler, but only a
@@ -76,7 +76,7 @@ simultaneously detect whether the flag is valid and learning about the version
 string. If this command fails and `rustc -vV` succeeds then Cargo will fall back
 to the old behavior of passing `-A warnings`.
 
-# Drawbacks
+## Drawbacks
 
 This RFC adds surface area to the command line of the compiler with a relatively
 obscure option `--cap-lints`. The option will almost never be passed by anything
@@ -94,7 +94,7 @@ Cargo may one day grow configuration to *not* pass this flag by default (e.g. go
 back to passing `-Awarnings` by default), which is yet again more expansion of
 API surface area.
 
-# Alternatives
+## Alternatives
 
 * Modifications to lints or additions to lints could be considered
   backwards-incompatible changes.
@@ -104,6 +104,6 @@ API surface area.
   example `-A everything`. This is semantically different enough from `-A foo`
   that it seems worth having a new flag.
 
-# Unresolved questions
+## Unresolved questions
 
 None yet.

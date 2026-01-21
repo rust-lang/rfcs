@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1461](https://github.com/rust-lang/rfcs/pull/1461)
 - Rust Issue: [rust-lang/rust#31766](https://github.com/rust-lang/rust/issues/31766)
 
-# Summary
+## Summary
 [summary]: #summary
 
 [RFC 1158](https://github.com/rust-lang/rfcs/pull/1158) proposed the addition
@@ -12,7 +12,7 @@ but was declined so that those APIs could be built up out of tree in the [net2
 crate](https://crates.io/crates/net2/). This RFC proposes pulling portions of
 net2's APIs into the standard library.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The functionality provided by the standard library's wrappers around standard
@@ -25,7 +25,7 @@ All of the methods to be added map directly to equivalent system calls.
 This does not cover the entirety of net2's APIs. In particular, this RFC does
 not propose to touch the builder types.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The following methods will be added:
@@ -108,19 +108,19 @@ errors. Instead, we have two options:
 Option 2 seems like the safer approach unless people feel comfortable with these
 APIs.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is a fairly significant increase in the surface areas of these APIs, and
 most users will never touch some of the more obscure functionality that these
 provide.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We can leave some or all of this functionality in net2.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 The stabilization path (see above).

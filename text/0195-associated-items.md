@@ -2,7 +2,7 @@
 - RFC PR #: [rust-lang/rfcs#195](https://github.com/rust-lang/rfcs/pull/195)
 - Rust Issue #: [rust-lang/rust#17307](https://github.com/rust-lang/rust/issues/17307)
 
-# Summary
+## Summary
 
 This RFC extends traits with *associated items*, which make generic programming
 more convenient, scalable, and powerful. In particular, traits will consist of a
@@ -27,7 +27,7 @@ summary of restrictions on the initial implementation of associated
 consts. Other than that modification, the proposal has not been changed to
 reflect newer Rust features or syntax.*
 
-# Motivation
+## Motivation
 
 A typical example where associated items are helpful is data structures like
 graphs, which involve at least three types: nodes, edges, and the graph itself.
@@ -72,7 +72,7 @@ fn distance<G: Graph>(graph: &G, start: &G::N, end: &G::N) -> uint { ... }
 The following subsections expand on the above benefits of associated items, as
 well as some others.
 
-## Associated types: engineering benefits for generics
+### Associated types: engineering benefits for generics
 
 As the graph example above illustrates, associated _types_ do not increase the
 expressiveness of traits _per se_, because you can always use extra type
@@ -100,7 +100,7 @@ engineering benefits:
   In today's Rust, by contrast, associated types can only be added by adding
   more type parameters to a trait, which breaks all code mentioning the trait.
 
-## Clearer trait matching
+### Clearer trait matching
 
 Type parameters to traits can either be "inputs" or "outputs":
 
@@ -175,7 +175,7 @@ With this approach, a trait declaration like `trait Add<Rhs> { ... }` is really
 defining a *family* of traits, one for each choice of `Rhs`. One can then
 provide a distinct `impl` for every member of this family.
 
-## Expressiveness
+### Expressiveness
 
 Associated types, lifetimes, and functions can already be expressed in today's
 Rust, though it is unwieldy to do so (as argued above).
@@ -215,7 +215,7 @@ trait Float {
 }
 ```
 
-## Why now?
+### Why now?
 
 The above motivations aside, it may not be obvious why adding associated types
 *now* (i.e., pre-1.0) is important. There are essentially two reasons.
@@ -253,9 +253,9 @@ But the second reason is for the library stabilization process:
   covered in future RFCs). Adding these traits would improve the quality and
   consistency of our 1.0 library APIs.
 
-# Detailed design
+## Detailed design
 
-## Trait headers
+### Trait headers
 
 Trait headers are written according to the following grammar:
 
@@ -287,7 +287,7 @@ an `impl`; conceptually, each distinct instantiation of the types yields a
 distinct trait. More details are given in the section "The input/output type
 distinction" below.
 
-## Trait bodies: defining associated items
+### Trait bodies: defining associated items
 
 Trait bodies are expanded to include three new kinds of items: consts, types,
 and lifetimes:
@@ -327,7 +327,7 @@ fn print_nodes<G: Graph>(g: &G) {
 }
 ```
 
-### Namespacing/shadowing for associated types
+#### Namespacing/shadowing for associated types
 
 Associated types may have the same name as existing types in scope, *except* for
 type parameters to the trait:
@@ -357,7 +357,7 @@ In the case of a name clash like `Foo` above, if the trait needs to refer to the
 outer `Foo` for some reason, it can always do so by using a `type` alias
 external to the trait.
 
-### Defaults
+#### Defaults
 
 Notice that associated consts and types both permit defaults, just as trait
 methods and functions can provide defaults.
@@ -429,7 +429,7 @@ We deal with this in a very simple way:
 * Otherwise, a trait implementor can selectively override individual default
   methods/functions, as they can today.
 
-## Trait implementations
+### Trait implementations
 
 Trait `impl` syntax is much the same as before, except that const, type, and
 lifetime items are allowed:
@@ -445,7 +445,7 @@ IMPL_ITEM =
 Any `type` implementation must satisfy all bounds and where clauses in the
 corresponding trait item.
 
-## Referencing associated items
+### Referencing associated items
 
 Associated items are referenced through paths. The expression path grammar was
 updated as part of [UFCS](https://github.com/rust-lang/rfcs/pull/132), but to
@@ -497,7 +497,7 @@ Vec<T>::Iter    // reference to the type `Iter` associated with `Vec<T>
                 //   as implemented by `Vec<T>`
 ```
 
-### Ways to reference items
+#### Ways to reference items
 
 Next, we'll go into more detail on the meaning of each kind of path.
 
@@ -520,9 +520,9 @@ impl<T> Container for Vec<T> {
 }
 ```
 
-#### Via an `ID_SEGMENT` prefix
+##### Via an `ID_SEGMENT` prefix
 
-##### When the prefix resolves to a type
+###### When the prefix resolves to a type
 
 The most common way to get at an associated item is through a type parameter
 with a trait bound:
@@ -573,7 +573,7 @@ fn pick<C: Container>(c: &C) -> Option<&<<C>::E>> { ... }
 
 The behavior of `TYPE_SEGMENT` prefixes is described in the next subsection.
 
-##### When the prefix resolves to a trait
+###### When the prefix resolves to a trait
 
 However, it is possible for an `ID_SEGMENT` prefix to resolve to a *trait*,
 rather than a type. In this case, the behavior of an `ID_SEGMENT` varies from
@@ -605,7 +605,7 @@ resolve since there is no way to tell which `impl` to use. A path like
 fn trait_empty<C: Container>() -> C;
 ```
 
-#### Via a `TYPE_SEGMENT` prefix
+##### Via a `TYPE_SEGMENT` prefix
 
 > The following text is *slightly changed* from the
 > [UFCS RFC](https://github.com/rust-lang/rfcs/pull/132).
@@ -635,7 +635,7 @@ Given a path `<T>::m::...`:
    - Otherwise, rewrite the path to `<T as Trait>::m::...` and
      continue.
 
-#### Via a `IMPL_SEGMENT` prefix
+##### Via a `IMPL_SEGMENT` prefix
 
 > The following text is *somewhat different* from the
 > [UFCS RFC](https://github.com/rust-lang/rfcs/pull/132).
@@ -737,7 +737,7 @@ function knows nothing about the associated type `G::N`. However, a *client* of
 `pick_node` that instantiates it with a particular concrete graph type will also
 know the concrete type of the value returned from the function -- here, `MyNode`.
 
-## Scoping of `trait` and `impl` items
+### Scoping of `trait` and `impl` items
 
 Associated types are frequently referred to in the signatures of a trait's
 methods and associated functions, and it is natural and convenient to refer to
@@ -835,7 +835,7 @@ trait Foo<Input> {
 }
 ```
 
-## Constraining associated types
+### Constraining associated types
 
 Associated types are not treated as parameters to a trait, but in some cases a
 function will want to constrain associated types in some way. For example, as
@@ -916,7 +916,7 @@ referencing it.
 Output constraints are a handy shorthand when using trait bounds, but they are a
 *necessity* for trait objects, which we discuss next.
 
-## Trait objects
+### Trait objects
 
 When using trait objects, the `Self` type is "erased", so different types
 implementing the trait can be used under the same trait object type:
@@ -978,7 +978,7 @@ part of trait objects. But it leaves wiggle room to relax this restriction
 later on: trait object types that are not allowed under this design can be given
 meaning in some later design.
 
-## Inherent associated items
+### Inherent associated items
 
 All associated items are also allowed in inherent `impl`s, so a definition like
 the following is allowed:
@@ -1014,13 +1014,13 @@ Note, however, that output constraints do not make sense for inherent outputs:
 MyGraph<N = SomeNodeType>
 ```
 
-## The input/output type distinction
+### The input/output type distinction
 
 When designing a trait that references some unknown type, you now have the
 option of taking that type as an input parameter, or specifying it as an output
 associated type. What are the ramifications of this decision?
 
-### Coherence implications
+#### Coherence implications
 
 Input types are used when determining which `impl` matches, even for the same
 `Self` type:
@@ -1078,7 +1078,7 @@ with the same set of types for the input type parameters.
 See the [trait reform RFC](https://github.com/rust-lang/rfcs/pull/48) for more
 discussion of these properties.
 
-### Type inference implications
+#### Type inference implications
 
 Finally, *output* type parameters can be inferred/resolved as soon as there is
 a matching `impl` based on the input type parameters. Because of the
@@ -1095,7 +1095,7 @@ In practice, these inference benefits can be quite valuable. For example, in the
 immediately known once the input types are known, which can avoid the need for
 type annotations.
 
-## Limitations
+### Limitations
 
 The main limitation of associated items as presented here is about associated
 *types* in particular. You might be tempted to write a trait like the following:
@@ -1142,7 +1142,7 @@ changes needed to stabilize our existing traits (and add a few key others),
 while HKTs will allow us to define important traits in the future but are not
 necessary for 1.0.
 
-### Encoding higher-kinded types
+#### Encoding higher-kinded types
 
 That said, it's worth pointing out that variants of higher-kinded types can be
 encoded in the system being proposed here.
@@ -1200,14 +1200,14 @@ trait Mappable
 While the above demonstrates the versatility of associated types and `where`
 clauses, it is probably too much of a hack to be viable for use in `libstd`.
 
-### Associated consts in generic code
+#### Associated consts in generic code
 
 If the value of an associated const depends on a type parameter (including
 `Self`), it cannot be used in a constant expression. This restriction will
 almost certainly be lifted in the future, but this raises questions outside the
 scope of this RFC.
 
-# Staging
+## Staging
 
 Associated lifetimes are probably not necessary for the 1.0 timeframe. While we
 currently have a few traits that are parameterized by lifetimes, most of these
@@ -1216,9 +1216,9 @@ can go away once DST lands.
 On the other hand, associated lifetimes are probably trivial to implement once
 associated types have been implemented.
 
-# Other interactions
+## Other interactions
 
-## Interaction with implied bounds
+### Interaction with implied bounds
 
 As part of the
 [implied bounds](http://smallcultfollowing.com/babysteps/blog/2014/07/06/implied-bounds/)
@@ -1236,7 +1236,7 @@ fn pick_node<G: Graph>(g: &G) -> &<G as Graph>::N
 
 But this feature can easily be added later, as part of a general implied bounds RFC.
 
-## Future-proofing: specialization of `impl`s
+### Future-proofing: specialization of `impl`s
 
 In the future, we may wish to relax the "overlapping instances" rule so that one
 can provide "blanket" trait implementations and then "specialize" them for
@@ -1283,9 +1283,9 @@ implementations; instead, output types would only be visible when all input
 types were concretely known. This approach is backwards-compatible with the RFC,
 and is probably a good idea in any case.
 
-# Alternatives
+## Alternatives
 
-## Multidispatch through tuple types
+### Multidispatch through tuple types
 
 This RFC clarifies trait matching by making trait type parameters inputs to
 matching, and associated types outputs.
@@ -1356,7 +1356,7 @@ Add::add(some_int, some_complex)
 On balance, the generics-based approach seems like a better fit for the language
 design, especially in its interaction with methods and the object system.
 
-## A backwards-compatible version
+### A backwards-compatible version
 
 Yet another alternative would be to allow trait type parameters to be either
 inputs or outputs, marking the inputs with a keyword `in`:
@@ -1375,9 +1375,9 @@ like `Sum` above into associated types later.
 This is perhaps a reasonable fallback, but it seems better to introduce a clean
 design with both multidispatch and associated items together.
 
-# Unresolved questions
+## Unresolved questions
 
-## Super traits
+### Super traits
 
 This RFC largely ignores super traits.
 
@@ -1390,13 +1390,13 @@ Note that this treatment of super traits is, in particular, consistent with the
 proposed scoping rules, which do not bring items from super traits into scope in
 the body of a subtrait; they must be accessed via `Self::item_name`.
 
-## Equality constraints in `where` clauses
+### Equality constraints in `where` clauses
 
 This RFC allows equality constraints on types for associated types, but does not
 propose a similar feature for `where` clauses. That will be the subject of a
 follow-up RFC.
 
-## Multiple trait object bounds for the same trait
+### Multiple trait object bounds for the same trait
 
 The design here makes it possible to write bounds or trait objects that mention
 the same trait, multiple times, with different inputs:
@@ -1411,7 +1411,7 @@ bounds, but may have implications for vtables that make it problematic for trait
 objects. Whether or not such trait combinations are allowed will likely depend
 on implementation concerns, which are not yet clear.
 
-## Generic associated consts in match patterns
+### Generic associated consts in match patterns
 
 It seems desirable to allow constants that depend on type parameters in match
 patterns, but it's not clear how to do so while still checking exhaustiveness
@@ -1420,7 +1420,7 @@ where clause, to constrain associated constant values.
 
 For now, we simply defer the question.
 
-## Generic associated consts in array sizes
+### Generic associated consts in array sizes
 
 It would be useful to be able to use trait-associated constants in generic code.
 

@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2515](https://github.com/rust-lang/rfcs/pull/2515)
 - Rust Issue: [rust-lang/rust#63063](https://github.com/rust-lang/rust/issues/63063)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow type aliases and associated types to use `impl Trait`, replacing the prototype `existential type` as a way to declare type aliases and associated types for opaque, uniquely inferred types.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 2071](https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-existential-types.md) described a method to define opaque types satisfying certain bounds (described in RFC 2071 and elsewhere as *existential types*). It left open the question of what the precise concrete syntax for the feature should be, opting to use a placeholder syntax, `existential type`. Since then, a clearer picture has emerged as to how to rephrase `impl Trait` in terms of type inference, rather than existentially-quantified types, which also provides new motivation for a proposed concrete syntax making use of the existing and familiar syntax `impl Trait`.
@@ -29,7 +29,7 @@ both as the syntax for type aliases and also for associated types, and that exis
 
 Furthermore, this RFC proposes a strategy by which the terminology surrounding `impl Trait` might be transitioned from existentially-type theoretic terminology to type inference terminology, reducing the cognitive complexity of the feature.
 
-## Semantic Justification
+### Semantic Justification
 Currently, each occurrence `impl Trait` serves two complementary functional purposes.
 1. It defines an opaque type `T` (that is, a new type whose precise identification is hidden) satisfying (trait) bounds.
 2. It infers the precise type for `T` (that must satisfy the bounds for `T`), based on its occurrences.
@@ -77,7 +77,7 @@ type Foo = __Foo_alias;
 
 This is functionally identical to `existential type`, but remains consistent with `impl Trait` where the original generated type is technically still hidden (exposed through the type alias).
 
-### Aliasing `impl Trait` in function signatures
+#### Aliasing `impl Trait` in function signatures
 Note that though the type alias above is not contextual, it can be used to alias any existing occurrence of `impl Trait` in return position, because the type it aliases is inferred.
 
 ```rust
@@ -102,9 +102,9 @@ Using `Baz` in multiple locations constrains all occurrences of the inferred typ
 
 Notice that we can describe the type alias syntax using features that are already present in Rust, rather than introducing any new constructs.
 
-## Learnability Justification
+### Learnability Justification
 
-###  Reduced technical and theoretic complexity
+####  Reduced technical and theoretic complexity
 As a relatively recently stabilised feature, there is not significant (official) documentation on `impl Trait` so far. Apart from the various RFC threads and internal discussions, `impl Trait` [is described in a blog post](https://blog.rust-lang.org/2018/05/10/Rust-1.26.html) and in the [Rust 2018 edition guide](https://rust-lang-nursery.github.io/edition-guide/2018/transitioning/traits/impl-trait.html). The edition guide primary describes `impl Trait` intuitively, in terms of use cases. It does however contain the following:
 
 > `impl Trait` in argument position are universal (universally quantified types). Meanwhile, `impl Trait` in return position are existentials (existentially quantified types).
@@ -113,14 +113,14 @@ As a relatively recently stabilised feature, there is not significant (official)
 
 In any model that does not unify the meaning of `impl Trait` in various positions, these technical explanations are likely to arise, as they provide the original motivation for treating `impl Trait` nonhomogeneously. From this perspective, it is valuable from documentation and explanatory angles to unify the uses of `impl Trait` so that these types of questions never even arise. Then we would have the ability to transition entirely away from the topic of existentially-quantified types.
 
-### Natural syntax
+#### Natural syntax
 Having explained `impl Trait` solely in terms of type inference (or less formal equivalent explanations), the syntax proposed here is the only natural syntax. Indeed, while discussing the syntax here, many express surprise that this syntax has ever been under question (often from people who think of `impl Trait` from an intuition about the feature's behaviour, rather than thinking about the existential type perspective).
 
 The argument that is occasionally put forward: that this syntax makes type aliases (or their uses) somehow contextual, is also addressed by the above interpretation. Indeed, every use of an individual `impl Trait` type alias refers to the same type. This argument is [detailed and addressed further in **Drawbacks**](#drawbacks).
 
 The following section provides a documentation-style introductory explanation for `impl Trait` that justifies the type alias syntax proposed here.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 [Adapted from the [Rust 2018 edition guide](https://rust-lang-nursery.github.io/edition-guide/2018/transitioning/traits/impl-trait.html#more-details).]
@@ -147,12 +147,12 @@ fn bar() -> impl Trait {
 type Baz = impl Trait;
 ```
 
-## How does `impl Trait` work?
+### How does `impl Trait` work?
 Whenever you write `impl Trait`, in any of the three places, you're saying that you have *some type* that implements `Trait`, but you don't want to expose any more information than that. The concrete type that implements `Trait` will be hidden, but you'll still be able to treat the type as if it implements `Trait`: calling trait methods and so on.
 
 The compiler will infer the concrete type, but other code won't be able to make use of that fact. This is straightforward to describe, but it manifests a little differently depending on the place it's used, so let's take a look at some examples.
 
-## Argument-position
+### Argument-position
 ```rust
 trait Trait {}
 
@@ -179,7 +179,7 @@ fn foo<T: Trait>(arg: T) {
 
 The only difference is that you can't use turbo-fish syntax for the first definition (as turbo-fish syntax only works with explicit generic type parameters). Thus, it's worth being mindful that switching between `impl Trait` and generic type parameters can consistute a breaking change for users of your code.
 
-## Return-position
+### Return-position
 ```rust
 trait Trait {}
 
@@ -198,7 +198,7 @@ This is useful especially for two things:
 
 [Here, we would also provide a more useful example, as in the [Rust 2018 edition guide](https://rust-lang-nursery.github.io/edition-guide/2018/transitioning/traits/impl-trait.html#impl-trait-and-closures).]
 
-## Type alias
+### Type alias
 ```rust
 trait Trait {}
 
@@ -281,7 +281,7 @@ Here, anything that makes use of `Foo` knows that `Foo::Assoc` implements `Debug
 
 [Eventually, we would also describe the use of `impl Trait` in `let`, `const` and `static` bindings, but as they are as-yet unimplemented and function the same as return-type `impl Trait`, they haven't been included here.]
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Since RFC 2071 was accepted, the initial implementation of `existential type` [has already been completed](https://github.com/rust-lang/rust/pull/52024). This RFC would replace the syntax of `existential type`, from:
@@ -332,7 +332,7 @@ type Bar<'a> = impl Debug;
 fn get_bar<'a>(y: &'a ()) -> Bar<'a> { UnitRefWrapper(y) }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This feature has already been accepted under a placeholder syntax, so the only reason not to do this is if another syntax is chosen as a better choice, from an ergonomic and consistency perspective.
@@ -373,7 +373,7 @@ It is likely that a misunderstanding of the nature of `impl Trait` in argument o
 
 Since we will teach `impl Trait` cohesively (that is, argument-position, return-position and type alias `impl Trait` at the same time), it is unlikely that users who understand `impl Trait` will be confused about `impl Trait` type aliases. (What's more, examples in the reference will illustrate this clearly.)
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 The justification for the type alias syntax proposed here comes down to two key motvations:
 - Consistency
@@ -395,7 +395,7 @@ The other alternatives commonly given are:
 - `type Foo: Bar;`, which suffers from complete and confusing inconsistency with associated types. Although on the surface, they can appear similar to existential types, by virtue of being a declaration that "some type exists [that will be provided]", they are more closely related to type parameters (which also declare that "some type exists that will be provided"), though type parameters with [Haskell-style functional dependencies](https://wiki.haskell.org/Functional_dependencies). This is sure to lead to confusions as users wonder why two features with identical syntax turn out to behave so differently.
 - Some other, new syntax for declaring a new type that acts in the same way as `existential type`. Though a new syntax would not be inconsistent, it would not be minimal, given that we can achieve the functionality using existing syntax (`impl Trait`). What's more, if the syntax proposed here were *not* added alongside this new syntax, this would lead to inconsistencies with `impl Trait`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None

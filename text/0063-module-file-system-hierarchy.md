@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#63](https://github.com/rust-lang/rfcs/pull/63)
 - Rust Issue: [rust-lang/rust#14180](https://github.com/rust-lang/rust/issues/14180)
 
-# Summary
+## Summary
 
 The rules about the places `mod foo;` can be used are tightened to only permit
 its use in a crate root and in `mod.rs` files, to ensure a more sane
@@ -13,7 +13,7 @@ not take away one's ability to shoot oneself in the foot should one really
 desire to; it just removes almost all of the rope, leaving only mixed
 metaphors.
 
-# Motivation
+## Motivation
 
 It is a common newbie mistake to write things like this:
 
@@ -58,11 +58,11 @@ without warning the user. The alterations contained herein ensure that there is
 no situation where such double loading can occur without deliberate intent via
 `#[path = "….rs"]`.
 
-# Drawbacks
+## Drawbacks
 
 None known.
 
-# Detailed design
+## Detailed design
 
 When a `mod foo;` statement is used, the compiler attempts to find a suitable
 file. At present, it just blindly seeks for `foo.rs` or `foo/mod.rs` (relative
@@ -80,7 +80,7 @@ conditions hold:
 In layman's terms, the file under parsing must "own" the directory, so to
 speak.
 
-# Alternatives
+## Alternatives
 
 The rationale is covered in the summary. This is the simplest repair to the
 current lack of structure; all alternatives would be more complex and invasive.
@@ -89,6 +89,6 @@ One non-invasive alternative is a lint which would detect double loads. This is
 less desirable than the solution discussed in this RFC as it doesn't fix the
 underlying problem which can, fortunately, be fairly easily fixed.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

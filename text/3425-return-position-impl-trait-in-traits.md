@@ -4,14 +4,14 @@
 - Rust Issue: [rust-lang/rust#91611](https://github.com/rust-lang/rust/issues/91611)
 - Initiative: [impl trait initiative](https://github.com/rust-lang/impl-trait-initiative)
 
-# Summary
+## Summary
 [summary]: #summary
 
 * Permit `impl Trait` in fn return position within traits and trait impls.
 * Allow `async fn` in traits and trait impls to be used interchangeably with its equivalent `impl Trait` desugaring.
 * Allow trait impls to `#[refine]` an `impl Trait` return type with added bounds or a concrete type.[^refine]
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The `impl Trait` syntax is currently accepted in a variety of places within the Rust language to mean "some type that implements `Trait`" (for an overview, see the [explainer] from the impl trait initiative). For function arguments, `impl Trait` is [equivalent to a generic parameter][apit] and it is accepted in all kinds of functions (free functions, inherent impls, traits, and trait impls).
@@ -22,7 +22,7 @@ In return position, `impl Trait` [corresponds to an opaque type whose value is i
 [apit]: https://rust-lang.github.io/impl-trait-initiative/explainer/apit.html
 [rpit]: https://rust-lang.github.io/impl-trait-initiative/explainer/rpit.html
 
-## Example use case
+### Example use case
 
 The use case for `-> impl Trait` in trait functions is similar to its use in other contexts: traits often wish to return "some type" without specifying the exact type. As a simple example that we will use through the RFC, consider the `NewIntoIterator` trait, which is a variant of the existing `IntoIterator` that uses `impl Iterator` as the return type:
 
@@ -33,7 +33,7 @@ trait NewIntoIterator {
 }
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 *This section assumes familiarity with the [basic semantics of impl trait in return position][rpit].*
@@ -122,10 +122,10 @@ impl UsesDesugaredFn for MyType {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Equivalent desugaring for traits
+### Equivalent desugaring for traits
 
 Each `-> impl Trait` notation appearing in a trait fn return type is effectively desugared to an anonymous associated type. In this RFC, we will use the placeholder name `$` when illustrating desugarings and the like.
 
@@ -148,7 +148,7 @@ trait NewIntoIterator {
 }
 ```
 
-## Equivalent desugaring for trait impls
+### Equivalent desugaring for trait impls
 
 Each `impl Trait` notation appearing in a trait impl fn return type is desugared to the same anonymous associated type `$` defined in the trait along with a function that returns it. The value of this associated type `$` is an `impl Trait`.
 
@@ -176,7 +176,7 @@ impl NewIntoIterator for Vec<u32> {
 
 The desugaring works the same for provided methods of traits.
 
-## Scoping rules for generic parameters
+### Scoping rules for generic parameters
 
 We say a generic parameter is "in scope" for an `impl Trait` type if the actual revealed type is allowed to name that parameter. The scoping rules for return position `impl Trait` in traits are the same as [those for return position `impl Trait` generally][scoping]: All type and const parameters are considered in-scope, while lifetime parameters are only considered in-scope if they are mentioned in the `impl Trait` type directly.
 
@@ -226,7 +226,7 @@ trait RefIterator for Vec<u32> {
 }
 ```
 
-## Validity constraint on impls
+### Validity constraint on impls
 
 Given a trait method where `impl Trait` appears in return position,
 
@@ -347,7 +347,7 @@ impl<T> IntoSendIterator for Vec<T> {
 }
 ```
 
-### Interaction with `async fn` in trait
+#### Interaction with `async fn` in trait
 
 This RFC modifies the “Static async fn in traits” RFC so that async fn in traits may be satisfied by implementations that return `impl Future<Output = ...>` as long as the return-position impl trait type matches the async fn's desugared impl trait with the same rules as above.
 
@@ -368,7 +368,7 @@ impl Trait for MyType {
 
 Similarly, the equivalent `-> impl Future` signature in a trait can be satisfied by using `async fn` in an impl of that trait.
 
-## Legal positions for `impl Trait` to appear
+### Legal positions for `impl Trait` to appear
 
 `impl Trait` can appear in the return type of a trait method in all the same positions as it can in a free function.
 
@@ -415,22 +415,22 @@ trait Nested {
 }
 ```
 
-## Dyn safety
+### Dyn safety
 
 To start, traits that use `-> impl Trait` will not be considered dyn safe, *unless the method has a `where Self: Sized` bound*. This is because dyn types currently require that all associated types are named, and the `$` type cannot be named. The other reason is that the value of `impl Trait` is often a type that is unique to a specific impl, so even if the `$` type *could* be named, specifying its value would defeat the purpose of the `dyn` type, since it would effectively identify the dynamic type.
 
 On the other hand, if the method has a `where Self: Sized` bound, the method will not exist on `dyn Trait` and therefore there will be no type to name.
 
-### Dyn safety for `async fn` in trait
+#### Dyn safety for `async fn` in trait
 
 This RFC modifies the "Static async fn in traits" RFC to allow traits with `async fn` to be dyn-safe if the method has a `where Self: Sized` bound. This is consistent with how `async fn foo()` desugars to `fn foo() -> impl Future`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This section discusses known drawbacks of the proposal as presently designed and (where applicable) plans for mitigating them in the future.
 
-## Cannot migrate off of impl Trait
+### Cannot migrate off of impl Trait
 
 In this RFC, if you use `-> impl Trait` in a trait definition, you cannot "migrate away" from that without changing all impls. In other words, we cannot evolve:
 
@@ -453,7 +453,7 @@ trait NewIntoIterator {
 
 without breaking semver compatibility for your trait. The [future possibilities](#future-possibilities) section discusses one way to resolve this, by permitting impls to elide the definition of associated types whose values can be inferred from a function return type.
 
-## Clients of the trait cannot name the resulting associated type, limiting extensibility
+### Clients of the trait cannot name the resulting associated type, limiting extensibility
 
 [As @Gankra highlighted in a comment on a previous RFC][gankra], the traditional `IntoIterator` trait permits clients of the trait to name the resulting iterator type and apply additional bounds:
 
@@ -471,7 +471,7 @@ The `NewIntoIterator` trait used as an example in this RFC, however, doesn't sup
 
 The [future possibilities](#future-possibilities) section discusses a planned extension to support naming the type returned by an impl trait, which could work to overcome this limitation for clients.
 
-## Difference in scoping rules from `async fn`
+### Difference in scoping rules from `async fn`
 
 `async fn` behaves [slightly differently][ref-async-captures] than return-position `impl Trait` when it comes to the scoping rules defined above. It considers _all_ lifetime parameters in-scope for the returned future.
 
@@ -558,7 +558,7 @@ This difference is pre-existing, but it's worth highlighting in this RFC the imp
 
 We leave open the question of whether to stabilize these two features together. In the future we can provide a nicer syntax for dealing with these cases, or remove the difference in scoping rules altogether.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ### Does auto trait leakage still occur for `-> impl Trait` in traits?
@@ -645,23 +645,23 @@ Therefore, if we were writing `IntoIterator` today, it would probably use `-> im
 
 The same is not true for `Iterator::Item`: because `Item` is so central to what an `Iterator` is, and because it rarely makes sense to use an opaque type for the item, it would remain an explicit associated type.
 
-# Prior art
+## Prior art
 
-## Should library traits migrate to use `impl Trait`?
+### Should library traits migrate to use `impl Trait`?
 
 Potentially, but not necessarily. Using `impl Trait` in traits imposes some limitations on generic code referencing those traits. While `impl Trait `desugars internally to an associated type, that associated type is anonymous and cannot be directly referenced by users, which prevents them from putting bounds on it or naming it for use in struct declarations. This is similar to `-> impl Trait` in free and inherent functions, which also returns an anonymous type that cannot be directly named. Just as in those cases, this likely means that widely used libraries should avoid the use of `-> impl Trait` and prefer to use an explicit named associated type, at least until some of the "future possibilities" are completed. However, this decision is best reached on a case-by-case basis: the real question is whether the bounds named in the trait will be sufficient, or whether users will wish to put additional bounds. In a trait like `IntoIterator`, for example, it is common to wish to bound the resulting iterator with additional traits, like `ExactLenIterator`. But given a trait that returns `-> impl Debug`, this concern may not apply.
 [prior-art]: #prior-art
 
 There are a number of crates that do desugaring like this manually or with procedural macros. One notable example is [real-async-trait](https://crates.io/crates/real-async-trait).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should we stabilize this feature together with `async fn` to mitigate hazards of writing a trait that is not forwards-compatible with its desugaring? (See [drawbacks].)
 - Resolution of [#112194: RPITIT is allowed to name any in-scope lifetime parameter, unlike inherent RPIT methods](https://github.com/rust-lang/rust/issues/112194)
 - Should we limit the legal positions for `impl Trait` to positions that are nameable using upcoming features like return-type notation (RTN)? (See [this comment](https://github.com/rust-lang/rfcs/pull/3425#pullrequestreview-1467880633) for an example.)
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 ### Naming return types

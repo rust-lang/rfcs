@@ -4,17 +4,15 @@
 - Rust Issue: [rust-lang/rust#48075](https://github.com/rust-lang/rust/issues/48075)
 
 
-Summary
--------
+## Summary
 
 Add a repetition specifier to macros to repeat a pattern at most once: `$(pat)?`. Here, `?` behaves like `+` or `*` but represents at most one repetition of `pat`.
 
-Motivation
-----------
+## Motivation
 
 There are two specific use cases in mind.
 
-## Macro rules with optional parts
+### Macro rules with optional parts
 
 Currently, you just have to write two rules and possibly have one "desugar" to the other.
 
@@ -41,7 +39,7 @@ macro_rules! foo {
 }
 ```
 
-## Trailing commas
+### Trailing commas
 
 Currently, the best way to make a rule tolerate trailing commas is to create another identical rule that has a comma at the end:
 
@@ -74,8 +72,7 @@ macro_rules! foo {
 }
 ```
 
-Guide-level explanation
------------------------
+## Guide-level explanation
 
 In Rust macros, you specify some "rules" which define how the macro is used and what it transforms to. For each rule, there is a pattern and a body:
 
@@ -119,8 +116,7 @@ The same can be done for `+` and `?`.
 
 The `?` operator is particularly useful for making macro rules with optional components in the invocation or for making macros tolerate trailing commas.
 
-Reference-level explanation
----------------------------
+## Reference-level explanation
 
 `?` is identical to `+` and `*` in use except that it represents "at most once" repetition.
 
@@ -128,14 +124,12 @@ Introducing `?` into the grammar for macro repetition introduces an easily fixab
 
   > There is ambiguity: $($x:ident)?+ today matches a?b?c and not a+. Fortunately this is easy to resolve: you just look one more token ahead and always treat ?* and ?+ to mean separate by the question mark token.
 
-Drawbacks
----------
+## Drawbacks
 While there are grammar ambiguities, they can be easily fixed.
 
 Also, for patterns that use `*`, `?` is not a perfect solution: `$(pat),* $(,)?` still allows `,` which is a bit weird. However, this is still an improvement over `$(pat),* $(,)*` which allows `,,,,,`.
 
-Rationale and Alternatives
---------------------------
+## Rationale and Alternatives
 
 The implementation of `?` ought to be very similar to `+` and `*`. Only the parser needs to change; to the author's knowledge, it would not be technically difficult to implement, nor would it add much complexity to the compiler.
 
@@ -170,7 +164,6 @@ It has also been suggested to add `{M, N}` (at least `M` but no more than `N`) e
 
 Finally, we could do nothing and wait for macros 2.0. However, it will be a while (possibly years) before that lands in stable rust. The current implementation and proposals are not very well-defined yet. Having something until that time would be nice to fix this paper cut. This proposal does not add a lot of complexity, but does nicely fill the gap.
 
-Unresolved Questions
---------------------
+## Unresolved Questions
 
 - Should the `?` Kleene operator accept a separator? Adding a separator is completely meaningless (since we don't accept trailing separators, and `?` can accept "at most one" repetition), but allowing it is consistent with `+` and `*`. Currently, we allow a separator. We could also make it an error or lint.

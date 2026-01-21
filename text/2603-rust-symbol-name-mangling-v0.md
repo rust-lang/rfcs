@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2603](https://github.com/rust-lang/rfcs/pull/2603)
 - Rust Issue: [rust-lang/rust#60705](https://github.com/rust-lang/rust/issues/60705)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes a new mangling scheme that describes what the symbol
@@ -20,7 +20,7 @@ In the future it _could_ be part of both and it is designed to be
 stable and extensible; but for the time being it would still be an
 implementation detail of the Rust compiler.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Due to its ad-hoc nature, the compiler's current name mangling scheme
@@ -57,14 +57,14 @@ The proposed scheme solves these problems:
 These properties should make it easier for third party tools to work
 with Rust binaries.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The following section will lay out the requirements for a name mangling
 scheme and then introduce the actual scheme through a series of ever
 more complex examples.
 
-## Requirements for a Symbol Mangling Scheme
+### Requirements for a Symbol Mangling Scheme
 
 A symbol mangling scheme has a few goals, one of them essential,
 the rest of them desirable. The essential one is:
@@ -129,13 +129,13 @@ The RFC also has a couple of non-goals:
    to the user.
 
 
-## The Mangling Scheme by Example
+### The Mangling Scheme by Example
 
 This section will develop an overview of the mangling scheme by walking
 through a number of examples. We'll start with the simplest case -- and
 will see how that already involves things that might be surprising.
 
-### Free-standing Functions and Statics
+#### Free-standing Functions and Statics
 
 A free-standing function is fully identified via its absolute path.
 For example, the following function
@@ -239,7 +239,7 @@ The final symbol name for the function would also include the prefix
 ```
 
 
-### Generic Functions
+#### Generic Functions
 
 Each monomorphization of a generic function has its own symbol name.
 The monomorphizations are disambiguated by the list of concrete generic
@@ -307,7 +307,7 @@ _RINvNtC3std3mem8align_ofjEC3bar (for crate "bar")
 ```
 
 
-### Closures and Closure Environments
+#### Closures and Closure Environments
 
 The scheme needs to be able to generate symbol names for the function
 containing the code of a closure and it needs to be able to refer to
@@ -343,7 +343,7 @@ a prefix). Their full names would then be `NCNvNtC7mycrate3foo3bar0`
 and `NCNvNtC7mycrate3foo3bars_0` respectively.
 
 
-### Methods
+#### Methods
 
 Methods are nested within `impl` or `trait` items. As such it would be
 possible to construct their symbol names as paths like
@@ -394,7 +394,7 @@ Here are some examples for complete symbol names:
 ```
 
 
-### Items Within Generic Impls
+#### Items Within Generic Impls
 
 In Rust one can define items within generic items, e.g. functions or
 impls, like in the following example:
@@ -467,7 +467,7 @@ _RNvNvXs3_C7mycrateINtC7mycrate3FoopEINtNtC3std7convert4FrompE4from3MSG
 Like other disambiguation information, this path would usually not actually
 be shown by demanglers.
 
-### Unicode Identifiers
+#### Unicode Identifiers
 
 Rust allows Unicode identifiers but our character set is restricted
 to ASCII alphanumerics, and `_`. In order to transcode the former to
@@ -511,7 +511,7 @@ _RNvNtNtC7mycrateu8gdel_5qa6escher4bach
               Unicode component
 ```
 
-### Compression/Substitution
+#### Compression/Substitution
 
 The length of symbol names has an influence on how much work the compiler,
 linker, and loader have to perform. The shorter the names, the better.
@@ -594,7 +594,7 @@ _RINtNtC3std4iter5ChainINtB2_3ZipINtNtB4_3vec8IntoItermEBt_EE
 
 Back references have the form `B<base-62-number>_`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The reference-level explanation consists of three parts:
@@ -609,7 +609,7 @@ compression of names, but it does not have to care about how the
 compiler generates mangled names.
 
 
-## Syntax Of Mangled Names
+### Syntax Of Mangled Names
 
 The syntax of mangled names is given in extended Backus-Naur form:
 
@@ -753,7 +753,7 @@ Mangled names conform to the following grammar:
 <vendor-specific-suffix> = ("." | "$") <suffix>
 ```
 
-### Namespace Tags
+#### Namespace Tags
 
 Namespaces are identified by an implementation defined single character tag
 (the `<namespace>` production). Only closures (`C`) and shims (`S`) have a
@@ -769,7 +769,7 @@ order not to force the compiler to waste processing time on re-constructing
 different disambiguation indices, the internal unspecified "namespaces" are
 used. This may change in the future.
 
-### Type-Level Constants
+#### Type-Level Constants
 
 As described above, the grammar encodes constant values via the
 `<const-data> = {<hex-digit>} "_"` production, where `{<hex-digit>}` is
@@ -782,7 +782,7 @@ constants (i.e. not just integers). This RFC suggests to develop a
 proper mangling for these as part of the future const-generics work,
 and, for now, only define a mangling for integer values.
 
-### Punycode Identifiers
+#### Punycode Identifiers
 
 Punycode generates strings of the form `([[:ascii:]]+-)?[[:alnum:]]+`.
 This is problematic because of the `-` character, which is not in the
@@ -806,7 +806,7 @@ With this post-processing in place the Punycode strings can be treated
 like regular identifiers and need no further special handling.
 
 
-### Vendor-specific suffix
+#### Vendor-specific suffix
 
 Similarly to the [Itanium C++ ABI mangling scheme][itanium-mangling-structure],
 a symbol name containing a period (`.`) or a dollar sign (`$`) represents a
@@ -821,7 +821,7 @@ the same semantics as the original.
 
 [itanium-mangling-structure]: https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling-structure
 
-## Compression
+### Compression
 
 Symbol name compression works by substituting parts of the mangled
 name that have already been seen for a back reference. Compression
@@ -859,7 +859,7 @@ node ends. This is ensured by not allowing optional or
 repeating elements at the end of substitutable productions.
 
 
-### Decompression
+#### Decompression
 
 Decompression too is built directly into demangling/parsing. When a back
 reference is encountered, we decode the referenced position and use a
@@ -884,7 +884,7 @@ demangler does not need to duplicate the mangler's substitution indexing logic,
 something that can become quite complex (as demonstrated by the compression
 scheme proposed in the initial version of this RFC).
 
-### A Note On Implementing Efficient Demanglers
+#### A Note On Implementing Efficient Demanglers
 
 The mangling syntax is constructed in a way that allows for implementing
 efficient demanglers:
@@ -908,7 +908,7 @@ Punycode can complicate decoding slightly because it needs dynamic memory
 allocation in the general case but it can be implemented with an on-stack
 buffer for a reasonable maximum supported length).
 
-## Mapping Rust Language Entities to Symbol Names
+### Mapping Rust Language Entities to Symbol Names
 
 This RFC suggests the following mapping of Rust entities to mangled names:
 
@@ -926,7 +926,7 @@ This RFC suggests the following mapping of Rust entities to mangled names:
   order to save space.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Why should we *not* do this?
@@ -938,7 +938,7 @@ Why should we *not* do this?
   proposed here because it exposes more information.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The alternatives considered are:
@@ -973,7 +973,7 @@ The alternatives considered are:
     pull the `zstd` specification into the mangling scheme specification,
     as well as the pre-trained dictionary.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 One of the major modern mangling schemes with a public specification is the
@@ -994,7 +994,7 @@ is taken from the [Swift][swift-gh] programming language's
 [swift-mangling]: https://github.com/apple/swift/blob/master/docs/ABI/Mangling.rst#identifiers
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 ### Punycode vs UTF-8
@@ -1049,7 +1049,7 @@ than it is for other languages that don't have a concept of
 library/crate metadata.
 
 
-# Appendix A - Suggested Demangling
+## Appendix A - Suggested Demangling
 
 This RFC suggests that names are demangled to a form that matches Rust
 syntax as it is used in source code, compiler error messages and `rustdoc`:
@@ -1083,7 +1083,7 @@ syntax as it is used in source code, compiler error messages and `rustdoc`:
    disambiguator is the only thing identifying them. The suggested
    demangling for closures is thus `{closure}[<index>]`.
 
-# Appendix B - Examples
+## Appendix B - Examples
 
 We assume that all examples are defined in a crate named `mycrate[1234]`.
 
@@ -1156,7 +1156,7 @@ pub static QUUX: u32 = {
 - mangled: `_RINxC3std3fooTNyB4_3BarBe_EBd_E`
 
 
-# Appendix C - Change LOG
+## Appendix C - Change LOG
 - Removed mention of Itanium mangling in introduction.
 - Weakened "predictability" goal.
 - Removed non-goal of not providing a mangling for lifetimes.

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1961](https://github.com/rust-lang/rfcs/pull/1961)/
 - Rust Issue: [rust-lang/rust#44095](https://github.com/rust-lang/rust/issues/44095)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add functions to the language which take a value and an inclusive range, and will "clamp" the input to the range.  I.E.
@@ -21,7 +21,7 @@ else if input < min {
 
 These would be on the Ord trait, and have a special version implemented for f32 and f64.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Clamp is a very common pattern in Rust libraries downstream.  Some observed implementations of this include:
@@ -60,7 +60,7 @@ output to hardware that expects values to be in a certain range, such as audio s
 While this is pretty trivial to implement downstream there are quite a few ways to do it and just writing the clamp 
 inline usually results in rather a lot of control flow structure to describe a fairly simple and common concept.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Add the following to std::cmp::Ord
@@ -106,24 +106,24 @@ pub fn clamp(self, min: f32, max: f32) -> f32 {
 
 This NaN handling behavior was chosen because a range with NaN on either side isn't really a range at all and the function can't be guaranteed to behave correctly if that is the case.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 The proposed changes would not mandate modifications to any Rust educational material.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is trivial to implement downstream, and several versions of it exist downstream.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Alternatives were explored at https://internals.rust-lang.org/t/clamp-function-for-primitive-types/4999
 
 Additionally there is the option of placing clamp in std::cmp in order to avoid backwards compatibility problems.  This is however semantically undesirable, as `1.clamp(2, 3);` is more readable than `clamp(1, 2, 3);`
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None

@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1307](https://github.com/rust-lang/rfcs/pull/1307)
 - Rust Issue: [rust-lang/rust#29453](https://github.com/rust-lang/rust/issues/29453)
 
-# Summary
+## Summary
 
 Add some additional utility methods to OsString and OsStr.
 
-# Motivation
+## Motivation
 
 OsString and OsStr are extremely bare at the moment; some utilities would make them
 easier to work with. The given set of utilities is taken from String, and don't add
@@ -15,7 +15,7 @@ any additional restrictions to the implementation.
 
 I don't think any of the proposed methods are controversial.
 
-# Detailed design
+## Detailed design
 
 Add the following methods to OsString:
 
@@ -62,16 +62,16 @@ fn is_empty(&self) -> bool;
 fn len(&self) -> usize;
 ```
 
-# Drawbacks
+## Drawbacks
 
 The meaning of `len()` might be a bit confusing because it's the size of
 the internal representation on Windows, which isn't otherwise visible to the
 user.
 
-# Alternatives
+## Alternatives
 
 None.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

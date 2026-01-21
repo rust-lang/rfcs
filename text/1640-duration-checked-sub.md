@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1640](https://github.com/rust-lang/rfcs/pull/1640)
 - Rust Issue: [rust-lang/rust#35774](https://github.com/rust-lang/rust/issues/35774)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC adds the `checked_*` methods already known from primitives like
 `usize` to `Duration`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Generally this helps when subtracting `Duration`s which can be the case quite
@@ -45,7 +45,7 @@ fn render() {
 Of course it is also suitable to not introduce `panic!()`s when adding
 `Duration`s.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The detailed design would be exactly as the current `sub()` method, just
@@ -83,19 +83,19 @@ The same accounts for all other added methods, namely:
 - `checked_mul()`
 - `checked_div()`
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 `None`.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The alternatives are simply not doing this and forcing the programmer to code
 the check on their behalf.
 This is not what you want.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 `None`.

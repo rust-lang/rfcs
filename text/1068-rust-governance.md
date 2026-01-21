@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1068](https://github.com/rust-lang/rfcs/pull/1068)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 This RFC proposes to expand, and make more explicit, Rust's governance
 structure. It seeks to supplement today's core team with several
@@ -13,7 +13,7 @@ interest.
 *Thanks to Nick Cameron, Manish Goregaokar, Yehuda Katz, Niko Matsakis and Dave
  Herman for many suggestions and discussions along the way.*
 
-# Motivation
+## Motivation
 
 Rust's governance has evolved over time, perhaps most dramatically
 with the introduction of the RFC system -- which has itself been
@@ -26,7 +26,7 @@ That said, as Rust has matured, a few growing pains have emerged.
 We'll start with a brief review of today's governance and process,
 then discuss what needs to be improved.
 
-## Background: today's governance structure
+### Background: today's governance structure
 
 Rust is governed by a
 [core team](https://github.com/rust-lang/rust-wiki-backup/blob/master/Note-core-team.md),
@@ -56,7 +56,7 @@ though, most decisions are about weighting various tradeoffs, and the
 job of the core team is to make the final decision about such
 weightings in light of the overall direction of the language.
 
-## What needs improvement
+### What needs improvement
 
 At a high level, we need to improve:
 
@@ -69,7 +69,7 @@ Below, each of these bullets is expanded into a more detailed analysis
 of the problems. These are the problems this RFC is trying to
 solve. The "Detailed Design" section then gives the actual proposal.
 
-### Scalability: RFC process
+#### Scalability: RFC process
 
 In some ways, the RFC process is a victim of its own success: as the
 volume and depth of RFCs has increased, it's harder for the entire
@@ -110,7 +110,7 @@ We need a way to scale up the RFC process that:
 * Ensures that simple, uncontentious changes can be made quickly, without undue
   process burden.
 
-### Scalability: areas of focus
+#### Scalability: areas of focus
 
 In addition, there are increasingly areas of important work that are
 only loosely connected with decisions in the core language or APIs:
@@ -121,7 +121,7 @@ of global coordination that more "core" areas do.
 These areas are only going to increase in number and importance, so we
 should remove obstacles holding them back.
 
-### Stakeholder involvement
+#### Stakeholder involvement
 
 RFC shepherds are intended to reach out to "stakeholders" in an RFC,
 to solicit their feedback. But that is different from the stakeholders
@@ -137,7 +137,7 @@ take a balanced, global view of things and (2) the core team should
 not grow too large. So some other way of including more stakeholders
 in decisions would be preferable.
 
-### Clarity and transparency
+#### Clarity and transparency
 
 Despite many steps toward increasing the clarity and openness of
 Rust's processes, there is still room for improvement:
@@ -168,7 +168,7 @@ Rust's processes, there is still room for improvement:
   online communication), but there is still room for being more
   explicit and public.
 
-### Community norms and the Code of Conduct
+#### Community norms and the Code of Conduct
 
 Rust's design process and community norms are closely intertwined. The
 RFC process is a joint exploration of design space and tradeoffs, and
@@ -205,7 +205,7 @@ the mechanics of moderation:
 Answering these questions, and generally clarifying how the CoC is viewed and
 enforced, is an important step toward scaling up the Rust community.
 
-# Detailed design
+## Detailed design
 
 The basic idea is to supplement the core team with several "subteams". Each
 subteam is focused on a specific area, e.g., language design or libraries. Most
@@ -216,7 +216,7 @@ that process.
 To ensure global coordination and a strong, coherent vision for the project as a
 whole, **each subteam is led by a member of the core team**.
 
-## Subteams
+### Subteams
 
 **The primary roles of each subteam are**:
 
@@ -301,7 +301,7 @@ subteam to decide, but:
   related to their area. Ideally, this would be done in part via a dashboard
   like [the Homu queue](http://buildbot.rust-lang.org/homu/queue/rust)
 
-## Core team
+### Core team
 
 **The core team serves as leadership for the Rust project as a whole**. In
   particular, it:
@@ -337,9 +337,9 @@ set of other stakeholders that are both actively involved in the Rust community,
 and can speak to the needs of major Rust constituencies, to ensure that the
 project is addressing real-world needs.
 
-## Decision-making
+### Decision-making
 
-### Consensus
+#### Consensus
 
 Rust has long used a form of [consensus decision-making][consensus]. In a
 nutshell the premise is that a successful outcome is not where one side of a
@@ -378,7 +378,7 @@ clear outcome.
 
 [consensus]: http://en.wikipedia.org/wiki/Consensus_decision-making
 
-### Lack of consensus
+#### Lack of consensus
 
 In some cases, though, consensus cannot be reached. These cases tend to split
 into two very different camps:
@@ -397,7 +397,7 @@ In either case, an alternative form of decision-making is needed.
 * For the "deep" case, the subteam leader is empowered to make a final decision,
   but should consult with the rest of the core team before doing so.
 
-### How and when RFC decisions are made, and the "final comment period"
+#### How and when RFC decisions are made, and the "final comment period"
 
 Each RFC has a shepherd drawn from the relevant subteam. The shepherd is
 responsible for driving the consensus process -- working with both the RFC
@@ -432,7 +432,7 @@ weight tradeoffs. The decision should be communicated in these terms, pointing
 out the tradeoffs that were raised and explaining how they were weighted, and
 **never introducing new arguments**.
 
-## Keeping things lightweight
+### Keeping things lightweight
 
 In addition to the "final comment period" proposed above, this RFC proposes some
 further adjustments to the RFC process to keep it lightweight.
@@ -440,7 +440,7 @@ further adjustments to the RFC process to keep it lightweight.
 A key observation is that, thanks to the stability system and nightly/stable
 distinction, **it's easy to experiment with features without commitment**.
 
-### Clarifying what needs an RFC
+#### Clarifying what needs an RFC
 
 Over time, we've been drifting toward requiring an RFC for essentially any
 user-facing change, which sometimes means that very minor changes get stuck
@@ -459,7 +459,7 @@ subteam should set an explicit policy about:
 
 These guidelines should try to keep the process lightweight for minor changes.
 
-### Clarifying the "finality" of RFCs
+#### Clarifying the "finality" of RFCs
 
 While RFCs are very important, they do not represent the final state of a
 design. Often new issues or improvements arise during implementation, or after
@@ -473,7 +473,7 @@ Later, if an implementation differs from the RFC in *substantial* ways, the
 subteam should be alerted, and may ask for an explicit amendment RFC. Otherwise,
 the changes should just be explained in the commit/PR.
 
-## The teams
+### The teams
 
 With all of that out of the way, what subteams should we start with? This RFC
 proposes the following initial set:
@@ -488,7 +488,7 @@ In the long run, we will likely also want teams for documentation and for
 community events, but these can be spun up once there is a more clear need (and
 available resources).
 
-### Language design team
+#### Language design team
 
 Focuses on the *design* of language-level features; not all team members need to
 have extensive implementation experience.
@@ -503,7 +503,7 @@ Some example RFCs that fall into this area:
   overlap with the library subteam)
 * [Sound generic drop](https://github.com/rust-lang/rfcs/pull/769)
 
-### Library team
+#### Library team
 
 Oversees both `std` and, ultimately, other crates in the `rust-lang` github
 organization. The focus up to this point has been the standard library, but we
@@ -520,7 +520,7 @@ Some example RFCs that fall into this area:
 * [Simplifying std::hash](https://github.com/rust-lang/rfcs/pull/823)
 * [Conventions for ownership variants](https://github.com/rust-lang/rfcs/pull/199)
 
-### Compiler team
+#### Compiler team
 
 Focuses on compiler internals, including implementation of language
 features. This broad category includes work in codegen, factoring of compiler
@@ -533,7 +533,7 @@ haven't generally required RFCs for this kind of internals work, but here are tw
   has high overlap with language design)
 * [Incremental compilation](https://github.com/rust-lang/rfcs/pull/594)
 
-### Tooling and infrastructure team
+#### Tooling and infrastructure team
 
 Even more broad is the "tooling" subteam, which at inception is planned to
 encompass every "official" (rust-lang managed) non-`rustc` tool:
@@ -551,7 +551,7 @@ encompass every "official" (rust-lang managed) non-`rustc` tool:
 It's not presently clear exactly what tools will end up under this umbrella, nor
 which should be prioritized.
 
-### Moderation team
+#### Moderation team
 
 Finally, the moderation team is responsible for dealing with CoC violations.
 
@@ -565,7 +565,7 @@ the core team as it deems appropriate.
 The moderation team will have a public email address that can be used to raise
 complaints about CoC violations (forwards to all active moderators).
 
-#### Initial plan for moderation
+##### Initial plan for moderation
 
 What follows is an initial proposal for the mechanics of moderation. The
 moderation subteam may choose to revise this proposal by drafting an RFC, which
@@ -636,7 +636,7 @@ the two discourse forums. (The subreddit already has its own
 moderation structure, and isn't directly associated with the rust-lang
 organization.)
 
-# Drawbacks
+## Drawbacks
 
 One possibility is that decentralized decisions may lead to a lack of coherence
 in the overall design of Rust. However, the existence of the core team -- and
@@ -661,7 +661,7 @@ to make discourse safe and productive, not to introduce fear of violating the
 CoC. The moderation guidelines, careful selection of moderators, and ability to
 withdraw moderators mitigate this risk.
 
-# Alternatives
+## Alternatives
 
 There are numerous other forms of open-source governance out there, far more
 than we can list or detail here. And in any case, this RFC is intended as an
@@ -700,9 +700,9 @@ decision-making group for a substantial area of the Rust project.
 [jq]: https://jquery.org/team/
 [mom]: https://wiki.mozilla.org/Modules/Activities#Module_Ownership_System
 
-# Unresolved questions
+## Unresolved questions
 
-## Subteams
+### Subteams
 
 This RFC purposefully leaves several subteam-level questions open:
 
@@ -716,7 +716,7 @@ This RFC purposefully leaves several subteam-level questions open:
 These questions are left to be address by subteams after their formation, in
 part because good answers will likely require some iterations to discover.
 
-## Broader questions
+### Broader questions
 
 There are many other questions that this RFC doesn't seek to address, and this
 is largely intentional. For one, it avoids trying to set out too much structure

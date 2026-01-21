@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3107](https://github.com/rust-lang/rfcs/pull/3107)
 - Rust Issue: [rust-lang/rust#87517](https://github.com/rust-lang/rust/issues/87517)
 
-# Summary
+## Summary
 [summary]: #summary
 
 An attribute `#[default]`, usable on `enum` unit variants, is introduced thereby allowing some
@@ -23,10 +23,10 @@ assert_eq!(Padding::default(), Padding::None);
 
 The `#[default]` and `#[non_exhaustive]` attributes may not be used on the same variant.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## `#[derive(Default)]` in more cases
+### `#[derive(Default)]` in more cases
 
 Currently, `#[derive(Default)]` is not usable on `enum`s. To partially rectify this situation, a
 `#[default]` attribute is introduced that can be attached to unit variants. This allows you to use
@@ -42,7 +42,7 @@ enum Padding {
 }
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The ability to add default values to fields of `enum` variants does not mean that you can suddenly
@@ -76,10 +76,10 @@ zero or multiple variants.
 As fields may be added to `#[non_exhaustive]` variants that necessitate additional bounds, it is not
 permitted to place `#[default]` and `#[non_exhaustive]` on the same variant.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `#[default]` on `enum`s
+### `#[default]` on `enum`s
 
 An attribute `#[default]` is provided the compiler and may be legally placed solely on one
 exhaustive `enum` unit variants. The attribute has no semantics on its own. Placing the attribute on
@@ -87,7 +87,7 @@ anything else will result in a compilation error. Furthermore, if the attribute 
 multiple variants of the same `enum` data-type after `cfg`-stripping and macro expansion is done,
 this will also result in a compilation error.
 
-## `#[derive(Default)]`
+### `#[derive(Default)]`
 
 Placing `#[derive(Default)]` on an `enum` named `$e` is permissible if and only if that enum has
 some variant `$v` with `#[default]` on it. In that event, the compiler shall generate the following:
@@ -101,7 +101,7 @@ impl ::core::default::Default for $e {
 }
 ```
 
-### Generated bounds
+#### Generated bounds
 
 As exhaustive unit variants have no inner types, no bounds shall be generated on the derived
 implementation. For example,
@@ -125,19 +125,19 @@ impl<T> Default for Option<T> {
 }
 ```
 
-## Interaction with `#[non_exhaustive]`
+### Interaction with `#[non_exhaustive]`
 
 The Rust compiler shall not permit `#[default]` and `#[non_exhaustive]` to be present on the same
 variant. Non-default variants may be `#[non_exhaustive]`, as can the `enum` itself.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The usual drawback of increasing the complexity of the language applies. However, the degree to
 which complexity is increased is not substantial. One notable change is the addition of an attribute
 for a built-in `#[derive]`, which has no precedent.
 
-# Rationale
+## Rationale
 [rationale]: #rationale
 
 The inability to derive `Default` on `enum`s has been noted on a number of occasions, with a common
@@ -184,7 +184,7 @@ enum Foo<T> {
 then any code where `T: !Default` would now fail to compile, on the assumption that the generated
 code for the latter has the `T: Default` bound (nb: not part of this RFC).
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 One alternative is to permit the user to declare the default variant in the derive itself, such as
@@ -195,15 +195,15 @@ Another alternative is assigning the first variant to be default when `#[derive(
 present. This may prevent a `#[derive(PartialOrd)]` on some `enum`s where order is important (unless
 the user were to explicitly assign the discriminant).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## Procedural macros
+### Procedural macros
 
 There are a number of crates which to varying degrees afford macros for default field values and
 associated facilities.
 
-### `#[derive(Derivative)]`
+#### `#[derive(Derivative)]`
 
 [`derivative`]: https://crates.io/crates/derivative
 
@@ -234,7 +234,7 @@ Like in this RFC, `derivative` allows you to derive `Default` for `enum`s. The s
 macro is `#[derivative(Default)]` whereas the RFC provides the more ergonomic and direct notation
 `#[default]` in this RFC.
 
-### `#[derive(SmartDefault)]`
+#### `#[derive(SmartDefault)]`
 
 [`smart-default`]: https://crates.io/crates/smart-default
 
@@ -263,22 +263,22 @@ enum Foo {
   However, for users who aren't aware of this, it may seem strange that `SmartDefault` should derive
   for the `Default` trait.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - None so far.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Non-unit variants
+### Non-unit variants
 
 One significant future possibility is to have `#[default]` permitted on non-unit variants. This was
 originally proposed as part of this RFC but has been postponed due to disagreement over what the
 generated bounds should be. This is largely due to the fact that [`#[derive(Default)]` on `struct`s
 may generate incorrect bounds](https://github.com/rust-lang/rust/issues/26925).
 
-## Overriding default fields
+### Overriding default fields
 
 The `#[default]` attribute could be extended to override otherwise derived default values, such as
 
@@ -321,7 +321,7 @@ struct Foo {
 If consensus can be reached on desired bounds, there should be no technical restrictions on
 permitting the `#[default]` attribute on a `#[non_exhaustive]` variant.
 
-## Clearer documentation and more local reasoning
+### Clearer documentation and more local reasoning
 
 Providing good defaults when such exist is part of any good design that makes a physical tool, UI
 design, or even data-type more ergonomic and easily usable. However, that does not mean that the
@@ -336,7 +336,7 @@ regard to the ease of skimming through code. In particular, it is easier to see 
 variant is if you can directly look at the `rustdoc` page and read the previous snippet, which would
 let you see the default variant without having to open up the code of the `Default` implementation.
 
-## `Error` trait and more
+### `Error` trait and more
 
 As this is the first derive macro that includes an attribute, this may open the flood gates with
 regard to permitting additional macros with attributes. Crates such as `thiserror` could be, in some

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#461](https://github.com/rust-lang/rfcs/pull/461)
 - Rust Issue: [rust-lang/rust#19175](https://github.com/rust-lang/rust/issues/19175)
 
-# Summary
+## Summary
 
 Introduce a new thread local storage module to the standard library, `std::tls`,
 providing:
@@ -11,7 +11,7 @@ providing:
 * Owning TLS, an owning, dynamically initialized, dynamically destructed
   variant, similar to `std::local_data` today.
 
-# Motivation
+## Motivation
 
 In the past, the standard library's answer to thread local storage was the
 `std::local_data` module. This module was designed based on the Rust task model
@@ -31,7 +31,7 @@ functionality that this RFC sees fit to try and wedge it into the schedule. The
 current `std::local_data` module simply doesn't meet the requirements of what
 one may expect out of a TLS implementation for a language like Rust.
 
-## Current Drawbacks
+### Current Drawbacks
 
 Today's implementation of thread local storage, `std::local_data`, suffers from
 a few drawbacks:
@@ -57,7 +57,7 @@ a few drawbacks:
 * The implementation currently assumes a local `Task` is available. Once the
   runtime removal is complete, this will no longer be a valid assumption.
 
-## Current Strengths
+### Current Strengths
 
 There are, however, a few pros to the usage of the module today which should be
 required for any replacement:
@@ -66,7 +66,7 @@ required for any replacement:
 * `std::local_data` allows consuming ownership of data, allowing it to live past
   the current stack frame.
 
-## Building blocks available
+### Building blocks available
 
 There are currently two primary building blocks available to Rust when building
 a thread local storage abstraction, `#[thread_local]` and OS-based TLS. Neither
@@ -78,7 +78,7 @@ of these are currently used for `std::local_data`, but are generally seen as
 With these available, this RFC is motivated in redesigning TLS to make use of
 these primitives.
 
-# Detailed design
+## Detailed design
 
 Three new modules will be added to the standard library:
 
@@ -104,7 +104,7 @@ Three new modules will be added to the standard library:
 The design described below can be found as an existing cargo package:
 https://github.com/alexcrichton/tls-rs.
 
-## The OS layer
+### The OS layer
 
 While LLVM has support for `#[thread_local]` statics, this feature is not
 supported on all platforms that LLVM can target. Almost all platforms, however,
@@ -121,7 +121,7 @@ This module will support "statically allocated" keys as well as dynamically
 allocated keys. A statically allocated key will actually allocate a key on
 first use.
 
-### Destructor support
+#### Destructor support
 
 The major difference between Unix and Windows TLS support is that Unix supports
 a destructor function for each TLS slot while Windows does not. When each Unix
@@ -136,7 +136,7 @@ lost when writing Unix-only code.
 Destructor support for Windows will be provided through a custom implementation
 of tracking known destructors for TLS keys.
 
-## Scoped TLS
+### Scoped TLS
 
 As discussed before, one of the motivations for this RFC is to provide a method
 of inserting any value into TLS, not just those that ascribe to `'static`. This
@@ -193,7 +193,7 @@ The purpose of this module is to enable the ability to insert a value into TLS
 for a scoped period of time. While able to cover many TLS patterns, this flavor
 of TLS is not comprehensive, motivating the owning variant of TLS.
 
-### Variations
+#### Variations
 
 Specifically the `with` API can be somewhat unwieldy to use. The `with` function
 takes a closure to run, yielding a value to the closure.  It is believed that
@@ -212,7 +212,7 @@ somewhat unergonomic, however, as it will almost always be followed by
 `unwrap()`. An alternative design would be to provide a `is_set` function and
 have `with` `panic!` instead.
 
-## Owning TLS
+### Owning TLS
 
 Although scoped TLS can store any value, it is also limited in the fact that it
 cannot own a value. This means that TLS values cannot escape the stack from
@@ -252,7 +252,7 @@ impl<T: 'static> Key<T> {
 }
 ```
 
-### Destructors
+#### Destructors
 
 One of the major points about this implementation is that it allows for values
 with destructors, meaning that destructors must be run when a thread exits. This
@@ -274,7 +274,7 @@ need some more hammering out. The sample implementation suffers from a few extra
 drawbacks, but it is believed that some more implementation work can overcome
 some of the minor downsides.
 
-### Variations
+#### Variations
 
 Like the scoped TLS variation, this key has a `with` function instead of the
 normally expected `get` function (returning a reference). One possible
@@ -285,7 +285,7 @@ way to ensure that `Ref<T>` does not satisfy `'static`. If the returned
 reference satisfies `'static`, then it's possible for TLS values to reference
 each other after one has been destroyed, causing a use-after-free.
 
-# Drawbacks
+## Drawbacks
 
 * There is no variant of TLS for statically initialized data. Currently the
   `std::tls` module requires dynamic initialization, which means a slight
@@ -302,7 +302,7 @@ each other after one has been destroyed, causing a use-after-free.
   maintain native TLS if necessary, or otherwise strongly recommend not using
   native TLS.
 
-# Alternatives
+## Alternatives
 
 Alternatives on the API can be found in the "Variations" sections above.
 
@@ -324,7 +324,7 @@ Some other alternatives might include:
 
 [prev-pr]: https://github.com/rust-lang/rust/pull/17583
 
-# Unresolved questions
+## Unresolved questions
 
 * Are the questions around destructors vague enough to warrant the `get` method
   being `unsafe` on owning TLS?

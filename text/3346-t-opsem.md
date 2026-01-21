@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3346](https://github.com/rust-lang/rfcs/pull/3346)
 - Rust Issue: n/a
 
-# Summary
+## Summary
 
 Create an operational semantics team that is tasked with owning the semantics of unsafe code. This responsibility would be transferred from [T-types], which had previously been given ownership of this domain. Additionally, this team replaces the Unsafe Code Guidelines working group, which has been doing much of the work in this space.
 

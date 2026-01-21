@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2500](https://github.com/rust-lang/rfcs/pull/2500)
 - Rust Issue: [rust-lang/rust#56345](https://github.com/rust-lang/rust/issues/56345)
 
-# This RFC was previously approved, but later **withdrawn**
+## This RFC was previously approved, but later **withdrawn**
 
 For details see the [summary comment].
 
 [summary comment]: https://github.com/rust-lang/rust/pull/76901#issuecomment-880169952
 
-# Summary
+## Summary
 [summary]: #summary
 
 Generalize the needle (née pattern) API to support `&str`, `&mut str`, `&[T]`, `&mut [T]`, `Vec<T>` and `&OsStr`.
@@ -38,10 +38,10 @@ Generalize the needle (née pattern) API to support `&str`, `&mut str`, `&[T]`, 
 
 <!-- /TOC -->
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Stabilize the Pattern API
+### Stabilize the Pattern API
 
 Pattern API v1.0 ([RFC 528] / [issue 27721]) has been implemented for nearly 3 years,
 but we still haven't decided to stabilize. One of the blockers is attempting to generalize the API
@@ -58,7 +58,7 @@ This RFC is raised as attempt to
 We hope that this RFC could revitalize the Pattern API development and make its stabilization
 foreseeable.
 
-## Implement OMG-WTF-8
+### Implement OMG-WTF-8
 
 The OMG-WTF-8 encoding was introduced to allow slicing an `&OsStr`, and thus enable extending
 the Pattern API to `&OsStr` without special-casing ([RFC 2295] / [issue 49802]). That RFC expects
@@ -66,12 +66,12 @@ a Pattern API working with `OsStr` to generalize some methods (e.g. `OsStr::ends
 This RFC would unblock the implementation of RFC 2295, as to decide whether to integrate with
 a Pattern API, or just go with the non-generic version.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 You may check the prototype package [`pattern-3`] for API documentation and source code.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Key concepts:
@@ -82,14 +82,14 @@ Key concepts:
 * *Searcher* is responsible for finding the range of the match.
 * Utilizing these together to safely construct many useful algorithms related to string matching.
 
-## API
+### API
 
 All items below should be placed in the `core::needle` module, re-exported as `std::needle`.
 
 We renamed "Pattern API" into "Needle API" to avoid confusion with the language's pattern matching
 i.e. the `match` expression.
 
-### Hay
+#### Hay
 
 A `Hay` is the core type which the search algorithm will run on.
 It is implemented on the unsized slice-like types like `str`, `OsStr` and `[T]`.
@@ -131,7 +131,7 @@ start_index() = 0   next_index(2) = 6
         prev_index(2) = 1            end_index() = 7
 ```
 
-### Haystack
+#### Haystack
 
 A `Haystack` is any linear structure which we can do string/array matching on,
 and can be sliced or split so they could be returned from the `matches()` and `split()` iterators.
@@ -178,7 +178,7 @@ When an index is based on a pointer, splitting a haystack will *invalidate* thos
 However, a pointer is persisted with slicing, so they could implement this method simply as
 `self.start_index()..self.end_index()`.
 
-### Shared haystack
+#### Shared haystack
 
 A `SharedHaystack` is a marker sub-trait which tells the compiler this haystack can cheaply be
 cheaply cloned (i.e. shared), e.g. a `&H` or `Rc<H>`. Implementing this trait alters some behavior
@@ -191,7 +191,7 @@ pub trait SharedHaystack: Haystack + Clone {}
 `.restore_range()` will never be called with a shared haystack and should be implemented as
 `unreachable!()`.
 
-### Span
+#### Span
 
 A `Span` is a haystack coupled with information where the original span is found.
 
@@ -260,7 +260,7 @@ a haystack will be split as soon as the span is split. The "original range" beco
 disconnected from the haystack, and this is where `.restore_range()` is needed:
 to recover the indices in the middle (`5 == 3 + 2` and `7 == 3 + 4`).
 
-### Searcher
+#### Searcher
 
 A searcher only provides a single method: `.search()`. It takes a span as input,
 and returns the first sub-range where the given needle is found.
@@ -299,7 +299,7 @@ an example which implements `ReverseSearcher` but not `DoubleEndedSearcher`, e.g
 * Forward searching the needle `xx` in the haystack `xxxxx` will yield `[xx][xx]x`
 * Backward searching the needle `xx` in the haystack `xxxxx` will yield `x[xx][xx]`
 
-### Consumer
+#### Consumer
 
 A consumer provides the `.consume()` method to implement `starts_with()` and `trim_start()`. It
 takes a span as input, and if the beginning matches the needle, returns the end index of the match.
@@ -338,7 +338,7 @@ The trait also provides a `.trim_start()` method in case a faster specialization
 
 Similar to searchers, the consumers also have the "reverse" and "double-ended" variants.
 
-### Needle
+#### Needle
 
 A needle is simply a "factory" of a searcher and consumer.
 
@@ -407,7 +407,7 @@ where
 and a type can implement all of `(FnMut(char) -> bool) + Searcher<str> + Consumer<str>`,
 causing impl conflict.
 
-### Algorithms
+#### Algorithms
 
 Standard algorithms are provided as *functions* in the `core::needle::ext` module.
 
@@ -608,7 +608,7 @@ impl str {
 }
 ```
 
-## Standard library changes
+### Standard library changes
 
 * Remove the entire `core::str::pattern` module from public, as this is unstable.
 
@@ -720,7 +720,7 @@ impl str {
 * Add all immutable Needle API algorithms to `OsStr`. The `.replace()` and `.replacen()` methods
     should produce an `OsString`.
 
-## Performance
+### Performance
 
 The benchmark of the `pattern_3` package shows that algorithms using the Needle API ("v3.0 API")
 is close to or much faster than the corresponding methods in libstd using v1.0.
@@ -765,7 +765,7 @@ searcher would be a job mismatch for `trim()`. This justifies the `Consumer` tra
 
 </details>
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * This RFC suggests generalizing some stabilized methods of `str` and `[T]` to adapt
@@ -848,14 +848,14 @@ searcher would be a job mismatch for `trim()`. This justifies the `Consumer` tra
 
     RFC 1672 is currently blocked by `chalk` integration before it could be reopened.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
-## Principles
+### Principles
 
 These are some guiding principles v3.0 will adhere to.
 
-### Generic algorithms
+#### Generic algorithms
 
 1. The Needle API should define an interface which can be used to easily implement
     all algorithms the standard library currently provides:
@@ -871,7 +871,7 @@ These are some guiding principles v3.0 will adhere to.
 2. We should not need "non-local unsafety" when writing these algorithms. Mainly, we should not need
     to do borrowck by hand (e.g. ensuring there is no overlapping mutable slices across functions).
 
-### Haystack implementor
+#### Haystack implementor
 
 3. The standard slice types must be supported:
     `&str`, `&mut str`, `&[T]`, `&mut [T]`, `Vec<T>`, and `&OsStr`.
@@ -879,7 +879,7 @@ These are some guiding principles v3.0 will adhere to.
 4. The API should be compatible with linked list and rope data structure as haystack,
     assuming we get either custom DST or GATs implemented.
 
-### Needle/Searcher implementor
+#### Needle/Searcher implementor
 
 5. The existing needle for `&str` and `&mut str` should be supported:
 
@@ -905,11 +905,11 @@ These are some guiding principles v3.0 will adhere to.
 9. One should not need to implement a `Searcher` three times to support `&[T]`, `&mut [T]` and
     `Vec<T>`. The searcher should rely on that these all can be borrowed as an `&[T]`.
 
-## Design rationales
+### Design rationales
 
 The section lists some important use cases which shape v3.0.
 
-### No more `.next_reject()`
+#### No more `.next_reject()`
 
 In v1.0 a searcher provides a `.next()` method which returns what is being seen ahead:
 a match, no-match, or end-to-string, and then advance the cursor.
@@ -928,7 +928,7 @@ However, we see that even `.next_reject()` is not something obvious. Given that 
 is only used in `trim()`, in v3.0 we decide to remove this method as well,
 and instead make the Needle implement `trim()` directly.
 
-### Searching in a `&mut str`
+#### Searching in a `&mut str`
 
 In all versions of Pattern APIs up to v2.0, the "haystack" is directly managed by the searcher.
 
@@ -985,7 +985,7 @@ gen fn matches<H: Haystack, P: Needle<H>>(mut haystack: H, needle: P) -> impl It
 }
 ```
 
-### Matching a `&Regex`
+#### Matching a `&Regex`
 
 In the prototype above, we always feed the remaining haystack into `.search()`.
 This works fine for built-in needle types like `char` and `&str`,
@@ -1064,7 +1064,7 @@ gen fn matches<H: Haystack, P: Needle<H>>(haystack: H, needle: P) -> impl Iterat
 }
 ```
 
-### Hay: Don't repeat yourself
+#### Hay: Don't repeat yourself
 
 When we support searching both `&str` and `&mut str`, we'll often need to implement the same
 algorithm to both types. v2.0 solves this by using macros, which works but is not elegant.
@@ -1095,7 +1095,7 @@ trait Needle<H: Haystack> {
 }
 ```
 
-### Consumer
+#### Consumer
 
 In v2.0 and before, a pattern (needle) will need to specialize `starts_with()` and `ends_with()`.
 
@@ -1151,9 +1151,9 @@ trait Consumer<A: Hay + ?Sized> {
 Both `starts_with()` and `trim()` can be efficiently implemented in terms of `.consume()`,
 though for some needles a specialized `trim()` can be even faster, so we keep this default method.
 
-## Miscellaneous decisions
+### Miscellaneous decisions
 
-### `usize` as index instead of pointers
+#### `usize` as index instead of pointers
 
 Pattern API v1.3–v2.0 all used cursors (pointers) as the primary indexing method.
 v3.0 still supports cursor-based indexing, but reverts to `usize` for the built-in slice types
@@ -1167,7 +1167,7 @@ v3.0 still supports cursor-based indexing, but reverts to `usize` for the built-
 2. **No performance advantage**. We have tested the performance and found that using integer index
     or cursor pointer have similar performance.
 
-### DSTs instead of GATs
+#### DSTs instead of GATs
 
 We share a searcher implementation by introducing the `Hay` trait, as the dereference target of the
 `Haystack` trait, i.e. `&[T]`, `&mut [T]` and `Vec<T>` will all be delegated to `[T]`:
@@ -1206,7 +1206,7 @@ We have decided to go with the DSTs approach because:
 2. **GATs is still unimplemented**. While the RFC for GATs has been accepted, the implementation
     has still not landed on the Rust compiler, making it impossible to create a test prototype.
 
-### `Deref` instead of `Borrow`
+#### `Deref` instead of `Borrow`
 
 The `Haystack` trait inherits `Deref` and requires its `Target` to implement `Hay`. An alternative
 is extending `Borrow` instead:
@@ -1225,7 +1225,7 @@ implement `Hay`, because it cannot properly implement `slice_unchecked(&self, ..
 
 And thus the more general `Borrow` trait offers no advantage over `Deref`.
 
-### Searcher makes Hay an input type instead of associated type
+#### Searcher makes Hay an input type instead of associated type
 
 The `Searcher` and `Consumer` traits makes the hay as input type.
 This makes any algorithm relying on a `ReverseSearcher` need to spell out the hay as well.
@@ -1263,13 +1263,13 @@ and `&OsStr`. Associated type would force creation of many wrapper types which i
 
 Therefore we stay with having the hay as the input type, the same choice taken in v2.0 and before.
 
-### Specialization of `contains()`
+#### Specialization of `contains()`
 
 v3.0 removed the `Needle::is_contained_in()` method. The `contains()` algorithm simply returned
 `searcher.search(span).is_some()`. The micro-benchmarks shows no performance decrease,
 thus the method is removed to reduce the API surface.
 
-### Needle for `&[T]` only requires `T: PartialEq`
+#### Needle for `&[T]` only requires `T: PartialEq`
 
 Sub-slice searching nowadays uses the Two-Way search algorithm, which requires ordered alphabet
 i.e. `T: Ord`. However, there are already two stabilized APIs only assuming `T: PartialEq`:
@@ -1293,7 +1293,7 @@ With specialization, this dilemma can be easily fixed: we will fallback to an al
 which only requires `T: PartialEq` (e.g. [`galil-seiferas`] or even naive search),
 and use the faster Two-Way algorithm when `T: Ord`.
 
-### Not having default implementations for `search` and `consume`
+#### Not having default implementations for `search` and `consume`
 
 In the `Searcher` and `Consumer` traits, `.search()` and `.consume()` can be implemented
 in terms of each other:
@@ -1343,7 +1343,7 @@ These fallbacks should only be used when the needle does not allow more efficien
 which is often not the case. To encourage needle implementations to support both primitives,
 where they should have full control of the details, we keep them as required methods.
 
-### Names of everything
+#### Names of everything
 
 * **Haystack**. Inherited from the v1.0 method `Searcher::haystack()`. v2.0 called it
     `PatternHaystack` since `Haystack` is an associated type referring to a range of cursors,
@@ -1434,15 +1434,15 @@ where they should have full control of the details, we keep them as required met
 
 * **Span**. The name is taken from the rustc compiler.
 
-## Alternatives
+### Alternatives
 
 * The names of everything except `Searcher` and `Haystack` are not finalized.
 
-# Prior art
+## Prior art
 
-## Previous attempts
+### Previous attempts
 
-### v1.0
+#### v1.0
 
 The existing `Pattern` API was introduced in [RFC 528] to provide a common interface for several
 search-related operations on a string. There were several minor revisions after the RFC was
@@ -1529,7 +1529,7 @@ While the pattern-to-searcher conversion is beneficial when searching the entire
 often wasteful in simple functions like `starts_with` and `ends_with` (a sub-slice equality check is
 optimal). Therefore, the specialized methods like `Pattern::is_prefix_of` are provided.
 
-### v1.2–v1.5
+#### v1.2–v1.5
 
 The `Pattern` API in Rust only supports searching a string. An [attempt][v1.5-comment] to
 evolve this to arbitrary haystack type can be found in the repository [Kimundi/pattern_api_sketch].
@@ -1565,7 +1565,7 @@ trait SearchPtrs { // e.g. implemented for &str
 }
 ```
 
-### v2.0
+#### v2.0
 
 The [v2.0 API][Kimundi/rust_pattern_api_v2] was introduced due to [RFC 1309],
 trying to cover `OsStr` as well. But other than `OsStr` support
@@ -1598,7 +1598,7 @@ trait PatternHaystack: Sized { // same as SearchPtrs in v1.5
 }
 ```
 
-## Haskell
+### Haskell
 
 Haskell is perhaps one of the few languages where a generic string matching API is found,
 since it also has so many string types like Rust 😝, and there isn't an official regex
@@ -1655,7 +1655,7 @@ Unlike this RFC, the `Extract` class is much simpler.
     `end_index` is also not needed since `before` and `after` (the slicing operations) will
     automatically clamp the index.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Currently, due to RFC 2089 and/or 2289 not being implemented, using a `Haystack` in any algorithm

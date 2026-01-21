@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1236](https://github.com/rust-lang/rfcs/pull/1236)
 - Rust Issue: [rust-lang/rust#27719](https://github.com/rust-lang/rust/issues/27719)
 
-# Summary
+## Summary
 
 Move `std::thread::catch_panic` to `std::panic::recover` after replacing the
 `Send + 'static` bounds on the closure parameter with a new `PanicSafe`
 marker trait.
 
-# Motivation
+## Motivation
 
 In today's stable Rust it's not possible to catch a panic on the thread that
 caused it. There are a number of situations, however, where this is
@@ -46,7 +46,7 @@ catching panics, largely because of a problem typically referred to as
 relaxing the bounds, let's review what exception safety is and what it means for
 Rust.
 
-# Background: What is exception safety?
+## Background: What is exception safety?
 
 Languages with exceptions have the property that a function can "return" early
 if an exception is thrown. While exceptions aren't too hard to reason about when
@@ -97,7 +97,7 @@ we can be memory safe in the face of exceptions and in languages like Java we
 can ensure that our logical invariants are upheld. Given this background let's
 take a look at how any of this applies to Rust.
 
-# Background: What is exception safety in Rust?
+## Background: What is exception safety in Rust?
 
 > Note: This section describes the current state of Rust today without this RFC
 >       implemented
@@ -177,7 +177,7 @@ triggered as part of a panic can always be traced back to an `unsafe` block.
 With all that background out of the way now, let's take a look at the guts of
 this RFC.
 
-# Detailed design
+## Detailed design
 
 At its heart, the change this RFC is proposing is to move
 `std::thread::catch_panic` to a new `std::panic` module and rename the function
@@ -192,7 +192,7 @@ fn recover<F: FnOnce() -> R + PanicSafe, R>(f: F) -> thread::Result<R>
 Before analyzing this new signature, let's take a look at this new
 `PanicSafe` trait.
 
-## A `PanicSafe` marker trait
+### A `PanicSafe` marker trait
 
 As discussed in the motivation section above, the current bounds of `Send +
 'static` on the closure parameter are too restrictive for common use cases, but
@@ -253,7 +253,7 @@ Let's take a look at each of these items in detail:
   it is exception safe and shouldn't be warned about when crossing the `recover`
   boundary. Otherwise this type simply acts like a `T`.
 
-### Example usage
+#### Example usage
 
 The only consumer of the `PanicSafe` bound is the `recover` function on the
 closure type parameter, and this ends up meaning that the *environment* needs to
@@ -321,7 +321,7 @@ fn foo(data: &RefCell<i32>) {
 }
 ```
 
-### Future extensions
+#### Future extensions
 
 In the future, this RFC proposes adding the following implementation of
 `PanicSafe`:
@@ -335,7 +335,7 @@ This implementation block encodes the "exception safe" boundary of
 If available, however, it would possibly reduce the number of false positives
 which require using `AssertPanicSafe`.
 
-### Global complexity
+#### Global complexity
 
 Adding a new marker trait is a pretty hefty move for the standard library. The
 current marker traits, `Send` and `Sync`, are well known and are ubiquitous
@@ -355,7 +355,7 @@ is rarely mentioned, if at all. It is intended that `AssertPanicSafe` is ideally
 only necessary where it actually needs to be considered (which idiomatically
 isn't too often) and even then it's lightweight to use.
 
-## Will Rust have exceptions?
+### Will Rust have exceptions?
 
 In a technical sense this RFC is not "adding exceptions to Rust" as they already
 exist in the form of panics. What this RFC is adding, however, is a construct
@@ -389,7 +389,7 @@ There are two key reasons `catch_panic` likely won't become idiomatic:
 For reference, here's a summary of the conventions around `Result` and `panic`,
 which still hold good after this RFC:
 
-### Result vs Panic
+#### Result vs Panic
 
 There are two primary strategies for signaling that a function can fail in Rust
 today:
@@ -441,7 +441,7 @@ roughly analogous to an opaque "an unexpected error has occurred" message.
 Stabilizing `catch_panic` does little to change the tradeoffs around `Result`
 and `panic` that led to these conventions.
 
-# Drawbacks
+## Drawbacks
 
 A drawback of this RFC is that it can water down Rust's error handling story.
 With the addition of a "catch" construct for exceptions, it may be unclear to
@@ -450,7 +450,7 @@ discussed above, however, Rust's design around error handling has always had to
 deal with these two strategies, and our conventions don't materially change by
 stabilizing `catch_panic`.
 
-# Alternatives
+## Alternatives
 
 One alternative, which is somewhat more of an addition, is to have the standard
 library entirely abandon all exception safety mitigation tactics. As explained
@@ -478,7 +478,7 @@ poisoning should not be removed by default, and in fact a new hypothetical
 panics by default (like poisoning) with an ability to opt out (like
 `PoisonError`).
 
-# Unresolved questions
+## Unresolved questions
 
 - Is it worth keeping the `'static` and `Send` bounds as a mitigation measure in
   practice, even if they aren't enforceable in theory? That would require thread

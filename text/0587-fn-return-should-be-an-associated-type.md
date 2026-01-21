@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#587](https://github.com/rust-lang/rfcs/pull/587)
 - Rust Issue: [rust-lang/rust#21527](https://github.com/rust-lang/rust/issues/21527)
 
-# Summary
+## Summary
 
 The `Fn` traits should be modified to make the return type an associated type.
 
-# Motivation
+## Motivation
 
 The strongest reason is because it would permit impls like the following
 (example from @alexcrichton):
@@ -63,7 +63,7 @@ impl<I,F> Iterator for Map<I,F>,
 This example highlights one subtle point about the `()` notation,
 which is covered below.
 
-# Detailed design
+## Detailed design
 
 The design has been implemented. You can see it in [this pull
 request]. The `Fn` trait is modified to read as follows:
@@ -128,7 +128,7 @@ impl<B,I,F> Iterator for Map<I,F>,
 Note that this final option is not legal without this change, because
 the type parameter `B` on the impl would be unconstrained.
 
-# Drawbacks
+## Drawbacks
 
 ### Cannot overload based on return type alone
 
@@ -163,7 +163,7 @@ panics; that is, the `!` notation is not a type and hence something
 like `FnMut() -> !` is not legal). The ability to overload based on return type
 is not removed, it is simply not something you can model using overloaded operators.
 
-# Alternatives
+## Alternatives
 
 ### Special syntax to represent the lack of an `Output` binding
 

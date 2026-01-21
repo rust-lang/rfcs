@@ -2,11 +2,11 @@
 - RFC PR: [#572](https://github.com/rust-lang/rfcs/pull/572)
 - Rust Issue: [#22203](https://github.com/rust-lang/rust/issues/22203)
 
-# Summary
+## Summary
 
 Feature gate unused attributes for backwards compatibility.
 
-# Motivation
+## Motivation
 
 Interpreting the current backwards compatibility rules strictly, it's not possible to add any further
 language features that use new attributes. For example, if we wish to add a feature that expands
@@ -15,7 +15,7 @@ contains uses of the `#[awesome_deriving]` attribute might be broken. While such
 (since syntax extensions aren't allowed yet), we still have a case of code that stops compiling after an update of a release build.
 
 
-# Detailed design
+## Detailed design
 
 We add a feature gate, `custom_attribute`, that disallows the use of any attributes not defined by the compiler or consumed in any other way.
 
@@ -23,26 +23,26 @@ This is achieved by elevating the `unused_attribute` lint to a feature gate chec
 
 Eventually, we can try for a namespacing system as described below, however with unused attributes feature gated, we need not worry about it until we start considering stabilizing plugins.
 
-# Drawbacks
+## Drawbacks
 
 I don't see much of a drawback (except that the alternatives below might be more lucrative). This might make it harder for people who wish to use custom attributes for static analysis in 1.0 code.
 
-# Alternatives
+## Alternatives
 
-## Forbid `#[rustc_*]` and `#[rustc(...)]` attributes
+### Forbid `#[rustc_*]` and `#[rustc(...)]` attributes
 
 (This was the original proposal in the RfC)
 
 This is less restrictive for the user, but it restricts us to a form of namespacing for any future attributes which we may wish to introduce. This is suboptimal, since by the time plugins stabilize (which is when user-defined attributes become useful for release code) we may add many more attributes to the compiler and they will all have cumbersome names.
 
-## Do nothing
+### Do nothing
 
 If we do nothing we can still manage to add new attributes, however we will need to invent new syntax for it. This will probably be in the form of basic namespacing support
 (`#[rustc::awesome_deriving]`) or arbitrary token tree support (the use case will probably still end up looking something like `#[rustc::awesome_deriving]`)
 
 This has the drawback that the attribute parsing and representation will need to be overhauled before being able to add any new attributes to the compiler.
 
-# Unresolved questions
+## Unresolved questions
 
 Which proposal to use — disallowing `#[rustc_*]` and `#[rustc]` attributes, or just `#[forbid(unused_attribute)]`ing everything.
 

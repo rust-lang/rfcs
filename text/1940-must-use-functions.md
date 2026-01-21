@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1940](https://github.com/rust-lang/rfcs/pull/1940)
 - Rust Issue: [rust-lang/rust#43302](https://github.com/rust-lang/rust/issues/43302)
 
-# Summary
+## Summary
 
 Support the `#[must_use]` attribute on arbitrary functions, to make
 the compiler lint when a call to such a function is ignored. Mark
 `PartialEq::{eq, ne}` `#[must_use]` as well as `PartialOrd::{lt, gt, le, ge}`.
 
-# Motivation
+## Motivation
 
 The `#[must_use]` lint is extremely useful for ensuring that values
 that are likely to be important are handled, even if by just
@@ -53,7 +53,7 @@ Rust does not do better in this case. If you wrote `modem_reset_flag == false;` 
 
 See further discussion in [#1812.](https://github.com/rust-lang/rfcs/pull/1812)
 
-# Detailed design
+## Detailed design
 
 If a semicolon discards the result of a function or method tagged with
 `#[must_use]`, the compiler will emit a lint message (under same lint
@@ -87,7 +87,7 @@ fn eq(&self, other: &Rhs) -> bool;
 
 The same thing for `ne`, and also `lt`, `gt`, `ge`, `le` in `PartialOrd`. There is no reason to discard the results of those operations. This means the `impl`s of these functions are not changed, it still issues a warning even for a custom `impl`.
 
-# Drawbacks
+## Drawbacks
 
 This adds a little more complexity to the `#[must_use]` system, and
 may be misused by library authors (but then, many features may be
@@ -106,7 +106,7 @@ e.g. if someone is ignoring their result and has the relevant lint (or
 warnings in general) set to be an error. This is a general problem of
 improving/expanding lints.
 
-# Alternatives
+## Alternatives
 
 - Adjust the rule to propagate `#[must_used]`ness through parentheses
   and blocks, so that `(foo());`, `{ foo() };` and even `if cond {
@@ -114,6 +114,6 @@ improving/expanding lints.
   
 - Should we let particular `impl`s of a function have this attribute? Current design allows you to attach it inside the declaration of the trait.
 
-# Unresolved questions
+## Unresolved questions
 
 - Should this be feature gated?

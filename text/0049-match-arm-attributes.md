@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#49](https://github.com/rust-lang/rfcs/pull/49)
 - Rust Issue: [rust-lang/rust#12812](https://github.com/rust-lang/rust/issues/12812)
 
-# Summary
+## Summary
 
 Allow attributes on match arms.
 
-# Motivation
+## Motivation
 
 One sometimes wishes to annotate the arms of match statements with
 attributes, for example with conditional compilation `#[cfg]`s or
@@ -63,7 +63,7 @@ match foo {
 ```
 
 
-# Detailed design
+## Detailed design
 
 Normal attribute syntax, applied to a whole match arm.
 
@@ -80,13 +80,13 @@ match x {
 }
 ```
 
-# Alternatives
+## Alternatives
 
 There aren't really any general alternatives; one could probably hack
 around matching on conditional enum variants with some macros and
 helper functions to share as much code as possible; but in general
 this won't work.
 
-# Unresolved questions
+## Unresolved questions
 
 Nothing particularly.

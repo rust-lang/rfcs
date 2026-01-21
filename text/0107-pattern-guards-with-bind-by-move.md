@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#107](https://github.com/rust-lang/rfcs/pull/107)
 - Rust Issue: [rust-lang/rust#15287](https://github.com/rust-lang/rust/issues/15287)
 
-# Summary
+## Summary
 
 Rust currently forbids pattern guards on match arms with move-bound variables.
 Allowing them would increase the applicability of pattern guards.
 
-# Motivation
+## Motivation
 
 Currently, if you attempt to use guards on a match arm with a move-bound
 variable, e.g.
@@ -39,7 +39,7 @@ This allows for succinct code with less pattern matching duplication and a
 minimum number of copies at runtime. The lack of this feature was encountered by
 @kmcallister when developing Servo's new HTML 5 parser.
 
-# Detailed design
+## Detailed design
 
 This change requires all occurrences of move-bound pattern variables in the
 guard to be treated as paths to the values being matched before they are moved,
@@ -126,7 +126,7 @@ approach to resolving that issue should also work with these proposed changes.
 This would be implemented behind a `feature(bind_by_move_pattern_guards)` gate
 until we have enough experience with the feature to remove the feature gate.
 
-# Drawbacks
+## Drawbacks
 
 The current error message makes it more clear what the user is doing wrong, but
 if this change is made the error message for an invalid use of this feature
@@ -135,13 +135,13 @@ be more confusing.
 
 This might be moderately difficult to implement in `rustc`.
 
-# Alternatives
+## Alternatives
 
 As far as I am aware, the only workarounds for the lack of this feature are to
 manually expand the control flow of the guard (which can quickly get messy) or
 use unnecessary copies.
 
-# Unresolved questions
+## Unresolved questions
 
 This has nontrivial interaction with guards in arbitrary patterns as proposed
 in [#99](https://github.com/rust-lang/rfcs/pull/99).

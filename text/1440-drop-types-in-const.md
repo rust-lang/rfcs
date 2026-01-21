@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1440](https://github.com/rust-lang/rfcs/pull/1440)
 - Rust Issue: [rust-lang/rust#33156](https://github.com/rust-lang/rust/issues/33156)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow types with destructors to be used in `static` items, `const` items, and `const` functions.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Some of the collection types do not allocate any memory when constructed empty (most notably `Vec`). With the change to make leaking safe, the restriction on `static` or `const` items with destructors
@@ -17,7 +17,7 @@ is no longer required to be a hard error (as it is safe and accepted that these 
 Allowing types with destructors to be directly used in `const` functions and stored in `static`s or `const`s will remove the need to have
 runtime-initialization for global variables.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 - Lift the restriction on types with destructors being used in `static` or `const` items.
@@ -28,7 +28,7 @@ runtime-initialization for global variables.
 - Allow `const fn` to return types with destructors.
 - Disallow constant expressions that require destructors to run during compile-time constant evaluation (i.e: a `drop(foo)` in a `const fn`).
 
-## Examples
+### Examples
 Assuming that `RwLock` and `Vec` have `const fn new` methods, the following example is possible and avoids runtime validity checks.
 
 ```rust
@@ -52,14 +52,14 @@ const fn sample(_v: Vec<u8>) -> usize {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Destructors do not run on `static` items (by design), so this can lead to unexpected behavior when a type's destructor has effects outside the program (e.g. a RAII temporary folder handle, which deletes the folder on drop). However, this can already happen using the `lazy_static` crate.
 
 A `const` item's destructor _will_ run at each point where the `const` item is used. If a `const` item is never used, its destructor will never run. These behaviors may be unexpected.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Runtime initialization of a raw pointer can be used instead (as the `lazy_static` crate currently does on stable).
@@ -68,7 +68,7 @@ A `const` item's destructor _will_ run at each point where the `const` item is u
 - Leaking of objects could be addressed by using C++-style `.dtors` support
   - This is undesirable, as it introduces confusion around destructor execution order.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - TBD

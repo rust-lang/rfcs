@@ -2,12 +2,12 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/574
 - Rust Issue #: https://github.com/rust-lang/rust/issues/23055
 
-# Summary
+## Summary
 
 Replace `Vec::drain` by a method that accepts a range parameter. Add
 `String::drain` with similar functionality.
 
-# Motivation
+## Motivation
 
 Allowing a range parameter is strictly more powerful than the current version.
 E.g., see the following implementations of some `Vec` methods via the hypothetical
@@ -46,7 +46,7 @@ as the current versions. (They should not be implemented this way.)
 In particular, this method allows the user to remove a slice from a vector in
 `O(Vec::len)` instead of `O(Slice::len * Vec::len)`.
 
-# Detailed design
+## Detailed design
 
 Remove `Vec::drain` and add the following method:
 
@@ -83,7 +83,7 @@ pub fn drain<T: Trait>(&mut self, range: T) -> /* ... */;
 
 Where `Trait` and the return value are as above but need not be the same.
 
-# Drawbacks
+## Drawbacks
 
 - The function signature differs from other collections.
 - It's not clear from the signature that `..` can be used to get the old behavior.

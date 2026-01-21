@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2361](https://github.com/rust-lang/rfcs/pull/2361)
 - Rust Issue: [rust-lang/rust#54306](https://github.com/rust-lang/rust/issues/54306)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a `dbg!($expr)` macro to the prelude (so that it doesn’t need to be imported)
@@ -14,7 +14,7 @@ This is a simpler and more opinionated counter-proposal
 to [RFC 2173](https://github.com/rust-lang/rfcs/pull/2173).
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Sometimes a debugger may not have enough Rust-specific support to introspect some data
@@ -38,7 +38,7 @@ This RFC improves some aspects:
   some distinguishing information may need to be added.
   For example: `println!("foo = {:?}", x.foo());`
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 To inspect the value of a given expression at run-time,
@@ -94,19 +94,19 @@ Running this program, in the playground, will print the following to `STDERR`:
 Using `dbg!` requires type of the expression to implement the `std::fmt::Debug`
 trait.
 
-## Move semantics
+### Move semantics
 
 The `dbg!(x)` macro moves the value `x` and takes ownership of it,
 unless the type of `x` implements `Copy`, and returns `x` unchanged.
 If you want to retain ownership of the value,
 you can instead borrow `x` with `dbg!(&x)`.
 
-## Unstable output format
+### Unstable output format
 
 The exact output printed by this macro should not be relied upon and is subject to future changes.
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The macro below is added to `src/libstd/macros.rs`,
@@ -131,30 +131,30 @@ The use of `match` over `let` is similar to the implementation of `assert_eq!`.
 It [affects the lifetimes of temporaries](
 https://stackoverflow.com/questions/48732263/why-is-rusts-assert-eq-implemented-using-a-match#comment84465322_48732525).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Adding to the prelude should be done carefully.
 However a library can always define another macro with the same name and shadow this one.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 [RFC 2173] and provides a more complex alternative that offers more control but is also more complex.
 This RFC was designed with the goal of being a simpler and thus better fit for the standard library.
 
-## Alternative: tweaking formatting
+### Alternative: tweaking formatting
 
 Any detail of the formatting can be tweaked. For example, `{:#?}` or `{:?}`?
 
-## A simple macro without any control over output
+### A simple macro without any control over output
 
 This RFC does not offer users control over the exact output being printed.
 This is because a use of this macro is intended to be run a small number of times before being removed.
 If more control is desired, for example logging in an app shipped to end users,
 other options such as `println!` or the `log` crate remain available.
 
-## Accepting a single expression instead of many
+### Accepting a single expression instead of many
 
 If the macro accepts more than one expression (returning a tuple),
 there is a question of what to do with a single expression.
@@ -163,7 +163,7 @@ but *not* doing so creates a discontinuty in the macro's behavior as things are 
 With only one expression accepted,
 users can still pass a tuple expression or call the macro multiple times.
 
-## Including `file!()` in the output
+### Including `file!()` in the output
 
 In a large project with multiple files,
 it becomes quite difficult to tell what the origin of the output is.
@@ -171,12 +171,12 @@ Including `file!()` is therefore quite helpful in debugging.
 However, it is not very useful on the [playground](https://play.rust-lang.org),
 but that exception is acceptable.
 
-## Including the line number
+### Including the line number
 
 The argument is analogous to that for `file!()`. For a large file,
 it would also be difficult to locate the source of the output without `line!()`.
 
-## Excluding the column number
+### Excluding the column number
 
 Most likely, only one `dbg!(expr)` call will occur per line.
 The remaining cases will likely occur when dealing with binary operators such as with:
@@ -198,7 +198,7 @@ which may still be a good reason to keep it.
 Nonetheless, this argument is not sufficient to keep `column!()`,
 wherefore **this RFC will not include it**.
 
-## Including `stringify!(expr)`
+### Including `stringify!(expr)`
 
 As discussed in the rationale regarding `column!()`,
 `stringify!(expr)` improves the legibility of similar looking expressions.
@@ -210,7 +210,7 @@ With `stringify!`, you can easily see how the left-hand side reduces to the righ
 This makes it easier to reason about the trace of your program and why things happened as they did.
 The ability to trace effectively can greatly improve the ability to debug with ease and speed.
 
-## Returning the value that was given
+### Returning the value that was given
 
 One goal of the macro is to intrude and disturb as little as possible in the workflow of the user.
 The macro should fit the user, not the other way around.
@@ -241,7 +241,7 @@ let y = dbg!(self.first()).second();
 
 This modification is considerably smaller and disturbs flow while debugging code to a lesser degree.
 
-## Keeping output when `cfg!(debug_assertions)` is disabled
+### Keeping output when `cfg!(debug_assertions)` is disabled
 
 When `cfg!(debug_assertions)` is false,
 printing could be disabled to reduce runtime cost in release builds.
@@ -250,7 +250,7 @@ where crates such as `log` may be better suited,
 and deemed less important than the ability to easily investigate bugs that only occur with optimizations.
 These kinds of bugs [do happen](https://github.com/servo/servo/issues/19519) and can be a pain to debug.
 
-## `STDERR` should be used over `STDOUT` as the output stream
+### `STDERR` should be used over `STDOUT` as the output stream
 
 The messages printed using `dbg!` are not usually errors,
 which is one reason to use `STDOUT` instead.
@@ -262,7 +262,7 @@ where should hypothetical uses of `dbg!` print to in the case of `rg some_word <
 Should they end up on the terminal or in the file `matching_lines`?
 Clearly the former is correct in this case.
 
-## Outputting `lit = lit` for `dbg!(lit);` instead of `lit`
+### Outputting `lit = lit` for `dbg!(lit);` instead of `lit`
 
 The left hand side of the equality adds no new information wherefore it might be a redundant annoyance.
 On the other hand, it may give a sense of symmetry with the non-literal forms such as `a = 42`.
@@ -271,7 +271,7 @@ In either case, since the macro is intentionally simple,
 there is little room for tweaks such as removing `lit = `.
 For these reasons, and especially the last one, the output format `lit = lit` is used.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Many languages have a construct that can be as terse as `print foo`.
@@ -285,7 +285,7 @@ Some examples are:
 
 The specific idea to return back the input `expr` in `dbg!(expr)` was inspired by [`traceShowId`] in Haskell.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Unbounded bikeshedding.

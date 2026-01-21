@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#403](https://github.com/rust-lang/rfcs/pull/403)
 - Rust Issue: [rust-lang/rust#18473](https://github.com/rust-lang/rust/issues/18473)
 
-# Summary
+## Summary
 
 Overhaul the `build` command internally and establish a number of conventions
 around build commands to facilitate linking native code to Cargo packages.
@@ -17,7 +17,7 @@ around build commands to facilitate linking native code to Cargo packages.
    static linkage, as well as providing the ability to override where a package
    comes from via environment variables.
 
-# Motivation
+## Motivation
 
 Building native code is normally quite a tricky business, and the original
 design of Cargo was to essentially punt on this problem. Today's "solution"
@@ -56,7 +56,7 @@ problems.
 Most of these concerns are fairly self-explanatory, but specifically (2) may
 require a bit more explanation:
 
-## Selecting linkage from the top level
+### Selecting linkage from the top level
 
 Conceptually speaking, a native library is largely just a collections of
 symbols. The linkage involved in creating a final product is an implementation
@@ -91,7 +91,7 @@ extension you may be using. One of the goals of this re-working is to enable
 top-level projects to make easier decisions about how to link to libraries,
 where to find linked libraries, etc.
 
-# Detailed design
+## Detailed design
 
 Summary:
 
@@ -103,7 +103,7 @@ Summary:
 * Use Rust for build scripts
 * Develop a convention of `*-sys` packages
 
-## Modifications to `rustc`
+### Modifications to `rustc`
 
 A new flag will be added to `rustc`:
 
@@ -136,7 +136,7 @@ Note that this RFC does not propose style guidelines nor suggestions for usage
 of `-l` vs `#[link]`. For Cargo it will later recommend discouraging use of
 `#[link]`, but this is not generally applicable to all Rust code in existence.
 
-## Declaration of native library dependencies
+### Declaration of native library dependencies
 
 Today Cargo has very little knowledge about what dependencies are being used by
 a package. By knowing the exact set of dependencies, Cargo paves a way into the
@@ -162,7 +162,7 @@ Cargo-packaged dependency.
 
 It is illegal to define `links` without also defining `build`.
 
-## Platform-specific dependencies
+### Platform-specific dependencies
 
 A number of native dependencies have various dependencies depending on what
 platform they're building for. For example, libcurl does not depend on OpenSSL
@@ -194,7 +194,7 @@ package was last built on Linux or windows. This has the advantage of a stable
 lockfile, but has the drawback that all dependencies must be downloaded, even if
 they're not used.
 
-## Pre-built libraries
+### Pre-built libraries
 
 A common pain point with constraints 1, 2, and cross compilation is that it's
 occasionally difficult to compile a library for a particular platform. Other
@@ -225,7 +225,7 @@ This configuration will be placed in the normal locations that `.cargo/config`
 is found. The configuration will only be queried if the target triple being
 built matches what's in the configuration.
 
-## Rust build scripts
+### Rust build scripts
 
 First pioneered by @tomaka in https://github.com/rust-lang/cargo/issues/610, the
 `build` command will no longer be an actual command, but rather a build script
@@ -270,7 +270,7 @@ This RFC does not propose a convention of what to name the build script files.
 Unlike `links`, it will be legal to specify `build` without specifying `links`.
 This is motivated by the code generation case study below.
 
-### Inputs
+#### Inputs
 
 Cargo will provide a number of inputs to the build script to facilitate building
 native code for the current package:
@@ -310,7 +310,7 @@ native code for the current package:
   filtered out and not passed to the build command. If there are no libraries to
   build (they're all pre-built), the build command will not be invoked.
 
-### Outputs
+#### Outputs
 
 The responsibility of the build script is to ensure that all requested native
 libraries are available for the crate to compile. The conceptual output of the
@@ -344,7 +344,7 @@ dictate linkage.
 If the build script exits with a nonzero exit code, then Cargo will consider it
 to have failed and will abort compilation.
 
-### Input/Output rationale
+#### Input/Output rationale
 
 In general one of the purposes of a custom build command is to dynamically
 determine the necessary dependencies for a library. These dependencies may have
@@ -362,7 +362,7 @@ through which this information can be transmitted. The maintainer of the
 for generating this sort of metadata so consumer packages can use it to build C
 libraries themselves.
 
-## A set of `*-sys` packages
+### A set of `*-sys` packages
 
 This section will discuss a *convention* by which Cargo packages providing
 native dependencies will be named, it is not proposed to have Cargo enforce this
@@ -391,7 +391,7 @@ directly. Additionally, packages using `*-sys` packages should not declare a
 `#[link]` directive to link to the native library as it's already linked to the
 `*-sys` package.
 
-## Phasing strategy
+### Phasing strategy
 
 The modifications to the `build` command are breaking changes to Cargo. To ease
 the transition, the build command will be join'd to the root path of a crate, and
@@ -403,7 +403,7 @@ The purpose of this is to help most build scripts today continue to work (but
 not necessarily all), and pave the way forward to implement the newer
 integration.
 
-## Case study: Cargo
+### Case study: Cargo
 
 Cargo has a surprisingly complex set of C dependencies, and this proposal has
 created an [example repository][example] for what the configuration of Cargo
@@ -411,7 +411,7 @@ would look like with respect to its set of C dependencies.
 
 [example]: https://github.com/alexcrichton/complicated-linkage-example
 
-## Case study: generated code
+### Case study: generated code
 
 As the release of Rust 1.0 comes closer, the use of compiler plugins has become
 increasingly worrying over time. It is likely that plugins will not be available
@@ -448,7 +448,7 @@ generated Rust code can be generated by the `build` command and placed into
 `OUT_DIR`. The `include!` macro would then be used to include the contents of
 the code inside of the appropriate module.
 
-## Case study: controlling linkage
+### Case study: controlling linkage
 
 One of the motivations for this RFC and redesign of the `build` command is to
 making linkage controls more explicit to Cargo itself rather than hardcoding
@@ -498,7 +498,7 @@ pursue more fine-tuned control over how libraries are linked. It is intended
 that `cargo` will itself be driven with something such as a `Makefile` to
 perform this configuration (be it environment or in files).
 
-# Drawbacks
+## Drawbacks
 
 * The system proposed here for linking native code is in general somewhat
   verbose.  In theory well designed third-party Cargo crates can alleviate this
@@ -519,7 +519,7 @@ perform this configuration (be it environment or in files).
 
 [verbose]: https://github.com/alexcrichton/complicated-linkage-example/blob/master/curl-sys/Cargo.toml#L9-L17
 
-# Alternatives
+## Alternatives
 
 * It has been proposed to support the `links` manifest key in the `features`
   section as well. In the proposed scheme you would have to create an optional
@@ -536,6 +536,6 @@ perform this configuration (be it environment or in files).
   and it's always a possibility that Cargo could grow more first-class support
   for dealing with the linkage of C libraries.
 
-# Unresolved questions
+## Unresolved questions
 
 None

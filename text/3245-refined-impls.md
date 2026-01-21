@@ -1,18 +1,18 @@
-# Refined trait implementations
+## Refined trait implementations
 
 - Feature Name: `refined_impls`
 - Start Date: 2022-03-22
 - RFC PR: [rust-lang/rfcs#3245](https://github.com/rust-lang/rfcs/pull/3245)
 - Rust Issue: [rust-lang/rust#100706](https://github.com/rust-lang/rust/issues/100706)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC generalizes the [`safe_unsafe_trait_methods` RFC][safe_unsafe], allowing implementations of traits to add type information about the API of their methods and constants which then become part of the API for that type. Specifically, lifetimes and where clauses are allowed to extend beyond what the trait provides.
 
 [safe_unsafe]: https://rust-lang.github.io/rfcs/2316-safe-unsafe-trait-methods.html
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 2316][safe_unsafe] introduced the notion of _safe implementations_ of unsafe trait methods. This allows code that knows it is calling a safe implementation of an unsafe trait method to do so without using an unsafe block. In other words, this works under RFC 2316, which is not yet implemented:
@@ -92,7 +92,7 @@ This is a papercut: In order to make this API available to users the `OrderedLog
 
 The purpose of this RFC is to fix the inconsistency in the language and add flexibility by removing this papercut. Finally, it establishes a policy to prevent such inconsistencies in the future.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When implementing a trait, you can use function signatures that _refine_ those in the trait by being more specific. For example,
@@ -153,10 +153,10 @@ Finally, methods marked `unsafe` in traits can be refined as safe APIs, allowing
 
 [^rpitit]: At the time of writing, return position impl Trait is not allowed in traits. The guide text written here is only for the purpose of illustrating how we would document this feature if it were allowed.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Trait implementations
+### Trait implementations
 
 The following text should be added after [this paragraph](https://doc.rust-lang.org/nightly/reference/items/implementations.html#trait-implementations) from the Rust reference:
 
@@ -184,27 +184,27 @@ When an item in an impl meets these conditions, we say it is a _valid refinement
 
 [implied bounds]: https://rust-lang.github.io/rfcs/2089-implied-bounds.html
 
-### Using refined implementations
+#### Using refined implementations
 
 Refined APIs are available anywhere knowledge of the impl being used is available. If the compiler can deduce a particular impl is being used, its API as written is available for use by the caller. This includes UFCS calls like `<MyType as Trait>::foo()`.
 
-## Transitioning away from the current behavior
+### Transitioning away from the current behavior
 
 Because we allow writing impls that look refined, but are [not usable][not-usable] as such, landing this feature could mean auto-stabilizing new ecosystem API surface. We should probably be conservative and require library authors to opt in to refined APIs with a `#[refine]` attribute. This can be done in two parts.
 
-### Lint against unmarked refined impls
+#### Lint against unmarked refined impls
 
 After this RFC is merged, we should warn when a user writes an impl that looks refined and suggest that they copy the exact API of the trait they are implementing. Once this feature stabilizes, we can suggest using `#[refine]` attribute to mark that an impl is intentionally refined.
 
-### Automatic migration for the next edition
+#### Automatic migration for the next edition
 
 We may want to upgrade the above lint to an error in 2024 or make refinement the default without any attribute at all. In either case, we should have an automatic edition migration that rewrites users' code to preserve its semantics. That means we will replace trait implementations that look refined with the original API of the trait items being implemented.
 
-### Documentation
+#### Documentation
 
 The following can be added to the reference to document the difference in editions.
 
-#### `#[refine]` attribute
+##### `#[refine]` attribute
 
 Refinements of trait items that do not match the API of the trait exactly must be accompanied by a `#[refine]` attribute on the item in Rust 2021 and older editions.[^refine-edition]
 
@@ -218,35 +218,35 @@ For historical reasons, we allow valid refinements on the following features in 
 
 [^refine-edition]: Depending on the outcome of the Unresolved Questions in this RFC, this may also be the case for future editions.
 
-## Preventing future ambiguity
+### Preventing future ambiguity
 
 This RFC establishes a policy that anytime the signature of an associated item in a trait implementation is *allowed to differ* from the signature in the trait, the information in that signature should be usable by code that uses the implementation.
 
 This RFC specifically does not specify that new language features involving traits *should* allow refined impls wherever possible. The language could choose not to accept refined implementation signatures for that feature. This should be decided on a case-by-case basis for each feature.
 
-## RFC 2316
+### RFC 2316
 
 [RFC 2316][safe_unsafe] is amended by this RFC to require `#[refine]` on safe implementations of unsafe trait methods.
 
-## Interaction with other features
+### Interaction with other features
 
-### Implied bounds
+#### Implied bounds
 
 When [implied bounds] is stabilized, the rules for valid refinements will be modified according to the italicized text above.
 
-### Specialization
+#### Specialization
 
 [Specialization] allows trait impls to overlap. Whenever two trait impls overlap, one must take precedence according to the rules laid out in the specialization RFC. Each item in the impl taking precedence must be a valid refinement of the corresponding item in the overlapping impl.
 
 [specialization]: https://rust-lang.github.io/rfcs/1210-impl-specialization.html
 
-### Generic associated types
+#### Generic associated types
 
 These features mostly don't interact. However, it's worth noting that currently generic associated types [require extra bounds][87479] on the trait definition if it is likely they will be needed by implementations. This feature would allow implementations that don't need those bounds to elide them and remove that requirement on their types' interface.
 
 [87479]: https://github.com/rust-lang/rust/issues/87479
 
-### `const` polymorphism
+#### `const` polymorphism
 
 We may want to allow implementations to add `const` to their methods. This raises the question of whether we want *provided* methods of the trait to also become `const`. For example:
 
@@ -258,7 +258,7 @@ impl Iterator for Foo {
 
 Should the `nth` method also be considered `const fn`?
 
-### Method dispatch
+#### Method dispatch
 
 The [method dispatch rules] can be confusing when there are multiple candidates with the same name but that differ in their `self` type. Refinement on `impl Trait` return types can interact with this by adding new candidates for method dispatch. See [this comment][resolution-comment] for an example.
 
@@ -267,7 +267,7 @@ Method dispatch rules can be improved in a future edition, for example by making
 [method dispatch rules]: https://doc.rust-lang.org/stable/reference/expressions/method-call-expr.html
 [resolution-comment]: https://github.com/rust-lang/rfcs/pull/3245#issuecomment-1105959958
 
-### Unsatisfiable trait members
+#### Unsatisfiable trait members
 
 Today we [require trait members with unsatisfiable `where` clauses to be implemented][2829]. This leads to dropping the unsatisfiable bounds in the impl (a form of refinement) and, in some cases, relying on the property that the item can never be used. See [this comment][unsat-comment] for an example. This RFC would relax that property.
 
@@ -278,28 +278,28 @@ We should solve this problem separately and allow implementers to omit items lik
 [2829]: https://github.com/rust-lang/rfcs/issues/2829
 [unsat-comment]: https://github.com/rust-lang/rfcs/pull/3245#issuecomment-1120097693
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## Accidental stabilization
+### Accidental stabilization
 
 For library authors, it is possible for this feature to create situations where a more refined API is *accidentally* stabilized. Before stabilizing, we will need to gain some experience with the feature to determine if it is a good idea to allow refined impls without annotations.
 
-## Complexity
+### Complexity
 
 Overall, we argue that this RFC reduces complexity by improving the consistency and flexibility of the language. However, this RFC proposes several things that can be considered added complexity to the language:
 
-### Adding text to the Rust reference
+#### Adding text to the Rust reference
 
 Part of the reason that text is being added to the reference is that the reference doesn't specify what makes an item in a trait implementation valid. The current behavior of allowing certain kinds of divergence and "ignoring" some of them is not specified anywhere, and would probably be just as verbose to describe.
 
-### Types are allowed to have different APIs for the same trait
+#### Types are allowed to have different APIs for the same trait
 
 It is possible for a user to form an impression of a trait API by seeing its use in one type, then be surprised to find that that usage does not generalize to all implementations of the trait.
 
 It's rarely obvious, however, that a *trait* API is being used at a call site as opposed to an inherent API (which can be completely different from one type to the next). The one place it is obvious is in generic functions, which will typically only have access to the original trait API.
 
-## Refactoring
+### Refactoring
 [Refactoring]: #refactoring
 
 When a trait API is refined by a type, users of that type may rely on refined details of that API without realizing it. This could come as a surprise when they then try to refactor their code to be generic over that type.
@@ -310,28 +310,28 @@ In some situations the user may realize they are relying on too many details of 
 
 This problem can be solved or mitigated with new ways of adding bounds to the refined items, but those are out of scope for this RFC and not fully designed. They are described below in [Bounding refined items].
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This RFC attempts to be minimal in terms of its scope while accomplishing its stated goal to improve the consistency of Rust. It aims to do so in a way that makes Rust easier to learn and easier to use.
 
-## Do nothing
+### Do nothing
 
 Doing nothing preserves the status quo, which as shown in the [Motivation] section, is confusing and inconsistent. Allowing users to write function signatures that aren't actually visible to calling code violates the principle of least surprise. It would be better to begin a transition out of this state sooner than later to make future edition migrations less disruptive.
 
-## Require implementations to use exactly the same API as the trait
+### Require implementations to use exactly the same API as the trait
 
 We could reduce the potential for confusion by disallowing "dormant refinements" with a warning in the current edition, as this RFC proposes, and an error in future editions. This approach is more conservative than the one in this RFC. However, it leaves Rust in a state of allowing some kinds of refinement (like safe impls of `unsafe` methods) but not others, without a clear reason for doing so.
 
 While we could postpone the question of whether to allow this indefinitely, we argue that allowing such refinements will make Rust easier to learn and easier to use.
 
-## Allow `#[refine]` at levels other than impl items
+### Allow `#[refine]` at levels other than impl items
 
 We could allow `#[refine]` on individual aspects of a function signature like the return type, where clauses, or argument types. This would allow users to scope refinement more narrowly and make sure that they aren't refining other aspects of that function signature. However, it seems unlikely that API refinement would be such a footgun that such narrowly scoping is needed.
 
 Going in the other direction, we could allow `#[refine]` on the impl itself. This would remove repetition in cases where an impl refines many items at once. It is unclear if this would be desired frequently enough to justify it.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 ### Java covariant return types
@@ -344,10 +344,10 @@ One piece of related prior art here is the [leakage of auto traits][auto-leakage
 
 [auto-leakage]: https://rust-lang.github.io/rfcs/1522-conservative-impl-trait.html#oibit-transparency
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Should `#[refine]` be required in future editions?
+### Should `#[refine]` be required in future editions?
 
 As discussed in [Drawbacks], this feature could lead to library authors accidentally publishing refined APIs that they did not mean to stabilize. We could prevent that by requiring the `#[refine]` attribute on any refined item inside an implementation.
 
@@ -359,16 +359,16 @@ There are three main options:
 
 It would help to do an analysis of how frequently "dormant refinements" occur on crates.io today, and of a sample of those, how many look accidental and how many look like an extended API that a crate author might have meant to expose.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Return position `impl Trait` in traits
+### Return position `impl Trait` in traits
 
 One motivating use case for refined impls is return position impl trait in traits, which is not yet an accepted Rust feature. You can find more details about this feature in an [earlier RFC](https://github.com/rust-lang/rfcs/pull/3193). Its use is demonstrated in an [example][guide-level-explanation] at the beginning of this RFC.
 
 This RFC is intended to stand alone, but it also works well with that proposal.
 
-### Equivalence to associated types
+#### Equivalence to associated types
 
 One of the appealing aspects of this feature is that it can be desugared to a function returning an associated type.
 
@@ -397,14 +397,14 @@ let _: String = ().foo();
 
 With refinement impls, we can say that this desugaring is equivalent because return position impl trait would give the same flexibility to implementers as associated types.
 
-## Bounding refined items
+### Bounding refined items
 [Bounding refined items]: #bounding-refined-items
 
 As described in the [Refactoring] drawbacks section, when making existing code generic a user may run into dependence on refined aspects of a concrete type not specified in the trait itself. In this case the user may want to add additional bounds so they can make their code generic without significant modifications.
 
 This problem already exists for associated types, but bounds can be added for those. This implies a couple of ways to solve this problem.
 
-### New kinds of bounds
+#### New kinds of bounds
 
 We can make it possible to add bounds on all refine-able aspects of a trait API.
 
@@ -422,7 +422,7 @@ The need for this arises both in `async` (e.g. needing to bound a future return 
 
 There is no way to bound the type of a const today. It is possible one could be added, but since consts will only allow subtype refinement (i.e. a type with a longer lifetime than required by the trait) it is unlikely that this situation will come up often in practice.
 
-### Falling back to associated types
+#### Falling back to associated types
 
 As mentioned above, associated types can have bounds, either on their exact value or with other traits:
 
@@ -474,7 +474,7 @@ There are least a couple of things needed for this:
 
 [associated type defaults]: https://github.com/rust-lang/rust/issues/29661
 
-## Adding generic parameters
+### Adding generic parameters
 
 This RFC allows implementers to replace return-position `impl Trait` with a concrete type. Conversely, sometimes it is desirable to *generalize* an argument from a concrete type to `impl Trait` or a new generic parameter.
 

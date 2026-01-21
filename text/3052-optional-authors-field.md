@@ -1,11 +1,11 @@
-# RFC: Make the authors field optional
+## RFC: Make the authors field optional
 
 - Feature Name: `optional_authors_field`
 - Start Date: 2021-01-07
 - RFC PR: [rust-lang/rfcs#3052](https://github.com/rust-lang/rfcs/pull/3052)
 - Rust Issue: [rust-lang/rust#83227](https://github.com/rust-lang/rust/issues/83227)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes to make the `package.authors` field of `Cargo.toml` optional.
@@ -13,7 +13,7 @@ This RFC also proposes preventing Cargo from auto-filling it, allowing crates
 to be published to crates.io without the field being present, and avoiding
 displaying its contents on the crates.io and docs.rs UI.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The crates.io registry does not allow users to change the contents of already
@@ -33,7 +33,7 @@ grows, with projects either making the field useless by just stating "The
 $PROJECT developers" or only naming the original authors without mentioning
 other major contributors.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 crates.io will allow publishing crates without the `package.authors` field, and
@@ -51,18 +51,18 @@ the `CARGO_PKG_AUTHORS` environment variable) will have to handle the field
 being missing (for example by switching from the `env!` macro to
 `option_env!`).
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The implementation of this RFC spans multiple parts of the Rust project:
 
-## Cargo
+### Cargo
 
 Cargo will stop fetching the current user's name and email address when running
 `cargo init`, and it will not include the field in the default template for
 `Cargo.toml`.
 
-## crates.io
+### crates.io
 
 crates.io will allow publishing versions without the field and with the field
 empty. The Web UI will remove the authors section, while retaining the current
@@ -73,11 +73,11 @@ currently includes it, but the field will always be empty (even if the crate
 author manually adds data to it). The database dumps will also stop including
 the field.
 
-## docs.rs
+### docs.rs
 
 docs.rs will replace the authors with the current owners in its UI.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Cargo currently provides author information to the crate via
@@ -94,7 +94,7 @@ may have wanted that information preserved. After this RFC, crate authors who
 want to display historical authors who are not current crate owners will have
 to present that information in some other way.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This RFC reduces the problems related to changing the names in the authors
@@ -105,7 +105,7 @@ We could do nothing, but that would increase the support load of the crates.io
 team and would result in more crates being removed from the registry due to
 this issue.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 * **JavaScript:** `package.json` has an optional `authors` field, but it's not
@@ -121,12 +121,12 @@ this issue.
   whether to pre-populate it based on the current environment or skip it. The
   Packagist Web UI does not show the contents of the field.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * What should we do about the metadata in already published crates?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The `package.authors` field could be deprecated and removed in a future

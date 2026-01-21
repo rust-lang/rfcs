@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#439](https://github.com/rust-lang/rfcs/pull/439)
 - Rust Issue: [rust-lang/rfcs#19148](https://github.com/rust-lang/rust/issues/19148)
 
-# Summary
+## Summary
 
 This RFC proposes a number of design improvements to the `cmp` and
 `ops` modules in preparation for 1.0. The impetus for these
@@ -17,7 +17,7 @@ impact the design. Highlights:
 * Add `IndexSet` to better support maps.
 * Clarify ownership semantics throughout.
 
-# Motivation
+## Motivation
 
 The operator and comparison traits play a double role: they are lang
 items known to the compiler, but are also library APIs that need to be
@@ -33,7 +33,7 @@ at 1.0, there is enough information to make final decisions about the
 construction of the comparison and operator traits. That's what this
 RFC aims to do.
 
-# Detailed design
+## Detailed design
 
 The traits in `cmp` and `ops` can be broken down into several
 categories, and to keep things manageable this RFC discusses each
@@ -46,12 +46,12 @@ category separately:
 * Indexing and slicing: `Index`, `IndexMut`, `Slice`, `SliceMut`
 * Special traits: `Deref`, `DerefMut`, `Drop`, `Fn`, `FnMut`, `FnOnce`
 
-## Basic operators
+### Basic operators
 
 The basic operators include arithmetic and bitwise notation with both
 unary and binary operators.
 
-### Current design
+#### Current design
 
 Here are two example traits, one unary and one binary, for basic operators:
 
@@ -72,7 +72,7 @@ uses of `&` for the operands.
 The traits also take `Result` as an
 [*input*](https://github.com/rust-lang/rfcs/pull/195) type.
 
-### Proposed design
+#### Proposed design
 
 This RFC proposes to make `Result` an associated (output) type, and to
 make the traits work by value:
@@ -144,11 +144,11 @@ impl<'a, 'b> Add<&'a str> for &'b str {
 }
 ```
 
-## Comparison traits
+### Comparison traits
 
 The comparison traits provide overloads for operators like `==` and `>`.
 
-### Current design
+#### Current design
 
 Comparisons are subtle, because some types (notably `f32` and `f64`)
 do not actually provide full equivalence relations or total
@@ -193,7 +193,7 @@ problems in map APIs, which are now resolved in a different way.)
 The comparison traits all work by reference, and the compiler inserts
 implicit uses of `&` to make this ergonomic.
 
-### Proposed design
+#### Proposed design
 
 This RFC proposes to follow largely the same design strategy, but to
 remove `Equiv` and instead generalize the traits via multidispatch:
@@ -234,11 +234,11 @@ likely improve e.g. `#[deriving(Ord)]` to automatically derive
 `PartialOrd`. See Alternatives for a more radical design (and the
 reasons that it's not feasible right now.)
 
-## Indexing and slicing
+### Indexing and slicing
 
 There are a few traits that support `[]` notation for indexing and slicing.
 
-### Current design:
+#### Current design:
 
 The current design is as follows:
 
@@ -276,7 +276,7 @@ For both of these traits, the indexes themselves are taken by
 reference, and the compiler automatically introduces a `&` (so you
 write `v[3]` not `v[&3]`).
 
-### Proposed design
+#### Proposed design
 
 This RFC proposes to refactor the slice design into more modular
 components, which as a side-product will make slicing automatically
@@ -285,7 +285,7 @@ desirable because `&mut v[1..]` is more consistent with the rest of
 the language than `v[mut 1..]` (and also makes the borrowing semantics
 more explicit).
 
-#### Index revisions
+##### Index revisions
 
 In the new design, the index traits take the index by value and the
 compiler no longer introduces a silent `&`. This follows the same
@@ -333,7 +333,7 @@ will use `IndexSet` to interpret the `expr[i] = expr` syntax. (You can
 always get `IndexMut` by instead writing `* &mut expr[i] = expr`, but
 this will likely be extremely rare.)
 
-#### Slice revisions
+##### Slice revisions
 
 The changes to slice notation are more radical: this RFC proposes to
 remove the slice traits altogether! The replacement is to introduce
@@ -378,12 +378,12 @@ type level, however, and the latter is not ambiguous: `Foo { a: x,
 .. bar}` since the `.. bar` component will never be parsed as an
 expression.
 
-## Special traits
+### Special traits
 
 Finally, there are a few "special" traits that hook into the compiler
 in various ways that go beyond basic operator overlaoding.
 
-### `Deref` and `DerefMut`
+#### `Deref` and `DerefMut`
 
 The `Deref` and `DerefMut` traits are used for overloading
 dereferencing, typically for smart pointers.
@@ -407,11 +407,11 @@ pub trait Deref {
 }
 ```
 
-### `Drop`
+#### `Drop`
 
 This RFC proposes no changes to the `Drop` trait.
 
-### Closure traits
+#### Closure traits
 
 This RFC proposes no changes to the closure traits. The current design looks like:
 
@@ -437,16 +437,16 @@ change their definition to support
 [variadic generics](https://github.com/rust-lang/rfcs/issues/376) in
 the future.
 
-# Drawbacks
+## Drawbacks
 
 The main drawback is that implementing the above will take a bit of
 time, which is something we're currently very short on. However,
 stabilizing `cmp` and `ops` has always been part of the plan, and has
 to be done for 1.0.
 
-# Alternatives
+## Alternatives
 
-## Comparison traits
+### Comparison traits
 
 We could pursue a more aggressive change to the comparison traits by
 not having `PartialOrd` be a super trait of `Ord`, but instead
@@ -462,7 +462,7 @@ true).
 Since it's unlikely that these other changes can happen in time for
 1.0, this RFC takes a more conservative approach.
 
-## Slicing
+### Slicing
 
 We may want to drop the `[]` notation. This notation was introduced to
 improve ergonomics (from `foo(v.as_slice())` to `foo(v[]`), but now
@@ -478,7 +478,7 @@ language are likely to face quickly.
 In the opinion of this RFC author, we should either keep `[]`
 notation, or provide deref coercions so that you can just say `&v`.
 
-# Unresolved questions
+## Unresolved questions
 
 In the long run, we should support overloading of operators like `+=`
 which often have a more efficient implementation than desugaring into

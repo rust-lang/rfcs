@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2992](https://github.com/rust-lang/rfcs/pull/2992)
 - Rust Issue: [rust-lang/rust#80970](https://github.com/rust-lang/rust/issues/80970)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This proposes a new `cfg`: `target_abi`, which specifies certain aspects of the
@@ -11,7 +11,7 @@ target's [Application Binary Interface (ABI)][abi]. This also adds a
 `CARGO_CFG_TARGET_ABI` environment variable for parity with other
 `CARGO_CFG_TARGET_*` variables.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Certain targets are only differentiated by their ABI. For example: the `ios` OS
@@ -29,7 +29,7 @@ variable. This is not ideal because:
 - Checking `TARGET` is error prone, mainly because the ABI often follows
   `target_env` without separation.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This would act like [existing `target_*` configurations][cfg-options].
@@ -53,7 +53,7 @@ pub mod app_kit;
 This configuration option would also be usable as
 `#[cfg_attr(target_abi = "...", attr)]`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `target_abi` is a key-value option set once with the target's ABI. The value is
@@ -69,7 +69,7 @@ Example values:
 - `"eabihf"`
 - `"macabi"`
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Additional metadata for the compiler to keep track of.
@@ -77,7 +77,7 @@ Example values:
 - Like other `cfg`s, this can be manipulated at build time to be a value that
   mismatches the actual target.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 We can keep the existing work-around of checking the `TARGET` environment
@@ -89,7 +89,7 @@ variable in a `build.rs` script. However, this is not ideal because:
 - Checking `TARGET` is error prone, mainly because the ABI often follows
   `target_env` without separation.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [Target component configurations][cfg-options]: `target_arch`,
@@ -98,12 +98,12 @@ variable in a `build.rs` script. However, this is not ideal because:
 - `CARGO_CFG_TARGET_*`
   [environment variables for `build.rs`](https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 None.

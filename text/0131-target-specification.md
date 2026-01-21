@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#131](https://github.com/rust-lang/rfcs/pull/131)
 - Rust Issue: [rust-lang/rust#16093](https://github.com/rust-lang/rust/issues/16093)
 
-# Summary
+## Summary
 
 *Note:* This RFC discusses the behavior of `rustc`, and not any changes to the
 language.
@@ -12,7 +12,7 @@ usecases. Additionally, add support for the "unknown" OS in target triples,
 providing a minimum set of target specifications that is valid for bare-metal
 situations.
 
-# Motivation
+## Motivation
 
 One of Rust's important use cases is embedded, OS, or otherwise "bare metal"
 software. At the moment, we still depend on LLVM's split-stack prologue for
@@ -21,7 +21,7 @@ support what LLVM requires to enable this (on x86, a certain thread-local
 storage setup). Additionally, porting `rustc` to a new platform requires
 modifying the compiler, adding a new OS manually.
 
-# Detailed design
+## Detailed design
 
 A target triple consists of three strings separated by a hyphen, with a
 possible fourth string at the end preceded by a hyphen. The first is the
@@ -83,13 +83,13 @@ than matching against an enum listing the OSes we recognize. The `target_os`,
 `target_family`, and `target_arch` `cfg` variables would be extracted from the
 `--target` passed to rustc.
 
-# Drawbacks
+## Drawbacks
 
 More complexity. However, this is very flexible and allows one to use Rust on
 a new or non-standard target *incredibly easy*, without having to modify the
 compiler. rustc is the only compiler I know of that would allow that.
 
-# Alternatives
+## Alternatives
 
 A less holistic approach would be to just allow disabling split stacks on a
 per-crate basis. Another solution could be adding a family of targets,

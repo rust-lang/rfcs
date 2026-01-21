@@ -4,11 +4,11 @@
 - Tracking Issue: [rust-lang/rust#117587](https://github.com/rust-lang/rust/issues/117587)
 - Initiative: [`impl Trait` Initiative](https://github.com/rust-lang/impl-trait-initiative)
 
-# Summary
+## Summary
 
 In Rust 2024 and later editions, return position `impl Trait` (RPIT) opaque types will automatically capture all in-scope type *and* lifetime parameters.  In preparation for this, new RPIT-like `impl Trait` features introduced into earlier editions will also automatically capture all in-scope type and lifetime parameters.
 
-# Background
+## Background
 
 Rust's rules in the 2021 and earlier editions around capturing lifetimes in return position `impl Trait` (RPIT) opaque types are inconsistent, unergonomic, and not helpful to users.  In common scenarios, doing the correct thing requires a *trick* that is not well known and whose purpose is commonly not well understood.
 
@@ -18,7 +18,7 @@ We want the upcoming features in the stabilization pipeline to capture lifetimes
 
 This RFC specifies a [solution] that achieves this.  But first, we'll describe the problem in further detail.  The descriptions and examples in this section use the semantics of Rust 2021.
 
-## Capturing lifetimes
+### Capturing lifetimes
 
 In return position `impl Trait` (RPIT) and `async fn`, an **opaque type** is a type that can only be used for its specified trait bounds (and for the "leaked" auto trait bounds of its hidden type).  A **hidden type** is the actual concrete type of the values hidden behind the opaque type.
 
@@ -39,7 +39,7 @@ See [Appendix H] for examples and further exposition of these rules.
 
 [^ref-captures-trait-ltps]: See ["The `Captures` trick"](#the-captures-trick) for the definition of `Captures`.
 
-## Capturing lifetimes in type parameters
+### Capturing lifetimes in type parameters
 
 In return position `impl Trait` (RPIT) and `async fn`, lifetimes contained within all in-scope type parameters are captured in the opaque type.  For example:[^ref-captures-trait-tps]
 
@@ -58,7 +58,7 @@ In the above, we would say that `foo` captures the type parameter `T` or that it
 
 [^ref-captures-trait-tps]: See ["The `Captures` trick"](#the-captures-trick) for the definition of `Captures`.  Note that in this example, the `Captures` trick would not be needed, but it is notated explicitly for exposition.
 
-### Behavior of `async fn`
+#### Behavior of `async fn`
 
 As we saw in the examples above, `async` functions automatically capture in their returned opaque types all type and lifetime parameters in scope.
 
@@ -94,7 +94,7 @@ fn foo<'a, T>(x: &'a (), y: T)
 
 Given how `async fn` captures all type and lifetime parameters in scope in its returned opaque type, we could imagine that if it had happened first, the original lifetime capture rules for RPIT might have done that as well.
 
-### Behavior of `async fn` with lifetimes in outer impl
+#### Behavior of `async fn` with lifetimes in outer impl
 
 Lifetimes in scope from an outer impl are also captured automatically by an `async fn`.  For example:
 
@@ -110,7 +110,7 @@ impl<'a> Foo<'a> {
 
 Note that the lifetime is captured in the returned opaque type whether or not the lifetime appears in the `async fn` return type and whether or not the lifetime is actually used in the hidden type at all.
 
-## Working with the lifetime capture rules in RPIT
+### Working with the lifetime capture rules in RPIT
 
 For the borrow checker to function with an opaque type it must know what lifetimes it captures (and consequently what lifetimes may be used by the hidden type), so it's important that this information can be deduced from the signature, either by writing it out or by an automatic rule.
 
@@ -118,7 +118,7 @@ As we saw in the previous examples, for RPIT (but not for `async fn`), the rule 
 
 When someone wants to capture a lifetime parameter not already in the bounds, that person must use one of the tricks we'll describe next.
 
-### The outlives trick
+#### The outlives trick
 
 Consider this example:
 
@@ -144,7 +144,7 @@ It works anyway in this specific case only because the lifetime of the returned 
 
 This trick fails when there are multiple independent lifetimes that are captured, including lifetimes contained within type parameters (see [Appendix D] for an example of this).  Further, it confuses users and makes it more difficult for those users to build a consistent mental model of Rust lifetime bounds.
 
-### The `Captures` trick
+#### The `Captures` trick
 
 The correct way to express the capture of lifetime parameters in Rust 2021 is with the `Captures` trick.  It's the only option when multiple independent lifetimes must be captured (including lifetimes from captured type parameters).  Consider again our example:
 
@@ -177,7 +177,7 @@ While this does work, the `Captures` trick is ungainly, it's not widely known, a
 
 [^captures-trait]: Note that there are various ways to define the `Captures` trait.  In most discussions about this trick, it has been defined as above.  However, internally in the Rust compiler it is currently defined instead as `trait Captures<'a> {}`.  These notational differences do not affect the semantics described in this RFC.  Note, however, that `Captures<'a> + Captures<'b>` is not equivalent to `Captures<(&'a (), &'b ())>` because lifetimes do not participate in trait selection in Rust.  To get equivalent semantics, one would have to define `trait Captures2<'a, 'b> {}`, `trait Captures3<'a, 'b, 'c> {}`, etc.
 
-## Behavior of RPIT in Rust 2021 with type parameters
+### Behavior of RPIT in Rust 2021 with type parameters
 
 The Rust 2021 rules for capturing lifetime parameters in opaque types are also inconsistent with the rules for capturing lifetime components within type parameters.  Consider:
 
@@ -193,7 +193,7 @@ fn bar<'a>(x: &'a ()) -> impl Sized + 'a {
 
 Rust captures all type parameters automatically in the opaque type.  This results in all lifetime components within those type parameters being captured automatically.  It can be surprising for lifetime parameters to not work in the same way as lifetime components contained within captured type parameters.
 
-## Overcapturing
+### Overcapturing
 
 The rules that cause us to capture all generic parameters in the opaque type might cause us to capture too much.  This is already a problem in Rust 2021.  E.g.:
 
@@ -221,11 +221,11 @@ The stabilization of the 2024 lifetime capture rules in this RFC is contingent o
 
 [RFC 1214]: https://github.com/rust-lang/rfcs/blob/master/text/1214-projections-lifetimes-and-wf.md
 
-## Summary of problems
+### Summary of problems
 
 In summary, in Rust 2021, the lifetime capture rules for RPIT opaque types are unergonomic and require unobvious tricks.  The rules for capturing lifetime parameters are inconsistent with the rules for capturing lifetimes within type parameters.  The rules for RPIT are inconsistent with the rules for `async fn`, and this is exposed to users because of the common need to switch between these two equivalent forms.
 
-# Solution
+## Solution
 
 [solution]: #solution
 
@@ -233,7 +233,7 @@ This section is normative.
 
 In Rust 2024 and later editions, return position `impl Trait` (RPIT) opaque types will automatically capture all in-scope type *and* lifetime parameters.  In preparation for this, new RPIT-like `impl Trait` features introduced into earlier editions will also automatically capture all in-scope type and lifetime parameters.
 
-## Apply `async fn` rule to RPIT in 2024 edition
+### Apply `async fn` rule to RPIT in 2024 edition
 
 Under this RFC, in the Rust 2024 edition, RPIT opaque types will automatically capture all lifetime parameters in scope, just as `async fn` does in Rust 2021, and just as RPIT does in Rust 2021 when capturing type parameters.
 
@@ -245,7 +245,7 @@ This updates and supersedes the behavior specified in [RFC 1522] and [RFC 1951].
 
 Consequently, the following examples will become legal in Rust 2024:
 
-### Capturing lifetimes from a free function signature
+#### Capturing lifetimes from a free function signature
 
 ```rust
 fn foo<'a, T>(x: &'a T) -> impl Sized { x }
@@ -253,7 +253,7 @@ fn foo<'a, T>(x: &'a T) -> impl Sized { x }
 //                         ^ Captures `'a` and `T`.
 ```
 
-### Capturing lifetimes from outer inherent impl
+#### Capturing lifetimes from outer inherent impl
 
 ```rust
 struct Foo<'a, T>(&'a T);
@@ -264,7 +264,7 @@ impl<'a, T> Foo<'a, T> {
 }
 ```
 
-### Capturing lifetimes from an inherent associated function signature
+#### Capturing lifetimes from an inherent associated function signature
 
 ```rust
 struct Foo<T>(T);
@@ -275,7 +275,7 @@ impl<T> Foo<T> {
 }
 ```
 
-### Capturing lifetimes from an inherent method signature
+#### Capturing lifetimes from an inherent method signature
 
 ```rust
 struct Foo<T>(T);
@@ -286,7 +286,7 @@ impl<T> Foo<T> {
 }
 ```
 
-### Capturing lifetimes from `for<..>` binders
+#### Capturing lifetimes from `for<..>` binders
 
 Once higher ranked lifetime bounds on nested opaque types are supported in Rust (see [#104288][]), the following code will become legal:
 
@@ -313,13 +313,13 @@ Note that support for higher ranked lifetime bounds is not required by this RFC 
 
 [#104288]: https://github.com/rust-lang/rust/issues/104288
 
-## Overcapturing
+### Overcapturing
 
 Sometimes the capture rules result in unwanted type and lifetime parameters being captured.  This happens in Rust 2021 due to the RPIT rules for capturing lifetimes from all in-scope type parameters and the `async fn` rules for capturing all in-scope type and lifetime parameters.  Under this RFC, in Rust 2024, lifetime parameters could also be overcaptured by RPIT.
 
 The stabilization of the 2024 lifetime capture rules in this RFC is contingent on the stabilization of some solution for precise capturing that will allow all code that is allowed under Rust 2021 to be expressed, in some cases with syntactic changes, in Rust 2024.
 
-## Type alias `impl Trait` (TAIT)
+### Type alias `impl Trait` (TAIT)
 
 Under this RFC, the opaque type in type alias `impl Trait` (TAIT) in all editions will automatically capture all type and lifetime parameters present in the type alias.  For example:
 
@@ -339,7 +339,7 @@ This updates and supersedes the behavior specified in [RFC 2071] and [RFC 2515].
 
 [RFC 2515]: https://github.com/rust-lang/rfcs/blob/master/text/2515-type_alias_impl_trait.md
 
-## Associated type position `impl Trait` (ATPIT)
+### Associated type position `impl Trait` (ATPIT)
 
 Under this RFC, the opaque type in associated type position `impl Trait` (ATPIT) in all editions will automatically capture all type and lifetime parameters present in the GAT and in the outer impl.  For example:
 
@@ -369,7 +369,7 @@ impl<'t, 's> Trait<'t> for Foo<'s> {
 
 This updates and supersedes the behavior specified in [RFC 2071] and [RFC 2515].
 
-## Return position `impl Trait` in Trait (RPITIT)
+### Return position `impl Trait` in Trait (RPITIT)
 
 Under this RFC, when an associated function or method in a trait definition contains in its return type a return position `impl Trait` in trait (RPITIT), the impl of that item may capture in the returned opaque type, in all editions, all trait input type and lifetime parameters, all type and lifetime parameters present in the `Self` type, and all type and lifetime parameters in the associated function or method signature.
 
@@ -408,7 +408,7 @@ This updates and supersedes the behavior specified in [RFC 3425].
 
 [RFC 3425]: https://github.com/rust-lang/rfcs/blob/master/text/3425-return-position-impl-trait-in-traits.md
 
-## `async fn` in trait (AFIT)
+### `async fn` in trait (AFIT)
 
 Under this RFC, when an associated function or method in a trait definition is an `async fn` in trait (AFIT), the impl of that item may capture in the returned opaque type, in all editions, all trait input type and lifetime parameters, all type and lifetime parameters present in the `Self` type, and all type and lifetime parameters in the associated function or method signature.
 
@@ -447,20 +447,20 @@ impl<'t, 's> Trait<'t> for Foo<'s> {
 
 This updates and supersedes the behavior specified in [RFC 3425].
 
-# Acknowledgments
+## Acknowledgments
 
 Thanks to Tyler Mandry (@tmandry) for his collaboration on the earlier design document for the 2024 lifetime capture rules, and thanks to Michael Goulet (@compiler-errors) for helpful discussions and insights on this topic.
 
 All errors and omissions remain those of the author alone.
 
-# Appendix A: Other resources
+## Appendix A: Other resources
 
 Other resources:
 
 - [Lifetime capture rules 2024 T-lang design meeting](https://hackmd.io/sFaSIMJOQcuwCdnUvCxtuQ)
 - [Capturing lifetimes in RPITIT](https://hackmd.io/zgairrYRSACgTeZHP1x0Zg)
 
-# Appendix B: Matrix of capturing effects
+## Appendix B: Matrix of capturing effects
 
 | | 2021: *Outer LP* | 2021: *Item LP* | 2024: *Outer LP* | 2024: *Item LP* |
 |-|-|-|-|-|
@@ -480,7 +480,7 @@ The 2021 behavior described for RPIT and `async fn` is the stable behavior in Ru
 
 *All* of the features above automatically capture all lifetimes from all type parameters in scope in both the 2021 and the 2024 editions.
 
-# Appendix C: The 2021 edition rules fail for RPITIT
+## Appendix C: The 2021 edition rules fail for RPITIT
 
 Under the 2021 edition RPIT semantics, RPITs on inherent associated functions and methods do not capture any lifetime parameters automatically.  E.g.:
 
@@ -522,7 +522,7 @@ Under the 2021 edition capture rules, our options would be to:
 
 For RPITIT, the Rust 2021 lifetime capture rules would necessarily lead to some kind of inconsistency or loss of expressiveness.  Conversely, the rules in this RFC obviate the problem and allow RPIT to be fully consistent, whether it is used in an inherent impl, in a trait impl, or in a trait definition.
 
-# Appendix D: The outlives trick fails with only one lifetime parameter
+## Appendix D: The outlives trick fails with only one lifetime parameter
 
 [Appendix D]: #appendix-d-the-outlives-trick-fails-with-only-one-lifetime-parameter
 
@@ -546,7 +546,7 @@ fn test<'t, 'x>(t: &'t (), x: &'x ()) {
 }
 ```
 
-# Appendix E: Adding a `'static` bound
+## Appendix E: Adding a `'static` bound
 
 Adding a `+ 'static` bound will work in Rust 2024 in exactly the same way that it works in Rust 2021.  E.g.:
 
@@ -581,7 +581,7 @@ fn test<'t, 'x>(t: &'t (), x: &'x ()) {
 }
 ```
 
-# Appendix F: Future possibility: Precise capturing syntax
+## Appendix F: Future possibility: Precise capturing syntax
 
 [Appendix F]: #appendix-f-future-possibility-precise-capturing-syntax
 
@@ -594,7 +594,7 @@ fn foo<'x, 'y, T, U>() -> impl<'x, T> Sized { todo!() }
 //                        but not `'y` or `U`.
 ```
 
-# Appendix G: Future possibility: Inferred precise capturing
+## Appendix G: Future possibility: Inferred precise capturing
 
 [Appendix G]: #appendix-g-future-possibility-inferred-precise-capturing
 
@@ -670,7 +670,7 @@ This comes at the cost of adding an extra early-bound lifetime parameter in the 
 [#60670]: https://github.com/rust-lang/rust/issues/60670
 [#116733]: https://github.com/rust-lang/rust/pull/116733
 
-# Appendix H: Examples of outlives rules on opaque types
+## Appendix H: Examples of outlives rules on opaque types
 
 [Appendix H]: #appendix-h-examples-of-outlives-rules-on-opaque-types
 
@@ -777,7 +777,7 @@ fn callee<'o, P1: 'o, .., Pn: 'o>(..) -> impl Trait + 'o { .. }
 
 One application of this transformation to solve problems created by overcapturing is described in [Appendix G][].
 
-# Appendix I: Precise capturing with TAIT
+## Appendix I: Precise capturing with TAIT
 
 [Appendix I]: #appendix-i-precise-capturing-with-tait
 

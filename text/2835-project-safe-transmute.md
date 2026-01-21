@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2835](https://github.com/rust-lang/rfcs/pull/2835)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 To form a project group with the purpose of designing subsequent RFCs around the
@@ -15,7 +15,7 @@ group RFC](https://github.com/rust-lang/rfcs/pull/2797/files)
   * Subsequent goals may include extending other language features that are made possible
   with safe transmute including safe reading of union fields
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Transmuting one type to another type and vice versa in Rust is extremely dangerous ---
@@ -35,7 +35,7 @@ unsafe features.
 For these reasons, we plan on learning from the prior art to implement a standard way of
 transmuting types in a safe way.
 
-## Details of the safe transmute project group
+### Details of the safe transmute project group
 
 [Repository][repository]
 
@@ -47,7 +47,7 @@ Lang team liaisons:
 
 * [joshtriplett (Josh)](https://github.com/joshtriplett)
 
-### Charter
+#### Charter
 [charter]: #charter
 
 The safe transmute project group has the following initial scope:
@@ -58,7 +58,7 @@ The safe transmute project group has the following initial scope:
 Once this scope has been reached, the team may continue working on features that are
 natural extensions of safe transmute like safe reading on union fields.
 
-### Constraints and considerations
+#### Constraints and considerations
 
 In its work, the project-group should consider various constraints and
 considerations:
@@ -67,13 +67,13 @@ considerations:
 * That safety is of the upmost importance as there is already a way to
   transmute using unsafe APIs
 
-### Participation in the project group
+#### Participation in the project group
 
 Like any Rust group, the safe transmute project group intends to operate
 in a public and open fashion and welcomes participation. Visit the
 [repository][repository] for more details.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * It is possible that the scope of this endeavor is not large enough to warrant a
@@ -85,21 +85,21 @@ in a public and open fashion and welcomes participation. Visit the
   and share enough implementation characteristics to be ready for the community to
   rally around one design direction in the standard library.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The formation of the project group was first discussed in the [FFI unwind
 project group RFC][ffi unwind]. As is state in that RFC, this working group can be
 considered a precursor to the current ["shepherded project group" proposal][shepherd].
 
-# Unresolved questions and Future possibilities
+## Unresolved questions and Future possibilities
 [unresolved-questions]: #unresolved-questions
 
 Since this RFC merely formalizes the creation of the project group, it
 intentionally leaves all technical details within the project's scope
 unresolved.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The project group will start with a fairly [limited scope][charter], but if the

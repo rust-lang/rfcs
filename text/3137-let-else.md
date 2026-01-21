@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3137](https://github.com/rust-lang/rfcs/pull/3137)
 - Rust Issue: [rust-lang/rust#87335](https://github.com/rust-lang/rust/issues/87335)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a new `let PATTERN: TYPE = EXPRESSION else DIVERGING_BLOCK;` construct (informally called a
@@ -16,7 +16,7 @@ The expression has some restrictions, notably it may not end with an `}` or be j
 
 This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc] for an almost identical feature.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 `let else` simplifies some very common error-handling patterns.
@@ -34,7 +34,7 @@ the "success" case to continue in the surrounding context without additional nes
 let-else statements are also more succinct and natural than emulating the equivalent pattern with `match` or if-let,
 which require intermediary bindings (usually of the same name).
 
-## Examples
+### Examples
 
 let-else is particularly useful when dealing with enums which are not `Option`/`Result`, and as such do not have access to e.g. `ok_or()`.
 Consider the following example transposed from a real-world project written in part by the author:
@@ -125,7 +125,7 @@ impl ActionView {
 }
 ```
 
-## A practical refactor with `match`
+### A practical refactor with `match`
 
 It is possible to use `match` expressions to emulate this today, but at a
 significant cost in length and readability.
@@ -162,7 +162,7 @@ let GeoJson::FeatureCollection(features) = geojson else {
 };
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 A common pattern in non-trivial code where static guarantees can not be fully met (e.g. I/O, network or otherwise) is to check error cases when possible before proceeding,
@@ -189,7 +189,7 @@ let Some(a) = an_option else {
 This is a counterpart to `if let` expressions, and the pattern matching works identically, except that the value from the pattern match
 is assigned to the surrounding scope rather than the block's scope.
 
-# Reference-level explanations
+## Reference-level explanations
 [reference-level-explanation]: #reference-level-explanation
 
 let-else is syntactical sugar for `match` where the non-matched case diverges.
@@ -239,7 +239,7 @@ let MyEnum::VariantA(_, _, x) | MyEnum::VariantB { x, .. } = a else { return; };
 let-else does not combine with the `let` from if-let, as if-let is not actually a _let statement_.
 If you ever try to write something like `if let p = e else { } { }`, instead use a regular if-else by writing `if let p = e { } else { }`.
 
-## Desugaring example
+### Desugaring example
 
 ```rust
 let Some(x) = y else { return; };
@@ -257,10 +257,10 @@ let x = match y {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## The diverging block
+### The diverging block
 
 "Must diverge" is an unusual requirement, which doesn't exist elsewhere in the language as of the time of writing,
 and might be difficult to explain or lead to confusing errors for programmers new to this feature.
@@ -268,7 +268,7 @@ and might be difficult to explain or lead to confusing errors for programmers ne
 However, rustc does have support for representing the divergence through the type-checker via `!` or any other uninhabited type,
 so the implementation is not a problem.
 
-## `let PATTERN = if {} else {} else {};`
+### `let PATTERN = if {} else {} else {};`
 
 One unfortunate combination of this feature with regular if-else expressions is the possibility of `let PATTERN = if { a } else { b } else { c };`.
 This is likely to be unclear if anyone writes it, but does not pose a syntactical issue, as `let PATTERN = if y { a } else { b };` should always be
@@ -280,7 +280,7 @@ This can be overcome by making a raw if-else in the expression position a compil
 
 This restriction can be made by checking if the expression ends in `}` after parsing but _before_ macro expansion.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 let-else attempts to be as consistent as possible to similar existing syntax.
@@ -309,7 +309,7 @@ The expression must not end with a `}`, in order to prevent `else {} else {}` (a
 The `else` must be followed by a block, as in `if {} else {}`. This else block must be diverging as the outer
 context cannot be guaranteed to continue soundly without assignment, and no alternate assignment syntax is provided.
 
-## Alternatives
+### Alternatives
 
 While this feature can partly be covered by functions such `ok_or`/`ok_or_else` on the `Option` and `Result` types combined with the Try operator (`?`),
 such functions do not exist automatically on custom enum types and require non-obvious and non-trivial implementation, and may not be map-able
@@ -318,7 +318,7 @@ These functions will also not work for code which wishes to return something oth
 Moreover, this does not cover diverging blocks that do something other than return with an error or target an enclosing `try` block,
 for example if the diverging expression is `continue e` or `break 'outer_loop e`.
 
-### Naming of `else` (`let ... otherwise { ... }`)
+#### Naming of `else` (`let ... otherwise { ... }`)
 
 One often proposed alternative is to use a different keyword than `else`, such as `otherwise`.
 This is supposed to help disambiguate let-else statements from other code with blocks and `else`.
@@ -326,14 +326,14 @@ This is supposed to help disambiguate let-else statements from other code with b
 This RFC avoids this as it would mean losing symmetry with if-else and if-let-else, and would require adding a new keyword.
 Adding a new keyword could mean more to teach and could promote even more special casing around let-else's semantics.
 
-### Comma-before-else (`, else { ... }`)
+#### Comma-before-else (`, else { ... }`)
 
 Another proposal very similar to renaming `else` it to have it be proceeded by some character such as a comma.
 
 It is possible that adding such additional separating syntax would make combinations with expressions which have blocks
 easier to read and less ambiguous, but is also generally inconsistent with the rest of the rust language at time of writing.
 
-### Introducer syntax (`guard let ... {}`)
+#### Introducer syntax (`guard let ... {}`)
 
 Another often proposed alternative is to add some introducer syntax (usually an extra keyword) to the beginning of the let-else statement,
 to denote that it is different than a regular `let` statement.
@@ -350,7 +350,7 @@ By contrast, a let-else statement begins with `let` and the start of a let-else 
 This syntax has prior art in the Swift programming language, which includes a [guard-let-else][swift] statement
 which is roughly equivalent to this proposal except for the choice of keywords.
 
-### `if !let PAT = EXPR { BODY }`
+#### `if !let PAT = EXPR { BODY }`
 
 The [old RFC][old-rfc] originally proposed this general feature via some kind of pattern negation as `if !let PAT = EXPR { BODY }`.
 
@@ -360,7 +360,7 @@ and partway through that RFC's lifecycle it was updated to be similar to this RF
 
 The `if !let` alternative syntax would also share the binding drawback of the `unless let` alternative syntax.
 
-### `let PATTERN = EXPR else DIVERGING_EXPR;`
+#### `let PATTERN = EXPR else DIVERGING_EXPR;`
 
 A potential alternative to requiring parentheses in `let PATTERN = (if { a } else { b }) else { c };`
 is to change the syntax of the `else` to no longer be a block but instead _any_ expression which diverges,
@@ -375,7 +375,7 @@ This RFC avoids this because it is overall less consistent with `else` from if-e
 
 This was originally suggested in the old RFC, comment at https://github.com/rust-lang/rfcs/pull/1303#issuecomment-188526691
 
-### `else`-block fall-back assignment
+#### `else`-block fall-back assignment
 
 A fall-back assignment alternate to the diverging block has been proposed multiple times in relation to this feature in the [original rfc][] and also in out-of-RFC discussions.
 
@@ -410,7 +410,7 @@ let Ok(a) = x else match {
 }
 ```
 
-### Assign to outer scope from `match`
+#### Assign to outer scope from `match`
 
 Another alternative is to allow assigning to the outer scope from within a `match`.
 
@@ -424,7 +424,7 @@ match thing {
 
 However this is not an obvious opposite to if-let, and would introduce an entirely new positional meaning of `let`.
 
-### `||` in pattern-matching
+#### `||` in pattern-matching
 
 A more complex, more flexible, but less obvious alternative is to allow `||` in any pattern matches as a fall-through match case fallback.
 Such a feature would likely interact more directly with [if-let-chains][], but could also be use to allow refutable patterns in let statements
@@ -470,18 +470,18 @@ let z = if let Some(v) = x {
 
 This is, as stated, a much more complex alternative interacting with much more of the language, and is also not an obvious opposite of if-let expressions.
 
-### Macro
+#### Macro
 
 Another suggested solution is to create a macro which handles this.
 A crate containing such a macro is mentioned in the [Prior art](#prior-art) section of this RFC.
 
 This crate has not been widely used in the rust crate ecosystem with only 47k downloads over the ~6 years it has existed at the time of writing.
 
-### Null Alternative
+#### Null Alternative
 
 Don't make any changes; use existing syntax like `match` (or `if let`) as shown in the motivating example, or write macros to simplify the code.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc].
@@ -501,33 +501,33 @@ The `match` alternative in particular is fairly prevalent in rust code on projec
 The Try operator allows for an `ok_or_else` alternative to be used where the types are only `Option` and `Result`,
 which is considered to be idiomatic rust.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Readability in practice
+### Readability in practice
 
 Will `let ... else { ... };` be clear enough to humans in practical code, or will some introducer syntax be desirable?
 
-## Conflicts with if-let-chains
+### Conflicts with if-let-chains
 
 Does this conflict too much with the if-let-chains RFC or vice-versa?
 
 Neither this feature nor that feature should be stabilized without considering the other.
 
-## Amount of special cases
+### Amount of special cases
 
 Are there too many special-case interactions with other features?
 
-## Grammar clarity
+### Grammar clarity
 
 Does the grammar need to be clarified?
 
 This RFC has some slightly unusual grammar requirements.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## if-let-chains
+### if-let-chains
 
 An RFC exists for a (unimplemented at time of writing) feature called [if-let-chains][]:
 
@@ -580,14 +580,14 @@ error[E0005]: refutable pattern in local binding: `false` not covered
   = note: `let` bindings require an "irrefutable pattern", like a `struct` or an `enum` with only one variant
 ```
 
-## Fall-back assignment
+### Fall-back assignment
 
 This RFC does not suggest that we do any of these, but notes that they would be future possibilities.
 
 If fall-back assignment as discussed above in [rationale-and-alternatives][] is desirable, it could be added a few different ways,
 not all potential ways are covered here, but the ones which seem most popular at time of writing are:
 
-### let-else-else-chains
+#### let-else-else-chains
 
 Where the pattern is sequentially matched against each expression following an else, up until a required diverging block if the pattern did not match on any value.
 Similar to the above-mentioned alternative of `||` in pattern-matching, but restricted to only be used with let-else.
@@ -606,7 +606,7 @@ This has a complexity issue with or-patterns, where expressions can _easily_ bec
 let A(x) | B(x) = foo() else bar() else { return; };
 ```
 
-### let-else-match
+#### let-else-match
 
 Where the `match` must cover all patters which are not the let assignment pattern.
 
@@ -616,7 +616,7 @@ let Ok(a) = x else match {
 }
 ```
 
-## `||` in pattern-matching
+### `||` in pattern-matching
 
 A variant of `||` in pattern-matching could still be a non-conflicting addition if it was allowed to be refutable, ending up with constructs similar to the
 above mentioned let-else-else-chains. In this way it would add to let-else rather than replace it.
@@ -625,7 +625,7 @@ above mentioned let-else-else-chains. In this way it would add to let-else rathe
 let Some(x) = a || b else { return; };
 ```
 
-## let-else within if-let
+### let-else within if-let
 
 This RFC naturally brings with it the question of if let-else should be allowable in the `let` position within if-let,
 creating a potentially confusing and poorly reading construct:

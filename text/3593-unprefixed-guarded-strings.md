@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3593](https://github.com/rust-lang/rfcs/pull/3593)
 - Tracking Issue: [rust-lang/rust#123735](https://github.com/rust-lang/rust/issues/123735)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Beginning with the 2024 edition, reserve the syntax `#"foo"#`, as a way of future-proofing against future language changes.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 3101](https://github.com/rust-lang/rfcs/blob/master/text/3101-reserved_prefixes.md) reserved, among other things, all ident-prefixed strings like `ident"foo"` and `ident##"foo"##`. Despite these prefixes not conflicting with basic Rust grammar, reserving various prefixes avoids future macro breakage.
@@ -52,7 +52,7 @@ Following the 2021 edition, `#"foo"#` would become a compiler error.
 
 Note that this syntactic reservation is whitespace-sensitive: any whitespace to either side of the intervening `#` will allow this code to compile. This provides a simple migration path for anyone who would be impacted by this change; they would need only change their macro invocations from `foo!(#"qux"#)` to `foo!(# "qux" #)` or `foo!(# "qux"#)`. It is possible to automate this mechanical migration via rustfix.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When designing DSLs via macros that take token trees as inputs, be aware that certain syntactic productions which have no meaning in Rust are nonetheless forbidden by the grammar, as they represent "reserved space" for future language development. In addition to the `<identifier>#<identifier>`, `<identifier>"<string contents>"`, `<identifier>'<char contents>'`, and `<identifier>#<numeric literal>` forms reserved in Edition 2021, `#"<string contents>"` (with any number of leading `#`) is reserved for future use by the language.
@@ -72,7 +72,7 @@ Putting it all together, this means that the following are valid macro invocatio
 * `foo!(#"qux"#)`
 * `foo!(####"qux"####)`
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 
@@ -95,17 +95,17 @@ error: invalid string literal
   = note: unprefixed guarded string literals are reserved for future use
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Complicates macro tokenizing rules.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Just merge [RFC 3475: Unified String Literals](https://github.com/rust-lang/rfcs/pull/3475) instead. That RFC is a strict superset of this RFC.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 * [RFC 3101: Reserved prefixes in the 2021 edition](https://github.com/rust-lang/rfcs/blob/master/text/3101-reserved_prefixes.md)

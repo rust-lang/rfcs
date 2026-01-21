@@ -6,14 +6,14 @@
 
 _From the community that brought you the Pre-RFC and the e-RFC, we now introduce: the de-RFC!_
 
-# Summary
+## Summary
 [summary]: #summary
 
 Type ascription ([RFC #803][ascript-rfc], [tracking issue]) has been a merged RFC for seven years, with no clear path to stabilization. Since then, syntactic norms in Rust have shifted significantly and it's becoming increasingly unlikely that this RFC if posted would have landed today. During this time the nightly support for this feature has impacted the quality of parser diagnostics; creating a large black hole of potential mistakes that lead to a suggestion around ascription (a feature most cannot use) when there could have been a more targeted and accurate diagnostic.
 
 This RFC intends to advocate for the feature being removed entirely (or at least moving the implementation to a less prime area of the syntactic space) with a fresh RFC being necessary to add it again.
 
-# Demotivation
+## Demotivation
 [demotivation]: #demotivation
 
 One of the primary demotivations is the negative effect on diagnostics. `:` is a pretty highly used syntactic component in Rust: a double colon is a crucial part of how paths work, and paths are found _everywhere_ in Rust (every variable and type name is a path). It's a rather easy to accidentally type `:` instead of `::`, and that is often interpreted as type ascription syntax. It's a terrible experience for the user to make an often hard-to-notice mistake and get told they are trying to use a feature they may not even have heard of. Here's [an example][ekuber-tweet] of a bad diagnostic caused by type ascription; while such diagnostics can be fixed, there are just so many of them. The fact that this is _still_ a problem despite the amazing work being put into diagnostics is a signal that it may always be a problem. And if this feature were to stabilize as-is, it would likely get worse since there would be backpressure to improve the diagnostics of legitimate uses of ascription. Good diagnostics are an exercise in guessing user intent; and the harder we make that the worse the diagnostics will be.
@@ -24,26 +24,26 @@ Type ascription was originally RFCd in 2015. This is a time before `?`, an RFC t
 
 Syntax isn't the only reason; while type ascription is probably a good idea, a feature this significant deserves to be properly designed for the zeitgeist.
 
-# Guide-level obfuscation
+## Guide-level obfuscation
 [guide-level-obfuscation]: #guide-level-obfuscation
 
 The `:` type ascription syntax would be removed from the nightly language. It is up to the compiler team whether they wish to remove it completely from the compiler (or perhaps just make it unparsable and use some magical unstable `ascript!()` macro in the meantime so that it is testable).
 
 This does not prevent future type ascription RFCs from happening, however they must propose the feature from first principles, and justify their choice of syntax. They are, of course, free to copy the work or text of the previous RFC.
 
-# Reference-level obfuscation
+## Reference-level obfuscation
 [reference-level-obfuscation]: #reference-level-obfuscation
 
 ![diff shortstat of 275k removed lines](https://user-images.githubusercontent.com/1617736/187055431-2ab9f46b-4c23-4ec4-9884-d050501bf0c2.png)
 
-# Drawforwards
+## Drawforwards
 [drawforwards]: #drawforwards
 
 There are a couple advantages to keeping the feature around. In general, people do not seem against the idea of type ascription, rather, it's unclear to me that it will ever stabilize in _this form_. A potential path forward would be to simply restart the conversation around it and see what it would take to get it stabilized. This may have the same effective result of having the feature reexamined according to the _current_ Rust language and syntax and updated accordingly.
 
 Perhaps even the existence of this de-RFC will spur someone to trying to do this.
 
-# Irrationale and alternatives
+## Irrationale and alternatives
 [irrationale-and-alternatives]: #irrationale-and-alternatives
 
 While the intent of this de-RFC is not to propose a new syntax, new syntax ideas that fit better into Rust today ought to illustrate why the feature should be removed.
@@ -70,7 +70,7 @@ And that's just in the space of dot-postfix syntax. While the winds of Rust are 
 
 
 
-# Posterior art
+## Posterior art
 [posterior-art]: #posterior-art
 
 Rust has in the past removed nightly features entirely, sometimes even adding them back in a different form later.
@@ -81,12 +81,12 @@ A lot more examples of nightly features being removed can be found [here][dispo-
 
 It's far more rare for this to happen to RFCd features, however, hence the de-RFC.
 
-# Unresolved answers
+## Unresolved answers
 [unresolved-answers]: #unresolved-answers
 
  - Should this be completely removed by the compiler, or left behind in a way that cannot be directly accessed through Rust syntax (or requires using a wrapper macro)?
 
-# Future probabilities
+## Future probabilities
 [future-probabilities]: #future-probabilities
 
 

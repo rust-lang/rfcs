@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1624](https://github.com/rust-lang/rfcs/pull/1624)
 - Rust Issue: [rust-lang/rust#37339](https://github.com/rust-lang/rust/issues/37339)
 
-# Summary
+## Summary
 [summary]: #summary
 
 (This is a result of discussion of
@@ -13,7 +13,7 @@
 
 Let a `loop { ... }` expression return a value via `break my_value;`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 > Rust is an expression-oriented language. Currently loop constructs don't
@@ -69,7 +69,7 @@ let computation = loop {
 self.use(computation);
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 This proposal does two things: let `break` take a value, and let `loop` have a
@@ -222,13 +222,13 @@ let x = 'a loop {
 assert_eq!(x, 1);
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The proposal changes the syntax of `break` statements, requiring updates to
 parsers and possibly syntax highlighters.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 No alternatives to the design have been suggested. It has been suggested that
@@ -236,7 +236,7 @@ the feature itself is unnecessary, and indeed much Rust code already exists
 without it, however the pattern solves some cases which are difficult to handle
 otherwise and allows more flexibility in code layout.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 ### Extension to for, while, while let

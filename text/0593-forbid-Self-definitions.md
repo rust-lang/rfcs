@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#593](https://github.com/rust-lang/rfcs/pull/593)
 - Rust Issue: [rust-lang/rust#22137](https://github.com/rust-lang/rust/issues/22137)
 
-# Summary
+## Summary
 
 Make `Self` a keyword.
 
-# Motivation
+## Motivation
 
 Right now, `Self` is just a regular identifier that happens to get a special meaning
 inside trait definitions and impls. Specifically, users are not forbidden from defining
@@ -34,20 +34,20 @@ for a custom type, precisely because of this ambiguity, so preventing it outrigh
 
 Making the identifier `Self` an keyword would prevent this situation because the user could not use it freely for custom definitions.
 
-# Detailed design
+## Detailed design
 
 Make the identifier `Self` a keyword that is only legal to use inside a trait definition or impl to refer to the `Self` type.
 
-# Drawbacks
+## Drawbacks
 
 It might be unnecessary churn because people already don't run into this
 in practice.
 
-# Alternatives
+## Alternatives
 
 Keep the status quo. It isn't a problem in practice, and just means
 `Self` is the special case of a contextual type definition in the language.
 
-# Unresolved questions
+## Unresolved questions
 
 None so far

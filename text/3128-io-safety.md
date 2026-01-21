@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#3128](https://github.com/rust-lang/rfcs/pull/3128)
 - Rust Issue: [rust-lang/rust#87074](https://github.com/rust-lang/rust/issues/87074)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Close a hole in encapsulation boundaries in Rust by providing users of
 `AsRawFd` and related traits guarantees about their raw resource handles, by
 introducing a concept of *I/O safety* and a new set of types and traits.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust's standard library almost provides *I/O safety*, a guarantee that if one
@@ -60,10 +60,10 @@ This RFC introduces a path to gradually closing this loophole by introducing:
 [access the wrong resources]: https://cwe.mitre.org/data/definitions/910.html
 [spooky action at a distance]: https://en.wikipedia.org/wiki/Action_at_a_distance_(computer_programming)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## The I/O safety concept
+### The I/O safety concept
 
 Rust's standard library has low-level types, [`RawFd`] on Unix-like platforms,
 and [`RawHandle`]/[`RawSocket`] on Windows, which represent raw OS resource
@@ -132,7 +132,7 @@ introduction of some new types and traits and new impls for them. Initially,
 not all of the Rust ecosystem will support I/O safety though; adoption will
 be gradual.
 
-## `OwnedFd` and `BorrowedFd<'fd>`
+### `OwnedFd` and `BorrowedFd<'fd>`
 
 These two types are conceptual replacements for `RawFd`, and represent owned
 and borrowed handle values. `OwnedFd` owns a file descriptor, including closing
@@ -157,7 +157,7 @@ Rust's control, so I/O can be thought of as using [interior mutability].
 
 [interior mutability]: https://doc.rust-lang.org/reference/interior-mutability.html
 
-## `AsFd`, `Into<OwnedFd>`, and `From<OwnedFd>`
+### `AsFd`, `Into<OwnedFd>`, and `From<OwnedFd>`
 
 These three are conceptual replacements for `AsRawFd::as_raw_fd`,
 `IntoRawFd::into_raw_fd`, and `FromRawFd::from_raw_fd`, respectively,
@@ -177,7 +177,7 @@ pub fn do_some_io<FD: AsFd>(input: &FD) -> io::Result<()> {
 
 For Windows, similar traits, but in `Handle` and `Socket` forms.
 
-## Gradual adoption
+### Gradual adoption
 
 I/O safety and the new types and traits wouldn't need to be adopted
 immediately; adoption could be gradual:
@@ -195,10 +195,10 @@ immediately; adoption could be gradual:
    semver-incompatible changes, though most users of APIs switching to these
    new traits wouldn't need any changes.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## The I/O safety concept
+### The I/O safety concept
 
 In addition to the Rust language's memory safety, Rust's standard library also
 guarantees I/O safety. An I/O operation is *valid* if the raw handles
@@ -215,7 +215,7 @@ Functions accepting arbitrary raw I/O handle values ([`RawFd`], [`RawHandle`],
 or [`RawSocket`]) should be `unsafe` if they can lead to any I/O being
 performed on those handles through safe APIs.
 
-## `OwnedFd` and `BorrowedFd<'fd>`
+### `OwnedFd` and `BorrowedFd<'fd>`
 
 `OwnedFd` and `BorrowedFd` are both `repr(transparent)` with a `RawFd` value
 on the inside, and both can use niche optimizations so that `Option<OwnedFd>`
@@ -227,13 +227,13 @@ These types also implement the existing `AsRawFd`, `IntoRawFd`, and `FromRawFd`
 traits, so they can interoperate with existing code that works with `RawFd`
 types.
 
-## `AsFd`, `Into<OwnedFd>`, and `From<OwnedFd>`
+### `AsFd`, `Into<OwnedFd>`, and `From<OwnedFd>`
 
 These types provide `as_fd`, `into`, and `from` functions similar to
 `AsRawFd::as_raw_fd`, `IntoRawFd::into_raw_fd`, and `FromRawFd::from_raw_fd`,
 respectively.
 
-## Prototype implementation
+### Prototype implementation
 
 All of the above is prototyped here:
 
@@ -242,7 +242,7 @@ All of the above is prototyped here:
 The README.md has links to documentation, examples, and a survey of existing
 crates providing similar features.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Crates with APIs that use file descriptors, such as [`nix`] and [`mio`], would
@@ -253,10 +253,10 @@ Crates using `AsRawFd` or `IntoRawFd` to accept "any file-like type" or "any
 socket-like type", such as [`socket2`]'s [`SockRef::from`], would need to
 either switch to `AsFd` or `Into<OwnedFd>`, or make these functions unsafe.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Concerning "unsafe is for memory safety"
+### Concerning "unsafe is for memory safety"
 
 Rust historically drew a line in the sand, stating that `unsafe` would only
 be for memory safety. A famous example is [`std::mem::forget`], which was
@@ -289,7 +289,7 @@ concepts.
 [`std::mem::forget` being safe]: https://doc.rust-lang.org/std/mem/fn.forget.html
 [changed to safe]: https://rust-lang.github.io/rfcs/1066-safe-mem-forget.html
 
-## I/O Handles as plain data
+### I/O Handles as plain data
 
 The main alternative would be to say that raw handles are plain data, with no
 concept of I/O safety and no inherent relationship to OS resource lifetimes. On
@@ -311,7 +311,7 @@ I/O safety approach will require changes to Rust code in crates such as
 [`RawFd`], though the changes can be made gradually across the ecosystem rather
 than all at once.
 
-## The `IoSafe` trait (and `OwnsRaw` before it)
+### The `IoSafe` trait (and `OwnsRaw` before it)
 
 Earlier versions of this RFC proposed an `IoSafe` trait, which was meant as a
 minimally intrusive fix. Feedback from the RFC process led to the development
@@ -325,7 +325,7 @@ Earlier versions of `IoSafe` were called `OwnsRaw`. It was difficult to find a
 name for this trait which described exactly what it does, and arguably this is
 one of the signs that it wasn't the right trait.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Most memory-safe programming languages have safe abstractions around raw
@@ -354,10 +354,10 @@ compile time rather than run time.
 [C#]: https://docs.microsoft.com/en-us/dotnet/api/system.io.file?view=net-5.0
 [Java]: https://docs.oracle.com/javase/7/docs/api/java/io/File.html?is-external=true
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Formalizing ownership
+### Formalizing ownership
 
 This RFC doesn't define a formal model for raw handle ownership and lifetimes.
 The rules for raw handles in this RFC are vague about their identity. What does
@@ -372,7 +372,7 @@ needs, but it could be explored in the future.
 
 [reference]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Some possible future ideas that could build on this RFC include:
@@ -407,7 +407,7 @@ Some possible future ideas that could build on this RFC include:
    Similar portability abstractions could apply to `From<OwnedFd>` and
    `Into<OwnedFd>`.
 
-# Thanks
+## Thanks
 [thanks]: #thanks
 
 Thanks to Ralf Jung ([@RalfJung]) for leading me to my current understanding

@@ -3,17 +3,17 @@
 - RFC PR: [rust-lang/rfcs#1845](https://github.com/rust-lang/rfcs/pull/1845)
 - Rust Issue: [rust-lang/rust#40475](https://github.com/rust-lang/rust/issues/40475)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This is an RFC to add the APIs: `From<&[T]> for Rc<[T]>` where [`T: Clone`][Clone] or [`T: Copy`][Copy] as well as `From<&str> for Rc<str>`. In addition: `From<Vec<T>> for Rc<[T]>` and `From<Box<T: ?Sized>> for Rc<T>` will be added.
 
 Identical APIs will also be added for [`Arc`][Arc].
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Caching and [string interning]
+### Caching and [string interning]
 
 These, and especially the latter - i.e: `From<&str>`, trait implementations of [`From`][From] are useful when dealing with any form of caching of slices.
 
@@ -68,15 +68,15 @@ The [tendril] crate does one form of interning:
 
 It is useful to provide an implementation of `From<&[T]>` as well, and not just for [`&str`][str], because one might deal with non-utf8 strings, i.e: `&[u8]`. One could potentially reuse this for [`Path`][Path], [`OsStr`][OsStr].
 
-## Safe abstraction for `unsafe` code.
+### Safe abstraction for `unsafe` code.
 
 Providing these implementations in the current state of Rust requires substantial amount of `unsafe` code. Therefore, for the sake of confidence in that the implementations are safe - it is best done in the standard library.
 
-## [`RcBox`][RcBox] is not public
+### [`RcBox`][RcBox] is not public
 
 Furthermore, since [`RcBox`][RcBox] is not exposed publicly from [`std::rc`][std::rc], one can't make an implementation outside of the standard library for this without making assumptions about the internal layout of [`Rc`][Rc]. The alternative is to roll your own implementation of [`Rc`][Rc] in its entirety - but this in turn requires using a lot of feature gates, which makes using this on stable Rust in the near future unfeasible.
 
-## For [`Arc`][Arc]
+### For [`Arc`][Arc]
 
 For [`Arc`][Arc] the synchronization overhead of doing `.clone()` is probably greater than the overhead of doing `Arc<Box<str>>`. But once the clones have been made, `Arc<str>` would probably be cheaper to dereference due to locality.
 
@@ -86,10 +86,10 @@ Because of the similarities between the layout of [`Rc`][Rc] and [`Arc`][Arc], a
 
 Taking all of this into account, adding the APIs for [`Arc`][Arc] is warranted.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## There's already an implementation
+### There's already an implementation
 [theres-already-an-implementation]: #theres-already-an-implementation
 
 There is [already an implementation](https://doc.rust-lang.org/nightly/src/alloc/rc.rs.html#417-440) of sorts [`alloc::rc`][Rc] for this. But it is hidden under the feature gate `rustc_private`, which, to the authors knowledge, will never be stabilized. The implementation is, on this day, as follows:
@@ -123,23 +123,23 @@ impl Rc<str> {
 
 The idea is to use the bulk of the implementation of that, generalize it to [`Vec`][Vec]s and [slices][slice], specialize it for [`&str`][str], provide documentation for both.
 
-## [`Copy`][Copy] and [`Clone`][Clone]
+### [`Copy`][Copy] and [`Clone`][Clone]
 [copy-clone]: #copy-clone
 
 For the implementation of `From<&[T]> for Rc<[T]>`, `T` must be [`Copy`][Copy] if `ptr::copy_nonoverlapping` is used because this relies on it being memory safe to simply copy the bits over. If instead, [`T::clone()`][Clone] is used in a loop, then `T` can simply be [`Clone`][Clone] instead. This is however slower than using `ptr::copy_nonoverlapping`.
 
-## [`Vec`][Vec] and [`Box`][Box]
+### [`Vec`][Vec] and [`Box`][Box]
 
 For the implementation of `From<Vec<T>> for Rc<[T]>`, `T` need not be [`Copy`][Copy], nor [`Clone`][Clone]. The input vector already owns valid `T`s, and these elements are simply copied over bit for bit. After copying all elements, they are no longer
 owned in the vector, which is then deallocated. Unfortunately, at this stage, the memory used by the vector can not be reused - this could potentially be changed in the future.
 
 This is similar for [`Box`][Box].
 
-## Suggested implementation
+### Suggested implementation
 
 The actual implementations could / will look something like:
 
-### For [`Rc`][Rc]
+#### For [`Rc`][Rc]
 
 ```rust
 #[inline(always)]
@@ -456,7 +456,7 @@ With more safe abstractions in the future, this can perhaps be rewritten with
 less unsafe code. But this should not change the API itself and thus will never
 cause a breaking change.
 
-### For [`Arc`][Arc]
+#### For [`Arc`][Arc]
 
 For the sake of brevity, just use the implementation above, and replace:
 + `slice_to_rc` with `slice_to_arc`,
@@ -464,17 +464,17 @@ For the sake of brevity, just use the implementation above, and replace:
 + `rcbox_ptr` with `arcinner_ptr`,
 + `Rc` with `Arc`.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 The documentation provided in the `impls` should be enough.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The main drawback would be increasing the size of the standard library.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 1. Only implement this for [`T: Copy`][Copy] and skip [`T: Clone`][Clone].
@@ -509,7 +509,7 @@ impl Arc<str> {
 }
 ```
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 + Should a special version of [`make_mut`][make_mut] be added for `Rc<[T]>`? This could look like:

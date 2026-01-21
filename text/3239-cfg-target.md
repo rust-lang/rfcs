@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#3239](https://github.com/rust-lang/rfcs/pull/3239)
 - Rust Issue: [rust-lang/rust#96901](https://github.com/rust-lang/rust/issues/96901)
 
-# This RFC was previously approved, but part of it later **withdrawn**
+## This RFC was previously approved, but part of it later **withdrawn**
 
 The `cfg(target = "...")` conditional compilation key was previously approved,
 but was later withdrawn. For details, see the [summary comment].
 
 [summary comment]: https://github.com/rust-lang/rust/pull/96909#issuecomment-1148979831
 
-# Summary
+## Summary
 [summary]: #summary
 
 This proposes a new `cfg`: `target`, which matches the entire target triple
@@ -20,7 +20,7 @@ environment variable for parity with other `CARGO_CFG_*` variables.
 In addition, this proposes a shorthand `cfg(target(...))` to match multiple
 components of a target string at once.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 To `#[cfg]` against a specific target, a `build.rs` script is required to emit a
@@ -34,7 +34,7 @@ This can be very cumbersome. Note that the target ABI cannot currently be
 `#[cfg]`-ed against, so a `build.rs` is still necessary to match all target
 components.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This would act like existing `target_*` configurations (except `target_feature`)
@@ -57,7 +57,7 @@ attribute as follows:
 #[cfg(target(os = "linux", arch = "arm"))]
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `target` is a key-value option set once with the target's Rust triple.
@@ -71,13 +71,13 @@ Example values:
 - `"x86_64-pc-windows-msvc"`
 - `"x86_64-unknown-linux-gnu"`
 
-## Semantics of target with attributes
+### Semantics of target with attributes
 
 The shorthand form of `#[cfg(target(os = "linux))]` is expanded and entirely
 equivalent to `#[cfg(target_os = "linux")]` (and so on for `arch` and the other
 potential attributes).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Configuring against specific targets can be overly strict and could make
@@ -95,14 +95,14 @@ potential attributes).
   `TARGET`. However, including it would be consistent with other `CARGO_CFG_*`
   variables.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 We can keep the existing work-around of checking the `TARGET` environment
 variable in a `build.rs` script. However, that increases compile time and makes
 a crate incompatible with certain build systems.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [Target component configurations](https://doc.rust-lang.org/reference/conditional-compilation.html#set-configuration-options):
@@ -111,14 +111,14 @@ a crate incompatible with certain build systems.
 - `TARGET` and `CARGO_CFG_TARGET_*`
   [environment variables for `build.rs`](https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - How do we ensure a project does not miss configurations similar to the ones
   being `#[cfg]`-ed against with this feature? Perhaps this should be added as a
   Clippy lint that's off by default.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This would enable `#[cfg]`-ing against a specific target ABI (e.g. `macabi`,

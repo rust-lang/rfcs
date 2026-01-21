@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1681](https://github.com/rust-lang/rfcs/pull/1681)
 - Rust Issue: [rust-lang/rust#35900](https://github.com/rust-lang/rust/issues/35900)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extract a very small sliver of today's procedural macro system in the compiler,
@@ -13,7 +13,7 @@ burden on the compiler but also don't try to provide enough features for the
 "perfect macro system" at the same time. Overall, this should be considered an
 incremental step towards an official "macros 2.0".
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Some large projects in the ecosystem today, such as [serde] and [diesel],
@@ -66,7 +66,7 @@ Put another way, we currently have macros 1.0 unstable today, we're shooting
 for macros 2.0 stable in the far future, but this RFC is striking a middle
 ground at macros 1.1 today!
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 First, before looking how we're going to expose procedural macros, let's
@@ -127,7 +127,7 @@ Another goal of this RFC will also be to hide as many of these technical
 details as possible, allowing the compiler to flexibly change how it interfaces
 to macros.
 
-## Macros 1.1
+### Macros 1.1
 
 Ok, with the background knowledge of what procedural macros are today, let's
 take a look at how we can solve the major problems blocking its stabilization:
@@ -135,7 +135,7 @@ take a look at how we can solve the major problems blocking its stabilization:
 * Sharing an API of the entire compiler
 * Frozen interface between the compiler and macros
 
-### `librustc_macro`
+#### `librustc_macro`
 
 Proposed in [RFC 1566](https://github.com/rust-lang/rfcs/pull/1566) and
 described in [this blog post](http://ncameron.org/blog/libmacro/) the
@@ -184,7 +184,7 @@ available as well.
 
 [compiler-tokenstream]: https://github.com/rust-lang/rust/blob/master/src/libsyntax/tokenstream.rs#L323-L338
 
-### Defining a macro
+#### Defining a macro
 
 A new crate type will be added to the compiler, `rustc-macro` (described below),
 indicating a crate that's compiled as a procedural macro. There will not be a
@@ -253,7 +253,7 @@ attributes, although it will be required for `rustc_macro_derive`
 implementations to remove these attributes when handing them back to the
 compiler. The compiler will still gate unknown attributes by default.
 
-### `rustc-macro` crates
+#### `rustc-macro` crates
 
 Like the rlib and dylib crate types, the `rustc-macro` crate
 type is intended to be an intermediate product.  What it *actually* produces is
@@ -279,7 +279,7 @@ forwards-compatible extensions to be implemented in macros 2.0:
   available. Limiting the public exports for now to only custom-derive
   annotations should allow for maximal flexibility here.
 
-### Using a procedural macro
+#### Using a procedural macro
 
 Using a procedural macro will be very similar to today's `extern crate` system,
 such as:
@@ -308,7 +308,7 @@ compiler to generate an error, and it must be resolved by loading only one or
 the other of the `rustc-macro` crates (eventually this will be solved with a
 more principled `use` system in macros 2.0).
 
-### Initial implementation details
+#### Initial implementation details
 
 This section lays out what the initial implementation details of macros 1.1
 will look like, but none of this will be specified as a stable interface to the
@@ -338,7 +338,7 @@ The actual underlying representation of `TokenStream` will be basically the same
 as it is in the compiler today. (the details on this are a little light
 intentionally, shouldn't be much need to go into *too* much detail).
 
-### Initial Cargo integration
+#### Initial Cargo integration
 
 Like plugins today, Cargo needs to understand which crates are `rustc-macro`
 crates and which aren't. Cargo additionally needs to understand this to sequence
@@ -358,7 +358,7 @@ Eventually Cargo may also grow support to understand that a `rustc-macro` crate
 should be compiled twice, once for the host and once for the target, but this is
 intended to be a backwards-compatible extension to Cargo.
 
-## Pieces to stabilize
+### Pieces to stabilize
 
 Eventually this RFC is intended to be considered for stabilization (after it's
 implemented and proven out on nightly, of course). The summary of pieces that
@@ -375,7 +375,7 @@ would become stable are:
   Additionally, definitions end up having no hygiene for now.
 * The `rustc-macro = true` attribute in Cargo
 
-### Macros 1.1 in practice
+#### Macros 1.1 in practice
 
 Alright, that's a lot to take in! Let's take a look at what this is all going to
 look like in practice, focusing on a case study of `#[derive(Serialize)]` for
@@ -443,7 +443,7 @@ pub struct Foo {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * This is not an interface that would be considered for stabilization in a void,
@@ -506,7 +506,7 @@ pub struct Foo {
   is caused by that field, but that kind of precision will not be
   possible until a richer interface is available.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Wait for macros 2.0, but this likely comes with the high cost of postponing a
@@ -547,7 +547,7 @@ pub struct Foo {
   deviates from what you actually may want, `#[derive(serde::Deserialize)]`, for
   example.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Is the interface between macros and the compiler actually general enough to

@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1131](https://github.com/rust-lang/rfcs/pull/1131)
 - Rust Issue: [rust-lang/rust#26179](https://github.com/rust-lang/rust/issues/26179)
 
-# Summary
+## Summary
 
 Provide a pair of intrinsic functions for hinting the likelihood of branches being taken.
 
-# Motivation
+## Motivation
 
 Branch prediction can have significant effects on the running time of some code. Especially tight
 inner loops which may be run millions of times. While in general programmers aren't able to
@@ -20,7 +20,7 @@ will be taken in `2/B` cases (where `B` is the base the numbers are in), given r
 32-bit processor that is approximately one in two billion cases, for 64-bit it's one in 18
 quintillion cases.
 
-# Detailed design
+## Detailed design
 
 Implement a pair of intrinsics `likely` and `unlikely`, both with signature `fn(bool) -> bool`
 which hint at the probability of the passed value being true or false. Specifically, `likely` hints
@@ -39,18 +39,18 @@ these intrinsics simply as the identity function. Though it is expected that the
 information to the optimizer, that information is not guaranteed to change the decisions the
 optimiser makes.
 
-# Drawbacks
+## Drawbacks
 
 The intrinsics cannot be used to hint at arms in `match` expressions. However, given that hints
 would need to be variants, a simple intrinsic would not be sufficient for those purposes.
 
-# Alternatives
+## Alternatives
 
 Expose an `expect` intrinsic. This is what gcc/clang does with `__builtin_expect`. However there is
 a restriction that the second argument be a constant value, a requirement that is not easily
 expressible in Rust code. The split into `likely` and `unlikely` intrinsics reflects the strategy
 we have used for similar restrictions like the ordering constraint of the atomic intrinsics.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

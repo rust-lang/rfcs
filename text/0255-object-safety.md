@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#255](https://github.com/rust-lang/rfcs/pull/255)
 - Rust Issue: [rust-lang/rust#17670](https://github.com/rust-lang/rust/issues/17670)
 
-# Summary
+## Summary
 
 Restrict which traits can be used to make trait objects.
 
@@ -13,7 +13,7 @@ flexible, this will make for better error messages, less surprising software
 evolution, and (hopefully) better design. The motivation for the proposed change
 is stronger due to part of the DST changes.
 
-# Motivation
+## Motivation
 
 Part of the planned, in progress DST work is to allow trait objects where a
 trait is expected. Example:
@@ -76,7 +76,7 @@ call. This simplifies the "core language" and makes method dispatch
 notation -- which involves some non-trivial inference -- into a kind
 of "sugar" for the more explicit UFCS notation.
 
-# Detailed design
+## Detailed design
 
 To be precise about object-safety, an object-safe method must meet one
 of the following conditions:
@@ -111,7 +111,7 @@ by-value self methods are permitted, since currently one cannot invoke
 pass an unsized type by-value (though we consider that a useful future
 extension).
 
-# Drawbacks
+## Drawbacks
 
 This is a breaking change and forbids some safe code which is legal
 today. This can be addressed in two ways: splitting traits, or adding
@@ -185,7 +185,7 @@ fn baz<T:SomeTrait>(t: &T) {
 }
 ```
 
-# Alternatives
+## Alternatives
 
 We could continue to check methods rather than traits are
 object-safe. When checking the bounds of a type parameter for a
@@ -201,11 +201,11 @@ might permit `fn foo() -> Self` because it (implicitly) requires that
 `Self` be sized. Similarly, we might permit other tests beyond just
 sized-ness. Any such extension would be backwards compatible.
 
-# Unresolved questions
+## Unresolved questions
 
 N/A
 
-# Edits
+## Edits
 
 * 2014-02-09. Edited by Nicholas Matsakis to (1) include the
   requirement that object-safe traits do not require `Self:Sized` and

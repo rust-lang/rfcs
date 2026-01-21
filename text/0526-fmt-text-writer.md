@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#526](https://github.com/rust-lang/rfcs/pull/526)
 - Rust Issue: [rust-lang/rust#20352](https://github.com/rust-lang/rust/issues/20352)
 
-# Summary
+## Summary
 
 Statically enforce that the `std::fmt` module can only create valid UTF-8 data
 by removing the arbitrary `write` method in favor of a `write_str` method.
 
-# Motivation
+## Motivation
 
 Today it is conventionally true that the output from macros like `format!` and
 well as implementations of `Show` only create valid UTF-8 data. This is not
@@ -23,7 +23,7 @@ Additionally, it is possible to statically enforce the convention that `Show`
 only deals with valid unicode, and as such the possibility of doing so should be
 explored.
 
-# Detailed design
+## Detailed design
 
 The `std::fmt::FormatWriter` trait will be redefined as:
 
@@ -72,7 +72,7 @@ The changes outlined in this RFC will only affect `Show` and other formatting
 trait implementations. As can be seen from the sample implementation, the
 fallout is quite minimal with respect to the rest of the standard library.
 
-# Drawbacks
+## Drawbacks
 
 A version of this RFC has been [previously postponed][rfc57], but this variant
 is much less ambitious in terms of generic `TextWriter` support. At this time
@@ -85,7 +85,7 @@ as a `&mut Writer`, e.g. for the `Show` impl of `Json`. This is undoubtedly used
 outside this repository, and it would break all of these users relying on the
 binary functionality of the old `FormatWriter`.
 
-# Alternatives
+## Alternatives
 
 Another possible solution to specifically the performance problem is to have an
 `unsafe` flag on a `Formatter` indicating that only valid utf-8 data was
@@ -97,7 +97,7 @@ The `fmt::Writer` trait can also be located as `io::TextWriter` instead to
 emphasize its possible future connection with I/O, although there are not
 concrete plans today to develop these connections.
 
-# Unresolved questions
+## Unresolved questions
 
 * It is unclear to what degree a `fmt::Writer` needs to interact with
   `io::Writer` and the various adaptors/buffers. For example one would have to

@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1252](https://github.com/rust-lang/rfcs/pull/1252)
 - Rust Issue: [rust-lang/rust#30014](https://github.com/rust-lang/rust/issues/30014)
 
-# Summary
+## Summary
 
 Document and expand the open options.
 
 
-# Motivation
+## Motivation
 
 The options that can be passed to the os when opening a file vary between
 systems. And even if the options seem the same or similar, there may be
@@ -22,15 +22,15 @@ This RFC attempts to
 - suggest extra options to expose more platform-specific options.
 
 
-# Detailed design
+## Detailed design
 
-## Access modes
+### Access modes
 
-### Read-only
+#### Read-only
 Open a file for read-only.
 
 
-### Write-only
+#### Write-only
 Open a file for write-only.
 
 If a file already exist, the contents of that file get overwritten, but it is
@@ -42,11 +42,11 @@ file.write(b"bbbb")
 ```
 
 
-### Read-write
+#### Read-write
 This is the simple combinations of read-only and write-only.
 
 
-### Append-mode
+#### Append-mode
 Append-mode is similar to write-only, but all writes always happen at the end of
 the file. This mode is especially useful if multiple processes or threads write
 to a single file, like a log file. The operating system guarantees all writes
@@ -71,7 +71,7 @@ Because of this append is treated as a separate access mode in Rust, and if
 `.append(true)` is specified than `.write()` is ignored.
 
 
-### Read-append
+#### Read-append
 Writing to the file works exactly the same as in append-mode.
 
 Reading is more difficult, and may involve a lot of seeking. When the file is
@@ -88,7 +88,7 @@ try!(file.seek(SeekFrom::Start(pos)));
 try!(file.read(&mut buffer));
 ```
 
-### No access mode set
+#### No access mode set
 Even if you don't have read or write permission to a file, it is possible to
 open it on some systems by opening it with no access mode set (or the equivalent
 there of). This is true for Windows, Linux (with the flag `O_PATH`) and
@@ -112,7 +112,7 @@ fallback is not worth it: it is no great effort to set the access mode
 explicitly.
 
 
-### Windows-specific
+#### Windows-specific
 `.access_mode(FILE_READ_DATA)`
 
 On Windows you can detail whether you want to have read and/or write access to
@@ -160,7 +160,7 @@ The implied flags can be specified explicitly with the constants
 `FILE_GENERIC_READ` and `FILE_GENERIC_WRITE`.
 
 
-## Creation modes
+### Creation modes
 
 creation mode                | file exists | file does not exist | Unix              | Windows                                   |
 :----------------------------|-------------|---------------------|:------------------|:------------------------------------------|
@@ -171,17 +171,17 @@ not set (open existing)      | open        | fail                |              
 .create_new(true)            | fail        | create              | O_CREAT + O_EXCL  | CREATE_NEW + FILE_FLAG_OPEN_REPARSE_POINT |
 
 
-### Not set (open existing)
+#### Not set (open existing)
 Open an existing file. Fails if the file does not exist.
 
 
-### Create
+#### Create
 `.create(true)`
 
 Open an existing file, or create a new file if it does not already exists.
 
 
-### Truncate
+#### Truncate
 `.truncate(true)`
 
 Open an existing file, and truncate it to zero length. Fails if the file does
@@ -192,7 +192,7 @@ if the `GENERIC_WRITE` flag is set. Setting the equivalent individual flags is
 not enough.
 
 
-### Create and truncate
+#### Create and truncate
 `.create(true).truncate(true)`
 
 Open an existing file and truncate it to zero length, or create a new file if it
@@ -209,7 +209,7 @@ _system_ set, it is necessary to open with `FILE_ATTRIBUTE_SYSTEM`. See
 the Windows-specific `.attributes()` below on how to set these.
 
 
-### Create_new
+#### Create_new
 `.create_new(true)`
 
 Create a new file, and fail if it already exist.
@@ -234,7 +234,7 @@ Simply put: nothing is allowed to exist on the target location, also no
 if `.create_new(true)` is set, `.create()` and `.truncate()` are ignored.
 
 
-### Unix-specific: Mode
+#### Unix-specific: Mode
 `.mode(0o666)`
 
 On Unix the new file is created by default with permissions `0o666` minus the
@@ -247,7 +247,7 @@ specified, `.mode()` is ignored.
 Rust currently does not expose a way to modify the umask.
 
 
-### Windows-specific: Attributes
+#### Windows-specific: Attributes
 `.attributes(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)`
 
 Files on Windows can have several attributes, most commonly one or more of the
@@ -273,7 +273,7 @@ existing attributes are preserved and combined with the ones declared with
 In all other cases the attributes get ignored.
 
 
-### Combination of access modes and creation modes
+#### Combination of access modes and creation modes
 
 Some combinations of creation modes and access modes do not make sense.
 
@@ -309,13 +309,13 @@ On Unix this is done by setting the creation mode using `.custom_flags()` with
 specifying `.access_mode()` (see above).
 
 
-## Asynchronous IO
+### Asynchronous IO
 Out op scope.
 
 
-## Other options
+### Other options
 
-### Inheritance of file descriptors
+#### Inheritance of file descriptors
 Leaking file descriptors to child processes can cause problems and can be a
 security vulnerability. See this report by
 [Python](https://www.python.org/dev/peps/pep-0446/).
@@ -343,7 +343,7 @@ This means we can always set the flag `O_CLOEXEC`, and do an additional `fcntl`
 if the os is NetBSD or Solaris.
 
 
-### Custom flags
+#### Custom flags
 `.custom_flags()`
 
 Windows and the various flavours of Unix support flags that are not
@@ -413,7 +413,7 @@ Unix:
 | [POSIX](http://pubs.opengroup.org/onlinepubs/9699919799/functions/open.html) | [Linux](http://man7.org/linux/man-pages/man2/open.2.html) | [OS X](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/open.2.html) | [FreeBSD](https://www.freebsd.org/cgi/man.cgi?query=open&sektion=2) | [OpenBSD](http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man2/open.2?query=open&sec=2) | [NetBSD](http://netbsd.gw.com/cgi-bin/man-cgi?open+2+NetBSD-current) | [Dragonfly BSD](http://leaf.dragonflybsd.org/cgi/web-man?command=open&section=2) | [Solaris](http://docs.oracle.com/cd/E23824_01/html/821-1463/open-2.html) |
 
 
-### Windows-specific flags and attributes
+#### Windows-specific flags and attributes
 The following variables for CreateFile2 currently have no equivalent functions
 in Rust to set them:
 ```
@@ -423,9 +423,9 @@ HANDLE                hTemplateFile;
 ```
 
 
-## Changes from current
+### Changes from current
 
-### Access mode
+#### Access mode
 - Current: `.append(true)` requires `.write(true)` on Unix, but not on Windows.
   New: ignore `.write()` if `.append(true)` is specified.
 - Current: when `.append(true)` is set, it is not possible to modify file
@@ -440,7 +440,7 @@ HANDLE                hTemplateFile;
   New: always fail to open if no access mode is set.
 - Rename the Windows-specific `.desired_access()` to `.access_mode()`
 
-### Creation mode
+#### Creation mode
 - Implement `.create_new()`.
 - Do not allow `.truncate(true)` if the access mode is read-only and/or append.
 - Do not allow `.create(true)` or `.create_new (true)` if the access mode is
@@ -454,13 +454,13 @@ HANDLE                hTemplateFile;
   bits, and the custom flags that modify the behaviour of the current file
   handle.
 
-### Other options
+#### Other options
 - Set the close-on-exec flag atomically on Unix if supported.
 - Implement `.custom_flags()` on Windows and Unix to pass custom flags to the
 system.
 
 
-# Drawbacks
+## Drawbacks
 This adds a thin layer on top of the raw operating system calls. In this
 [pull request](https://github.com/rust-lang/rust/pull/26772#issuecomment-126753342)
 the conclusion was: this seems like a good idea for a "high level" abstraction
@@ -480,13 +480,13 @@ Also this RFC is in line with the vision for IO in the
   cross-platform capabilities.
 
 
-# Alternatives
+## Alternatives
 The first version of this RFC contained a proposal for options that control
 caching anf file locking. They are out of scope for now, but included here for
 reference.
 
 
-## Sharing / locking
+### Sharing / locking
 On Unix it is possible for multiple processes to read and write to the same file
 at the same time.
 
@@ -504,7 +504,7 @@ to unusable for modern multi-threaded programs. Linux may in some very rare
 cases support mandatory file locking, but it is just as broken as advisory.
 
 
-### Windows-specific: Share mode
+#### Windows-specific: Share mode
 `.share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)`
 
 It is possible to set the individual share permissions with `.share_mode()`.
@@ -515,7 +515,7 @@ others all rights, unless explicitly denied, e.g.:
 `.share_mode(DENY_READ | DENY_WRITE | DENY_DELETE)`.
 
 
-## Controlling caching
+### Controlling caching
 When dealing file file systems and hard disks, there are several kinds of
 caches. Giving hints or controlling them may improve performance or data
 consistency.
@@ -542,7 +542,7 @@ consistency.
    cache.
 
 
-### Read-ahead hint
+#### Read-ahead hint
 ```
 .read_ahead_hint(enum CacheHint)
 
@@ -573,7 +573,7 @@ Open flags / system calls:
   for sequential).
 
 
-### OS cache
+#### OS cache
 `used_once(true)`
 
 When reading many gigabytes of data a process may push useful data from other
@@ -592,7 +592,7 @@ This control over the os cache is the main reason some applications use direct
 io, despite it being less convenient and disabling other useful caches.
 
 
-### Delayed writing and on-disk write cache
+#### Delayed writing and on-disk write cache
 `.sync_data(true)` and `.sync_all(true)`
 
 There can be two delays (by the os and by the disk cache) between when an
@@ -629,7 +629,7 @@ syncing both data and metadata. If `.sync_all(true)` is specified,
 `.sync_data()` is ignored.
 
 
-### Direct access / no caching
+#### Direct access / no caching
 Most operating systems offer a mode that reads data straight from disk to an
 application buffer, or that writes straight from a buffer to disk. This avoid
 the small cost of a memory copy. It has the side effect that the data is not
@@ -657,5 +657,5 @@ used with an abstraction / external crate that handles the data size and
 alignment requirements. If it should be used at all.
 
 
-# Unresolved questions
+## Unresolved questions
 None.

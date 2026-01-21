@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2235](https://github.com/rust-lang/rfcs/pull/2235)
 - Rust Issue: [rust-lang/rust#57715](https://github.com/rust-lang/rust/issues/57715)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Expand the traits implemented by structs `libc` crate to include `Debug`, `Eq`, `Hash`, and `PartialEq`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This will allow downstream crates to easily support similar operations with any types they
@@ -25,12 +25,12 @@ are `dqblk`, `utsname`, and `statvfs`. These structs have fields and field types
 support as many platforms as `libc` does, this variation makes implementing these traits manually on wrapper types time consuming and
 error prone.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Add an `extra_traits` feature to the `libc` library that enables `Debug`, `Eq`, `Hash`, and `PartialEq` implementations for all structs.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `Debug`, `Eq`/`PartialEq`, and `Hash` traits will be added as automatic derives within the `s!` macro in `src/macros.rs` if the corresponding feature
@@ -41,7 +41,7 @@ as of `bbda50d20937e570df5ec857eea0e2a098e76b2d` on `x86_64-unknown-linux-gnu` t
  * `Eq`/`PartialEq` - 46
  * `Hash` - 17
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 While most structs will be able to derive these implementations automatically, some will not (for example arrays larger than 32 elements). This will make it harder to add
@@ -49,12 +49,12 @@ some structs to `libc`.
 
 This extra trait will increase the testing requirements for `libc`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Adding these trait implementations behind a singular feature flag has the best combination of utility and ergonomics out of the possible alternatives listed below:
 
-## Always enabled with no feature flags
+### Always enabled with no feature flags
 
 This was regarded as unsuitable because it increases compilation times by 100-200%. Compilation times of `libc` was tested at commit `bbda50d20937e570df5ec857eea0e2a098e76b2d`
 with modifications to add derives for the traits discussed here under the `extra_traits` feature (with no other features). Some types failed to have these traits
@@ -71,12 +71,12 @@ derived because of specific fields, so these were removed from the struct declar
 | `cargo clean && cargo build --no-default-features --release --features use_std`              | 0.66s |
 | `cargo clean && cargo build --no-default-features --release --features use_std,extra_traits` | 1.94s |
 
-## Default-on feature
+### Default-on feature
 
 For crates that are more than one level above `libc` in the dependency chain it will be impossible for them to opt out. This could also happen with a default-off
 feature flag, but it's more likely the library authors will expose it as a flag as well.
 
-## Multiple feature flags
+### Multiple feature flags
 
 Instead of having a single `extra_traits` feature, have it and feature flags for each trait individually like:
 
@@ -88,5 +88,5 @@ Instead of having a single `extra_traits` feature, have it and feature flags for
 This change should reduce compilation times when not all traits are desired. The downsides are that it complicates CI. It can be added in a backwards-compatible
 manner later should compilation times or consumer demand changes.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions

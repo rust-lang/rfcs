@@ -2,14 +2,14 @@
 - RFC PR: (https://github.com/rust-lang/rfcs/pull/216)
 - Rust Issue: (https://github.com/rust-lang/rust/issues/17320)
 
-# Summary
+## Summary
 
 Add additional iterator-like Entry objects to collections.
 Entries provide a composable mechanism for in-place observation and mutation of a
 single element in the collection, without having to "re-find" the element multiple times.
 This deprecates several "internal mutation" methods like hashmap's `find_or_insert_with`.
 
-# Motivation
+## Motivation
 
 As we approach 1.0, we'd like to normalize the standard APIs to be consistent, composable,
 and simple. However, this currently stands in opposition to manipulating the collections in
@@ -53,7 +53,7 @@ confusing and complicated. However the solution was simple: external iteration. 
 all the benefits of internal iteration, but with a much simpler interface, and greater
 composability. Thus, this RFC proposes the same solution to the internal mutation problem.
 
-# Detailed design
+## Detailed design
 
 A fully tested "proof of concept" draft of this design has been implemented on top of hashmap,
 as it seems to be the worst offender, while still being easy to work with. It sits as a pull request
@@ -174,7 +174,7 @@ be tackled in a back-compat manner after this has landed, and usage is observed.
 proposal does not provide any generic trait for Entries, preferring concrete implementations for
 the time-being.
 
-# Drawbacks
+## Drawbacks
 
 * More structs, and more methods in the short-term
 
@@ -183,7 +183,7 @@ the time-being.
 * `insert_or_update_with` is kind of convenient for avoiding the kind of boiler-plate
 found in the examples
 
-# Alternatives
+## Alternatives
 
 * Just put our foot down, say "no efficient complex manipulations", and drop
 all the internal mutation stuff without a replacement.
@@ -203,6 +203,6 @@ in *any* location.
 However it had some interesting ideas about Key manipulation, so we mention it here for
 historical purposes.
 
-# Unresolved questions
+## Unresolved questions
 
 Naming bikesheds!

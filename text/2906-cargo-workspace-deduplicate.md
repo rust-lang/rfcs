@@ -5,13 +5,13 @@
 
 > **Note**: This feature was stabilized in Rust 1.64. Several design changes were made in the course of the implementation. Please see the documentation for [`[workspace.package]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-package-table) and [`[workspace.dependencies]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-dependencies-table) for details on how to use this feature.
 
-# Summary
+## Summary
 [summary]: #summary
 
 Deduplicate common dependency and metadata directives amongst a set of workspace
 crates in Cargo with extensions to the `[workspace]` section in `Cargo.toml`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Cargo has supported workspaces for quite some time now but when managing a large
@@ -21,7 +21,7 @@ duplication. Many of these areas of duplication are managed either manually or
 with scripts, and the goal of this proposal is to largely eliminate the need for
 scripts and also the need to manually manage so much.
 
-## Duplication of `[dependencies]` sections
+### Duplication of `[dependencies]` sections
 
 Often when managing a workspace you'll have a lot of crates that all depend on
 the same crate. For example many of your crates may depend on `log`. Today you
@@ -48,7 +48,7 @@ log = { version = "0.3.1", features = ['release_max_level_warn'] }
 If you wanted to consistently write this across many crates it can get quite
 cumbersome quite quickly.
 
-## Duplication in inter-dependent crates
+### Duplication in inter-dependent crates
 
 When managing a workspace you'll often have a lot workspace members that all
 depend on each other. The "blessed" way to do this is actually quite verbose:
@@ -73,7 +73,7 @@ Naturally, with a highly-interconnected workspace which may be relatively large,
 this leads to a lot of duplication very quickly. This is a lot of `path` and
 `version` directives that you've got to manage.
 
-## Duplication in crate versions
+### Duplication in crate versions
 
 A frequent pattern in Cargo workspaces which publish to crates.io is to have all
 the crate at the same semver version. These crates all move in lockstep during
@@ -84,7 +84,7 @@ workspace of a lot of crates makes their own homebrew script for updating
 versions and managing updates/publications. It'd be quite convenient if we could
 standardize across the Rust ecosystem how to manage this information!
 
-## Duplication in crate metadata
+### Duplication in crate metadata
 
 The last primary area of duplication that this proposal attempts to tackle is in
 crate metadata in the `[package]` section. This includes items such as:
@@ -101,7 +101,7 @@ These metadata directives are often duplicated amongst all crates, especially
 author/license/repository information. This is a pretty poor experience if you'e
 got to keep writing down the information in so many places!
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Cargo's manifest parsing will be updated with new features to support
@@ -110,7 +110,7 @@ pretty small in their own right, they all add up to greatly reducing the
 overhead of managing a workspace of many crates. The list of new features in
 Cargo will look like the following:
 
-## Workspace-level Dependencies
+### Workspace-level Dependencies
 
 The `[workspace]` section can now have a `dependencies` section which works the
 same way as the `[dependencies]` section in `Cargo.toml`:
@@ -142,7 +142,7 @@ defined in `[workspace.dependencies]` too:
 log2 = { workspace = true }
 ```
 
-## No longer need both `version` and `path` to publish to Crates.io
+### No longer need both `version` and `path` to publish to Crates.io
 
 When you have a `path` dependency, Cargo's current behavior on publication looks
 like this:
@@ -166,7 +166,7 @@ with `path` dependencies if you publish to crates.io. Coupled with the
 workspace-level dependencies above this means you never have to write the
 version of a path dependency anywhere!
 
-## Package metadata can reference other workspace members
+### Package metadata can reference other workspace members
 
 To deduplicate `[package]` directives in `Cargo.toml` workspace members, Cargo
 will now support declaring that metadata directives should be inherited from the
@@ -197,7 +197,7 @@ authors = { workspace = true }
 license = { workspace = true }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Cargo's `[workspace]` section will first be extended with a few new attributes.
@@ -205,7 +205,7 @@ Like before the `[workspace]` table can only appear in a workspace root, not in
 any other manifests. Additionally the `[workspace]` table doesn't have to be
 associated with a package, it could be part of a virtual manifest.
 
-## Updates to `[workspace]`
+### Updates to `[workspace]`
 
 The first addition to the `[workspace]` table is a `dependencies` sub-table,
 like so:
@@ -266,14 +266,14 @@ same as the `[package]` section of `Cargo.toml`.
 For now the `metadata` key is explicitly left out (due to complications around
 merging table values), but it can always be added in the future if necessary.
 
-## Updates to a package `Cargo.toml`
+### Updates to a package `Cargo.toml`
 
 The interpretation of a `Cargo.toml` manifest within Cargo will now require a
 `Workspace` object to be created. This `Workspace` will be used to elaborate and
 expand each member's `Cargo.toml` directive. Additionally `Cargo.toml` will
 syntactically accept some more forms.
 
-### Placeholder Values
+#### Placeholder Values
 
 Previously package metadata values must be declared explicitly in each
 `Cargo.toml`:
@@ -319,7 +319,7 @@ Note that directives like `license-file` are resolved relative to their
 definition, so `license-file` is relative to the `[workspace]` section that
 defined it.
 
-### New dependency directives
+#### New dependency directives
 
 Dependencies in the `[dependencies]`, `[dev-dependencies]`,
 `[build-dependencies]`, and `[target."...".dependencies]` sections will support
@@ -353,7 +353,7 @@ For now if a `workspace = true` dependency is specified then also specifying the
 directive is inherited from the `[workspace.dependencies]` declaration, which
 defaults to `true` if nothing else is specified.
 
-### Path dependencies infer `version` directive
+#### Path dependencies infer `version` directive
 
 As a final change to `Cargo.toml`, dependencies using the `path` directive and
 not specifying a `version` directive will have the `version` directive inferred.
@@ -408,7 +408,7 @@ then Cargo would not alter this dependency directive:
 bar = { path = "../bar" }
 ```
 
-## Effect on `cargo publish`
+### Effect on `cargo publish`
 
 Cargo currently already "elaborates" the manifest during publication. For
 example it removes `path` keys in dependency lists to only have the version
@@ -424,7 +424,7 @@ will make its way to the registry index. Furthermore metadata fields like
 Put another way, `Cargo.toml` files published to crates.io, or metadata found
 through crates.io, won't change from what they are today.
 
-## Effect on `Cargo.lock`
+### Effect on `Cargo.lock`
 
 When creating a `Cargo.lock` file Cargo will perform crate resolution as-if all
 dependencies in `[workspace.dependencies]` are depended on by some crate, even
@@ -437,19 +437,19 @@ Note that for entries in `[workspace.dependencies]` which aren't used by any
 crates in the workspace will likely trigger a warning, however, so users can
 continue to prune accidentally unused entries.
 
-## Effect on `cargo metadata`
+### Effect on `cargo metadata`
 
 Executing `cargo metadata` to learn about a crate graph will implicitly perform
 all substitution defined in this proposal. Consumers of `cargo metadata` will
 continue to get the same output they got before this proposal, meaning that
 implicit substitutions, if any, will be invisible to users of `cargo metadata`.
 
-## Effect on `cargo read-manifest`
+### Effect on `cargo read-manifest`
 
 Similar to `cargo metadata`, the `cargo read-manifest` command will perform all
 necessary substitutions when presenting the output as JSON.
 
-## Effect resolution for relative `path` dependencies
+### Effect resolution for relative `path` dependencies
 
 Like today, `path` dependencies will be resolved relative to the file that
 defines them. This means that references to dependencies defined in the
@@ -476,7 +476,7 @@ then the `my-crate` dependency references the crate located at `crates/my-crate`
 relative to the workspace root, not located at
 `crates/other-crate/crates/my-crate`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This proposal significantly complicates the process of interpreting a
@@ -506,7 +506,7 @@ something else to figure out what the dependency actually is. This layer of
 indirection can cause surprise for readers or otherwise add a speed-bump to
 understanding the contents of a manifest.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Cargo's manifests have been a pretty carefully curated part of Cargo's design to
@@ -550,7 +550,7 @@ option to reference another package as well. Overall this proposal should
 empower more power users of Cargo to manage workspaces easily without taking
 away any of the existing configurations that Cargo already supports.
 
-## Alternative Syntax
+### Alternative Syntax
 
 This proposal is largely a syntactic proposal for `Cargo.toml` and changing how
 we can specify a few directives. Naturally that lends itself to quite a lot of
@@ -570,7 +570,7 @@ foo = "workspace"
 foo.workspace = true # technically the same, but idiomatically different
 ```
 
-## Including metadata by default
+### Including metadata by default
 
 This proposal indicates that package metadata is not inherited by default from
 the workspace. This may be desired in some scenarios instead of repeating
@@ -588,7 +588,7 @@ ways this could happen.
   an optional way of specifying this. For now though to keep this proposal
   simple this is left out as a possible future extension of Cargo.
 
-## Inheriting metadata from other packages
+### Inheriting metadata from other packages
 
 One possible extension of this RFC is for metadata to not only be inheritable
 from the `[workspace]` table but also from other packages. For example a
@@ -600,7 +600,7 @@ It's hoped though that an eventual feature of nested workspaces would solve this
 issue in Cargo. That way each "clique" could correspond to one workspace, and
 that way we wouldn't need extra support to inherit directives from anywhere.
 
-## Motivating issues
+### Motivating issues
 
 Duplication throughout workspaces has been a thorn in Cargo's since practically
 since the inception of workspaces. Naturally there's quite a few bugs filed on
@@ -624,7 +624,7 @@ proposal at all as well as how to design this proposal.
 [#6126]: https://github.com/rust-lang/cargo/issues/6126
 [#6828]: https://github.com/rust-lang/cargo/issues/6828
 
-## Full templating language
+### Full templating language
 
 One sort of far-out-there alternative we could go for is to be far more
 ambitious and make our own sort of "templating language" on top of TOML. This
@@ -646,7 +646,7 @@ think there's a lot to be gained from the simplicity of TOML and prioritizing
 other tools reading Cargo manifests, so we may not want to go full-blown
 templating language just yet.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * One thing we'll want to resolve for sure is nailing down all the syntactical

@@ -2,13 +2,13 @@
 - RFC PR: [rust-lang/rfcs#79](https://github.com/rust-lang/rfcs/pull/79)
 - Rust Issue: [rust-lang/rust#14309](https://github.com/rust-lang/rust/issues/14309)
 
-# Summary
+## Summary
 
 Leave structs with unspecified layout by default like enums, for
 optimisation purposes. Use something like `#[repr(C)]` to expose C
 compatible layout.
 
-# Motivation
+## Motivation
 
 The members of a struct are always laid in memory in the order in
 which they were specified, e.g.
@@ -68,7 +68,7 @@ Notably, Rust's `enum`s already have undefined layout, and provide the
 `#[repr]` attribute to control layout more precisely (specifically,
 selecting the size of the discriminant).
 
-# Drawbacks
+## Drawbacks
 
 Forgetting to add `#[repr(C)]` for a struct intended for FFI use can
 cause surprising bugs and crashes. There is already a lint for FFI use
@@ -100,7 +100,7 @@ That said, this scenario requires:
   passed to C).
 
 
-# Detailed design
+## Detailed design
 
 A struct declaration like
 
@@ -153,7 +153,7 @@ extern "C" fn foo(x: UnspecifiedLayout) { } // warning: use of non-FFI-safe stru
 ```
 
 
-# Alternatives
+## Alternatives
 
 - Have non-C layouts opt-in, via `#[repr(smallest)]` and
   `#[repr(random)]` (or similar).
@@ -162,7 +162,7 @@ extern "C" fn foo(x: UnspecifiedLayout) { } // warning: use of non-FFI-safe stru
   last, and `[u8, .. 1000000]` fields get placed first. The `#[repr]`
   attributes would still allow for selecting declaration-order layout.
 
-# Unresolved questions
+## Unresolved questions
 
 - How does this interact with binary compatibility of dynamic libraries?
 - How does this interact with DST, where some fields have to be at the

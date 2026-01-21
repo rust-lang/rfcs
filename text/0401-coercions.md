@@ -2,7 +2,7 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/401
 - Rust Issue #: https://github.com/rust-lang/rust/issues/18469
 
-# Summary
+## Summary
 
 Describe the various kinds of type conversions available in Rust and suggest
 some tweaks.
@@ -15,7 +15,7 @@ The `transmute` intrinsic and other unsafe methods of type conversion are not
 covered by this RFC.
 
 
-# Motivation
+## Motivation
 
 It is often useful to convert a value from one type to another. This conversion
 might be implicit or explicit and may or may not involve some runtime action.
@@ -25,7 +25,7 @@ transmutes.
 Our current rules around type conversions are not well-described. The different
 conversion mechanisms interact poorly and the implementation is somewhat ad-hoc.
 
-# Detailed design
+## Detailed design
 
 Rust has several kinds of type conversion: subtyping, coercion, and casting.
 Subtyping and coercion are implicit, there is no syntax. Casting is explicit,
@@ -52,7 +52,7 @@ receiver coercions are valid casts.
 Finally, I will discuss function polymorphism, which is something of a coercion
 edge case.
 
-## Subtyping
+### Subtyping
 
 Subtyping is implicit and can occur at any stage in type checking or inference.
 Subtyping in Rust is very restricted and occurs only due to variance with
@@ -61,7 +61,7 @@ to erase lifetimes from types, then the only subtyping would be due to type
 equality.
 
 
-## Coercions
+### Coercions
 
 A coercion is implicit and has no syntax. A coercion can only occur at certain
 coercion sites in a program, these are typically places where the desired type
@@ -201,7 +201,7 @@ Perhaps type ascription should not be a coercion site. Or perhaps we don't need
 type ascription at all if we allow trivial casts.
 
 
-### Custom unsizing coercions
+#### Custom unsizing coercions
 
 It should be possible to coerce smart pointers (e.g., `Rc`) in the same way as
 the built-in pointers. In order to do so, we provide two traits and an intrinsic
@@ -271,7 +271,7 @@ impl<Sized? T, Sized? U> CoerceUnsized<Rc<T>> for Rc<U> {
 }
 ```
 
-## Coercions of receiver expressions
+### Coercions of receiver expressions
 
 These coercions occur when matching the type of the receiver of a method call
 with the self type (i.e., the type of `e` in `e.m(...)`) or in field access.
@@ -317,7 +317,7 @@ the usual coercion machinery. I believe, but have not proved, that these two
 descriptions are equivalent.
 
 
-## Casts
+### Casts
 
 Casting is indicated by the `as` keyword. A cast `e as U` is valid if one of the
 following holds:
@@ -355,7 +355,7 @@ There will be a lint for trivial casts. A trivial cast is a cast `e as T` where
 `e` has type `U` and `U` is a subtype of `T`. The lint will be warn by default.
 
 
-## Function type polymorphism
+### Function type polymorphism
 
 Currently, functions may be used where a closure is expected by coercing a
 function to a closure. We will remove this coercion and instead use the
@@ -402,7 +402,7 @@ to find the implementing method and then call the function itself because the
 function is 'wrapped' in a closure object.
 
 
-## Changes required
+### Changes required
 
 * Add cast from unsized slices to raw pointers (`&[V] to *V`);
 
@@ -428,7 +428,7 @@ function is 'wrapped' in a closure object.
 * add DST/custom coercions.
 
 
-# Drawbacks
+## Drawbacks
 
 We are adding and removing some coercions. There is always a trade-off with
 implicit coercions on making Rust ergonomic vs making it hard to comprehend due
@@ -436,7 +436,7 @@ to magical conversions. By changing this balance we might be making some things
 worse.
 
 
-# Alternatives
+## Alternatives
 
 These rules could be tweaked in any number of ways.
 
@@ -444,7 +444,7 @@ Specifically for the DST custom coercions, the compiler could throw an error if
 it finds a user-supplied implementation of the `Unsize` trait, rather than
 silently ignoring them.
 
-# Amendments
+## Amendments
 
 * Updated by [#1558](https://github.com/rust-lang/rfcs/pull/1558), which allows
   coercions from a non-capturing closure to a function pointer.

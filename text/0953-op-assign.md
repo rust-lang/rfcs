@@ -3,18 +3,18 @@
 - RFC PR: [rust-lang/rfcs#953](https://github.com/rust-lang/rfcs/pull/953)
 - Rust Issue: [rust-lang/rust#28235](https://github.com/rust-lang/rust/issues/28235)
 
-# Summary
+## Summary
 
 Add the family of `[Op]Assign` traits to allow overloading assignment
 operations like `a += b`.
 
-# Motivation
+## Motivation
 
 We already let users overload the binary operations, letting them overload the
 assignment version is the next logical step. Plus, this sugar is important to
 make mathematical libraries more palatable.
 
-# Detailed design
+## Detailed design
 
 Add the following **unstable** traits to libcore and reexported them in libstd:
 
@@ -50,7 +50,7 @@ Once we feel comfortable with the implementation we'll remove the feature gate
 and mark the traits as stable. This can be done after 1.0 as this change is
 backwards compatible.
 
-## RHS: By value vs by ref
+### RHS: By value vs by ref
 
 Taking the RHS by value is more flexible. The implementations allowed with
 a by value RHS are a superset of the implementations allowed with a by ref RHS.
@@ -67,11 +67,11 @@ desired).
 
 [elsewhere]: https://github.com/rust-lang/rfcs/pull/203
 
-# Drawbacks
+## Drawbacks
 
 None that I can think of.
 
-# Alternatives
+## Alternatives
 
 Take the RHS by ref. This is less flexible than taking the RHS by value but, in
 some instances, it can save writing `&rhs` when the RHS is owned and the
@@ -79,7 +79,7 @@ implementation demands a reference. However, this last point will be moot if we
 implement auto-referencing for binary operators, as `lhs += rhs` would actually
 call `add_assign(&mut lhs, &rhs)` if `Lhs impls AddAssign<&Rhs>`.
 
-# Unresolved questions
+## Unresolved questions
 
 Should we overload `ShlAssign` and `ShrAssign`, e.g.
 `impl ShlAssign<u8> for i32`, since we have already overloaded the `Shl` and

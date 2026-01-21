@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3692](https://github.com/rust-lang/rfcs/pull/3692)
 - Tracking Issue: [rust-lang/cargo#14774](https://github.com/rust-lang/cargo/issues/14774)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Give users control over the feature unification that happens based on the packages they select.
@@ -16,7 +16,7 @@ Related issues:
 - [#8157: --bin B resolves features differently than -p B in a workspace](https://github.com/rust-lang/cargo/issues/8157)
 - [#13844: The cargo build --bins re-builds binaries again after cargo build --all-targets](https://github.com/rust-lang/cargo/issues/13844)
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Today, when Cargo is building, features in dependencies are enabled based on the set of packages selected to build.
@@ -39,11 +39,11 @@ and then locally patch in the real instance of it.
 This also makes testing of features more difficult because a user can't just run `cargo check --workspace` to verify that the correct set of features are enabled.
 This has led to the rise of tools like [cargo-hack](https://crates.io/crates/cargo-hack) which de-unify packages.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 We'll add two new modes to feature unification:
@@ -99,7 +99,7 @@ Specify which packages participate in [feature unification](https://doc.rust-lan
 * `workspace`: merge dependency features across all workspace members, regardless of which packages are specified for the current build
 * `package`: dependency features are only considered on a package-by-package basis, preferring duplicate builds of dependencies when different sets of feature are activated by the packages.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This increases entropy within Cargo and the universe at large.
@@ -112,7 +112,7 @@ As `workspace` unifcation builds dependencies the same way as `--workspace`, it 
 - If `--workspace` would produce an invalid binary for your requirements, then it will do so with `workspace` unification as well.
   - For example, if you have regular packages and a `no_std` package in the same workspace, the `no_std` package may end up with dependnencies built with `std` features.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This is done in the config instead of the manifest:
@@ -133,19 +133,19 @@ While a solution that targeted this higher-level need would cover more uses case
 there is a lot more work to do within the design space and it could end up being more unwieldy.
 The solution offered in this RFC is simple in that it is just a re-framing of what already happens on the command line.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 [`cargo-hakari`](https://crates.io/crates/cargo-hakari) is a "cargo-workspace-hack" generator that builds a graph off of `cargo metadata` and re-implements feature unification.
 
 [cargo-hack](https://crates.io/crates/cargo-hack) can run each selected package in a separate `cargo` invocation to prevent unification.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - How to name the config field to not block the future possibilities
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 ### Support in manifests

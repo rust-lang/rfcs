@@ -4,12 +4,12 @@
 - eRFC PR: [rust-lang/rfcs#3558](https://github.com/rust-lang/rfcs/pull/3558)
 - Tracking Issue: [rust-lang/testing-devex-team1](https://github.com/rust-lang/testing-devex-team/issues/1)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This eRFC lays out a path for [stabilizing programmatic output for libtest](https://github.com/rust-lang/rust/issues/49359).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [libtest](https://github.com/rust-lang/rust/tree/master/library/test)
@@ -35,7 +35,7 @@ Most of that involves shifting responsibilities from the test harness to the tes
 - Allowing more powerful experiments with custom test runners (e.g. [`cargo nextest`](https://crates.io/crates/cargo-nextest)) as they'll have more information to operate on
 - Lowering the barrier for custom test harnesses (like [`libtest-mimic`](https://crates.io/crates/libtest-mimic)) as UI responsibilities are shifted to the test runner (`cargo test`)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The intended outcomes of this experiment are:
@@ -93,10 +93,10 @@ Custom test harnesses are important for this discussion because
   - [trybuild](https://crates.io/crates/trybuild)
 - The compatibility guarantees around libtest mean that development of new ideas is easier through custom test harnesses
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Resources
+### Resources
 
 Comments made on libtests format
 - [Format is complex](https://github.com/rust-lang/rust/issues/49359#issuecomment-467994590) (see also [1](https://github.com/rust-lang/rust/issues/49359#issuecomment-1531369119))
@@ -108,17 +108,17 @@ Comments made on libtests format
 - ~~[Lacks ignored reason](https://github.com/rust-lang/rust/issues/49359#issuecomment-715877950)~~ ([resolved?](https://github.com/rust-lang/rust/issues/49359#issuecomment-1531369119))
 - [Lack of `rendered` field](https://github.com/rust-lang/rust/issues/49359#issuecomment-1531369119)
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 See also
 - https://internals.rust-lang.org/t/alternate-libtest-output-format/6121
 - https://internals.rust-lang.org/t/past-present-and-future-for-rust-testing/6354
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Existing formats
@@ -126,13 +126,13 @@ Existing formats
 - [subunit](https://github.com/testing-cabal/subunit)
 - [TAP](https://testanything.org/)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Improve custom test harness experience
+### Improve custom test harness experience
 
 With less of a burden being placed on custom test harnesses,
 we can more easily explore what is needed for making them be a first-class experience.

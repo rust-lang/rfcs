@@ -1,10 +1,10 @@
-# Restrictions
+## Restrictions
 
 - Start Date: 2022-10-09
 - RFC PR: [rust-lang/rfcs#3323](https://github.com/rust-lang/rfcs/pull/3323)
 - Rust Issue: [rust-lang/rust#105077](https://github.com/rust-lang/rust/issues/105077)
 
-# Summary
+## Summary
 
 You can write `pub impl(crate) trait Foo {}`, which limits the ability to implement the trait to the
 crate it is defined in. Similarly, you can write `pub struct Foo(pub mut(crate) u8);` and
@@ -12,7 +12,7 @@ crate it is defined in. Similarly, you can write `pub struct Foo(pub mut(crate) 
 Outside of the declared scope, implementing the trait or mutating the field is not allowed. If no
 restriction is specified, the ability to implement or mutate is uninhibited.
 
-# Motivation
+## Motivation
 
 Currently, a trait being visible (and nameable) in a given location implies that you are able to
 implement it. However, this does not mean that you want anyone to implement it. It is reasonable to
@@ -27,7 +27,7 @@ fields public, while acceptable for read access, is not acceptable for write acc
 ability to mutate a field to a certain scope is desirable in these situations, while still allowing
 read access everywhere else.
 
-# Guide-level explanation
+## Guide-level explanation
 
 **Restrictions** limit what you are allowed to do with a type. In this sense, visibility is a
 restriction! The compiler stops you from using a private type, after all. `#[non_exhaustive]` is
@@ -46,7 +46,7 @@ Yes, that is obvious, but it is worth noting that the user can still match exhau
 dummy variant has to be handled even within the crate that defined it. With the `#[non_exhaustive]`
 restriction, this is not the case.
 
-## `impl`-restricted traits
+### `impl`-restricted traits
 
 It is very common for a library to want to have a trait that exists _but_ only have it be
 implemented for the types they want. It is so common, in fact, that
@@ -136,7 +136,7 @@ Another benefit is that it is no longer possible to accidentally implement `Seal
 not `Foo`. This is a very easy mistake to make, and it is difficult to notice. With the new syntax,
 you will only have one trait to worry about.
 
-## `mut`-restricted fields
+### `mut`-restricted fields
 
 Have you ever wanted to have read-only fields in Rust? C++, C#, Java, TypeScript, Kotlin, and Swift
 all have them in some form or another! In Rust, it is feasible to go one step further and have
@@ -182,7 +182,7 @@ situations, it is by no means a complete solution.
 
 [`readonly` crate]: https://crates.io/crates/readonly
 
-### Where does a mutation occur?
+#### Where does a mutation occur?
 
 There is one major question: what even counts as a mutation? This is not as straightforward as you
 might think. If you write
@@ -245,7 +245,7 @@ _interior_ mutability of a field should avoid exposing it as a public field with
 
 [interior mutability]: https://doc.rust-lang.org/reference/interior-mutability.html
 
-### `struct` expressions are not allowed
+#### `struct` expressions are not allowed
 
 Given that the most common use for for `mut`-restricted fields is to ensure an invariant, it is
 important that the invariant be enforced. Consider the previous definition of `Time`. If you could
@@ -286,9 +286,9 @@ In this example, `Foo::Alpha { x: 5 }` is allowed when it is in the same crate a
 because `x` is not restricted within this scope, so the field can be freely mutated. Because of
 this, the previous concern about upholding invariants is not applicable.
 
-# Reference-level explanation
+## Reference-level explanation
 
-## Syntax
+### Syntax
 
 Using the syntax from [the reference for `struct`s][struct syntax], the change needed to support
 `mut` restrictions is quite small.
@@ -340,7 +340,7 @@ Trait :
 Essentially, `mut` and `impl` have the same syntax as `pub`, just with a different keyword. Using
 the keyword without providing a path is not allowed.
 
-## Behavior
+### Behavior
 
 The current behavior of `pub` is that `pub` makes something visible within the declared scope. If no
 scope is declared (such that it is just `pub`), then the item is visible everywhere. This behavior
@@ -359,7 +359,7 @@ be constructed with `struct` expressions unless all fields are unrestricted in t
 This is the case even if the field is not directly declared, such as when functional record updates
 are used.
 
-## "Mutable use" in the compiler
+### "Mutable use" in the compiler
 
 The concept of a "mutable use" [already exists][mutating use method] within the compiler. This
 catches all situations that are relevant here, including `ptr::addr_of_mut!`, `&mut`, and direct
@@ -368,19 +368,19 @@ constitutes a "mutable use" are not stated here.
 
 [mutating use method]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/mir/visit/enum.PlaceContext.html#method.is_mutating_use
 
-## Interaction with `trait` aliases
+### Interaction with `trait` aliases
 
 Trait aliases cannot be implemented. As such, there is no concern about compatibility between the
 `impl` restriction and `trait` aliases.
 
-# Drawbacks
+## Drawbacks
 
 - Additional syntax for macros to handle
 - More syntax to learn
 - While unambiguous to parse, `trait impl(crate) Foo` could be confusing due to its similarity to
   `impl Foo`.
 
-# Alternatives
+## Alternatives
 
 - `impl` and `mut` restrictions could be attributes, similar to `#[non_exhaustive]`.
   - The proposed syntax could by syntactic sugar for these attributes.
@@ -395,7 +395,7 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
   syntax if we provided less flexibility? Would a new keyword or two help? We could choose a syntax
   with less flexibility and verbosity but more simplicity. For instance, `sealed` or `readonly`.
 
-# Prior art
+## Prior art
 
 - The [`readonly` crate] simulates immutable fields outside of the defining module. Types with this
   attribute cannot define `Deref`, which can be limiting. Additionally, it applies to all fields and
@@ -415,7 +415,7 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 - Users of many languages, including Rust, regularly implement read-only fields by providing a
   getter method without a setter method, demonstrating a need for this.
 
-# Unresolved questions
+## Unresolved questions
 
 - Should an "unnecessary restriction" lint be introduced? It would fire when the restriction is as
   strict or less strict than the visibility. This warning could also be used for `pub(self)`.
@@ -451,7 +451,7 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 - Should a simpler syntax be provided for common cases? For instance, `sealed` or `readonly`. A
   different syntax altogether could be used as well.
 
-# Future possibilities
+## Future possibilities
 
 - Explicitly sealed/exhaustive traits could happen in the future. This has the ability to impact
   coherence, such that other crates could rely on the fact that the list of implementations is

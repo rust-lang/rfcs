@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1660](https://github.com/rust-lang/rfcs/pull/1660)
 - Rust Issue: [rust-lang/rust#35070](https://github.com/rust-lang/rust/issues/35070)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce non-panicking borrow methods on `RefCell<T>`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Whenever something is built from user input, for example a graph in which nodes
@@ -16,7 +16,7 @@ are `RefCell<T>` values, it is primordial to avoid panicking on bad input. The
 only way to avoid panics on cyclic input in this case is a way to
 conditionally-borrow the cell contents.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 ```rust
@@ -37,13 +37,13 @@ impl RefCell<T> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This departs from the fallible/infallible convention where we avoid providing
 both panicking and non-panicking methods for the same operation.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The alternative is to provide a `borrow_state` method returning the state
@@ -64,7 +64,7 @@ impl<T> RefCell<T> {
 See [the Rust tracking issue](https://github.com/rust-lang/rust/issues/27733)
 for this feature.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are no unresolved questions.

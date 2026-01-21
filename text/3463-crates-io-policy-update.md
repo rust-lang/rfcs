@@ -1,12 +1,12 @@
 - Start Date: 2023-07-24
 - RFC PR: [rust-lang/rfcs#3463](https://github.com/rust-lang/rfcs/pull/3463)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The Rust community has outgrown the current crates.io policies. This RFC proposes a new "Terms of Use" policy based on prior work by PyPI, npm and GitHub.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 > Why are we doing this? What use cases does it support? What is the expected outcome?
@@ -17,14 +17,14 @@ The situation around name squatting has lately also reached unsustainable levels
 
 The main motivation for this RFC is to give the crates.io team a fixed set of rules to determine if a project is using crates.io in a reasonable way, or if the user should get a warning and the project potentially be removed. It is mostly codifying the existing practices of the team, except for being more strict regarding name squatting.
 
-# Proposal
+## Proposal
 [guide-level-explanation]: #guide-level-explanation
 
 The following is a proposed new "Terms of Use" policy for crates.io, replacing <https://crates.io/policies> and <https://crates.io/data-access>.
 
 -------------------------------------------------------------------------------
 
-# Terms of Use
+## Terms of Use
 
 **Short version:** _crates.io is a critical resource for the Rust ecosystem,
 which hosts a variety of packages from a diverse group of users. That resource
@@ -99,7 +99,7 @@ the crates.io team will respect the legal decisions of the
 providing the crates.io service.
 
 
-## Package Ownership
+### Package Ownership
 
 crates.io has a first-come, first-serve policy on crate names. Upon publishing a
 package, the publisher will be made owner of the package on crates.io.
@@ -126,7 +126,7 @@ happen without prior notification to the author, but in most cases the team will
 first give the author the chance to justify the purpose of the crate.
 
 
-## Data Access
+### Data Access
 
 If you need access to a large subset of the crates.io database we recommend
 first looking at the **crates.io [index repository](https://github.com/rust-lang/crates.io-index)**.
@@ -165,7 +165,7 @@ We reserve the right to block traffic from any client that we determine to be in
 violation of this policy or causing an impact on the integrity of our service.
 
 
-## Security
+### Security
 
 Safety is one of the core principles of Rust, and to that end, we would like to
 ensure that cargo and crates.io have secure implementations. To learn more about
@@ -182,7 +182,7 @@ the individual crate owners and their specific policies instead.
 Thank you for taking the time to responsibly disclose any issues you find.
 
 
-## Sexually Obscene Content
+### Sexually Obscene Content
 
 We do not tolerate content associated with sexual exploitation or abuse of
 another individual, including where minors are concerned. We do not allow
@@ -203,7 +203,7 @@ historical or journalistic contexts, or as it relates to victim advocacy. In
 some cases a disclaimer can help communicate the context of the project.
 
 
-## Violations and Enforcement
+### Violations and Enforcement
 
 crates.io retains full discretion to take action in response to a violation of
 these policies, including account suspension, account termination, or removal of
@@ -221,7 +221,7 @@ Account suspension may be lifted at the team's discretion however, for example i
 the case of someone's account being compromised.
 
 
-## Credits & License
+### Credits & License
 
 This policy is partially based on [PyPI’s Acceptable Use Policy](https://github.com/pypi/warehouse/blob/3c404ada9fed7a03bbf7c3c74e86c383f705d96a/policies/acceptable-use-policy.md)
 and modified from its original form.
@@ -231,7 +231,7 @@ license](https://creativecommons.org/licenses/by/4.0/).
 
 -------------------------------------------------------------------------------
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 As the "Credits & License" says, the main inspiration for the proposed policy is the [Acceptable Use Policy](https://pypi.org/policy/acceptable-use-policy/) of the Python Package Index (PyPI). Their policy in turn is based on the [Acceptable Use Policies](https://docs.github.com/en/site-policy/acceptable-use-policies/) of GitHub. Both of these policies are licensed under the [Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by/4.0/), so we can happily reuse them.
@@ -243,14 +243,14 @@ The third source of material are the "[Open-Source Terms](https://docs.npmjs.com
 RubyGems, Maven Central, Packagist (PHP) and Nuget (C#) were also investigated, but they did not appear to have written rules published in easy-to-find places.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Is the wording of the "name reservation" clause sufficient to discourage name squatting in the future?
 - Are there any current legitimate uses of crates.io that would suddenly be forbidden by these new rules?
 - Should the crates.io policies forbid embedding executable binaries in the crate files?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - [PEP 541](https://peps.python.org/pep-0541/) also defines rules for abandoned projects and how people could continue maintenance for them. Introducing something like that would be a large deviation for crates.io though, and something that would need a dedicated RFC. Nevertheless, it is worth thinking about if the majority of the Rust community would prefer having such a ruleset.

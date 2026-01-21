@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#879](https://github.com/rust-lang/rfcs/pull/879)
 - Rust Issue: [rust-lang/rust#23872](https://github.com/rust-lang/rust/pull/23872)
 
-# Summary
+## Summary
 
 Lex binary and octal literals as if they were decimal.
 
-# Motivation
+## Motivation
 
 Lexing all digits (even ones not valid in the given base) allows for
 improved error messages & future proofing (this is more conservative
@@ -60,7 +60,7 @@ Code that wants two tokens can opt in to it by `0b01 23`, for
 example. This is easy to write, and expresses the intent more clearly
 anyway.
 
-# Detailed design
+## Detailed design
 
 The grammar that the lexer uses becomes
 
@@ -83,7 +83,7 @@ ignore!(0b0123)
 is an error even though it doesn't use the tokens.
 
 
-# Drawbacks
+## Drawbacks
 
 This adds a slightly peculiar special case, that is somewhat unique to
 Rust. On the other hand, most languages do not expose the lexical
@@ -92,7 +92,7 @@ is, in many languages it is indistinguishable if `0b1234` is one or
 two tokens: it is *always* an error either way.
 
 
-# Alternatives
+## Alternatives
 
 Don't do it, obviously.
 
@@ -101,6 +101,6 @@ an error or not depending if a suffix of `23` is valid. Handling this
 uniformly would require `"foo"123` and `'a'123` also being lexed as a
 single token. (Which may be a good idea anyway.)
 
-# Unresolved questions
+## Unresolved questions
 
 None.

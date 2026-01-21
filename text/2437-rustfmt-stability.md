@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2437](https://github.com/rust-lang/rfcs/pull/2437)
 - Rust Issue: [rust-lang/rust#54504](https://github.com/rust-lang/rust/issues/54504)
 
-# Summary
+## Summary
 [summary]: #summary
 
 With any luck, Rustfmt 1.0 will happen very soon. The Rust community takes promises of stability very seriously, and Rustfmt (due to being a tool as well as a library) has some interesting constraints on stability. Users should be able to update Rustfmt without hurting their workflow. Where it is used in scripts or on CI, updating Rustfmt should not cause operational errors or unexpected failure.
@@ -15,7 +15,7 @@ The goal is for formatting to only ever change when a user deliberately upgrades
 I propose handling versioning internally in Rustfmt, by formatting according to the rules of previous versions and having users opt-in to breaking changes.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Instability is annoying.
@@ -26,7 +26,7 @@ For users running Rustfmt locally, having formatting change frequently is distra
 
 Rustfmt has a programmatic API (the RLS is a major client), the usual backwards compatibility concerns apply here.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 If you're using Rustfmt, formatting won't change without an explicit upgrade (i.e., a major version increase). This covers all formatting to all code, subject to the following restrictions:
@@ -44,12 +44,12 @@ I do expect that there will be major version increments to Rustfmt (i.e., there 
 If a user uses Rustfmt in CI, I do not propose that they will always be able to update their Rust version without having to update their Rustfmt version, and that may cause some formatting changes. But, it should be a conscious decision by the user to do so, and they should not be *surprised* by formatting changes.
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Background
+### Background
 
-### Specification
+#### Specification
 
 Rustfmt's formatting has been specified in the [formatting RFC process](https://github.com/rust-lang-nursery/fmt-rfcs) by the Rust community style team. The guidelines are described by [RFC 2436](https://github.com/rust-lang/rfcs/pull/2436). The guide aims to be complete and precise, however, it does not aim to totally constrain how a tool formats Rust code. In particular, it allows tools some freedom in formatting 'small' instances of some items in a more compact format. It also does not totally specify the interaction of nested items, especially expressions.
 
@@ -58,9 +58,9 @@ For example, the guide specifies how a method call and a chain of field field ac
 In terms of the implementation, there are [limitations](https://github.com/rust-lang-nursery/rustfmt#limitations) on Rustfmt 1.0; for example, Rustfmt will not format comments or many macros. The stability guidelines proposed here apply to all code, not just the code which Rustfmt can format.
 
 
-### Use cases
+#### Use cases
 
-#### General use
+##### General use
 
 Either on the command line (`rustfmt` or `cargo fmt`) or via an editor (where format-on-save is a common work flow).
 
@@ -68,22 +68,22 @@ Major changes to formatting are distracting and pollute diffs. Changing command 
 
 Users can typically choose when to update (`rustup update`), but might be constrained by the toolchain they are using (i.e., they have a minimum Rustfmt version which supports the Rust version they are using). If they use Rustfmt via the RLS, then the version is dependent on the RLS version, not Rustfmt (see below).
 
-#### CI
+##### CI
 
 Any formatting change could cause erroneous CI errors. Ideally, users want to avoid a long build of Rustfmt, but relying on Rustup means getting the latest version of Rustfmt. Effectively, cannot control when an update happens. Important that developers can get the same results locally as on the CI, or it becomes impossible to land patches.
 
-#### API clients
+##### API clients
 
 Can control versioning using Cargo, but there is likely to be pressure from end-users to have an up to date version. API breaking changes would cause build errors. Formatting changes might break tests.
 
-#### Options
+##### Options
 
 Rustfmt can be configured with [many options](https://github.com/rust-lang-nursery/rustfmt/blob/master/Configurations.md) from the command line and a config file (rustfmt.toml). Options can be stable or unstable. Unstable options can only be used on the nightly toolchain and require opt-in with the `--unstable-features` command line flag. All options have default values and users are strongly encouraged to use these defaults.
 
 There is currently an unstable `required_version` option which enforces that the program is being formatted with a given version of Rustfmt, however, there is no mechanism to get the specified version.
 
 
-### Distribution and versioning
+#### Distribution and versioning
 
 Rustfmt can be built and run [from source](https://github.com/rust-lang-nursery/rustfmt), but requires a nightly toolchain. It can be used as a library or installed via Cargo. It is versioned in the usual way (currently 0.6.0). There are two crates on crates.io - `rustfmt-nightly` is up to date and requires a nightly toolchain, `rustfmt` is deprecated.
 
@@ -94,12 +94,12 @@ If using Rustup, then there is no way to get a specific version of Rustfmt, only
 A common way to use Rustfmt is in an editor via the RLS. The RLS is primarily distributed via Rustup. When installed in this way, the version of Rustfmt used is the same as if Rustfmt were installed directly via Rustup (note that this is the version in the Rust repo submodule and not necessarily the same version as indicated by the RLS's Cargo.toml).
 
 
-## Definition of changes
+### Definition of changes
 
 In this section we define what constitutes different kinds of breaking change for Rustfmt.
 
 
-### API breaking change
+#### API breaking change
 
 A change that could cause a dependent crate not to build, could break a script using the executable, or breaks specification-level formatting compatibility. A formatting change in this category would be frustrating even for occasional users.
 
@@ -116,7 +116,7 @@ Any API breaking change will require a major version increment. Changes to forma
 
 An API breaking change would cause a semver major version increment.
 
-### Major formatting breaking change
+#### Major formatting breaking change
 
 Any change which would change the formatting of code which was previously correctly formatted. In particular when run on CI, any change which would cause `rustfmt --check` to fail where it previously succeeded.
 
@@ -125,14 +125,14 @@ This only applies to formatting with the default options. It includes bug fixes,
 A major formatting breaking change would cause a semver minor version increment, however, users would have to opt-in to the change.
 
 
-### Minor formatting breaking change
+#### Minor formatting breaking change
 
 These are changes to formatting which cannot cause regressions for users using default options and stable Rust. That is any change to formatting which only affects formatting with non-default options or only affects code which does not compile with stable Rust.
 
 A minor formatting breaking change would cause a semver minor version increment.
 
 
-### Non-breaking change
+#### Non-breaking change
 
 These changes cannot cause breakage to any user.
 
@@ -148,7 +148,7 @@ Examples:
 Such changes only require a patch version increment.
 
 
-## Proposal
+### Proposal
 
 Dealing with API breaking changes and non-breaking changes is trivial so won't be covered here.
 
@@ -162,20 +162,20 @@ Dealing with API breaking changes and non-breaking changes is trivial so won't b
 * alternative: the version could be specified in Cargo.toml as a dev-dependency/task and passed to rustfmt
 
 
-### Publishing
+#### Publishing
 
 Rustfmt can be used via three major channels: via Cargo, via Rustup, and via the RLS. To ensure there are no surprises between the different distribution mechanisms, we will only distribute published versions, i.e., we will not publish a Git commit which does not correspond to a release via Rustup or the RLS.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 We want to make sure Rustfmt can evolve and stability guarantees make that more complex. However, it is certainly a price worth paying, and we should just ensure that we can still make forwards progress on Rustfmt.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
-## External handling
+### External handling
 
 * Major formatting changes cause a major version increment, minor formatting changes cause a minor version increment
   - QUESTION - how do we distinguish API breaking changes from major formatting changes?
@@ -191,7 +191,7 @@ We want to make sure Rustfmt can evolve and stability guarantees make that more 
 Rustfmt would have to maintain a branch for every supported release and backport 'necessary' changes. Hopefully we would minimise these - there should be no security fixes, and most bug fixes would be breaking. Anyone who expects to get changes to unstable Rustfmt should be using the latest version, so we shouldn't backport unstable changes. I'm sure there would be some backports though.
 
 
-## Rationale for choosing internal handling
+### Rationale for choosing internal handling
 
 The internal handling approach adds complexity to Rustfmt (but no worse than current options). Every bug fix or improvement would need to be gated on either the `required_version` or an unstable option.
 
@@ -200,12 +200,12 @@ On the other hand, all changes are internal to Rustfmt and we don't require chan
 It is not clear how to integrate the external handling with Rustup, which is how many users get Rustfmt. It would also be complicated to manage branches and backports under the external handling approach.
 
 
-## Other alternatives
+### Other alternatives
 
 Two alternative are spelled out above. A third alternative is to version according to semver, but not make any special effort to constrain breaking changes. This would result in either slowing down development of Rustfmt or frequent breaking changes. Due to the nature of distribution of rustfmt, that would make it effectively impossible to use in CI.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Rust itself has had a very strict backwards compatibility guarantee. Rust sticks strictly to semver versions and avoids any major version increment; even the [2018 edition](https://github.com/rust-lang/rfcs/blob/master/text/2052-epochs.md) avoids a breaking change by requiring an opt-in. However, it has been possible to fix bugs without being strictly backwards compatible, due to the way Rustfmt will be used in CI, it is not clear if that will be possible for Rustfmt.
@@ -213,7 +213,7 @@ Rust itself has had a very strict backwards compatibility guarantee. Rust sticks
 Other formatters (Gofmt, Clang Format) have not dealt with the stability/versioning issue. I believe this is possible because they are not widely used in CI and because they are fairly mature and do not change formatting much.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Whether we want to specify the version in Cargo instead of/as well as in rustfmt.toml.

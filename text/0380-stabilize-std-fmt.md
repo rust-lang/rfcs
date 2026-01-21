@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#380](https://github.com/rust-lang/rfcs/pull/380)
 - Rust Issue: [rust-lang/rust#18904](https://github.com/rust-lang/rust/issues/18904)
 
-# Summary
+## Summary
 
 Stabilize the `std::fmt` module, in addition to the related macros and
 formatting language syntax. As a high-level summary:
@@ -11,21 +11,21 @@ formatting language syntax. As a high-level summary:
 * Remove a number of superfluous formatting traits (renaming a few in the
   process).
 
-# Motivation
+## Motivation
 
 This RFC is primarily motivated by the need to stabilize `std::fmt`. In the past
 stabilization has not required RFCs, but the changes envisioned for this module
 are far-reaching and modify some parts of the language (format syntax), leading
 to the conclusion that this stabilization effort required an RFC.
 
-# Detailed design
+## Detailed design
 
 The `std::fmt` module encompasses more than just the actual
 structs/traits/functions/etc defined within it, but also a number of macros and
 the formatting language syntax for describing format strings. Each of these
 features of the module will be described in turn.
 
-## Formatting Language Syntax
+### Formatting Language Syntax
 
 The [documented syntax](http://doc.rust-lang.org/std/fmt/#syntax) will not be
 changing as-written. All of these features will be accepted wholesale
@@ -47,7 +47,7 @@ changing as-written. All of these features will be accepted wholesale
 * Integer specifiers of what to format (`{0}`)
 * Named arguments (`{foo}`)
 
-### Using Format Specifiers
+#### Using Format Specifiers
 
 While quite useful occasionally, there is no static guarantee that any
 implementation of a formatting trait actually respects the format specifiers
@@ -78,7 +78,7 @@ methods to assist in formatting these situations. This is, however, quite rare
 to fall into one of these two buckets, so the specifiers are largely ignored
 (and the formatter is `write!`-n to directly).
 
-### Named Arguments
+#### Named Arguments
 
 Currently Rust does not support named arguments anywhere *except* for format
 strings. Format strings can get away with it because they're all part of a macro
@@ -109,7 +109,7 @@ formatting macros themselves. It will likely be possible to extend the macro in
 the future to support whatever named argument syntax is developed as well, and
 the old syntax could be accepted for some time.
 
-## Formatting Traits
+### Formatting Traits
 
 Today there are 16 formatting traits. Each trait represents a "type" of
 formatting, corresponding to the `[type]` production in the formatting syntax.
@@ -169,12 +169,12 @@ C/Python/Ruby/etc.
 It would, of course, be possible to re-add any of these traits in a
 backwards-compatible fashion.
 
-### Format type for `Binary`
+#### Format type for `Binary`
 
 With the removal of the `Bool` trait, this RFC recommends renaming the specifier
 for `Binary` to `b` instead of `t`.
 
-### Combining all traits
+#### Combining all traits
 
 A possible alternative to having many traits is to instead have one trait, such
 as:
@@ -209,7 +209,7 @@ recommending the remaining separation of these traits.
 * A hypothetical world with runtime format string construction could find a
   different system for taking arguments.
 
-### Method signature
+#### Method signature
 
 Currently, each formatting trait has a signature as follows:
 
@@ -237,7 +237,7 @@ Overall, this signature seems to be appropriate in terms of "give me a sink of
 bytes to write myself to, and let me return an error if one happens". Due to
 this, this RFC recommends that all formatting traits be marked `#[unstable]`.
 
-## Macros
+### Macros
 
 There are a number of prelude macros which interact with the format syntax:
 
@@ -255,14 +255,14 @@ There are a number of prelude macros which interact with the format syntax:
 All of these are `macro_rules!`-defined macros, except for `format_args` and
 `format_args_method`.
 
-### Common syntax
+#### Common syntax
 
 All of these macros take some form of prefix, while the trailing suffix is
 always some instantiation of the formatting syntax. The suffix portion is
 recommended to be considered `#[stable]`, and the sections below will discuss
 each macro in detail with respect to its prefix and semantics.
 
-### format_args
+#### format_args
 
 The fundamental purpose of this macro is to generate a value of type
 `&fmt::Arguments` which represents a pending format computation. This structure
@@ -288,7 +288,7 @@ macro and its syntax.
 
 [rfc-31]: https://github.com/rust-lang/rfcs/blob/master/active/0031-better-temporary-lifetimes.md
 
-### format_args_method
+#### format_args_method
 
 The purpose of this macro is to solve the "call this method" case not covered
 with the `format_args` macro. This macro was introduced fairly late in the game
@@ -324,7 +324,7 @@ would be disallowed
 write!(&mut my_struct.writer, "{}", my_struct.some_other_field);
 ```
 
-### write/writeln
+#### write/writeln
 
 These two macros take the prefix of "some pointer to a writer" as an argument,
 and then format data into the write (returning whatever `write_fmt` returns).
@@ -336,7 +336,7 @@ This RFC recommends marking these two macros `#[stable]` with the modification
 above (removing `format_args_method`). The `ln` suffix to `writeln` will be
 discussed shortly.
 
-### print/println
+#### print/println
 
 These two macros take no prefix, and semantically print to a *task-local* stdout
 stream. The purpose of a task-local stream is provide some form of buffering to
@@ -344,14 +344,14 @@ make stdout printing at all performant.
 
 This RFC recommends marking these two macros a `#[stable]`.
 
-#### The `ln` suffix
+##### The `ln` suffix
 
 The name `println` is one of the few locations in Rust where a short C-like
 abbreviation is accepted rather than the more verbose, but clear, `print_line`
 (for example). Due to the overwhelming precedent of other languages (even Java
 uses `println`!), this is seen as an acceptable special case to the rule.
 
-### format
+#### format
 
 This macro takes no prefix and returns a `String`.
 
@@ -361,13 +361,13 @@ this, this RFC recommends considering this macro `#[stable]` due to its
 delegation to the `format` method in the `std::fmt` module, similar to how the
 `write!` macro delegates to the `fmt::write`.
 
-### fail/assert/debug_assert
+#### fail/assert/debug_assert
 
 The format string portions of these macros are recommended to be considered as
 `#[stable]` as part of this RFC. The actual stability of the macros is not
 considered as part of this RFC.
 
-## Freestanding Functions
+### Freestanding Functions
 
 There are a number of [freestanding
 functions](http://doc.rust-lang.org/std/fmt/index.html#functions) to consider in
@@ -410,7 +410,7 @@ the `std::fmt` module for stabilization.
   This RFC proposes that this function be considered `#[unstable]` as its
   location and naming are a bit questionable, but the functionality is desired.
 
-## Miscellaneous items
+### Miscellaneous items
 
 * `trait FormatWriter`
 
@@ -462,17 +462,17 @@ the `std::fmt` module for stabilization.
   Like the `radix` function, this RFC recommends `#[unstable]` for both of these
   pieces of functionality.
 
-# Drawbacks
+## Drawbacks
 
 Today's macro system necessitates exporting many implementation details of the
 formatting system, which is unfortunate.
 
-# Alternatives
+## Alternatives
 
 A number of alternatives were laid out in the detailed description for various
 aspects.
 
-# Unresolved questions
+## Unresolved questions
 
 * How feasible and/or important is it to construct a format string at runtime
   given the recommend stability levels in this RFC?

@@ -4,7 +4,7 @@
 - Rust Issue:
   [rust-lang/cargo#14157](https://github.com/rust-lang/cargo/issues/14157)
 
-# Summary
+## Summary
 
 [summary]: #summary
 
@@ -21,7 +21,7 @@ This is to unblock the following RFCs:
 - [Cargo feature deprecation](https://github.com/rust-lang/rfcs/pull/3486)
 - [Cargo feature visibility](https://github.com/rust-lang/rfcs/pull/3487)
 
-# Motivation
+## Motivation
 
 [motivation]: #motivation
 
@@ -40,7 +40,7 @@ there are some limitations that don't have elegant solutions:
 This RFC proposes a plan that add that information to `Cargo.toml`, solving
 these problems.
 
-# Guide-level explanation
+## Guide-level explanation
 
 [guide-level-explanation]: #guide-level-explanation
 
@@ -75,7 +75,7 @@ features are enabled by a given feature. For example,
 
 All other keys are described in their individual RFCs.
 
-## General Implementation & Usage
+### General Implementation & Usage
 
 Use cases for these new keys will likely develop with time,
 but one of the simplest applications is for information output with `cargo
@@ -103,7 +103,7 @@ crab@rust foobar % cargo add regex
 Features like `aho-corasick`, `memchr`, or `use_std` would likely be
 `public = false` since they aren't listed on the crate landing page.
 
-# Reference-level explanation
+## Reference-level explanation
 
 [reference-level-explanation]: #reference-level-explanation
 
@@ -121,7 +121,7 @@ requires an MSRV bump for users of your published package as we have not been
 actively streamlining the workflow for maintaining separate development and
 published MSRVs.
 
-# Drawbacks
+## Drawbacks
 
 [drawbacks]: #drawbacks
 
@@ -130,20 +130,20 @@ published MSRVs.
 - Extending the `Cargo.toml` schema, particularly having a field support
   additional types, is disruptive to third-party parsers
 
-# Rationale and alternatives
+## Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This RFC has no impact on the Index Summaries.
 Future RFCs will need to work with that.
 
-## Naming
+### Naming
 
 - `enables` reads better on the line than `enable`
 - `enables` is likely an easier word for non-native speakers than `activates`
 - `required` is used elsewhere to say "this should automatically be available if requirements are met"
 
-## Schema
+### Schema
 
 We could split the special feature syntax (`dep:`, etc) as distinct fields
 but we'd prefer trivial conversion from the "simple" schema to the "detailed" schema,
@@ -151,15 +151,15 @@ like `dependencies`.
 However, we likely would want to prefer using new fields over adding more syntax,
 like with [disabling default features](https://github.com/rust-lang/cargo/issues/3126).
 
-# Prior art
+## Prior art
 
 [prior-art]: #prior-art
 
-# Unresolved questions
+## Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
 
-# Future possibilities
+## Future possibilities
 
 [future-possibilities]: #future-possibilities
 

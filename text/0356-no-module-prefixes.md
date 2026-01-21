@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#356](https://github.com/rust-lang/rfcs/pull/356)
 - Rust Issue: [rust-lang/rust#18073](https://github.com/rust-lang/rust/issues/18073)
 
-# Summary
+## Summary
 
 This is a conventions RFC that proposes that the items exported from a module
 should *never* be prefixed with that module name. For example, we should have
@@ -11,7 +11,7 @@ should *never* be prefixed with that module name. For example, we should have
 (An alternative design is included that special-cases overlap with the
 `prelude`.)
 
-# Motivation
+## Motivation
 
 Currently there is no clear prohibition around including the module's name as a
 prefix on an exported item, and it is sometimes done for type names that are
@@ -22,7 +22,7 @@ This RFC include two designs: one that entirely rules out such prefixes, and one
 that rules it out *except* for names that overlap with the prelude. Pros/cons
 are given for each.
 
-# Detailed design
+## Detailed design
 
 The main rule being proposed is very simple: the items exported from a module
 should never be prefixed with the module's name.
@@ -48,7 +48,7 @@ Overall, the RFC author believes that *if* this convention is adopted, confusion
 around redefining prelude names would gradually go away, because (at least for
 things like `Result`) we would come to expect it.
 
-# Alternative design
+## Alternative design
 
 An alternative rule would be to never prefix an exported item with the module's
 name, *except* for names that are also defined in the prelude, which *must* be

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2383](https://github.com/rust-lang/rfcs/pull/2383)
 - Rust Issue: [rust-lang/rust#54503](https://github.com/rust-lang/rust/issues/54503)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Rust has a number of code lints, both built into the compiler and provided
@@ -16,7 +16,7 @@ occasionally placed in a comment above the attribute or, more often, left
 unstated. This RFC proposes adding syntax to the lint attributes to encode the
 documented reason for a lint configuration choice.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The style guide for a project, team, or company can cover far more than just
@@ -66,7 +66,7 @@ I expect Clippy will be a significant benefactor of this RFC, as Clippy lints
 are far more specific and plentiful than the compiler lints, and from personal
 experience much more likely to want explanation for their use or disuse.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When a linting tool such as the compiler or Clippy encounter a code span that
@@ -156,7 +156,7 @@ note: lint level defined here
   = help: for further information visit ...
 ```
 
-## `expect` Lint Attribute
+### `expect` Lint Attribute
 
 This RFC adds an `expect` lint attribute that functions identically to `allow`,
 but will cause a lint to be emitted when the code it decorates ***does not***
@@ -219,7 +219,7 @@ reason: Everything is mut until I get this figured out
   = note: #[warn(expectation_missing)] on by default
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This RFC adds a `reason = STRING` element to the three lint attributes. The
@@ -239,7 +239,7 @@ fail the build when one occurs. The default setting is
 
 That’s pretty much it, for technical details.
 
-## OPTIONAL — Yet Another Comment Syntax
+### OPTIONAL — Yet Another Comment Syntax
 
 A sugar for lint text MAY be the line comment `//#` or the block comment
 `/*# #*/` with `U+0023 # NUMBER SIGN` as the signifying character. These
@@ -281,14 +281,14 @@ author does not expect it to be included in the main RFC at all, and is writing
 it solely to be a published prior art in case of future desire for such a
 feature.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Why should we *not* do this?
 
 Possibly low value add for the effort.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 - Why is this design the best in the space of possible designs?
@@ -304,13 +304,13 @@ Possibly low value add for the effort.
 
     None.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The `stable` and `unstable` attributes both take descriptive text parameters
 that appear in diagnostic and documentation output.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - What parts of the design do you expect to resolve through the RFC process

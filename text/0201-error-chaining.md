@@ -2,7 +2,7 @@
 - RFC PR #: [rust-lang/rfcs#201](https://github.com/rust-lang/rfcs/pull/201)
 - Rust Issue #: [rust-lang/rust#17747](https://github.com/rust-lang/rust/issues/17747)
 
-# Summary
+## Summary
 
 This RFC improves interoperation between APIs with different error
 types. It proposes to:
@@ -19,7 +19,7 @@ The proposed changes are all library changes; no language changes are
 needed -- except that this proposal depends on
 [multidispatch](https://github.com/rust-lang/rfcs/pull/195) happening.
 
-# Motivation
+## Motivation
 
 Typically, a module (or crate) will define a custom error type encompassing the
 possible error outcomes for the operations it provides, along with a custom
@@ -31,7 +31,7 @@ single library is reasonably good.
 However, we lack infrastructure when consuming or building on errors from
 multiple APIs, or abstracting over errors.
 
-## Consuming multiple error types
+### Consuming multiple error types
 
 Our current infrastructure for error handling does not cope well with
 mixed notions of error.
@@ -67,7 +67,7 @@ There are roughly two scenarios where multiple library error types
 need to be coalesced into a common type, each with different needs:
 application error reporting, and library error reporting
 
-### Application error reporting: presenting errors to a user
+#### Application error reporting: presenting errors to a user
 
 An application is generally the "last stop" for error handling: it's
 the point at which remaining errors are presented to the user in some
@@ -94,7 +94,7 @@ Ideally, one could use the `try!` macro as in the `download` example
 to coalesce a variety of error types into this single, simple
 `struct`.
 
-### Library error reporting: abstraction boundaries
+#### Library error reporting: abstraction boundaries
 
 When one library builds on others, it needs to translate from their
 error types to its own. For example, a web server framework may build
@@ -113,7 +113,7 @@ way to embed one kind of error in another (usually via a
 ["cause chain"](http://docs.oracle.com/javase/tutorial/essential/exceptions/chained.html)). Both
 scenarios should be supported by Rust's error handling infrastructure.
 
-## Abstracting over errors
+### Abstracting over errors
 
 Finally, libraries sometimes need to work with errors in a generic
 way. For example, the `serialize::Encoder` type takes is generic over
@@ -133,7 +133,7 @@ including short and detailed descriptions and "causes". We should
 begin developing similar functionality in `libstd` to ensure that we
 have an agreed-upon baseline error API.
 
-# Detailed design
+## Detailed design
 
 We can address all of the problems laid out in the Motivation section
 by adding some simple library code to `libstd`, so this RFC will
@@ -146,7 +146,7 @@ currently under consideration.
 The proposal consists of two pieces: a standardized `Error` trait and
 extensions to the `try!` macro.
 
-## The `Error` trait
+### The `Error` trait
 
 The standard `Error` trait follows very the widespread pattern found
 in `Exception` base classes in many languages:
@@ -197,7 +197,7 @@ In particular, application code will often employ `Box<Error>` as the
 error type when reporting errors to the user. The `try!` macro
 support, explained below, makes doing so ergonomic.
 
-## An extended `try!` macro
+### An extended `try!` macro
 
 The other piece to the proposal is a way for `try!` to automatically
 convert between different types of errors.
@@ -275,25 +275,25 @@ fn my_lib_func() -> Result<T, MyError> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 The main drawback is that the `try!` macro is a bit more complicated.
 
-# Unresolved questions
+## Unresolved questions
 
-## Conventions
+### Conventions
 
 This RFC does not define any particular conventions around cause
 chaining or concrete error types. It will likely take some time and
 experience using the proposed infrastructure before we can settle
 these conventions.
 
-## Extensions
+### Extensions
 
 The functionality in the `Error` trait is quite minimal, and should
 probably grow over time. Some additional functionality might include:
 
-### Features on the `Error` trait
+#### Features on the `Error` trait
 
 * **Generic creation of `Error`s.** It might be useful for the `Error`
   trait to expose an associated constructor. See
@@ -312,7 +312,7 @@ would also require these `enum`s to include something like a
 `GenericError` variant, which is unfortunate. So for now, the design
 sticks to the least common denominator.
 
-### Concrete error types
+#### Concrete error types
 
 On the other hand, for code that doesn't care about the footprint of
 its error types, it may be useful to provide something like the

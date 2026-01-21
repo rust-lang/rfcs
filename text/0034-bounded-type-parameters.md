@@ -2,14 +2,14 @@
 - RFC PR: [rust-lang/rfcs#34](https://github.com/rust-lang/rfcs/pull/34)
 - Rust Issue: [rust-lang/rust#15759](https://github.com/rust-lang/rust/issues/15759)
 
-# Summary
+## Summary
 
 Check all types for well-formedness with respect to the bounds of type variables.
 
 Allow bounds on formal type variable in structs and enums. Check these bounds
 are satisfied wherever the struct or enum is used with actual type parameters.
 
-# Motivation
+## Motivation
 
 Makes type checking saner. Catches errors earlier in the development process.
 Matches behaviour with built-in bounds (I think).
@@ -52,7 +52,7 @@ so in the impl, `X` can be assumed to have the bound `U`. But the impl does not
 indicate this. Note, this is sound, but does not indicate programmer intent very
 well.
 
-# Detailed design
+## Detailed design
 
 Whenever a type is used it must be checked for well-formedness. For polymorphic
 types we currently check only that the type exists. I would like to also check
@@ -95,7 +95,7 @@ impl<X: U> St<X> {
 }
 ```
 
-# Alternatives
+## Alternatives
 
 Keep the status quo.
 
@@ -103,7 +103,7 @@ We could add bounds on structs, etc. But not check them in impls. This is safe
 since the implementation is more general than the struct. It would mean we allow
 impls to be un-necessarily general.
 
-# Unresolved questions
+## Unresolved questions
 
 Do we allow and check bounds in type aliases? We currently do not. We should
 probably continue not to since these type variables (and indeed the type

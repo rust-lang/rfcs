@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#911](https://github.com/rust-lang/rfcs/pull/911)
 - Rust Issue: [rust-lang/rust#24111](https://github.com/rust-lang/rust/issues/24111)
 
-# Summary
+## Summary
 
 Allow marking free functions and inherent methods as `const`, enabling them to be
 called in constants contexts, with constant arguments.
 
-# Motivation
+## Motivation
 
 As it is right now, `UnsafeCell` is a stabilization and safety hazard: the field
 it is supposed to be wrapping is public. This is only done out of the necessity
@@ -59,7 +59,7 @@ particular, conditional branching and virtual dispatch are still not
 supported in constant expressions, which imposes a severe limitation
 on what one can express.
 
-# Detailed design
+## Detailed design
 
 Functions and inherent methods can be marked as `const`:
 ```rust
@@ -184,13 +184,13 @@ impl OptionalInt {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 * A design that is not conservative enough risks creating backwards compatibility
 hazards that might only be uncovered when a more extensive CTFE proposal is made,
 after 1.0.
 
-# Alternatives
+## Alternatives
 
 * While not an alternative, but rather a potential extension, I want to point
 out there is only way I could make `const fn`s work with traits (in an untested
@@ -221,7 +221,7 @@ being `const`) would allow direct calls, but it's not obvious how one could
 write a function generic over a type which implements a trait and requiring
 that a certain method of that trait is implemented as `const`.
 
-# Unresolved questions
+## Unresolved questions
 
 * Keep recursion or disallow it for now? The conservative choice of having no
 recursive `const fn`s would not affect the usecases intended for this RFC.
@@ -231,13 +231,13 @@ Also, there is no way to actually write a recursive `const fn` at this moment,
 because no control flow primitives are implemented for constants, but that
 cannot be taken for granted, at least `if`/`else` should eventually work.
 
-# History
+## History
 
 - This RFC was accepted on 2015-04-06. The primary concerns raised in
   the discussion concerned CTFE, and whether the `const fn` strategy
   locks us into an undesirable plan there.
 
-# Updates since being accepted
+## Updates since being accepted
 
 Since it was accepted, the RFC has been updated as follows:
 

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#494](https://github.com/rust-lang/rfcs/pull/494)
 - Rust Issue: [rust-lang/rust#20444](https://github.com/rust-lang/rust/issues/20444)
 
-# Summary
+## Summary
 
 * Remove the `std::c_vec` module
 * Move `std::c_str` under a new `std::ffi` module, not exporting the `c_str`
@@ -12,7 +12,7 @@
 * Provide convenience functions for translating *C-owned* types into slices in
   Rust.
 
-# Motivation
+## Motivation
 
 The primary motivation for this RFC is to work out the stabilization of the
 `c_str` and `c_vec` modules. Both of these modules exist for interoperating with
@@ -38,7 +38,7 @@ In general all of this functionality needs to be reconciled with one another to
 provide a consistent and coherence interface when operating with types
 originating from C.
 
-# Detailed design
+## Detailed design
 
 In refactoring all usage could be categorized into one of three categories:
 
@@ -50,7 +50,7 @@ The current `CString` attempts to handle all three of these concerns all at
 once, somewhat conflating desires. Additionally, `CVec` provides a fairly
 different interface than `CString` while providing similar functionality.
 
-## A new `std::ffi`
+### A new `std::ffi`
 
 > **Note**: an old implementation of the design below can be found [in a branch
 > of mine][c_str]
@@ -91,7 +91,7 @@ concrete `u8` type. The default of `libc::c_char` was chosen to ensure that
 provide a `DerefMut` implementation to maintain the static guarantee that there
 are no interior nul bytes.
 
-### Constructing a `CString`
+#### Constructing a `CString`
 
 One of the major departures from today's API is how a `CString` is constructed.
 Today this can be done through the `CString::new` function or the `ToCStr`
@@ -113,7 +113,7 @@ The `ToCStr` trait is removed entirely (including from the prelude) in favor of
 these construction functions. This could possibly be re-added in the future, but
 for now it will be removed from the module.
 
-### Working with `*const libc::c_char`
+#### Working with `*const libc::c_char`
 
 Instead of using `CString` to look at a `*const libc::c_char`, the module now
 provides two conversion functions to go from a C string to a byte slice. The
@@ -136,7 +136,7 @@ following functions will also be deprecated:
   `String::from_raw_buf` except that `slice::from_raw_buf` is used instead of
   `ffi`.
 
-## Removing `c_vec`
+### Removing `c_vec`
 
 The new `ffi` module serves as a solution to desires (1) and (2) above, but
 the third use case is left unsolved so far. This is what the current `c_vec`
@@ -158,7 +158,7 @@ utility crate for interoperating with raw pointers in this fashion may manifest
 itself on crates.io, and inclusion into the standard library can be considered
 at that time.
 
-## Working with C Strings
+### Working with C Strings
 
 The design above has been implemented in [a branch][branch] of mine where the
 fallout can be seen. The primary impact of this change is that the `to_c_str`
@@ -167,7 +167,7 @@ and `with_c_str` methods are no longer in the prelude by default, and
 
 [branch]: https://github.com/alexcrichton/rust/tree/cstr
 
-# Drawbacks
+## Drawbacks
 
 * Whenever Rust works with a C string, it's tough to avoid the cost associated
   with the initial length calculation. All types provided here involve
@@ -187,7 +187,7 @@ and `with_c_str` methods are no longer in the prelude by default, and
   `*const libc::c_char` were deprecated in favor of only supporting a conversion
   to a slice.
 
-# Alternatives
+## Alternatives
 
 * There is an [alternative RFC](https://github.com/rust-lang/rfcs/pull/435)
   which discusses pursuit of today's general design of the `c_str` module  as
@@ -196,7 +196,7 @@ and `with_c_str` methods are no longer in the prelude by default, and
 * The `from_vec_unchecked` function could do precisely 0 work instead of always
   pushing a 0 at the end.
 
-# Unresolved questions
+## Unresolved questions
 
 * On some platforms, `libc::c_char` is not necessarily just one byte, which
   these types rely on. It's unclear how much this should affect the design of

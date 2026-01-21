@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2412](https://github.com/rust-lang/rfcs/pull/2412)
 - Rust Issue: [rust-lang/rust#54882](https://github.com/rust-lang/rust/issues/54882)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC introduces the `#[optimize]` attribute for controlling optimization level on a per-item
 basis.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, rustc has only a small number of optimization options that apply globally to the
@@ -28,10 +28,10 @@ does not exist, an alternate solution is necessary.
 With the `#[optimize]` attribute it is possible to annotate the optimization level of separate
 items, so that they are optimized differently from the global optimization option.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## `#[optimize(size)]`
+### `#[optimize(size)]`
 
 Sometimes, optimizations are a trade-off between execution time and the code size. Some
 optimizations, such as loop unrolling increase code size many times on average (compared to
@@ -57,7 +57,7 @@ Using this attribute is recommended when inspection of generated code reveals un
 function or functions, but use of `-O` is still preferable over `-C opt-level=s` or `-C
 opt-level=z`.
 
-## `#[optimize(speed)]`
+### `#[optimize(speed)]`
 
 Conversely, when one of the global optimization options for code size is used (`-Copt-level=s` or
 `-Copt-level=z`), profiling might reveal some functions that are unnecessarily “hot”. In that case,
@@ -74,7 +74,7 @@ fn banana() {
 Much like with `#[optimize(size)]`, the `speed` counterpart is also a hint and will likely not
 yield the same results as using the global optimization option for speed.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `#[optimize(size)]` attribute applied to an item or expression will instruct the optimization
@@ -112,7 +112,7 @@ expressions (i.e. not closures) is considered “unused” as of this RFC and sh
 via e.g.  propagation). Some future RFC may assign some behaviour to this attribute with respect to
 such definitions.
 
-# Implementation approach
+## Implementation approach
 
 For the LLVM backend, these attributes may be implemented in a following manner:
 
@@ -123,7 +123,7 @@ For the LLVM backend, these attributes may be implemented in a following manner:
 `-C opt-level=2/3` and apply the equivalent LLVM function attribute (`optsize`, `minsize`) to all
 items which do not have an `#[optimize(speed)]` attribute.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Not all of the alternative codegen backends may be able to express such a request, hence the
@@ -131,7 +131,7 @@ items which do not have an `#[optimize(speed)]` attribute.
     * As a fallback, this attribute may be implemented in terms of more specific optimization hints
       (such as `inline(never)`, the future `unroll(never)` etc).
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Proposed is a very semantic solution (describes the desired result, instead of behaviour) to the
@@ -150,7 +150,7 @@ attributes would be able to such as influencing the instruction selection or swi
 strategy (jump table, if chain, etc.) This makes the attribute useful even in presence of all the
 targeted optimization knobs we might have in the future.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 * LLVM: `optsize`, `optnone`, `minsize` function attributes (exposed in Clang in some way);
@@ -161,7 +161,7 @@ its way to optimize without considering the size trade-off. Can only be applied 
 per-compilation-unit basis. Enabled by default, as is appropriate for a compiler targeting
 embedded use-cases.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Should we also implement `optimize(always)`? `optimize(level=x)`?

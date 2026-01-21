@@ -14,7 +14,7 @@
 - RFC PR: [rust-lang/rfcs#1990](https://github.com/rust-lang/rfcs/pull/1990)
 - Rust Issue: [rust-lang/rust#44732](https://github.com/rust-lang/rust/issues/44732)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Documentation is an important part of any project, it allows developers to
@@ -25,7 +25,7 @@ navigate documentation. However, there is no way right now to have documentation
 be imported into the code from an external file. This RFC proposes a way to
 extend the functionality of Rust to include this ability.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 1. Many smaller crates are able to do all of the documentation that's needed in
@@ -56,7 +56,7 @@ These are just a few reasons as to why we should do this, but the expected
 outcome of this feature is expected to be positive with little to no downside
 for a user.
 
-# Detailed Design
+## Detailed Design
 [design]: #detailed-design
 
 All files included through the attribute will be relative paths from the crate
@@ -126,19 +126,19 @@ mod example {
 }
 ```
 
-## Acceptable Paths
+### Acceptable Paths
 
 If you've noticed the path given `../docs/example.md` is a relative path to
 `src`. This was decided upon as a good first implementation and further RFCs
 could be written to expand on what syntax is acceptable for paths. For instance
 not being relative to `src`.
 
-## Missing Files or Incorrect Paths
+### Missing Files or Incorrect Paths
 If a file given to `include` is missing then this should trigger a compilation
 error as the given file was supposed to be put into the code but for some reason
 or other it is not there.
 
-## Line Numbers When Errors Occur
+### Line Numbers When Errors Occur
 As with all macros being expanded this brings up the question of line numbers
 and for documentation tests especially so, to keep things simple for the user
 the documentation should be treated separately from the code. Since the
@@ -168,7 +168,7 @@ they were inserted into the code for these scenarios would cause confusion and
 would obfuscate where errors occur, making it harder not easier for end users,
 making this feature useless if it creates ergonomic overhead like this.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 `#[doc(include = "file_path")]` is an extension of the current
@@ -188,7 +188,7 @@ Programming Language book has a section for [doc comments](https://doc.rust-lang
 to show how users can include docs from external sources. The Rust Reference
 comments section would need to updated to include this new syntax as well.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - This might confuse or frustrate people reading the code directly who prefer
@@ -197,7 +197,7 @@ comments section would need to updated to include this new syntax as well.
   that the doc comment is for while reading it separately from the code it
   documents.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Currently there already [exists a plugin](https://github.com/mgattozzi/rdoc)
@@ -214,7 +214,7 @@ continue to work as is if this alternative is chosen, though this means we limit
 what we do and do not want rustc/rustdoc to be able to achieve here when it
 comes to docs.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - What would be best practices for adding docs to crates?

@@ -42,9 +42,7 @@ following.
 
   - Any semantic or syntactic change to the language that is not a bugfix.
   - Removing language features, including those that are feature-gated.
-  - Changes to the interface between the compiler and libraries, including lang
-    items and intrinsics.
-  - Additions to `std`.
+  - Large additions to `std`.
 
 Some changes do not require an RFC:
 
@@ -55,6 +53,7 @@ Some changes do not require an RFC:
     more errors, etc.)
   - Additions only likely to be _noticed by_ other developers-of-rust,
     invisible to users-of-rust.
+  - Minor additions to `std`: these only require an [ACP](https://std-dev-guide.rust-lang.org/development/feature-lifecycle.html).
 
 If you submit a pull request to implement a new feature without going through
 the RFC process, it may be closed with a polite request to submit an RFC first.
@@ -131,8 +130,8 @@ merged into the RFC repository as a markdown file. At that point the RFC is
     and drawbacks are shown. You can make edits, big and small, to the RFC to
     clarify or change the design, but make changes as new commits to the pull
     request, and leave a comment on the pull request explaining your changes.
-    Specifically, do not squash or rebase commits after they are visible on the
-    pull request.
+    **Specifically, do not squash or rebase commits after they are visible on
+    the pull request.**
   - At some point, a member of the subteam will propose a "motion for final
     comment period" (FCP), along with a *disposition* for the RFC (merge, close,
     or postpone).

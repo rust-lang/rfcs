@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1574](https://github.com/rust-lang/rfcs/pull/1574)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 [RFC 505] introduced certain conventions around documenting Rust projects. This
@@ -12,7 +12,7 @@ modifications is provided below.
 
 [RFC 505]: https://github.com/rust-lang/rfcs/blob/master/text/0505-api-comment-conventions.md
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Documentation is an extremely important part of any project. It’s important
@@ -21,7 +21,7 @@ that we have consistency in our documentation.
 For the most part, the RFC proposes guidelines that are already followed today,
 but it tries to motivate and clarify them.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 ### English
@@ -287,22 +287,22 @@ pub fn ref_slice<T>(opt: &Option<T>) -> &[T] {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It’s possible that RFC 505 went far enough, and something this detailed is inappropriate.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could stick with the more minimal conventions of the previous RFC.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.
 
-# Appendix A: Full conventions text
+## Appendix A: Full conventions text
 
 Below is a combination of RFC 505 + this RFC’s modifications, for convenience.
 

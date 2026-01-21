@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2289](https://github.com/rust-lang/rfcs/pull/2289)
 - Rust Issue: [rust-lang/rust#52662](https://github.com/rust-lang/rust/issues/52662)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce the bound form `MyTrait<AssociatedType: Bounds>`, permitted anywhere
@@ -13,7 +13,7 @@ a bound of the form `MyTrait<AssociatedType = T>` would be allowed. The bound
 See the [reference][reference-level-explanation] and [rationale][alternatives]
 for exact details.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, when specifying a bound using a trait that has an associated
@@ -29,7 +29,7 @@ particular, given the ability to write bounds on a type variable as `T: Bounds`,
 it makes sense to permit writing bounds on an associated type directly.
 This results in the simpler syntax `MyTrait<AssociatedType: Bounds>`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Instead of specifying a concrete type for an associated type, we can
@@ -44,7 +44,7 @@ fn print_all<T: Iterator<Item: Display>>(printables: T) {
 }
 ```
 
-## In anonymous existential types
+### In anonymous existential types
 
 ```rust
 fn printables() -> impl Iterator<Item: Display> {
@@ -52,7 +52,7 @@ fn printables() -> impl Iterator<Item: Display> {
 }
 ```
 
-## Further examples
+### Further examples
 
 Instead of writing:
 
@@ -85,7 +85,7 @@ impl<I: Clone + Iterator<Item: Clone>> Clone for Peekable<I> {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The surface syntax `T: Trait<AssociatedType: Bounds>` should desugar to a pair
@@ -102,7 +102,7 @@ Meanwhile, the surface syntax `dyn Trait<AssociatedType: Bounds>` desugars into
 `dyn Trait<AssociatedType = T>` where `T` is a named type variable `T` with the
 bound `T: Bounds`.
 
-## The desugaring for associated types
+### The desugaring for associated types
 
 In the case of an associated type having a bound of the form:
 
@@ -121,7 +121,7 @@ trait TraitA {
 }
 ```
 
-## Notes on the meaning of `impl Trait<Assoc: Bound>`
+### Notes on the meaning of `impl Trait<Assoc: Bound>`
 
 Note that in the context `-> impl Trait<Assoc: Bound>`, since the Trait is
 existentially quantified, the `Assoc` is as well. Semantically speaking,
@@ -134,7 +134,7 @@ fn printables() -> impl Iterator<Item = impl Display> { .. }
 For `arg: impl Trait<Assoc: Bound>`, it is semantically equivalent to:
 `arg: impl Trait<Assoc = impl Bound>`.
 
-## Meaning of `existential type Foo: Trait<Assoc: Bound>`
+### Meaning of `existential type Foo: Trait<Assoc: Bound>`
 
 Given:
 
@@ -154,7 +154,7 @@ existential type _0: Bound;
 This syntax is specified in [RFC 2071]. As in that RFC, this documentation
 uses the non-final syntax for existential type aliases.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Rust code can already express this using the desugared form. This proposal
@@ -164,7 +164,7 @@ developers to know about and understand those forms, and this proposal is no
 different. However, we believe that the parallel to the use of bounds elsewhere
 makes this new syntax immediately recognizable and understandable.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
 As with any new surface syntax, one alternative is simply not introducing
@@ -232,7 +232,7 @@ However, [RFC 2089, Implied Bounds][RFC 2089] specifies that desugaring to the
 point of view of a user. The desugaring with `where` therefore becomes viable
 in the presence of [RFC 2089].
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Does allowing this for `dyn` trait objects introduce any unforeseen issues?

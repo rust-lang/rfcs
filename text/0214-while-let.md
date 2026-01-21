@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#214](https://github.com/rust-lang/rfcs/pull/214)
 - Rust Issue: [rust-lang/rust#17687](https://github.com/rust-lang/rust/issues/17687)
 
-# Summary
+## Summary
 
 Introduce a new `while let PAT = EXPR { BODY }` construct. This allows for using a refutable pattern
 match (with optional variable binding) as the condition of a loop.
 
-# Motivation
+## Motivation
 
 Just as `if let` was inspired by Swift, it turns out Swift supports `while let` as well. This was
 not discovered until much too late to include it in the `if let` RFC. It turns out that this sort of
@@ -34,7 +34,7 @@ This also makes the language a bit more consistent; right now, any condition tha
 `if` can be used with `while`. The new `if let` adds a form of `if` that doesn't map to `while`.
 Supporting `while let` restores the equivalence of these two control-flow constructs.
 
-# Detailed design
+## Detailed design
 
 `while let` operates similarly to `if let`, in that it desugars to existing syntax. Specifically,
 the syntax
@@ -63,12 +63,12 @@ a backwards-compatible change.
 
 Just as with `if let`, `while let` will be introduced under a feature gate (named `while_let`).
 
-# Drawbacks
+## Drawbacks
 
 Yet another addition to the grammar. Unlike `if let`, it's not obvious how useful this syntax will
 be.
 
-# Alternatives
+## Alternatives
 
 As with `if let`, this could plausibly be done with a macro, but it would be ugly and produce bad
 error messages.
@@ -79,6 +79,6 @@ weird, and b) it's a bit of an odd coupling with the `let` keyword as alternativ
 going to be introducing variable bindings. However, it would make `while let` more general and able
 to replace more instances of `loop { match { ... } }` than is possible with the main design.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

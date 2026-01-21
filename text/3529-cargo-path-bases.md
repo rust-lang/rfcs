@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3529](https://github.com/rust-lang/rfcs/pull/3529)
 - Rust Issue: [rust-lang/cargo#14355](https://github.com/rust-lang/cargo/issues/14355)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a table of path "bases" in Cargo configuration files that can be used
@@ -12,7 +12,7 @@ to prefix the path of `path` dependencies and `patch` entries.
 This feature will not support declaring path bases in manifest files to avoid
 additional design complexity, though this may be added in the future.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 As a project grows in size, it becomes necessary to split it into smaller
@@ -41,7 +41,7 @@ find-and-replace to handle a producing project being moved. Additionally, a
 host-specific or target-specific intermediate directory may be specified as a
 `base`, allowing code to be consumed from there using `path` dependencies.
 
-### Example
+#### Example
 
 If we had a sub-project that depends on three others:
 
@@ -99,7 +99,7 @@ generated).
 * Moving `foo` or `baz` only requires searching for the canonical form relative
 to the path base.
 
-## Other uses
+### Other uses
 
 The ability to use path bases for `path` dependencies is convenient for
 developers who are using a large number of `path` dependencies within the same
@@ -111,7 +111,7 @@ Cargo will also provide built-in base paths, for example `workspace` to point to
 the root directory of the workspace. This allows workspace members to reference
 each other without first needing to `../` their way back to the workspace root.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 If you often use multiple path dependencies that have a common parent directory,
@@ -147,12 +147,12 @@ You can also use `base` along with `path` when specifying a `[patch]`.
 Specifying a `path` and `base` on a `[patch]` is equivalent to specifying just a
 `path` containing the full path including the prepended base.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Specifying Dependencies
+### Specifying Dependencies
 
-### Path Bases
+#### Path Bases
 
 A `path` dependency may optionally specify a base by setting the `base` key to
 the name of a path base from the `[path-bases]` table in either the
@@ -189,7 +189,7 @@ character, and must not be empty.
 If the name of path base used in a dependency is neither in the configuration
 nor one of the built-in path base, then Cargo will raise an error.
 
-#### Built-in path base
+##### Built-in path base
 
 Cargo provides implicit path bases that can be used without the need to specify
 them in a `[path-bases]` table.
@@ -203,7 +203,7 @@ will prefer the value in the configuration. The allows Cargo to add new built-in
 path bases without compatibility issues (as existing uses will shadow the
 built-in name).
 
-## Configuration
+### Configuration
 
 `[path-bases]`
 
@@ -216,22 +216,22 @@ prepend the locations of `path` dependencies. See the
 [specifying dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#path-bases)
 documentation for more information.
 
-## cargo add
+### cargo add
 
-### Synopsis
+#### Synopsis
 
 `cargo add` *[options]* `--path` *path* [`--base` *base*]
 
-### Options
+#### Options
 
-#### Source options
+##### Source options
 
 `--base` *base*
 
 The [path base](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#path-bases)
 to use when adding from a local crate.
 
-## Workspaces
+### Workspaces
 
 Path bases can be used in a workspace's `[dependencies]` table.
 
@@ -240,7 +240,7 @@ If a member is inheriting a dependency (i.e., using `workspace = true`) then the
 That is, the member will use the `path` dependency as specified in the workspace
 manifest and has no ability to override the base path being used (if any).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 1. There is now an additional way to specify a dependency in
@@ -267,7 +267,7 @@ manifest and has no ability to override the base path being used (if any).
    dependencies where versioning is enforced, rather than as mutable
    path dependencies.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This design was primarily chosen for its simplicity — it adds very
@@ -340,7 +340,7 @@ in strategic locations, cluttering their directories. The proposed
 mechanism is simple to understand and to use, and still covers a wide
 variety of use-cases.
 
-## Support for declaring path bases in the manifest
+### Support for declaring path bases in the manifest
 
 Currently path bases only support being declared in the configuration, and not
 the manifest. While it would be possible to add support for declaring path bases
@@ -362,7 +362,7 @@ way to set "default values" for path dependencies (e.g., to a submodule) that a
 developer could override in their local configuration file. While this may be
 useful, this scenario is already taken care of by the `patch` feature in Cargo.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Python searches for dependencies by walking `sys.path` in definition
@@ -410,7 +410,7 @@ often good enough. However, as the motivation section of this RFC
 outlines, there are still use-cases where a simple name-indirection
 could help.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * What exact names we should use for the table (`path-bases`) and field names
@@ -420,10 +420,10 @@ could help.
   * `home` or `user_home` for the user's home directory?
   * `sysroot` for the current rustc sysroot?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Add support for declaring path bases in the manifest
+### Add support for declaring path bases in the manifest
 
 As mentioned [above](#support-for-declaring-path-bases-in-the-manifest),
 declaring path bases is only supported in the configuration.
@@ -442,7 +442,7 @@ manifest, or to the package that uses it?
 * If using inheritance, should path bases be implicitly or explicitly inherited?
 (e.g., requiring `[base-paths] workspace = true`)
 
-## Path bases relative to other path bases
+### Path bases relative to other path bases
 
 We could allow defining a path base relative to another path base:
 
@@ -452,7 +452,7 @@ base1 = "/dev/me"
 base2 = { base = "base1", path = "some_subdir" } # /dev/me/some_subdir
 ```
 
-## Path dependency with just a base
+### Path dependency with just a base
 
 We could allow defining a path dependency with *just* `base`, making
 `cratename = { base = "thebase" }` equivalent to
@@ -460,7 +460,7 @@ We could allow defining a path dependency with *just* `base`, making
 common cases, where crates appear within the base in a directory named for the
 crate.
 
-## Git dependencies
+### Git dependencies
 
 It seems reasonable to extend path bases to `git` dependencies, with something
 like:

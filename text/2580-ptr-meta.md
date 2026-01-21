@@ -3,7 +3,7 @@
 - RFC PR: https://github.com/rust-lang/rfcs/pull/2580
 - Rust Issue: https://github.com/rust-lang/rust/issues/81513
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add generic APIs that allow manipulating the metadata of fat pointers:
@@ -17,7 +17,7 @@ This RFC does *not* propose a mechanism for defining custom dynamically-sized ty
 but tries to stay compatible with future proposals that do.
 
 
-# Background
+## Background
 [background]: #background
 
 Typical high-level code doesn’t need to worry about fat pointers,
@@ -49,7 +49,7 @@ pub struct TraitObject {
 [`std::raw::TraitObject`]: https://doc.rust-lang.org/1.30.0/std/raw/struct.TraitObject.html
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 We now have APIs in Stable Rust to let unsafe code freely and reliably manipulate slices,
@@ -70,7 +70,7 @@ because there was previously no way to express pointer-thinness in generic code.
 [lib]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2015&gist=bbeecccc025f5a7a0ad06086678e13f3
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 
@@ -164,7 +164,7 @@ impl<Dyn: ?Sized + DynTrait> Drop for ThinBox<Dyn> {
 ```
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The APIs whose full definition is found below
@@ -325,7 +325,7 @@ impl<DynTrait: ?Sized> DynMetadata<DynTrait> {
 ```
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The status quo is that code (such as linked in [Motivation]) that requires this functionality
@@ -350,7 +350,7 @@ possibly like `(DynMetadata<dyn Trait>, DynMetadata<dyn OtherTrait>)`.)
 [2579]: https://github.com/rust-lang/rfcs/pull/2579
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 A previous [Custom Dynamically-Sized Types][cdst] RFC was postponed.
@@ -362,7 +362,7 @@ Except for `DynMetadata`’s methods, this RFC proposes a subset of what that th
 [6663]: https://internals.rust-lang.org/t/pre-erfc-lets-fix-dsts/6663
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * The name of `Pointee`. [Internals thread #6663][6663] used `Referent`.

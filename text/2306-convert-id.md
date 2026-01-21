@@ -3,22 +3,22 @@
 - RFC PR: [rust-lang/rfcs#2306](https://github.com/rust-lang/rfcs/pull/2306)
 - Rust Issue: [rust-lang/rust#53500](https://github.com/rust-lang/rust/issues/53500)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Adds an identity function `pub const fn identity<T>(x: T) -> T { x }`
 as `core::convert::identity`. The function is also re-exported to
 `std::convert::identity`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## The identity function is useful
+### The identity function is useful
 
 While it might seem strange to have a function that just returns back the input,
 there are some cases where the function is useful.
 
-### Using `identity` to do nothing among a collection of mappers
+#### Using `identity` to do nothing among a collection of mappers
 
 When you have collections such as maps or arrays of mapping functions like
 below and you watch to dispatch to those you sometimes need the identity
@@ -36,7 +36,7 @@ map.insert("bar", other_stuff);
 map.insert("baz", identity);
 ```
 
-### Using `identity` as a no-op function in a conditional
+#### Using `identity` as a no-op function in a conditional
 
 This reasoning also applies to simpler yes/no dispatch as below:
 
@@ -48,7 +48,7 @@ let mapper = if condition { some_manipulation } else { identity };
 do_stuff(42);
 ```
 
-### Using `identity` to concatenate an iterator of iterators
+#### Using `identity` to concatenate an iterator of iterators
 
 We can use the identity function to concatenate an iterator of iterators
 into a single iterator.
@@ -64,7 +64,7 @@ While the standard library has recently added `Iterator::flatten`,
 which you should use instead, to achieve the same semantics, similar situations
 are likely in the wild and the `identity` function can be used in those cases.
 
-### Using `identity` to keep the `Some` variants of an iterator of `Option<T>`
+#### Using `identity` to keep the `Some` variants of an iterator of `Option<T>`
 
 We can keep all the maybe variants by simply `iter.filter_map(identity)`.
 
@@ -74,13 +74,13 @@ let filtered = iter.filter_map(identity).collect::<Vec<_>>();
 assert_eq!(vec![1, 3], filtered);
 ```
 
-### To be clear that you intended to use an identity conversion
+#### To be clear that you intended to use an identity conversion
 
 If you instead use a closure as in `|x| x` when you need an
 identity conversion, it is less clear that this was intentional.
 With `identity`, this intent becomes clearer.
 
-## The `drop` function as a precedent
+### The `drop` function as a precedent
 
 The `drop` function in `core::mem` is defined as `pub fn drop<T>(_x: T) { }`.
 The same effect can be achieved by writing `{ _x; }`. This presents us
@@ -88,7 +88,7 @@ with a precedent that such trivial functions are considered useful and
 includable inside the standard library even though they can be written easily
 inside a user's crate.
 
-## Avoiding repetition in user crates
+### Avoiding repetition in user crates
 
 Here are a few examples of the identity function being defined and used:
 
@@ -99,7 +99,7 @@ Here are a few examples of the identity function being defined and used:
 There's a smattering of more examples. To reduce duplication,
 it should be provided in the standard library as a common place it is defined.
 
-## Precedent from other languages
+### Precedent from other languages
 
 There are other languages that include an identity function in
 their standard libraries, among these are:
@@ -117,7 +117,7 @@ their standard libraries, among these are:
 + [Agda](http://www.cse.chalmers.se/~nad/repos/lib/src/Function.agda)
 + [Elm](http://package.elm-lang.org/packages/elm-lang/core/latest/Basics#identity)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 An identity function is a mapping of one type onto itself such that the output
@@ -135,7 +135,7 @@ This function is also re-exported to `std::convert::identity`.
 It is important to note that the input `x` passed to the function is
 moved since Rust uses move semantics by default.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 An identity function defined as `pub const fn identity<T>(x: T) -> T { x }`
@@ -146,7 +146,7 @@ Note that the identity function is not always equivalent to a closure
 such as `|x| x` since the closure may coerce `x` into a different type
 while the identity function never changes the type.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It is already possible to do this in user code by:
@@ -157,7 +157,7 @@ It is already possible to do this in user code by:
 These are contrasted with the [motivation] for including the function
 in the standard library.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 The rationale for including this in `convert` and not `mem` is that the
@@ -170,12 +170,12 @@ Naming the function `id` instead of `identity` is a possibility.
 This name is however ambiguous with *"identifier"* and less clear
 wherefore `identifier` was opted for.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are no unresolved questions.
 
-# Possible future work
+## Possible future work
 
 A previous iteration of this RFC proposed that the `identity` function
 should be added to prelude of both libcore and libstd.
@@ -186,7 +186,7 @@ it is possible to revisit this in the future if the team chances its mind.
 The section below details, for posterity,
 the argument for inclusion that was previously in the [motivation].
 
-## The case for inclusion in the prelude
+### The case for inclusion in the prelude
 
 Let's compare the effort required, assuming that each letter
 typed has a uniform cost with respect to effort.

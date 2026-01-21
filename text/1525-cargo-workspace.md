@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1525](https://github.com/rust-lang/rfcs/pull/1525)
 - Rust Issue: [rust-lang/cargo#2122](https://github.com/rust-lang/cargo/issues/2122)
 
-# Summary
+## Summary
 
 Improve Cargo's story around multi-crate single-repo project management by
 introducing the concept of workspaces. All packages in a workspace will share
 `Cargo.lock` and an output directory for artifacts.
 
-# Motivation
+## Motivation
 
 A common method to organize a multi-crate project is to have one
 repository which contains all of the crates. Each crate has a corresponding
@@ -31,7 +31,7 @@ Solving these two problems should help ease the development of large Rust
 projects by ensuring that all dependencies remain in sync and builds by default
 use already-built artifacts if available.
 
-# Detailed design
+## Detailed design
 
 Cargo will grow the concept of a **workspace** for managing repositories of
 multiple crates. Workspaces will then have the properties:
@@ -316,7 +316,7 @@ version numbers, URL information, authorship, etc.
 This support isn't proposed to be added in this RFC specifically, but simply to
 show that workspaces can be used to solve other existing issues in Cargo.
 
-# Drawbacks
+## Drawbacks
 
 * As proposed there is no method to disable implicit actions taken by Cargo.
   It's unclear what the use case for this is, but it could in theory arise.
@@ -324,7 +324,7 @@ show that workspaces can be used to solve other existing issues in Cargo.
 * No crate will implicitly benefit from workspaces after this is implemented.
   Existing crates must opt-in with a `[workspace]` key somewhere at least.
 
-# Alternatives
+## Alternatives
 
 * The `workspace.members` key could support globs to define a number of
   directories at once. For example one could imagine:
@@ -343,7 +343,7 @@ show that workspaces can be used to solve other existing issues in Cargo.
   unfortunately, isn't always efficient to do and it would be unfortunate to
   have to unconditionally do this.
 
-# Unresolved questions
+## Unresolved questions
 
 * Does this approach scale well to repositories with a large number of crates?
   For example does the winapi-rs repository experience a slowdown on standard

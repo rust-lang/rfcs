@@ -2,15 +2,15 @@
 - RFC PR: [rust-lang/rfcs#86](https://github.com/rust-lang/rfcs/pull/86)
 - Rust Issue: [rust-lang/rust#14637](https://github.com/rust-lang/rust/issues/14637)
 
-# Summary
+## Summary
 
 Generalize the `#[macro_registrar]` feature so it can register other kinds of compiler plugins.
 
-# Motivation
+## Motivation
 
 I want to implement [loadable lints](https://github.com/mozilla/rust/issues/14067) and use them for project-specific static analysis passes in Servo.  Landing this first will allow more evolution of the plugin system without breaking source compatibility for existing users.
 
-# Detailed design
+## Detailed design
 
 To register a procedural macro in current Rust:
 
@@ -66,7 +66,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
 
 We only need one phase of loading plugin crates, even though the plugins we load may be used at different points (or not at all).
 
-# Drawbacks
+## Drawbacks
 
 Breaking change for existing procedural macros.
 
@@ -80,13 +80,13 @@ More moving parts.
 
 Since when do we ensure that old programs will compile? ;)  The `#[macro_registrar]` attribute wouldn't work anyway.
 
-# Alternatives
+## Alternatives
 
 We could add `#[lint_registrar]` etc. alongside `#[macro_registrar]`.  This seems like it will produce more duplicated effort all around.  It doesn't provide convenience methods, and it won't support API evolution as well.
 
 We could support the old `#[macro_registrar]` by injecting an adapter shim.  This is significant extra work to support a feature with no stability guarantee.
 
-# Unresolved questions
+## Unresolved questions
 
 Naming bikeshed.
 

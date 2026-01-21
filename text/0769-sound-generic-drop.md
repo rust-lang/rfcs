@@ -2,14 +2,14 @@
 - RFC PR: [rust-lang/rfcs#769](https://github.com/rust-lang/rfcs/pull/769)
 - Rust Issue: [rust-lang/rust#8861](https://github.com/rust-lang/rust/issues/8861)
 
-# History
+## History
 
 2015.09.18 -- This RFC was partially superseded by [RFC 1238], which
 removed the parametricity-based reasoning in favor of an attribute.
 
 [RFC 1238]: https://github.com/rust-lang/rfcs/blob/master/text/1238-nonparametric-dropck.md
 
-# Summary
+## Summary
 
 Remove `#[unsafe_destructor]` from the Rust language.  Make it safe
 for developers to implement `Drop` on type- and lifetime-parameterized
@@ -36,7 +36,7 @@ prepared to land.  The purpose of this RFC is two-fold:
 
 [prototype implementation]: https://github.com/pnkfelix/rust/tree/77afdb70a1d4d5a20069f12412bfeda3ccd145bf
 
-# Motivation
+## Motivation
 
 Part of Rust's design is rich use of Resource Acquisition Is
 Initialization (RAII) patterns, which requires destructors: code
@@ -65,7 +65,7 @@ a type, it is imposing a subtle and *unchecked* restriction on clients
 of that type that they will not ever allow the borrowed data to expire
 first.
 
-## Lifetime parameterization: the Sneetch example
+### Lifetime parameterization: the Sneetch example
 [The Sneetch example]: #lifetime-parameterization-the-sneetch-example
 
 If today Sylvester writes:
@@ -188,7 +188,7 @@ Thus, client code like that in `unwary_client` can inadvertently set
 up scenarios where Sylvester's code may break, and Sylvester might be
 completely unaware of the vulnerability.
 
-## Type parameterization: the problem of trait bounds
+### Type parameterization: the problem of trait bounds
 [The Zook example]: #type-parameterization-the-problem-of-trait-bounds
 
 One might think that all instances of this problem can
@@ -237,7 +237,7 @@ will be dropped before `zook` is.
 contrived example, that also illustrates how the use of borrowed data
 can lie hidden behind type parameters.)
 
-## The proposal
+### The proposal
 
 This RFC is proposes to fix this scenario, by having the compiler
 ensure that types with destructors are only employed in contexts where
@@ -246,9 +246,9 @@ strictly outlives the value of that type, or such borrowed data is
 provably not accessible from any `Drop` implementation via a reference
 of type `&'a`/`&'a mut`. This is the "Drop-Check" (aka `dropck`) rule.
 
-# Detailed design
+## Detailed design
 
-## The Drop-Check Rule
+### The Drop-Check Rule
 [The Drop-Check Rule]: #the-drop-check-rule
 
 The Motivation section alluded to the compiler enforcing a new rule.
@@ -297,9 +297,9 @@ Condition (B.) catches cases like `Zook<B<'a>>` from
 [the Zook example], where the destructor's interaction with borrowed
 data is hidden behind a method call in the `fn drop`.
 
-## Near-complete parametricity suffices
+### Near-complete parametricity suffices
 
-### Noncopy types
+#### Noncopy types
 
 All non-`Copy` type parameters are (still) assumed to have a
 destructor. Thus, one would be correct in noting that even a type
@@ -320,7 +320,7 @@ borrowed data from `v` itself (and thus such data will already have
 lifetime that strictly outlives `v`) or data created during the
 execution of the destructor.
 
-### `Any` instances
+#### `Any` instances
 
 All types implementing `Any` is forced to outlive `'static`. So one
 should not be able to hide borrowed data behind the `Any` trait, and
@@ -328,7 +328,7 @@ therefore it is okay for the analysis to treat `Any` like a black box
 whose destructor is safe to run (at least with respect to not
 accessing borrowed data).
 
-## Strictly outlives
+### Strictly outlives
 [strictly-outlives]: #strictly-outlives
 
 There is a notion of "strictly outlives" within the compiler
@@ -377,7 +377,7 @@ mutually refer to each other's data.
 
 For more details on this "strictly outlives" model, see [Appendix B].
 
-## When does one type own another
+### When does one type own another
 [type-ownership]: #when-does-one-type-own-another
 
 The definition of the Drop-Check Rule used the phrase
@@ -417,7 +417,7 @@ structure of an input type `E`.
    not* fall into this category, as they are handled up above; but
    this does cover cases like `Box<Trait<T_1, T_2>+'a>`).
 
-### Phantom Data
+#### Phantom Data
 
 The above definition for type-ownership is (believed to be) sound for
 pure Rust programs that do not use `unsafe`, but it does not suffice
@@ -454,9 +454,9 @@ for when the type `E` owns data of type `D`, we include:
 
 [RFC 738]: https://github.com/rust-lang/rfcs/pull/738
 
-## Examples of changes imposed by the Drop-Check Rule
+### Examples of changes imposed by the Drop-Check Rule
 
-### Some cyclic structure is still allowed
+#### Some cyclic structure is still allowed
 [Cyclic structure still allowed]: #some-cyclic-structure-is-still-allowed
 
 Earlier versions of the Drop-Check rule were quite conservative, to
@@ -514,7 +514,7 @@ Even though `Vec<T>` itself is defined as implementing `Drop`,
 it puts no bounds on `T`, and therefore that `Drop` implementation is
 ignored by the Drop-Check rule.
 
-### Directly mixing cycles and `Drop` is rejected
+#### Directly mixing cycles and `Drop` is rejected
 
 [The Sneetch example] illustrates a scenario were borrowed data is
 dropped while there is still an outstanding borrow that will be
@@ -597,7 +597,7 @@ clients.  After all, the `Drop` implementation for `C<'a>` could be
 rewritten tomorrow to contain code that accesses the neighboring
 nodes.
 
-### Some temporaries need to be given names
+#### Some temporaries need to be given names
 
 Due to the way that `rustc` implements the [strictly-outlives]
 relation in terms of code-extents, the analysis does not know in an
@@ -661,7 +661,7 @@ temporary from `stdin().lock()`.  However, such a change to the
 code extents could have unexpected fallout, analogous to the
 fallout that was associated with [Rust PR 21657].)
 
-### Mixing acyclic structure and `Drop` is sometimes rejected
+#### Mixing acyclic structure and `Drop` is sometimes rejected
 
 This is an example of sound code, accepted today, that is
 unfortunately rejected by the Drop-Check rule (at least in pnkfelix's
@@ -715,7 +715,7 @@ remainder extent that is actually covered by the `let c2;`.
 being pnkfelix is going to assume that it will be a bug that this RFC
 is forced to live with indefinitely.)
 
-## Unsound APIs need to be revised or removed entirely
+### Unsound APIs need to be revised or removed entirely
 [Unsound APIs]: #unsound-apis-that-need-to-be-revised-or-removed-entirely
 
 While the Drop-Check rule is designed to ensure that safe Rust code is
@@ -844,13 +844,13 @@ appears to be sound (as long as it carries `PhantomData<T>` just like
 `Vec<T>` does). In particular, when one ports the above example to use
 `TypedArena` instead of `Arena`, it is statically rejected by `rustc`.
 
-## The final goal: remove #[unsafe_destructor]
+### The final goal: remove #[unsafe_destructor]
 
 Once all of the above pieces have landed, lifetime- and
 type-parameterized `Drop` will be safe, and thus we will be able to
 remove `#[unsafe_destructor]`!
 
-# Drawbacks
+## Drawbacks
 
 * The Drop-Check rule is a little complex, and does disallow some
   sound code that would compile today.
@@ -871,7 +871,7 @@ remove `#[unsafe_destructor]`!
   data that has been already dropped. But again, that decision is out
   of scope for this RFC.)
 
-# Alternatives
+## Alternatives
 
 We considered simpler versions of [the Drop-Check rule]; in
 particular, an earlier version of it simply said that if the type of
@@ -894,7 +894,7 @@ and type-parametric types that implement `Drop` is not really tenable;
 we need to do something (and we have been planning to do something
 like this RFC for over a year).
 
-# Unresolved questions
+## Unresolved questions
 
 * Is the Drop-Check rule provably sound?  pnkfelix has based his
   argument on informal reasoning about parametricity, but it would be
@@ -918,9 +918,9 @@ like this RFC for over a year).
   incompatible with covariance; e.g. the current `TypedArena<T>` API
   is fundamentally invariant with respect to `T`.
 
-# Appendices
+## Appendices
 
-## Appendix A: Why and when would Drop read from borrowed data
+### Appendix A: Why and when would Drop read from borrowed data
 [Appendix A]: #appendix-a-why-and-when-would-drop-read-from-borrowed-data
 
 Here is a story, about two developers, Julia and Kurt, and the code
@@ -992,7 +992,7 @@ This illustrates a case where one might legitimately mix destructor
 code with borrowed data.  (Is this example any less contrived than
 [the Sneetch example]? That is in the eye of the beholder.)
 
-## Appendix B: strictly-outlives details
+### Appendix B: strictly-outlives details
 [Appendix B]: #appendix-b-strictly-outlives-details
 
 The rest of this section gets into some low-level details of parts of
@@ -1002,7 +1002,7 @@ produces (or fails to produce). It serves mostly to explain (1.) why
 [Rust PR 21657] was implemented, and (2.) why one may sometimes see
 indecipherable region-inference errors.
 
-### Review: Code Extents
+#### Review: Code Extents
 
 (Nothing here is meant to be new; its just providing context for the
 next subsection.)
@@ -1050,7 +1050,7 @@ it exists, potentially holds bits of code that will execute after `S`
 is done.  Any cleanup code for any values assigned to `P` will only
 run after we have finished with *all* code associated with `S`.
 
-### A problem with 1.0 alpha code extents
+#### A problem with 1.0 alpha code extents
 
 So, with the above established, we have a hint at how to express that
 a lifetime `'a` needs to strictly outlive a particular code extent `S`:
@@ -1092,7 +1092,7 @@ lives until the end of the block itself.
 This illustrates why "All the bindings established by let statements
 in a block are assigned the same code extent" is a problem
 
-### Block Remainder Code Extents
+#### Block Remainder Code Extents
 
 The solution proposed here (motivated by experience with the
 prototype) is to introduce finer-grained code extents.  This solution
@@ -1146,7 +1146,7 @@ as well as the temporary values created during evaluation of
 Likewise, `c` strictly outlives the bindings and temporaries created
 in the `...` that follows it.
 
-### Why stop at let-statements?
+#### Why stop at let-statements?
 
 This RFC does *not* propose that we attempt to go further and track
 the order of destruction of the values bound by a *single* let

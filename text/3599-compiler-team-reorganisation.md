@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3599](https://github.com/rust-lang/rfcs/pull/3599)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Re-organise the compiler team:
@@ -14,7 +14,7 @@ Re-organise the compiler team:
 - Establish mechanism for scaling additional maintenance activities that
   maintainers take on and recognising these contributions
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Compiler team contributors were introduced [in 2019 with RFC 2689][rfc2689],
@@ -70,7 +70,7 @@ and thus being a contributor.
 [rfc2689]: https://rust-lang.github.io/rfcs/2689-compiler-team-contributors.html
 [review_queue_analysis]: https://borrowed.dev/p/on-the-compiler-teams-review-queue
 
-# Definitions
+## Definitions
 [definitions]: #definitions
 
 There are various permissions/privileges/responsibilities which will be
@@ -124,14 +124,14 @@ referenced in later sections of this RFC, defined here:
 [expectations]: https://forge.rust-lang.org/compiler/reviews.html#expectations-for-r
 [triagebot]: https://forge.rust-lang.org/triagebot/index.html
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Contributors start without any particular privileges, permissions or
 responsibilities and can contribute whatever they'd like. Contributors can
 progress to [Team Members][team-members] and then [Maintainers][maintainers].
 
-## Team Members
+### Team Members
 [team-members]: #team-members
 
 Being able to grant permissions to trusted contributors quickly is beneficial to
@@ -178,7 +178,7 @@ ask to be re-instated at the team member level if they desire.
 
 [Compiler Development Guide]: https://rustc-dev-guide.rust-lang.org/
 
-## Maintainers
+### Maintainers
 [maintainers]: #maintainers
 
 Team members are eligible to become maintainers after they have continued to
@@ -217,7 +217,7 @@ Alumni can ask to be reinstated in the future.
 
 [coc]: https://www.rust-lang.org/policies/code-of-conduct
 
-### Maintenance activities
+#### Maintenance activities
 [maintenance-activities]: #maintenance-activities
 
 There are various maintenance activities that a maintainer could take on to help the
@@ -348,7 +348,7 @@ However activity participation is tracked, it should be easy for the team
 leads to have visibility into the participation in each to ensure that it is
 sustainable.
 
-## Team Leads
+### Team Leads
 [team-leads]: #team-leads
 
 Team leads are defined in [RFC 3262][rfc3262] and is unchanged by this RFC. It is
@@ -357,7 +357,7 @@ maintainers.
 
 [rfc3262]: https://rust-lang.github.io/rfcs/3262-compiler-team-rolling-leads.html
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Granting permissions earlier may be a risk
@@ -369,7 +369,7 @@ maintainers.
       membership. Some team members already assume that these expectations are there,
       but this wasn't made explicit when current team members were made team members.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Get better at doing nominations
@@ -384,7 +384,7 @@ maintainers.
       of the compiler but could be reasonable if implementing all of the changes
       described here will take too long.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [Maintenance activities][maintenance-activities] are similar to [an
@@ -403,12 +403,12 @@ maintainers.
 
 [officers]: https://hackmd.io/S9xqmwJbSI-a9mFdK9yQBA
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None!
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - Maintenance activities could be formalized further - see references in

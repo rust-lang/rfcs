@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1238](https://github.com/rust-lang/rfcs/pull/1238)/
 - Rust Issue: [rust-lang/rust#28498](https://github.com/rust-lang/rust/issues/28498)
 
-# Summary
+## Summary
 
 Revise the Drop Check (`dropck`) part of Rust's static analyses in two
 ways.  In the context of this RFC, these revisions are respectively
@@ -17,9 +17,9 @@ named `cannot-assume-parametricity` and `unguarded-escape-hatch`.
      `drop` implementation that will allow a destructor to side-step
      the `dropck`'s constraints (unsafely).
 
-# Motivation
+## Motivation
 
-## Background: Parametricity in `dropck`
+### Background: Parametricity in `dropck`
 
 The Drop Check rule (`dropck`) for [Sound Generic Drop][] relies on a
 reasoning process that needs to infer that the behavior of a
@@ -49,7 +49,7 @@ circles as *Parametricity*.
    `foo` cannot actually read any `u32` data out of the vector. More
    details about this are available on the [Sound Generic Drop][] RFC.
 
-## "Mistakes were made"
+### "Mistakes were made"
 
 The parametricity-based reasoning in the
 [Drop Check analysis][Sound Generic Drop] (`dropck`) was clever, but
@@ -75,7 +75,7 @@ channel.
 However, there is also a specific reason why we want to ratchet back
 on the `dropck` analysis as soon as possible.
 
-## Impl specialization is inherently non-parametric
+### Impl specialization is inherently non-parametric
 
 The parametricity requirement in the Drop Check rule over-restricts
 the design space for future language changes.
@@ -88,7 +88,7 @@ declaration in `f`.
 
 [impl specialization]: https://github.com/rust-lang/rfcs/pull/1210
 
-# Detailed design
+## Detailed design
 
 Revise the Drop Check (`dropck`) part of Rust's static analyses in two
 ways.  In the context of this RFC, these revisions are respectively
@@ -98,12 +98,12 @@ Though the revisions are given distinct names, they both fall under
 the feature gate `dropck_parametricity`. (Note however that this
 might be irrelevant to CAP; see [CAP stabilization details][]).
 
-## cannot-assume-parametricity
+### cannot-assume-parametricity
 
 The heart of CAP is this: make `dropck` analysis stop relying on
 parametricity of type-parameters.
 
-### Changes to the Drop-Check Rule
+#### Changes to the Drop-Check Rule
 
 The Drop-Check Rule (both in its original form and as revised here)
 dictates when a lifetime `'a` must strictly outlive some value `v`,
@@ -133,7 +133,7 @@ previously accepted (below are some examples that
 [continue to work][examples-continue-to-work] and
 some that [start being rejected][examples-start-reject]).
 
-### CAP stabilization details
+#### CAP stabilization details
 [CAP stabilization details]: #cap-stabilization-details
 
 `cannot-assume-parametricity` will be incorporated into the beta
@@ -154,13 +154,13 @@ as possible. This will enable new language features such as
  * (However, during implementation of this change, we should
     double-check whether a warning-cycle is in fact feasible.)
 
-## unguarded-escape-hatch
+### unguarded-escape-hatch
 
 The heart of `unguarded-escape-hatch` (UGEH) is this: Provide a new,
 unsafe (and unstable) attribute-based escape hatch for use in the
 standard library for cases where Drop Check is too strict.
 
-### Why we need an escape hatch
+#### Why we need an escape hatch
 
 The original motivation for the parametricity special-case in the
 original Drop-Check rule was due to an observation that collection
@@ -188,7 +188,7 @@ Of course, the whole point of this RFC is that using parametricity as
 the escape hatch seems like it does not suffice. But we still need
 *some* escape hatch.
 
-### The new escape hatch: an unsafe attribute
+#### The new escape hatch: an unsafe attribute
 
 This leads us to the second component of the RFC, `unguarded-escape-hatch` (UGEH):
 Add an attribute (with a name starting with "unsafe") that a library
@@ -216,7 +216,7 @@ dropping the value or moving the value from one location to another.
 The above assumption must hold regardless of what impact
 [impl specialization][] has on the resolution of all function calls.
 
-### UGEH stabilization details
+#### UGEH stabilization details
 [UGEH stabilization details]: #ugeh-stabilization-details
 
 The proposed attribute is only a *short-term* patch to work-around a
@@ -255,14 +255,14 @@ programmer to prove.
    we do not *want* to adopt this approach for the long term.)
 
 
-## Examples of code changes under the RFC
+### Examples of code changes under the RFC
 
 This section shows some code examples, starting with code that works
 today and must continue to work tomorrow, then showing an example of
 code that will start being rejected, and ending with an example of the
 UGEH attribute.
 
-### Examples of code that must continue to work
+#### Examples of code that must continue to work
 [examples-continue-to-work]: #examples-of-code-that-must-continue-to-work
 
 Here is some code that works today and must continue to work in the future:
@@ -307,7 +307,7 @@ fn main() {
 }
 ```
 
-### Examples of code that will start to be rejected
+#### Examples of code that will start to be rejected
 [examples-start-reject]: #examples-of-code-that-will-start-to-be-rejected
 
 The main change injected by this RFC is this: due to `cannot-assume-parametricity`,
@@ -345,7 +345,7 @@ that *no* crates on `crates.io` actually regressed under the new rule:
 everything that compiled before the change continued to compile after
 it.
 
-### Example of the unguarded-escape-hatch
+#### Example of the unguarded-escape-hatch
 [examples-escape-hatch]: #example-of-the-unguarded-escape-hatch
 
 If the developer of `Foo` has access to the feature-gated
@@ -377,7 +377,7 @@ fn main() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 As should be clear by the tone of this RFC, the
 `unguarded-escape-hatch` is clearly a hack. It is subtle and unsafe,
@@ -397,16 +397,16 @@ the language).
    [sound alternatives][continue supporting parametricity], rather
    than stabilize the unsafe hackish escape hatch..
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## CAP without UGEH
+### CAP without UGEH
 
 One might consider adopting `cannot-assume-parametricity` without
 `unguarded-escape-hatch`.  However, unless some other sort of escape
 hatch were added, this path would break much more code.
 
-## UGEH for lifetime parameters
+### UGEH for lifetime parameters
 
 Since we're already being unsafe here, one might consider having
 the `unsafe_destructor_blind_to_params` apply to lifetime parameters
@@ -417,7 +417,7 @@ is only intended as a short-term band-aid (see
 [UGEH stabilization details][]) it seems better to just make it only as
 broad as it needs to be (and no broader).
 
-## "Sort-of Guarded" Escape Hatch
+### "Sort-of Guarded" Escape Hatch
 
 We could add the escape hatch but continue employing the current
 dropck analysis to it. This would essentially mean that code would have
@@ -432,7 +432,7 @@ someone to think that their code has been proven sound (since the
 `dropck` would catch some mistakes in programmer reasoning) but the
 pitfalls with respect to specialization would remain.
 
-## Continue Supporting Parametricity
+### Continue Supporting Parametricity
 [continue supporting parametricity]: #continue-supporting-parametricity
 There may be ways to revise the language so that functions can declare
 that they must be parametric with respect to their type parameters.
@@ -447,7 +447,7 @@ parametric destructors, as we will see.
 Drop Check rule, where, as previously noted, parametricity is a
 [necessary but *insufficient* condition][parametricity-insufficient] for soundness.)
 
-### Parametricity via effect-system attributes
+#### Parametricity via effect-system attributes
 
 One feature of the [impl specialization] RFC is that all functions that
 can be specialized must be declared as such, via the `default` keyword.
@@ -475,7 +475,7 @@ using any library routine unless that routine has been marked as
 function unless the its developer is making a destructor that calls it
 in tandem.
 
-### Parametricity via some `?`-bound
+#### Parametricity via some `?`-bound
 
 Another approach starts from another angle: As described earlier,
 parametricity in `dropck` is the requirement that `fn drop` cannot do
@@ -517,7 +517,7 @@ burden on the destructor implementor: Again, the `T: ?Special`
 attribute is unlikely to be included on any function unless the its
 developer is making a destructor that calls it in tandem.
 
-# Unresolved questions
+## Unresolved questions
 
  * What name to use for the attribute?
    Is `unsafe_destructor_blind_to_params` sufficiently long and ugly? ;)
@@ -527,7 +527,7 @@ developer is making a destructor that calls it in tandem.
  * Should we consider merging the discussion of alternatives
    into the [impl specialization] RFC?
 
-# Bibliography
+## Bibliography
 
 ### Reynolds
 [Rey83]: #reynolds

@@ -4,13 +4,13 @@
 - RFC PR: [rust-lang/rfcs#385](https://github.com/rust-lang/rfcs/pull/385)
 - Rust Issue: [rust-lang/rust#18219](https://github.com/rust-lang/rust/issues/18219)
 
-# Summary
+## Summary
 
 - Lift the hard ordering restriction between `extern crate`, `use` and other items.
 - Allow `pub extern crate` as opposed to only private ones.
 - Allow `extern crate` in blocks/functions, and not just in modules.
 
-# Motivation
+## Motivation
 
 The main motivation is consistency and simplicity:
 None of the changes proposed here change the module system in any meaningful way,
@@ -18,7 +18,7 @@ they just remove weird forbidden corner cases that are all already possible to e
 
 Thus, they make it easier to learn the system for beginners, and easier to for developers to evolve their module hierarchies
 
-## Lifting the ordering restriction between `extern crate`, `use` and other items.
+### Lifting the ordering restriction between `extern crate`, `use` and other items.
 
 Currently, certain items need to be written in a fixed order: First all `extern crate`, then all `use` and then all other items.
 This has historically reasons, due to the older, more complex resolution algorithm, which included that shadowing was allowed between those items in that order,
@@ -74,7 +74,7 @@ With the order restriction still in place, this requires the sub module workarou
 
 As an example, [gfx-rs](https://github.com/gfx-rs/gfx-rs) currently employs this strategy.
 
-## Allow `pub extern crate` as opposed to only private ones.
+### Allow `pub extern crate` as opposed to only private ones.
 
 `extern crate` semantically is somewhere between `use`ing a module, and declaring one with `mod`,
 and is identical to both as far as as the module path to it is considered.
@@ -96,7 +96,7 @@ generally if a public module gets turned into its own crate.
 
 As an example,the author recalls stumbling over it during a refactoring of gfx-rs.
 
-## Allow `extern crate` in blocks/functions, and not just in modules.
+### Allow `extern crate` in blocks/functions, and not just in modules.
 
 Similar to the point above, its currently possible to both import and declare a module in a
 block expression or function body, but not to link to an library:
@@ -127,7 +127,7 @@ fn foo() {
 This again benefits macros and gives the developer the power to place external dependencies
 only needed for a single function lexically near it.
 
-## General benefits
+### General benefits
 
 In general, the simplification and freedom added by these changes
 would positively effect the docs of Rusts module system (which is already often regarded as too complex by outsiders),
@@ -140,14 +140,14 @@ This also does not have to be a 1.0 feature, as it is entirely backwards compati
 and strictly allows more programs to compile than before.
 However, as alluded to above it might be a good idea for 1.0 regardless
 
-# Detailed design
+## Detailed design
 
 - Remove the ordering restriction from resolve
 - If necessary, change resolve to look in the whole scope block for view items, not just in a prefix of it.
 - Make `pub extern crate` parse and teach privacy about it
 - Allow `extern crate` view items in blocks
 
-# Drawbacks
+## Drawbacks
 
 - The source of names in scope might be harder to track down
 - Similarly, it might become confusing to see when a library dependency exist.
@@ -155,14 +155,14 @@ However, as alluded to above it might be a good idea for 1.0 regardless
 However, these issues already exist today in one form or another, and can be addressed by proper
 docs that make library dependencies clear, and by the fact that definitions are generally greppable in a file.
 
-# Alternatives
+## Alternatives
 
 As this just cleans up a few aspects of the module system, there isn't really an alternative
 apart from not or only partially implementing it.
 
 By not implementing this proposal, the module system remains more complex for the user than necessary.
 
-# Unresolved questions
+## Unresolved questions
 
 - Inner attributes occupy the same syntactic space as items and view items, and are currently
   also forced into a given order by needing to be written first.

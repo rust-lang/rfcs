@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2627](https://github.com/rust-lang/rfcs/pull/2627)
 - Rust Issue: [rust-lang/rust#58713](https://github.com/rust-lang/rust/issues/58713)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extend the `#[link]` attribute by adding a new kind `kind="raw-dylib"` for use on Windows which emits idata sections for the items in the attached `extern` block, so they may be linked against without linking against an import library. Also add a `#[link_ordinal]` attribute for specifying symbols that are actually ordinals.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [dll]: https://en.wikipedia.org/wiki/Dynamic-link_library
@@ -21,7 +21,7 @@ Sometimes, a crate may know exactly which dll it wants to link against, but whic
 
 This would also allow `winapi` to not have to bundle import libraries for the `pc-windows-gnu` targets, saving on bandwidth and disk space for users.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When trying to link to a Windows dll, the `dylib` kind may sometimes be unsuitable, and `kind="raw-dylib"` can be used instead. A central requirement of `kind="raw-dylib"` is that the dll has a stable ABI. Here are some examples of valid reasons to use `kind="raw-dylib"`:
@@ -54,7 +54,7 @@ extern "system" {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Add a new attribute `#[link_ordinal]` taking a single unsuffixed integer value, such as `#[link_ordinal(116)]`. It can only be specified on symbols in an extern block using `kind="raw-dylib"`.
@@ -72,31 +72,31 @@ Add a new possible value `raw-dylib` to the `kind` property of the `link` attrib
 
 The [idata section] that is produced is equivalent to the idata sections found in [import libraries], and should result in identical code generation by the linker.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Additional complexity in the language through a new `kind` and a new attribute for specifying ordinals.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 The RFC as proposed would allow for full control over linking to symbols from dlls with syntax as close as possible to existing extern blocks.
 
 No alternatives are currently known other than the status quo.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Many non-native languages have the ability to import symbols from dlls, but this uses runtime loading by the language runtime and is not the same as what is being proposed here.
 
 Delphi is a native language that has the ability to import symbols from dlls without import libraries.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Whether there are any unresolved questions is an unresolved question.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 * With the features described in this RFC, we would be one step closer towards a fully standalone pure Rust target for Windows that does not rely on any external libraries (aside from the obvious and unavoidable runtime dependence on system libraries), allowing for easy installation and easy cross compilation.

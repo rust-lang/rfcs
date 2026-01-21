@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1214](https://github.com/rust-lang/rfcs/pull/1214)
 - Rust Issue: [rust-lang/rust#27579](https://github.com/rust-lang/rust/issues/27579)
 
-# Summary
+## Summary
 
 Type system changes to address the outlives relation with respect to
 projections, and to better enforce that all types are well-formed
@@ -33,7 +33,7 @@ Note that although the changes do cause regressions, they also cause
 some code (like that in [#23442]) which currently gets errors to
 compile successfully.
 
-# Motivation
+## Motivation
 
 ### TL;DR
 
@@ -381,7 +381,7 @@ of an impl will validate this requirement whenever they project out of
 a trait reference (e.g., to do a method call, or normalize an
 associated type).
 
-# Detailed design
+## Detailed design
 
 This section dives into detail on the proposed type rules.
 
@@ -968,15 +968,15 @@ to the rules given above.
 like `T::Foo` is normalized, we will require that the trait reference
 is WF.
 
-# Drawbacks
+## Drawbacks
 
 N/A
 
-# Alternatives
+## Alternatives
 
 I'm not aware of any appealing alternatives.
 
-# Unresolved questions
+## Unresolved questions
 
 **Best policy for type aliases.** The current policy is not to check
 type aliases, since they are transparent to type-checking, and hence
@@ -1017,7 +1017,7 @@ regions, so probably yes.
 [#21974]: https://github.com/rust-lang/rust/issues/21974
 [RFC 546]: 0546-Self-not-sized-by-default.md
 
-# Appendix
+## Appendix
 
 The informal explanation glossed over some details. This appendix
 tries to be a bit more thorough with how it is that we can conclude
@@ -1106,7 +1106,7 @@ then `R ⊢ P': 'a`. Proceed by induction and by cases over the form of `P`:
 in a type outlive `'a`, then the type outlives `'a`. Follows by
 inspection of the outlives rules.
 
-# Edit History
+## Edit History
 
 [RFC1592] - amend to require that tuple fields be sized
 

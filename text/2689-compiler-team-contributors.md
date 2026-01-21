@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2689](https://github.com/rust-lang/rfcs/pull/2689)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce an intermediate level of member for the compiler team, the
 **compiler team contributor**.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This proposal is part of a larger effort to introduce more structure
@@ -17,13 +17,13 @@ into the compiler team's makeup. This structure should make it easier
 to become a part of the compiler team, by laying out a clear path to
 membership and by offering more official roles.
 
-## Background: Access to infrastructure
+### Background: Access to infrastructure
 
 In addition to recognition, the levels in this document control access
 to other bits of our infrastructure. It is worth spending some time
 reviewing those bits of infrastructure.
 
-### bot privileges (including bors r+)
+#### bot privileges (including bors r+)
 
 The bors bot has a central list of folks that have "r+" privileges.
 These are people who can leave comments instructing bors to land a PR.
@@ -45,7 +45,7 @@ people with r+ privileges will begin by reviewing only simple PRs from
 parts of the compiler that they understand well. As their knowledge
 grows, they can approve more and more complex PRs. 
 
-### highfive queue
+#### highfive queue
 
 One great way to help move the compiler along and to gain experience
 in its internals is to be added to the highfive queue. People on this
@@ -60,7 +60,7 @@ the compiler. If you don't feel like you fully understood the PR, then
 -- after your initial review -- you can then re-assign the PR to
 someone more senior. (The "expert map" is a good way to find such folks.)
 
-### rust-lang org membership
+#### rust-lang org membership
 
 There are a number of things that you can't do in GitHub unless you
 are a member of the GitHub organization. Typically, one becomes a
@@ -82,7 +82,7 @@ take extra care in their public interaction. In particular, this
 implies we might not want to allow **anyone** to make themselves a
 member of the org.
 
-### triagebot
+#### triagebot
 
 The triagebot is an "upcoming" piece of infrastructure that should allow any GitHub user
 to make some changes to issues on rust-lang repositories. In particular, one would be
@@ -104,10 +104,10 @@ member, since it means that your username and picture do not appear
 next to the issue, but it's still pretty decent and should suffice for
 most purposes.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## The path to membership
+### The path to membership
 
 People will typically start as a **working group participant,** which
 is basically somebody who has come to work on something for the first
@@ -115,7 +115,7 @@ time. They don't know much about the compiler yet and have no
 particular privileges. They are assigned to issues using the triagebot
 and (typically) work with a mentor or mentoring instructions.
 
-### Compiler team contributors
+#### Compiler team contributors
   
 Once a working group participant has been contributing regularly for
 some time, they can be promoted to the level of a **compiler team
@@ -164,7 +164,7 @@ It also implies some obligations (in some cases, optional obligations):
 - Contributors are held to a higher standard than ordinary folk when
   it comes to the [Code of Conduct][CoC].
 
-### Compiler team members
+#### Compiler team members
   
 As a contributor gains in experience, they may be asked to become a
 **compiler team member**. This implies that they are not only a
@@ -181,7 +181,7 @@ of the team or some part of the compiler (or multiple parts).
   as a lead (though groups may have other leads who are not yet full
   members).
   
-### How promotion decisions are made
+#### How promotion decisions are made
 [hdam]: #how-promotion-decisions-are-made
 
 Promotion decisions (from participant to contributor, and from
@@ -214,7 +214,7 @@ are recommended.
 Once we have decided to promote, then the announcement can be posted
 to internals, and the person added to the team repository.
 
-### Not just code
+#### Not just code
 
 It is worth emphasizing that becoming a contributor or member of the
 compiler team does not necessarily imply writing PRs. There are a wide
@@ -227,7 +227,7 @@ in particular, is **regular and consistent** participation. The most
 important criteria for elevation to member is **actively shaping the
 direction of the team or compiler**.
 
-## Alumni status
+### Alumni status
 
 If at any time a current contributor or member wishes to take a break
 from participating, they can opt to put themselves into alumni status.
@@ -245,7 +245,7 @@ they previously attained and they may publicly indicate that, though
 they should indicate the time period for which they were active as
 well.
 
-### Changing back to contributor
+#### Changing back to contributor
 
 If desired, a team member may also ask to move back to contributor
 status. This would indicate a continued desire to be involved in
@@ -256,7 +256,7 @@ contributor status may ask to return to full team member status. This
 request would ordinarily be granted automatically barring
 extraordinary circumstances.
 
-### Automatic alumni status after 6 months of inactivity
+#### Automatic alumni status after 6 months of inactivity
 
 If a contributor or a member has been inactive in the compiler for 6
 months, then we will ask them if they would like to go to alumni
@@ -265,12 +265,12 @@ alumni status.  If they would prefer to remain active, that is also
 fine, but they will get asked again periodically if they continue to
 be inactive.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Why should we *not* do this?
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This RFC represents, effectively, the smallest extension to our structure
@@ -302,7 +302,7 @@ interested in that. But we could also address this by growing more
 kinds of groups within the set of members, such that one rarely pings
 the full set of members.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The compiler team has always drawn a distinction between r+
@@ -330,7 +330,7 @@ open source communities:
   (paraphrased from [this section of the Python Developer's
   guide](https://devguide.python.org/coredev/#how-to-become-a-core-developer)).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 **Are "contributor" and "member" the best names to use?** The term
@@ -345,7 +345,7 @@ example, should you still have r+ privileges? I'm inclined to say no.
 presently says 6 months, but that number was pulled out of a
 (metaphorical) hat.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 In the future, it would be good to add an "active mentorship" plan for

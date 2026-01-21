@@ -2,18 +2,18 @@
 - Start Date: 2020-10-10
 - RFC PR: [rust-lang/rfcs#3016](https://github.com/rust-lang/rfcs/pull/3016)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Define UB during const evaluation to lead to an unspecified result or hard error for the affected CTFE query, but not otherwise infect the compilation process.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 So far, nothing is specified about what happens when `unsafe` code leads to UB during CTFE.
 This is a major blocker for stabilizing `unsafe` operations in const-contexts.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 There are some values that Rust needs to compute at compile-time.
@@ -37,7 +37,7 @@ This can change from compiler version to compiler version: CTFE code that causes
 (This is in accordance with the general policy that unsound code is not subject to stability guarantees.)
 Implementations are encouraged to perform as many UB checks as they feasibly can, and they are encouraged to document which UB is and is not detected during CTFE and what the consequences of undetected UB can be, but none of this is required.
 
-## CTFE UB-checking in `rustc`
+### CTFE UB-checking in `rustc`
 
 For `rustc` specifically at the time the RFC is written, a lot of UB will actually be detected reliably:
 * Dereferencing dangling pointers.
@@ -60,20 +60,20 @@ None of this is *guaranteed*, and `rustc` may relax or otherwise change its UB c
 
 [UB]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When UB arises as part of CTFE, the result of this evaluation is an unspecified constant, i.e., it is arbitrary, and might not even be valid for the expected return type of this evaluation.
 The compiler might be able to detect that UB occurred and raise an error or a warning, but this is not mandated, and absence of lints does not imply absence of UB.
 However, the rest of the compiler will continue to function properly, and compilation *itself* will not raise UB.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This means UB during CTFE can silently "corrupt" the build in a way that the final program has UB when being executed
 (but not more so than if the CTFE code would instead have been run at runtime).
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The most obvious alternative is to say that UB during CTFE will definitely be detected.
@@ -91,18 +91,18 @@ While compiling untrusted code should only be done with care (including addition
 A possible middle-ground is to guarantee to detect *some UB*.
 However, what is cheap and/or easy to detect might change over time as the implementation of CTFE evolves, so to avoid drawing Rust into a corner, this RFC avoids making any such guarantees.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 C++ requires compilers to detect UB in `constexpr`.
 However, the fragment of C++ that is available to `constexpr` excludes pointer casts, pointer arithmetic (beyond array bounds), and union-based type punning, which makes such checks not very complicated and avoids most of the poorly specified parts of UB.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Currently none.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This RFC provides an easy way forward for "unconst" operations, i.e., operations that are safe at run-time but not at compile-time.

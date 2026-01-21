@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3642](https://github.com/rust-lang/rfcs/pull/3642)
 - Rust Issue: [rust-lang/rust#132951](https://github.com/rust-lang/rust/issues/132951)
 
-# Summary
+## Summary
 
 Add `std::thread::add_spawn_hook` to register a hook that runs for newly spawned threads.
 This will effectively provide us with "inheriting thread locals", a much requested feature.
@@ -22,7 +22,7 @@ std::thread::add_spawn_hook(|_| {
 });
 ```
 
-# Motivation
+## Motivation
 
 Thread local variables are often used for scoped "global" state.
 For example, a testing framework might store the status or name of the current
@@ -52,7 +52,7 @@ state even across spawned threads, but a logging/debugging/tracing library could
 keeps track of which thread spawned which thread to provide more useful
 information to the user.
 
-# Public Interface
+## Public Interface
 
 For adding a hook:
 
@@ -128,7 +128,7 @@ impl Builder {
 }
 ```
 
-# Implementation
+## Implementation
 
 The implementation is a *thread local* linked list of hooks, which is inherited by newly spawned threads.
 This means that adding a hook will only affect the current thread and all (direct and indirect) future child threads of the current thread.
@@ -141,7 +141,7 @@ spawned. The resulting `FnOnce` objects are stored and passed on to the child
 thread afterwards, which will execute them one by one before continuing with its
 main function.
 
-# Downsides
+## Downsides
 
 - The implementation requires allocation for each hook (to store them in the
   list of hooks), and an allocation each time a hook is spawned
@@ -156,9 +156,9 @@ main function.
   (However, this is already the case for output capturing in libtest:
   that does not work across threads when not spawned by libstd.)
 
-# Rationale and alternatives
+## Rationale and alternatives
 
-## Global vs thread local effect
+### Global vs thread local effect
 
 Unlike e.g. libc's `atexit()`, which has a global effect, `add_spawn_hook` has a thread local effect.
 
@@ -178,7 +178,7 @@ since threads can outlive their parent thread and then spawn more threads.
 
 A thread local effect (affecting all future child threads) seems to be the most "local" behavior we can achieve here.
 
-## Add but no remove
+### Add but no remove
 
 Having only an `add_spawn_hook` but not a `remove_spawn_hook` keeps things
 simple, by not needing a way to identify a specific hook (through a
@@ -189,7 +189,7 @@ If a hook only needs to execute conditionally, one can make use of an
 
 If no hooks should be executed or inherited, one can use `Builder::no_hooks`.
 
-## Requiring storage on spawning
+### Requiring storage on spawning
 
 Because the hooks run on the parent thread first, before the child thread is
 spawned, the results of those hooks (the functions to be executed in the child)
@@ -222,7 +222,7 @@ Considering that spawning a thread involves several allocations and syscalls,
 it doesn't seem very useful to try to minimize an extra allocation when that
 comes at a significant cost.
 
-## `impl` vs `dyn` in the signature
+### `impl` vs `dyn` in the signature
 
 An alternative interface could use `dyn` instead of generics, as follows:
 
@@ -236,7 +236,7 @@ However, this mostly has downsides: it requires the user to write `Box::new` in
 a few places, and it prevents us from ever implementing some optimization tricks
 to, for example, use a single allocation for multiple hook results.
 
-## A regular function vs some lang feature
+### A regular function vs some lang feature
 
 Just like `std::panic::set_hook`, `std::thread::add_spawn_hook` is just regular function.
 
@@ -254,7 +254,7 @@ The downsides are plenty, including limitations on what your hook can do and ret
 needing a macro or special syntax to register a hook, potential issues with dynamic linking,
 additional implementation complexity, and possibly having to block on a language feature.
 
-# Unresolved questions
+## Unresolved questions
 
 - Should the return value of the hook be an `Option`, for when the hook does not
   require any code to be run in the child?
@@ -265,12 +265,12 @@ additional implementation complexity, and possibly having to block on a language
   the thread name, can already be set by simply setting it as part of the code
   that runs on the child thread.)
 
-# Future possibilities
+## Future possibilities
 
 - Using this in libtest for output capturing (instead of today's
   implementation that has special hardcoded support in libstd).
 
-# Relevant history
+## Relevant history
 
 - The original reason I wrote [RFC 3184 "Thread local Cell methods"](https://github.com/rust-lang/rfcs/pull/3184)
   was to simplify thread spawn hooks (which I was experimenting with at the time).

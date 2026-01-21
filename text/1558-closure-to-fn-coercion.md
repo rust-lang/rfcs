@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1558](https://github.com/rust-lang/rfcs/pull/1558)
 - Rust Issue: [rust-lang/rust#39817](https://github.com/rust-lang/rust/issues/39817)
 
-# Summary
+## Summary
 [summary]: #summary
 
 A closure that does not move, borrow, or otherwise access (capture) local
 variables should be coercible to a function pointer (`fn`).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently in Rust, it is impossible to bind anything but a pre-defined function
@@ -77,7 +77,7 @@ Finally, this sort of automatic coercion is simply intuitive to the programmer.
 In the `&Fn` example, no variables are captured by the closures, so the theory is
 that nothing stops the compiler from treating them as anonymous functions.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 In C++, non-capturing lambdas (the C++ equivalent of closures) "decay" into function pointers
@@ -130,7 +130,7 @@ let a: &Fn(u32) -> u32 = |foo: u32| { foo + 1 };
 let b: fn(u32) -> u32 = *a; // Can't re-coerce
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This proposal could potentially allow Rust users to accidentally constrain their APIs.
@@ -168,10 +168,10 @@ fn func_general<'a>(&'a mut self) -> impl FnMut() -> u32 {
 This aspect is probably outweighed by convenience, simplicity, and the potential for optimization
 that comes with the proposed changes.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Function literal syntax
+### Function literal syntax
 
 With this alternative, Rust users would be able to directly bind a function
 to a variable, without needing to give the function a name.
@@ -205,7 +205,7 @@ variable with `let`.
 As with all new syntax, this alternative would carry with it a discovery barrier.
 Closure coercion may be preferred due to its intuitiveness.
 
-## Aggressive optimization
+### Aggressive optimization
 
 This is possibly unrealistic, but an alternative would be to continue encouraging
 the use of closures with the `Fn` trait, but use static analysis to determine
@@ -215,7 +215,7 @@ Of course, this would probably significantly complicate the optimization process
 would have the detriment of not being easily verifiable by the programmer without
 checking the disassembly of their program.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Should we generalize this behavior in the future, so that any zero-sized type that

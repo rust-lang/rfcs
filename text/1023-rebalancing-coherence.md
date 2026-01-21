@@ -259,14 +259,14 @@ As discussed above, it is a breaking change for to add a blanket impl
 for a `#[fundamental]` type. It is also a breaking change to add an
 impl of a `#[fundamental]` trait to an existing type.
 
-# Drawbacks
+## Drawbacks
 
 The primary drawback is that downstream crates cannot write an impl
 over types other than references, such as `Option<LocalType>`. This
 can be overcome by defining wrapper structs (new types), but that can
 be annoying.
 
-# Alternatives
+## Alternatives
 
 - **Status quo.** In the status quo, the balance of power is heavily
   tilted towards child crates. Parent crates basically cannot add any
@@ -286,7 +286,7 @@ be annoying.
   specialization, explicit negative impls, and explicit contracts
   between the trait definer and the trait consumer.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 

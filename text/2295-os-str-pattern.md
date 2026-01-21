@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2295](https://github.com/rust-lang/rfcs/pull/2295)
 - Rust Issue: [rust-lang/rust#49802](https://github.com/rust-lang/rust/issues/49802)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Generalize the WTF-8 encoding to allow `OsStr` to use the pattern API methods.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 `OsStr` is missing many common string methods compared to the standard `str` or even `[u8]`. There
@@ -49,7 +49,7 @@ an `OsStr` with an `OsStr` using a single Pattern API without panicking.
 [os-str-generic]: https://docs.rs/os-str-generic
 [WTF-8]: https://simonsapin.github.io/wtf-8/
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The following new methods are now available to `OsStr`. They behave the same as their counterpart in
@@ -223,7 +223,7 @@ assert_eq!(parts.next(), Some(&*OsString::from_wide(&[0xde04, 0x2e, 0x74, 0x78, 
 assert_eq!(parts.next(), None);
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 It is trivial to apply the pattern API to `OsStr` on platforms where it is just an `[u8]`. The main
@@ -252,7 +252,7 @@ detail can be found in the [`omgwtf8` package][OMG-WTF-8].
 
 [OMG-WTF-8]: https://github.com/kennytm/omgwtf8
 
-## Slicing
+### Slicing
 
 A surrogate pair is a 4-byte sequence in both UTF-8 and WTF-8. We support slicing it in half by
 representing the high surrogate by the first 3 bytes, and the low surrogate by the last 3 bytes.
@@ -273,7 +273,7 @@ Note that this means:
     implemented for `&OsStr`.
 2. The length of `x[..n]` may be longer than `n`.
 
-### Platform-agnostic guarantees
+#### Platform-agnostic guarantees
 
 If an index points to an invalid position (e.g. `\u{1000}[1..]` or `"\u{10000}"[1..]` or
 `"\u{10000}"[3..]`), a panic will be raised, similar to that of `str`. The following are guaranteed
@@ -301,7 +301,7 @@ Outside of Windows where the `OsStr` consists of arbitrary bytes, all numbers wi
 Note that we have never guaranteed the actual `OsStr` encoding, these should only be considered an
 implementation detail.
 
-## Comparison and storage
+### Comparison and storage
 
 All `OsStr` strings with sliced 4-byte sequence can be converted back to proper WTF-8 with an O(1)
 transformation:
@@ -320,7 +320,7 @@ Two `OsStr` are compared equal if they have the same canonicalization. This may 
 performance with a constant overhead, since there would be more checking involving the first and
 last three bytes.
 
-## Matching
+### Matching
 
 When an `OsStr` is used for matching, an unpaired low surrogate at the beginning and unpaired high
 surrogate at the end must be replaced by regular expressions that match all pre-canonicalization
@@ -348,7 +348,7 @@ After finding a match, if the end points to the middle of a 4-byte sequence, the
 should move backward by 2 bytes before continuing. This ensure searching for `\u{dc00}\u{d800}` in
 `\u{10000}\u{10000}\u{10000}` will properly yield 2 matches.
 
-## Pattern API
+### Pattern API
 
 As of Rust 1.25, we can search a `&str` using a character, a character set or another string,
 powered by [RFC #528](https://github.com/rust-lang/rfcs/pull/528) a.k.a. “Pattern API 1.0”.
@@ -452,7 +452,7 @@ match self.matcher.next_match() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * **It breaks the invariant `x[..n].len() == n`.**
@@ -475,10 +475,10 @@ match self.matcher.next_match() {
     As a workaround, we introduced `find_range` and `match_ranges`. Note that this is already a
     problem to solve if we want to make `Regex` a pattern of strings.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
-## Indivisible surrogate pair
+### Indivisible surrogate pair
 
 This RFC is the only design which allows borrowing a sub-slice of a surrogate code point from a
 surrogate pair.
@@ -503,7 +503,7 @@ There are two potential implementations when we want to match with an unpaired s
 Note that, for consistency, we need to make `"\u{10000}".starts_with("\u{d800}")` return `false` or
 panic.
 
-## Slicing at real byte offset
+### Slicing at real byte offset
 
 The current RFC defines the index that splits a surrogate pair into half at byte 2 of the 4-byte
 sequence. This has the drawback of `"\u{10000}"[..2].len() == 3`, and caused index arithmetic to be
@@ -544,7 +544,7 @@ However the question would be, what should `s[..1]` do?
 
 Given these, we decided not to treat the real byte offsets as valid indices.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None yet.

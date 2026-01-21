@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3493](https://github.com/rust-lang/rfcs/pull/3493)
 - Tracking Issue: [rust-lang/cargo#13290](https://github.com/rust-lang/cargo/issues/13290)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes extending `cargo update` to allow updates to pre-release versions when requested with `--precise`.
@@ -16,7 +16,7 @@ One way to think of this is that we are changing from the version
 requirements syntax requiring opt-in to match pre-release of higher versions to
 the resolver ignoring pre-releases like yanked packages, with an override flag.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Today, version requirements ignore pre-release versions by default,
@@ -33,7 +33,7 @@ the release before the maintainer stabilises the new parts of the API.
 Unfortunately, since `dep = "0.1.0"` is a transitive dependency of several dependencies of the large project, `cargo` refuses the upgrade, stating that `0.1.1-pre.0` is incompatible with `0.1.0`.
 The user is left with no upgrade path to the pre-release unless they are able to convince all of their transitive uses of `dep` to release pre-releases of their own.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When Cargo considers `Cargo.toml` requirements for dependencies it always favours selecting stable versions over pre-release versions.
@@ -89,10 +89,10 @@ required by package `tmp-oyyzsf v0.1.0 (/home/ethan/.cache/cargo-temp/tmp-OYyZsF
 This RFC preserves this behaviour to remain backwards compatible.
 Since this RFC is concerned with the behaviour of `cargo update --precise` changes to bare `cargo update` made in future RFCs should have no impact on this proposal.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Version requirements
+### Version requirements
 
 Version requirement operator semantics will change to encompass pre-release versions, compared to before where the presence of pre-release would change matching modes.
 This will also better align with the mathematical properties associated with some of the operators (see the closed [RFC 3266](https://github.com/rust-lang/rfcs/pull/3266)).
@@ -109,7 +109,7 @@ Note that the old syntax implicitly excluded `2.0.0-<prerelease>` which we have 
 
 This change applies to all operators.
 
-## Dependency Resolution
+### Dependency Resolution
 
 The intent is to mirror the behavior of yanked today.
 
@@ -118,14 +118,14 @@ When resolving, we would exclude from consideration any pre-release version unle
 - It is in the allow-list
 - It matches the version requirement under the old pre-release version requirement semantics.
 
-## `cargo update`
+### `cargo update`
 
 The version passed in via `--precise` would be added to the allow-list.
 
 **Note:** overriding of yanked via this mechanism is not meant to be assumed to be a part of this proposal.
 Support for selecting yanked with `--precise` should be decided separately from this RFC, instead see [rust-lang/cargo#4225](https://github.com/rust-lang/cargo/issues/4225)
 
-## [`semver`](https://crates.io/crates/semver)
+### [`semver`](https://crates.io/crates/semver)
 
 `cargo` will need both the old and new behavior exposed.
 To reduce risk of tools in the ecosystem unintentionally matching pre-releases (despite them still needing an opt-in),
@@ -136,7 +136,7 @@ package to offer this new matching behavior under a different name
 (also avoiding a breaking change).
 However, we leave the exact API details to the maintainer of the `semver` package.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Pre-release versions are not easily auditable when they are only specified in the lock file.
@@ -145,10 +145,10 @@ However, we leave the exact API details to the maintainer of the `semver` packag
 - This is an invasive change to cargo with a significant risk for bugs.  This also extends out to packages in the ecosystem that deal with dependency versions.
 - There is a risk that error messages from the resolver may be negatively affected and we might be limited in fixes due to the resolver's current design.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## One-time opt-in
+### One-time opt-in
 
 With this proposal, pre-release is like yanked:
 having `foo@1.2.3-alpha.0` in your `Cargo.lock` does not implicitly mean you can use `foo@1.2.3-alpha.1`.
@@ -159,14 +159,14 @@ Instead, the lockfile could identify that `foo@1.2.3-alpha.0` is a pre-release a
 (see also [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263)).
 Alternatively, in [future-possibilities] is `cargo update -p foo --allow-prerelease` which would be an explicit way to update.
 
-## Use overrides
+### Use overrides
 
 Cargo overrides can be used instead using `[patch]`.
 These provide a similar experience to pre-releases, however, they require that the library's code is somehow vendored outside of the registry, usually with git.
 This can cause issues particularly in CI where jobs may have permission to fetch from a private registry but not from private git repositories.
 Resolving issues around not being able to fetch pre-releases from the registry usually wastes a significant amount of time.
 
-## Extend `[patch]`
+### Extend `[patch]`
 
 It could be possible to build upon `[patch]` to [allow it to use crates published in the registry](https://github.com/rust-lang/cargo/issues/9227).
 This could be combined with [version overrides](https://github.com/rust-lang/cargo/issues/5640) to pretend that the pre-release crate is a stable version.
@@ -176,7 +176,7 @@ This would allow any version to masquerade as another.
 Without the concept of compatible pre-releases there would be no path forward towards being able to express pre-release requirements in library crates.
 This is explored in [future-possibilities].
 
-## Change the version in `Cargo.toml` rather than `Cargo.lock` when using `--precise`
+### Change the version in `Cargo.toml` rather than `Cargo.lock` when using `--precise`
 
 This [accepted proposal](https://github.com/rust-lang/cargo/issues/12425) allows cargo to update a projects `Cargo.toml` when the version is incompatible.
 
@@ -187,14 +187,14 @@ This makes this alternative unfit for our [motivation].
 The [accepted proposal](https://github.com/rust-lang/cargo/issues/12425) is affected by this RFC,
 insofar as it will not update the `Cargo.toml` in cases when the pre-release can be considered compatible for upgrade in `Cargo.lock`.
 
-## Pre-releases in `Cargo.toml`
+### Pre-releases in `Cargo.toml`
 
 Another alternative would be to resolve pre-release versions in `Cargo.toml`s even when another dependency specifies a stable version.
 This is explored in [future-possibilities].
 This would require significant changes to the resolver since the latest compatible version would depend on the versions required by other parts of the dependency tree.
 This RFC may be a stepping stone in that direction since it lays the groundwork for pre-release compatibility rules, however, I consider detailing such a change outside of the scope of this RFC.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263) aims to solve a similar but different issue where `cargo update` opts to upgrade 
@@ -212,10 +212,10 @@ For `--precise` forcing a version through, we have precedence in
 for `cargo update --precise` for incompatible versions to force its way
 through by modifying `Cargo.toml`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-# Version ranges with pre-release upper bounds
+## Version ranges with pre-release upper bounds
 
 [As stated earlier](#reference-level-explanation), this RFC proposes that semver version semantics change to encompass pre-release versions.
 
@@ -239,10 +239,10 @@ There are two ways we could go about solving this.
 
 Either way, it may be desirable to introduce a dedicated warning for this case.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Pre-release dep "allows" pre-release everywhere
+### Pre-release dep "allows" pre-release everywhere
 
 It would be nice if cargo could unify pre-release version requirements with stable versions.
 
@@ -259,7 +259,7 @@ Since crates ignore the lock files of their dependencies there is no way for `a`
 To enable this we could use the same concept of compatible pre-releases in `Cargo.toml`, not just `Cargo.lock`.
 This would require that pre-releases are specified with `=` and would allow pre-release versions to be requested anywhere within the dependency tree without causing the resolver to throw an error.
 
-## `--allow-prerelease`
+### `--allow-prerelease`
 
 Instead of manually selecting a version with `--precise`, we could support `cargo update --package foo --allow-prerelease`.
 

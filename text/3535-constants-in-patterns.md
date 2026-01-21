@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3535](https://github.com/rust-lang/rfcs/pull/3535)
 - Tracking Issue: [rust-lang/rust#120362](https://github.com/rust-lang/rust/issues/120362)
 
-# Summary
+## Summary
 [summary]: #summary
 
 When a constant appears as a pattern, this is syntactic sugar for writing a pattern that corresponds to the constant's value by hand.
@@ -13,7 +13,7 @@ This RFC does not allow any new code, compared to what already builds on stable 
 Its purpose is to explain the rules for constants in patterns in one coherent document,
 and to justify why we will start *rejecting* some code that currently works (see the [breaking changes](#breaking-changes) below).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The main motivation to write this RFC is to finish what started in [RFC 1445][rfc-1445]: define what happens when a constant is used as a pattern.
@@ -52,7 +52,7 @@ This new RFC takes the stance it does the former based on the following main des
   the pattern can be accessing private fields, and the `PartialEq` implementation provided by the library might be treating those fields in a particular way;
   we should not let people write patterns that "bypass" any such treatment and do structural matching when the crate author does not provide a structural `PartialEq`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Constants can be used as patterns, but only if their type implements `PartialEq`.
@@ -124,7 +124,7 @@ Most of the values of primitive Rust types have structural equality (integers, `
   `0.0` and `-0.0` as a value of a constant used in a pattern will all match both `0.0` and `-0.0`, as they do today.
   (As a literal, `0.0` and `-0.0` are currently both accepted but `+0.0` is not. This RFC does not propose to change anything here, though we could consider linting against `-0.0`.)
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When a constant `C` of type `T` is used as a pattern, we first check that `T: PartialEq`.
@@ -186,7 +186,7 @@ The *behavior* of such a constant as a pattern is the same as the corresponding 
 On floats are raw pointers, pattern matching behaves like `==`,
 which means in particular that the value `-0.0` matches the pattern `0.0`, and NaN values match no pattern (except for wildcards).
 
-## Breaking changes
+### Breaking changes
 
 This RFC breaks code that compiles today, but only code that already emits a future compatibility lint:
 - Matching on constants that do not implement `PartialEq` sometimes accidentally works, but triggers `const_patterns_without_partial_eq`.
@@ -203,14 +203,14 @@ This RFC breaks code that compiles today, but only code that already emits a fut
 When the RFC gets accepted, the floating-point lint should be adjusted to only cover the cases we are really going to reject,
 and all of them should be shown in dependencies or directly turned into hard errors.
 
-## Compiler/library cleanup
+### Compiler/library cleanup
 
 There also exists the `nontrivial_structural_match` future compatibility lint;
 it is not needed for this RFC so it can be removed when the RFC gets accepted.
 
 Similarly, the `StructuralEq` trait no longer serves a purpose and can be removed.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - The biggest drawback of this proposal is that it conflates `derive(PartialEq)` with a semver-stable promise that this type will always have structural equality.
@@ -227,7 +227,7 @@ Similarly, the `StructuralEq` trait no longer serves a purpose and can be remove
   To allow matching on "opaque" constants, we would have to add new machinery, such as a trait that indicates that *all* values of a given type have recursive structural equality.
   (Remember that `StructuralPartialEq` only reflects "shallow" structural equality.)
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The main design rationale has been explained in the "Motivation" section.
@@ -263,7 +263,7 @@ Some possible alternatives include:
   having possible behavior changes upon "outlining" a fieldless enum variant into a constant is too big of a footgun,
   and allowing matching without opt-in from the crate that defines the type makes abstraction and semver too tricky to maintain (consider that private fields would be compared when matching).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 [RFC 1445][rfc-1445] defines basically the same checks as this RFC; this RFC merely spells them out more clearly for cases the old RFC did not explicitly over (nested user-defined types, raw pointers),
@@ -271,7 +271,7 @@ and adjusts to decisions that have been made in the mean time (accepting floatin
 
 This RFC came out of discussions in a [t-lang design meeting](https://github.com/rust-lang/lang-team/issues/220).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - When a constant is used as a pattern in a `const fn`, what exactly should we require?
@@ -282,7 +282,7 @@ This RFC came out of discussions in a [t-lang design meeting](https://github.com
   Rejecting this would definitely be a breaking change; we currently don't even lint against these cases.
   Also see [this issue](https://github.com/rust-lang/rust/issues/119398).
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - At some point, we might want to stabilize the `StructuralPartialEq` trait.

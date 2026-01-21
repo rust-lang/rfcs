@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2582](https://github.com/rust-lang/rfcs/pull/2582)
 - Rust Issue: [rust-lang/rust#64490](https://github.com/rust-lang/rust/issues/64490)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce new variants of the `&` operator: `&raw mut <place>` to create a `*mut <T>`, and `&raw const <place>` to create a `*const <T>`.
@@ -11,7 +11,7 @@ This creates a raw pointer directly, as opposed to the already existing `&mut <p
 As a consequence, the existing expressions `<term> as *mut <T>` and `<term> as *const <T>` where `<term>` has reference type are equivalent to `&raw mut *<term>` and `&raw const *<term>`, respectively.
 Moreover, emit a lint for existing code that could use the new operator.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, if one wants to create a raw pointer pointing to something, one has no choice but to create a reference and immediately cast it to a raw pointer.
@@ -44,7 +44,7 @@ To avoid making too many assumptions by creating a reference, this RFC proposes 
 No intermediate reference exists, so no invariants have to be adhered to: the pointer may be unaligned and/or dangling.
 We also add a lint for cases that seem like the programmer unnecessarily created an intermediate reference, suggesting they reduce the assumptions their code is making by creating a raw pointer instead.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When working with unaligned or potentially dangling pointers, it is crucial that you always use raw pointers and not references:
@@ -87,7 +87,7 @@ The following is valid:
 let packed_cast = &raw const packed.field;
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Rust contains two operators that perform place-to-value conversion (matching `&` in C): one to create a reference (with some given mutability) and one to create a raw pointer (with some given mutability).
@@ -102,12 +102,12 @@ One possible heuristic here would be: If a safe reference (shared or mutable) is
 The details of this are best worked out in the implementation phase of this RFC.
 The lint should, at the very least, fire for the cases covered by the [syntactic sugar extension][future-possibilities], and it should fire when the factor that prevents this matching the sugar is just a redundant block, such as `{ &mut <place> } as *mut ?T`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This introduces new clauses into our grammar for a niche operation.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 One alternative to introducing a new primitive operation might be to somehow exempt "references immediately cast to a raw pointer" from the invariant.
@@ -124,13 +124,13 @@ For further details, see discussion [here][syntax-1] and [here][syntax-2] and [h
 [syntax-3]: https://github.com/rust-lang/rfcs/pull/2582#issuecomment-489468105
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 I am not aware of another language with both comparatively strong invariants for its reference types, and raw pointers.
 The need for taking a raw reference only arise because of Rust having both of these features.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Maybe the lint should also cover cases that look like `&[mut] <place> as *[mut|const] ?T` in the surface syntax but had a method call inserted, thus manifesting a reference (with the associated guarantees).
@@ -138,10 +138,10 @@ The lint as described would not fire because the reference actually gets used as
 However, what would the lint suggest to do instead?
 There just is no way to write this code without creating a reference.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## "Syntactic sugar" extension
+### "Syntactic sugar" extension
 
 We could treat `&mut <place> as *mut _`/`&<place> as *const _` as if they had been written with `&raw` to avoid creating temporary references when that was likely not the intention.
 We could also do this when `&mut <place>`/`& <place>` is used in a coercion site and gets coerced to a raw pointer.
@@ -179,7 +179,7 @@ In the future, if Rust's type ascriptions end up performing coercions, those coe
 So `&packed.field: *const _` would be `&raw const packed.field`.
 If Rust ever gets type ascriptions with coercions for binders, likewise these coercions would be subject to these rules in cases like `match &packed.field { x: *const _ => x }`.
 
-## Encouraging / requiring `&raw` in situations where references are often/definitely incorrect
+### Encouraging / requiring `&raw` in situations where references are often/definitely incorrect
 
 We could make references to packed fields that do *not* use this new "raw reference" operation a *hard error even in unsafe blocks* (after a transition period).
 There is no situation in which this code is okay; it creates a reference that violates basic invariants.
@@ -188,7 +188,7 @@ Taking a raw reference to a packed field, on the other hand, is a safe operation
 It has been suggested to [remove `static mut`][static-mut] because it is too easy to accidentally create references with lifetime `'static`.
 With `&raw` we could instead restrict `static mut` to only allow taking raw pointers (`&raw [mut|const] STATIC`) and entirely disallow creating references (`&[mut] STATIC`) even in safe code (in a future edition, likely; with lints in older editions).
 
-## Other
+### Other
 
 **Lowering of casts.** Currently, `mut_ref as *mut _` has a reborrow inserted, i.e., it gets lowered to `&mut *mut_ref as *mut _`.
 It seems like a good idea to lower this to `&raw mut *mut_ref` instead to avoid any effects the reborrow might have in terms of permitted aliasing.

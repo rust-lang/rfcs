@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#639](https://github.com/rust-lang/rfcs/pull/639)
 - Rust Issue: [rust-lang/rust#24263](https://github.com/rust-lang/rust/issues/24263)
 
-# Summary
+## Summary
 
 Add a new intrinsic, `discriminant_value` that extracts the value of the discriminant for enum
 types.
 
-# Motivation
+## Motivation
 
 Many operations that work with discriminant values can be significantly improved with the ability to
 extract the value of the discriminant that is used to distinguish between variants in an enum. While
@@ -46,16 +46,16 @@ match (self, other) {
 
 Which is compiled into [this IR](https://gist.github.com/Aatch/beb736b93a908aa67e84).
 
-# Detailed design
+## Detailed design
 
-## What is a discriminant?
+### What is a discriminant?
 
 A discriminant is a value stored in an enum type that indicates which variant the value is. The most
 common case is that the discriminant is stored directly as an extra field in the variant. However,
 the discriminant may be stored in any place, and in any format. However, we can always extract the
 discriminant from the value somehow.
 
-## Implementation
+### Implementation
 
 For any given type, `discriminant_value` will return a `u64` value. The values returned are as
 specified:
@@ -76,14 +76,14 @@ specified:
 
 Note the returned values for two differently-typed variants may compare in any way.
 
-# Drawbacks
+## Drawbacks
 
 * Potentially exposes implementation details. However, relying the specific values returned from
 `discriminant_value` should be considered bad practice, as the intrinsic provides no such guarantee.
 
 * Allows non-enum types to be provided. This may be unexpected by some users.
 
-# Alternatives
+## Alternatives
 
 * More strongly specify the values returned. This would allow for a broader range of uses, but
   requires specifying behaviour that we may not want to.
@@ -97,13 +97,13 @@ Note the returned values for two differently-typed variants may compare in any w
   "Sufficiently Smart Compiler" trap is a strong case against this reasoning though. There will
   likely always be cases where the user can write more efficient code than the compiler can produce.
 
-# Unresolved questions
+## Unresolved questions
 
 * Should `#[derive]` use this intrinsic to improve derived implementations of traits? While
   intrinsics are inherently unstable, `#[derive]`d code is compiler generated and therefore can be
   updated if the intrinsic is changed or removed.
 
-# Appendix
+## Appendix
 
 ```rust
 pub enum SqlState {
@@ -343,7 +343,7 @@ pub enum SqlState {
 }
 ```
 
-# History
+## History
 
 This RFC was accepted on a provisional basis on 2015-10-04.  The
 intention is to implement and experiment with the proposed

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2226](https://github.com/rust-lang/rfcs/pull/2226)
 - Rust Issue: [rust-lang/rust#48584](https://github.com/rust-lang/rust/issues/48584)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add support for formatting integers as hexadecimal with the `fmt::Debug` trait,
@@ -16,7 +16,7 @@ println!("{:02X?}", b"AZaz\0")
 [41, 5A, 61, 7A, 00]
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Sometimes the bits that make up an integer are more meaningful than its purely numerical value.
@@ -37,7 +37,7 @@ This RFC proposes adding the missing combination of:
 * Output intended primarily for end-users (`Display`) v.s. for programmers (`Debug`)
 * Numbers shown in decimal v.s. hexadecimal
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 In formatting strings like in the `format!` and `println!` macros,
@@ -58,10 +58,10 @@ let expected = &[ /* ... */ ][..];
 assert!(return_value == expected, "{:08X?} != {:08X?}", return_value, expected);
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Formatting strings
+### Formatting strings
 
 The syntax of formatting strings
 is [specified with a grammar](https://doc.rust-lang.org/std/fmt/#syntax)
@@ -91,7 +91,7 @@ format_spec := [[fill]align][sign]['#']['0'][width]['.' precision][radix][type]
 radix: 'x' | 'X'
 ```
 
-## `Formatter` API
+### `Formatter` API
 
 Note that `x` and `X` are already valid *types*.
 They are only interpreted as a radix when the type is `?`,
@@ -120,7 +120,7 @@ impl<'a> Formatter<'a> {
 Although the radix and type are separate in the formatting string grammar,
 they are intentionally conflated in this new API.
 
-## `Debug` impls
+### `Debug` impls
 
 The `Debug` implementation for primitive integer types `{u,i}{8,16,32,64,128,size}`
 is modified to defer to `LowerHex` or `UpperHex` instead of `Display`,
@@ -133,14 +133,14 @@ formatting parameters such as *width* when formatting keys/values/items.
 Doing so is important for this RFC to be useful.
 This is fixed by [PR #46233](https://github.com/rust-lang/rust/pull/46233).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The hexadecimal flag in the `Debug` trait is superficially redundant
 with the `LowerHex` and `UpperHex` traits.
 If these traits were not stable yet, we could have considered a more unified design.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Implementing `LowerHex` and `UpperHex` was proposed and rejected
@@ -150,7 +150,7 @@ The status quo is that debugging or testing code that could be a one-liner
 requires manual `Debug` impls and/or concatenating the results of separate
 string formatting operations.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Should this be extended to octal and binary (as `{:o?}` and `{:b?}`)?

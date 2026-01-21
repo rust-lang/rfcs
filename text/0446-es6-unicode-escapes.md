@@ -2,13 +2,13 @@
 - RFC PR: [rust-lang/rfcs#446](https://github.com/rust-lang/rfcs/pull/446)
 - Rust Issue: [rust-lang/rust#19739](https://github.com/rust-lang/rust/issues/19739)
 
-# Summary
+## Summary
 
 Remove `\u203D` and `\U0001F4A9` unicode string escapes, and add
 [ECMAScript 6-style](https://mathiasbynens.be/notes/javascript-escapes#unicode-code-point)
 `\u{1F4A9}` escapes instead.
 
-# Motivation
+## Motivation
 
 The syntax of `\u` followed by four hexadecimal digits dates from when Unicode
 was a 16-bit encoding, and only went up to U+FFFF.
@@ -22,7 +22,7 @@ This proposal unifies them into a single syntax that has a precedent
 in ECMAScript a.k.a. JavaScript.
 
 
-# Detailed design
+## Detailed design
 
 In terms of the grammar in [The Rust Reference](
 http://doc.rust-lang.org/reference.html#character-and-string-literals),
@@ -43,7 +43,7 @@ That is, `\u{` followed by one to six hexadecimal digits, followed by `}`.
 
 The behavior would otherwise be identical.
 
-## Migration strategy
+### Migration strategy
 
 In order to provide a graceful transition from the old `\uDDDD` and
 `\UDDDDDDDD` syntax to the new `\u{DDDDD}` syntax, this feature
@@ -59,7 +59,7 @@ all library code to use `\u{DDDDD}` instead of the old syntax.
 during a separate release from the one that added the warning from
 Stage 2).
 
-# Drawbacks
+## Drawbacks
 
 * This is a breaking change and updating code for it manually is annoying.
   It is however very mechanical, and we could provide scripts to automate it.
@@ -72,13 +72,13 @@ Stage 2).
   and in regular expressions.
 
 
-# Alternatives
+## Alternatives
 
 * Status quo: don’t change the escaping syntax.
 * Add the new `\u{…}` syntax, but also keep the existing `\u` and `\U` syntax.
   This is what ES 6 does, but only to keep compatibility with ES 5.
   We don’t have that constraint pre-1.0.
 
-# Unresolved questions
+## Unresolved questions
 
 None so far.

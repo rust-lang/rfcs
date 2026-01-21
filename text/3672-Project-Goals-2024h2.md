@@ -287,7 +287,7 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | ↳ [Testing infra + contributors for a-mir-formality](https://rust-lang.github.io/rust-project-goals/2024h2/a-mir-formality.html#ownership-and-team-asks)                   | [Niko Matsakis][] |                |
 
 
-### Definitions
+## Definitions
 
 Definitions for terms used above:
 

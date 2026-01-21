@@ -2,21 +2,21 @@
 - Start Date: 2023-08-22
 - RFC PR: [rust-lang/rfcs#3477](https://github.com/rust-lang/rfcs/pull/3477)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC helps to codify the T-lang policy regarding `cargo check` vs `cargo build`.
 
 This is a policy RFC rather than a change to the language itself, and is thus "instantly stable" once accepted. There's no associated feature within the compiler, and no further stabilization report necessary.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 It has often come up within GitHub issues what *exactly* the intended line is between Cargo's `check` and `build` commands should be, what users should expect, and so on.
 
 The RFC gives a clear policy from T-lang's perspective so that both other teams within the Rust project as well as users of the Rust project can have the same expectations.
 
-# Decision
+## Decision
 [decision]: #decision
 
 * `cargo build` catches all Rust compilation errors.
@@ -33,15 +33,15 @@ Given this performance cost and the fact that errors during monomorphization are
 
 Examples where the optimization level can affect if a program passes `cargo check` and/or `cargo build` are considered bugs unless there is a documented policy exception, approved by T-lang. One example of such an exception is [RFC #3016](https://rust-lang.github.io/rfcs/3016-const-ub.html), which indicated that undefined behavior in const functions cannot always be detected statically (and in particular, optimizations may cause the UB to be undetectable).
 
-# Frequently Asked Questions
+## Frequently Asked Questions
 
-## Why doesn't `check` catch everything?
+### Why doesn't `check` catch everything?
 
 The simplest example here is linker errors.  There's no practical way to confirm that linking will work without actually going through all the work of generating the artifacts and actually calling the linker, but that that point one might as well run `build` instead.
 
 An important part of what can make `check` faster than `build` is just *not* doing that kind of thing.  And linker errors are rare in pure Rust code, so this is often a good trade-off.
 
-## Why not let more things through in optimized builds?
+### Why not let more things through in optimized builds?
 
 Rust takes [stability without stagnation] very seriously.  We want to make sure stuff keeps compiling if it did before, but we also want to be able to work on improving rust without being so constrained as to make that functionally impossible.
 
@@ -53,12 +53,12 @@ As an example, there are various *lints* that can detect more cases when optimiz
 
 [stability without stagnation]: https://blog.rust-lang.org/2014/10/30/Stability.html#the-plan
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * Is there any situation when we would *want* to allow optimization level to affect if a program passes or fails a build? This seems unlikely.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 * Any future changes in this policy would require a future RFC so that such changes are as clear and visible as possible.

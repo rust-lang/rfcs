@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#59](https://github.com/rust-lang/rfcs/pull/59)
 - Rust Issue: [rust-lang/rust#13885](https://github.com/rust-lang/rust/issues/13885)
 
-# Summary
+## Summary
 
 The tilde (`~`) operator and type construction do not support allocators and therefore should be removed in favor of the `box` keyword and a language item for the type.
 
-# Motivation
+## Motivation
 
 * There will be a unique pointer type in the standard library, `Box<T,A>` where `A` is an allocator. The `~T` type syntax does not allow for custom allocators. Therefore, in order to keep `~T` around while still supporting allocators, we would need to make it an alias for `Box<T,Heap>`. In the spirit of having one way to do things, it seems better to remove `~` entirely as a type notation.
 
@@ -16,11 +16,11 @@ The tilde (`~`) operator and type construction do not support allocators and the
 
 * `~` can encourage people to blindly add sigils attempting to get their code to compile instead of consulting the library documentation.
 
-# Drawbacks
+## Drawbacks
 
 `~T` may be seen as convenient sugar for a common pattern in some situations.
 
-# Detailed design
+## Detailed design
 
 The `~EXPR` production is removed from the language, and all such uses are converted into `box`.
 
@@ -36,11 +36,11 @@ The destructuring form for `Box<T>` will be `box PAT`, as follows:
     let box(x) = box(10);
     println!("{}", x); // prints 10
 
-# Alternatives
+## Alternatives
 
 The other possible design here is to keep `~T` as sugar. The impact of doing this would be that a common pattern would be terser, but I would like to not do this for the reasons stated in "Motivation" above.
 
-# Unresolved questions
+## Unresolved questions
 
 The allocator design is not yet fully worked out.
 

@@ -5,7 +5,7 @@
 - RFC PR: [rust-lang/rfcs#3516](https://github.com/rust-lang/rfcs/pull/3516)
 - Rust Issue: [rust-lang/rust#44663](https://github.com/rust-lang/rust/issues/44663)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a public/private distinction to crate dependencies.
@@ -18,7 +18,7 @@ Enough has changed in the time since that RFC was approved that we felt we neede
 Note: The 2024 Edition is referenced in this RFC but that is a placeholder for
 whatever edition next comes up after stabilization.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The crates ecosystem has greatly expanded since Rust 1.0. With that, a few patterns for
@@ -44,7 +44,7 @@ Related problems with this scenario not handled by this RFC:
 - Help check for missing feature declarations by duplicating dependencies, rather than unifying features
   - See [Missing feature declaration check](#future-possibilities)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 As a trivial, artificial example:
@@ -165,10 +165,10 @@ I say "last ditch" because in most other cases,
 a user would be better served by wrapping the API which would be helped with
 features like `impl Trait` in type aliases if we had it.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## rustc
+### rustc
 
 The main change to the compiler will be to accept a new modifier on the `--extern` flag that Cargo
 supplies which marks it as a private dependency.
@@ -187,7 +187,7 @@ paired with `#[doc(hidden)]` and other already existing hacks.
 This most likely will also be necessary for the more complex relationship of
 `libcore` and `libstd` in Rust itself.
 
-## cargo
+### cargo
 
 A new dependency field, `public = <bool>` will be added that defaults to `false`.
 This field can be specified in `workspace.dependencies` and be overridden when `workspace = true` is in a dependency.
@@ -205,11 +205,11 @@ When adding a dependency today, the version requirement is reused from other dep
 With this RFC, that will be extended to also checking your dependencies for any `public` dependencies, and reusing their version requirement.
 This would be most easily done by having the field in the Index but `cargo add` could also read the `.crate` files as a fallback.
 
-## crates.io
+### crates.io
 
 Crates.io should show public dependencies more prominently than private ones.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It might not be clear how to resolve the warning/error, as it's emitted
@@ -231,10 +231,10 @@ We at least reduced the impact of this by not marking dependencies as private fo
 
 You can't definitively lint when a `public = true` is unused since it may depend on which platform or features.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Misc
+### Misc
 
 - `Cargo.toml`: instead of `public` (like [RFC 1977]), we could name the field `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html)) or name the field `visibility = "<public|private>"`
   - `pub` has a nice parallel with Rust
@@ -260,13 +260,13 @@ You can't definitively lint when a `public = true` is unused since it may depend
   - If we rely on `public` in the resolver, we might need it but we can always backfill it
   - Parts of the implementation are already there from the original RFC
 
-## Minimal version resolution
+### Minimal version resolution
 
 [RFC 1977] included the idea of verifying version requirements are high enough.
 This is a problem whether the dependency is private or not.
 This should be handled independent of this RFC.
 
-## Dependency visibility and the resolver
+### Dependency visibility and the resolver
 
 This is deferred to [Future possibilities](#future-possibilities)
 - This has been the main hang-up for stabilization over the last 6 years since the RFC was approved
@@ -278,19 +278,19 @@ Related problems potentially blocked on this
 - It is hoped that the resolver change would help with [cargo#9029](https://github.com/rust-lang/cargo/issues/9029)
 - If we allow duplication of private semver compatible dependencies, it would help with [cargo#10053](https://github.com/rust-lang/cargo/issues/10053)
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Within the cargo ecosystem:
 - [cargo public-api-crates](https://github.com/davidpdrsn/cargo-public-api-crates)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Help keep versions in-sync
+### Help keep versions in-sync
 
 When upgrading one dependency, you might need to upgrade another because you
 use it to interact with the first, like `clap` and `clap_complete`.
@@ -308,7 +308,7 @@ these problems.
 
 Some possible routes:
 
-### Dependency visibility and the resolver
+#### Dependency visibility and the resolver
 
 [RFC 1977] originally proposed handling this within the resolver
 
@@ -348,7 +348,7 @@ If we want to go this route, some hurdles to overcome include:
 - More thought is needed as we found that making a dependency `public = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
 - More thought is needed on what happens if you have multiple versions of a package that are public (via renaming like `tokio_03` and `tokio_1`)
 
-### Caller-declared relations
+#### Caller-declared relations
 
 As an alternative, when declaring dependencies,
 a user could [explicitly delegate the version requirement to another package](https://github.com/rust-lang/cargo/issues/4641)
@@ -390,7 +390,7 @@ This only helps when the packages are managed by a single project.
 Whether this should be specified across all sources (`from`) or per source (`registry.from`, `git.from`, `path.from`) will need to be worked out.
 See [rust-lang/cargo#6921](https://github.com/rust-lang/cargo/issues/6921) for an example of using this for git dependencies.
 
-## Missing feature declaration check
+### Missing feature declaration check
 
 It is easy for packages to accidentally rely on a dependency enabling a feature for them.
 We could add a mode that limits feature unification to reachable dependencies,
@@ -404,17 +404,17 @@ If packages start relying on it,
 it could coerce callers into abusing this mechanism,
 having a cascading effect in the ecosystem in the wrong direction.
 
-## Warn about semver incompatible public dependency
+### Warn about semver incompatible public dependency
 
 `cargo update` (or a manifest linter) could warn about public new incompatible
 public dependencies that are available to help the ecosystem progress in
 lockstep.
 
-## Warn about pre-1.0 public dependencies in 1.0+ packages
+### Warn about pre-1.0 public dependencies in 1.0+ packages
 
 See [rust-lang/cargo#6018](https://github.com/rust-lang/cargo/issues/6018)
 
-## Flag for `cargo doc` to skip inaccessible dependencies
+### Flag for `cargo doc` to skip inaccessible dependencies
 
 When building documentation for local development,
 a lot of times only the direct dependencies and their public dependencies are relevant but you can get stuck generating documentation for large dependencies

@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1200](https://github.com/rust-lang/rfcs/pull/1200)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 Add a new subcommand to Cargo, `install`, which will install `[[bin]]`-based
 packages onto the local system in a Cargo-specific directory.
 
-# Motivation
+## Motivation
 
 There has [almost always been a desire][cargo-37] to be able to install Cargo
 packages locally, but it's been somewhat unclear over time what the precise
@@ -27,7 +27,7 @@ Put another way, enabling easily sharing code is one of Cargo's fundamental
 design goals, and expanding into binaries is simply an extension of Cargo's core
 functionality.
 
-# Detailed design
+## Detailed design
 
 The following new subcommand will be added to Cargo:
 
@@ -77,7 +77,7 @@ be used as well.
 The `--list` option will list all installed packages (and their versions).
 ```
 
-## Installing Crates
+### Installing Crates
 
 Cargo attempts to be as flexible as possible in terms of installing crates from
 various locations and specifying what should be installed. All binaries will be
@@ -91,7 +91,7 @@ To use installed crates one just needs to add the binary path to their `PATH`
 environment variable. This will be recommended when `cargo install` is run if
 `PATH` does not already look like it's configured.
 
-#### Crate Sources
+##### Crate Sources
 
 The `cargo install` command will be able to install crates from any source that
 Cargo already understands. For example it will start off being able to install
@@ -99,7 +99,7 @@ from crates.io, git repositories, and local paths. Like with normal
 dependencies, downloads from crates.io can specify a version, git repositories
 can specify branches, tags, or revisions.
 
-#### Sources with multiple crates
+##### Sources with multiple crates
 
 Sources like git repositories and paths can have multiple crates inside them,
 and Cargo needs a way to figure out which one is being installed. If there is
@@ -111,13 +111,13 @@ heuristics to select a crate, in order:
 3. If only one crate has examples, use that crate.
 4. Print an error suggesting the `-p` flag.
 
-#### Multiple binaries in a crate
+##### Multiple binaries in a crate
 
 Once a crate has been selected, Cargo will by default build all binaries and
 install them. This behavior can be modified with the `--bin` or `--example`
 flags to configure what's installed on the local system.
 
-#### Building a Binary
+##### Building a Binary
 
 The `cargo install` command has some standard build options found on `cargo
 build` and friends, but a key difference is that `--release` is the default for
@@ -128,7 +128,7 @@ features of the crate being installed.
 The `--target` option is omitted as `cargo install` is not intended for creating
 cross-compiled binaries to ship to other platforms.
 
-#### Conflicting Crates
+##### Conflicting Crates
 
 Cargo will not namespace the installation directory for crates, so conflicts may
 arise in terms of binary names. For example if crates A and B both provide a
@@ -136,7 +136,7 @@ binary called `foo` they cannot be both installed at once. Cargo will reject
 these situations and recommend that a binary is selected via `--bin` or the
 conflicting crate is uninstalled.
 
-#### Placing output artifacts
+##### Placing output artifacts
 
 The `cargo install` command can be customized where it puts its output artifacts
 to install packages in a custom location. The root directory of the installation
@@ -154,13 +154,13 @@ Once the root directory is found, Cargo will place all binaries in the
 metadata in this folder in order to keep track of what's installed and what
 binaries belong to which package.
 
-## Managing Installations
+### Managing Installations
 
 If Cargo gives access to installing packages, it should surely provide the
 ability to manage what's installed! The first part of this is just discovering
 what's installed, and this is provided via `cargo install --list`.
 
-## Removing Crates
+### Removing Crates
 
 To remove an installed crate, another subcommand will be added to Cargo:
 
@@ -185,7 +185,7 @@ only uninstall particular binaries.
 Cargo won't remove the source for uninstalled crates, just the binaries that
 were installed by Cargo itself.
 
-## Non-binary artifacts
+### Non-binary artifacts
 
 Cargo will not currently attempt to manage anything other than a binary artifact
 of `cargo build`. For example the following items will not be available to
@@ -201,13 +201,13 @@ installation stage of a package. There is often a desire for a "pre-install
 script" which runs various house-cleaning tasks. This is left as a future
 extension to Cargo.
 
-# Drawbacks
+## Drawbacks
 
 Beyond the standard "this is more surface area" and "this may want to
 aggressively include more features initially" concerns there are no known
 drawbacks at this time.
 
-# Alternatives
+## Alternatives
 
 ### System Package Managers
 
@@ -258,6 +258,6 @@ as it will automatically handle when the compiler version changes, for example.
 It may also be more appropriate to add the caching layer at the `cargo build`
 layer instead of `cargo install`.
 
-# Unresolved questions
+## Unresolved questions
 
 None yet

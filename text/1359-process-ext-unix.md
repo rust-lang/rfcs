@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1359](https://github.com/rust-lang/rfcs/pull/1359)
 - Rust Issue: [rust-lang/rust#31398](https://github.com/rust-lang/rust/issues/31398)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add two methods to the `std::os::unix::process::CommandExt` trait to provide
@@ -15,7 +15,7 @@ fn before_exec<F>(&mut self, f: F) -> &mut Self
     where F: FnOnce() -> io::Result<()> + Send + Sync + 'static;
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Although the standard library's implementation of spawning processes on Unix is
@@ -40,7 +40,7 @@ Note that neither of these pieces of functionality are possible on Windows as
 there is no equivalent of the `fork` or `exec` syscalls in the standard APIs, so
 these are specifically proposed as methods on the Unix extension trait.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The following two methods will be added to the
@@ -93,7 +93,7 @@ This also happens after all other configuration has happened to ensure that
 libraries can take advantage of the other operations on `Command` without having
 to reimplement them manually in some circumstances.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This change is possible to be a breaking change to `Command` as it will no
@@ -106,7 +106,7 @@ may actually be best implemented as functions in the standard library itself.
 It's likely that many operations are well known across unixes and aren't niche
 enough to stay outside the standard library.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Instead of souping up `Command` the type could instead provide accessors to all
@@ -115,7 +115,7 @@ functionality to be built on crates.io first instead of requiring it to be built
 into the standard library to start out with. Note that this may want to end up
 in the standard library regardless, however.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Is it appropriate to run callbacks just before the `exec`? Should they instead

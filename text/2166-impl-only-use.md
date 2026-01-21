@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2166](https://github.com/rust-lang/rfcs/pull/2166)
 - Rust Issue: [rust-lang/rust#48216](https://github.com/rust-lang/rust/issues/48216)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The `use …::{… as …}` syntax can now accept `_` as alias to a trait to only import the
 implementations of such a trait.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Sometimes, we might need to `use` a trait to be able to use its methods on a type in our code.
@@ -76,7 +76,7 @@ refer to that trait, but we want the impls:
 use zoo::Zoo as _;
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Qualifying a `use` with `_` on a trait imports the trait’s `impl`s but not the symbol directly. It’s
@@ -85,7 +85,7 @@ else.
 
 The `_` means that you “don’t care about the name rustc will use for that qualified `use`“.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `use Trait as _` needs to desugar into `use Trait as SomeGenSym`. With this scheme, global imports
@@ -113,18 +113,18 @@ crates:
 extern crate my_crate as _;
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC tries to solve a very specific problem (when you *must* alias a trait use). It’s just a
 nit to make the syntax more *“rust-ish”* (it’s very easy to think such a thing would work given the
 way `_` works pretty much everywhere else).
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 The simple alternative is to let the programmer give a name to the qualified import, which is not a
 big deal, but is a bit ugly.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions

@@ -10,7 +10,7 @@
 > However, [the team decided to un-accept](https://github.com/rust-lang/rust/issues/44524#issuecomment-988260463)
 > the parts of this RFC related to using lifetimes without a separate definition.
 
-# Summary
+## Summary
 [summary]: #summary
 
 Eliminate the need for separately binding lifetime parameters in `fn`
@@ -49,7 +49,7 @@ The changes, in summary, are:
 
 **This RFC does not introduce any breaking changes**.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Today's system of lifetime elision has a kind of "cliff". In cases where elision
@@ -110,13 +110,13 @@ users by simultaneously improving clarity and ergonomics. In practice it should
 reduce the total occurrences of `<`, `>` and `'a` in signatures, while
 *increasing* the overall clarity and explicitness of the lifetime system.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 *Note: this is a **sketch** of what it might look like to teach someone
 lifetimes given this RFC**.
 
-## Introducing references and borrowing
+### Introducing references and borrowing
 
 *Assume that ownership has already been introduced, but not yet borrowing*.
 
@@ -146,7 +146,7 @@ This borrow of `my_vec` lasts only for the duration of the `print_vec` call.
 
 *Imagine more explanation here...*
 
-## Functions that return borrowed data
+### Functions that return borrowed data
 
 So far we've only seen functions that *consume* borrowed data; what about
 producing it?
@@ -176,7 +176,7 @@ Here we're making what looks like a "fresh" borrow, it's "derived" from the
 existing borrow of `self`, and hence fine to return back to our caller; the
 actual `MyStruct` value must live outside our stack frame anyway.
 
-### Pinpointing borrows with lifetimes
+#### Pinpointing borrows with lifetimes
 
 For Rust to guarantee safety, it needs to track the *lifetime* of each loan,
 which says *for what portion of code the loan is valid*.
@@ -216,7 +216,7 @@ which is a way of asking the compiler to determine their "intersection"
 returned `Item` borrow is valid for that period (which means it may incorporate
 data from both of the input borrows).
 
-## `struct`s and lifetimes
+### `struct`s and lifetimes
 
 Sometimes you need to build data types that contain borrowed data. Since those
 types can then be used in many contexts, you can't say in advance what the
@@ -256,7 +256,7 @@ impl<T> Vec<T> {
 The `'_` marker makes clear to the reader that *borrowing is happening*, which
 might not otherwise be clear.
 
-## `impl` blocks and lifetimes
+### `impl` blocks and lifetimes
 
 When writing an `impl` block for a structure that takes a lifetime parameter,
 you can give that parameter a name, which you should strive to make
@@ -281,13 +281,13 @@ If the type's lifetime is not relevant, you can leave it off using `'_`:
 impl<T> VecIter<'_, T> { ... }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 **Note: these changes are designed to *not* require a new edition**. They do
 expand our naming style lint, however.
 
-## Lifetimes in `impl` headers
+### Lifetimes in `impl` headers
 
 When writing an `impl` header, you can mention lifetimes without binding them in
 the generics list. Any lifetimes that are not already in scope (which, today,
@@ -315,7 +315,7 @@ This change goes hand-in-hand with a convention that lifetimes introduced in
 i.e. "meaningful" names, to reduce the chance of collision with typical `'a`
 usage in functions.
 
-## Lifetimes in `fn` signatures
+### Lifetimes in `fn` signatures
 
 When writing a `fn` declaration, if a lifetime appears that is not already in
 scope, it is taken to be a new binding, i.e. treated as a parameter to the
@@ -366,7 +366,7 @@ an error to mention lifetimes from that outer definition (without binding them
 explicitly). This is again intended for future-proofing and clarity, and is an
 edge case.
 
-## The wildcard lifetime
+### The wildcard lifetime
 
 When referring to a type (other than `&`/`&mut`) that requires lifetime
 arguments, it is deprecated to leave off those parameters.
@@ -388,7 +388,7 @@ fn foo(&self) -> Ref<'_, SomeType>
 fn iter(&self) -> Iter<'_, T>
 ```
 
-## Additional lints
+### Additional lints
 
 Beyond the change to the style lint for `impl` header lifetimes, two more lints
 are provided:
@@ -402,7 +402,7 @@ are provided:
   other unnecessary elements, e.g. when it could be using elision or could leave
   off lifetimes from its generics list.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The style lint for `impl` headers could introduce some amount of churn. This
@@ -435,10 +435,10 @@ or harder to determine, since the binding structure continues to be completely
 unambiguous; ergonomics and, arguably, learnability both improve. And
 signatures become less noisy and easier to read.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
-## Core rationale
+### Core rationale
 
 The key insight of the proposed design is that out-of-band bindings for lifetime
 parameters is buying us very little today:
@@ -459,7 +459,7 @@ Alternatively, we could instead distinguish these cases at the use-site, for
 example by writing `outer('a)` or some such to refer to the `impl` block
 bindings.
 
-## Possible extension or alternative: "backreferences"
+### Possible extension or alternative: "backreferences"
 
 A different approach would be referring to elided lifetimes through their
 parameter name, like so:
@@ -493,7 +493,7 @@ names), and otherwise keeping binding as-is. However, this has a few downsides:
   often nonsensical, since there's no sense in which one argument is the "primary
   definer" of the lifetime.
 
-## Alternatives
+### Alternatives
 
 We could consider using this as an opportunity to eliminate `'` altogether, by
 tying these improvements to a new way of providing lifetimes, e.g. `&ref(x) T`.
@@ -510,7 +510,7 @@ As mentioned above, we could consider alternatives to the case distinction in
 lifetime variables, instead using something like `outer('a)` to refer to
 lifetimes from an `impl` header.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - How to treat examples like `fn f() -> &'a str { "static string" }`.

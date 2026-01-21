@@ -1,14 +1,14 @@
 - Start Date: 2024-06-20
 - RFC PR: [rust-lang/rfcs#3660](https://github.com/rust-lang/rfcs/pull/3660)
 
-# Summary
+## Summary
 
 This RFC proposes a mechanism for crate authors to delete their crates from crates.io under certain conditions.
 
 
-# Motivation
+## Motivation
 
-There are a variety of reasons why a crate author might want to delete a crate or version from crates.io:
+There are a variety of reasons why a crate author might want to delete a crate from crates.io:
 
 * You published something accidentally.
 * You wanted to test crates.io.
@@ -24,7 +24,7 @@ This restriction makes sense for the majority of crates that have been around fo
 To make this process easier for our users and to reduce the workload of the crates.io team dealing with such support requests, we propose to codify our current set of informal rules into a formal policy that allows crate authors to delete their crates themselves under certain conditions (see below).
 
 
-# Proposal
+## Proposal
 
 We propose to allow crate authors to delete their **crates** from crates.io under the following conditions:
 
@@ -34,17 +34,12 @@ We propose to allow crate authors to delete their **crates** from crates.io unde
   * The crate is not depended upon by any other crate on crates.io (i.e. it has no reverse dependencies),
   * The crate has been downloaded less than 100 times for each month it has been published.
 
-We also propose to allow crate authors to delete **versions** of their crates from crates.io under the following conditions:
+This crate owner action will be enabled by a new API endpoint:
 
-* The version has been published for less than 72 hours.
-
-These crate owner actions will be enabled by two new API endpoints:
-
-- `DELETE /api/v1/crates/:crate_id` to delete a crate
-- `DELETE /api/v1/crates/:crate_id/:version` to delete a version
+- `DELETE /api/v1/crates/:crate_id`
 
 
-# Drawbacks
+## Drawbacks
 
 > Why should we *not* do this?
 
@@ -52,15 +47,12 @@ The main drawback of this proposal is that it makes the crates.io registry less 
 This could lead to confusion if a crate is deleted that is depended on by other projects that are not published on crates.io themselves.
 However, we believe that the conditions we propose are strict enough to prevent this from happening in practice due to the additional download threshold.
 
-Another potential drawback is that it can create confusion on when it would be better to yank a version instead of deleting it.
-We plan to address this by adding a note to the usage policy that explains the difference between yanking and deleting a version, and when to use which action based on the list in the [Motivation](#motivation) section above.
 
-
-# Rationale and alternatives
+## Rationale and alternatives
 
 > Why is this design the best in the space of possible designs?
 
-The proposed design is based on the current informal rules that the crates.io team uses to decide whether to delete a crate or version.
+The proposed design is based on the current informal rules that the crates.io team uses to decide whether to delete a crate.
 These rules have been derived from the npm registry, which has a similar policy (see below).
 We believe that the proposed conditions are strict enough to prevent accidental deletions while still allowing crate authors to delete their crates in the cases where it makes sense.
 
@@ -73,9 +65,9 @@ Situations like the [`everything` package on npm](https://uncenter.dev/posts/npm
 
 The proposed design is based on the current informal rules that the crates.io team uses to decide whether to delete a crate or version. If we don't implement this proposal, we will continue to rely on the crates.io team to handle these requests manually, which is time-consuming and error-prone.
 
-# Prior art
+## Prior art
 
-## npm
+### npm
 
 The main inspiration for this proposal comes from the npm registry, which has a similar policy for deleting packages and versions:
 
@@ -87,21 +79,21 @@ It started out with a policy that allowed package owners to delete their package
 Their policy was later changed to require that packages can only be deleted within 72 hours of being published, and then [changed again in January 2020](https://blog.npmjs.org/post/190553543620/changes-to-npmunpublish-policy-january-2020) to allow deletions outside the 72-hour window under certain conditions.
 
 
-## PyPI
+### PyPI
 
 The Python Package Index (PyPI) still allows package owners to delete their packages (or a subset of released files) at any time.
 A member of the PyPI team has proposed to [stop allowing deleting things from PyPI](https://discuss.python.org/t/stop-allowing-deleting-things-from-pypi/17227) due to the same issues that the npm registry faced. The most current proposed ruleset can be found [here](https://discuss.python.org/t/stop-allowing-deleting-things-from-pypi/17227/71).
 
 Their proposal is also inspired by the npm registry policy, but notably does not include a reverse dependency restriction. It seems that PyPI might not currently be tracking dependencies between packages, which would make it harder for them to implement such a restriction.
 
-## Others
+### Others
 
 <https://discuss.python.org/t/stop-allowing-deleting-things-from-pypi/17227/59> contains a list of other package registries and their deletion policies.
 
 
-# Unresolved questions
+## Unresolved questions
 
-## Should names of deleted crates be blocked so that they can't be re-used?
+### Should names of deleted crates be blocked so that they can't be re-used?
 
 The reason for this would be to prevent someone else from re-publishing a crate with the same name, which could lead to potential security issues.
 Due to the restrictions on the number of downloads and reverse dependencies, this seems like a low risk though.
@@ -110,20 +102,7 @@ The advantage of allowing others to re-use such names is that it allows name-squ
 The npm registry blocks re-use of deleted package names for 24 hours.
 
 
-## Should deleted versions be blocked from being re-uploaded?
-
-Since version deletions would also be possible for widely used crates, it might make sense to block re-uploads of deleted versions to prevent security issues.
-However, this would make it impossible to fix a mistakenly published new major version, for example.
-
-The npm registry blocks re-uploads of deleted versions indefinitely.
-
-
-## Should we keep and mark deleted versions in the index?
-
-The cargo team has expressed interest in potentially keeping deleted versions in the index and marking them as deleted, so that this information can be used to improve dependency resolution messages. It will have to be researched if this can be accomplished without breaking older cargo versions that expect a certain index format. It might be possible to only add these markers to the sparse index, which is only used by newer cargo versions.
-
-
-# Future possibilities
+## Future possibilities
 
 It is conceivable that the restrictions could be adjusted in the future if the crates.io team finds that the proposed restrictions are too strict or too lenient. For example, the download threshold could be adjusted based on how well the proposed ruleset will work in practice.
 

@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#3455](https://github.com/rust-lang/rfcs/pull/3455)
 - Rust Issue: n/a
 
-# Summary
+## Summary
 [summary]: #summary
 
 Create a new subteam focused on testing in the development workflow and to be responsible for
 ensuring Rust has a high quality automated testing experience that includes the capabilities
 developers expect when working with a modern programming language.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, the overall automated testing experience spans multiple components owned by different
@@ -39,7 +39,7 @@ The new Testing team is intended to establish an overarching vision and provide 
 [#2318]: https://github.com/rust-lang/rfcs/pull/2318
 [ci]: (https://internals.rust-lang.org/t/pre-rfc-implementing-test-binary-list-format-json-for-use-by-ide-test-explorers-runners/18308)
 
-## Mission and responsibilities
+### Mission and responsibilities
 [mission]: #mission
 
 This team would be primarily focused on iterating on the test writing and analysis experience, `cargo test`, and enabling integration points and features for external tools like CI or IDEs.
@@ -49,7 +49,7 @@ Examples of issues to resolve:
 - What parts of [cargo nextest](https://nexte.st/) can we stabilize?
 - With the proliferation of test frameworks (e.g. [rstest], [trybuild], [trycmd], [cargo_test_support], [criterion]), are there underlying needs we can resolve?
 
-## Relationships to other teams
+### Relationships to other teams
 
 With the aforementioned breadth across the Project, the Testing team will need to have collaborative relationships with many other teams, and is conceptually a subteam of both the Libs and Dev Tools teams.
 
@@ -65,11 +65,11 @@ T-devtools: This will be the primary top level parent team.
 
 **T-libs**: This will be a second/secondary top level parent team as they are ultimately responsible for libtest.
 
-## Processes
+### Processes
 
 For decisions on vision and direction, T-testing will use a standard FCP process.  T-testing will be subject to [T-cargo's processes](https://doc.crates.io/contrib/team.html#decision-process) when dealing with `cargo test` and T-libs's processes for libtest.  For any newly developed crates and libraries, we will follow [T-cargo's processes](https://doc.crates.io/contrib/team.html#decision-process).
 
-## Membership
+### Membership
 
 Team members are expected to shepherd testing discussions and vote on FCPs. Team membership is independent of regular code contributions though contributing can help build up the relevant experience and/or demonstrate the qualities for team membership.
 
@@ -89,13 +89,13 @@ The initial members of the Testing team shall be:
 - Scott Schafer (@Muscraft)
 - Thom Chiovoloni  (@thomcc)
 
-## Drawbacks 
+### Drawbacks 
 
 The proposed Testing team bears some similarity to other Rust teams (e.g. Types team) in the sense
 that it would complicate and muddle the ownership of specific problems.
 For example, there would be two teams dealing with `cargo test` and two dealing with libtest.
 
-## Rationale and alternatives
+### Rationale and alternatives
 
 - This could be a working group instead of a team. However, we believe the [reasoning articulated in the Types team RFC][team-not-wg] is applicable here as well. There is a need for focused effort on driving work to completion along with associated maintenance work; not a shorter-lived initiative to create recommendations.
 - The Testing team could be a dual-parent subteam, but with the primary team under the Libs team. However, we believe Dev Tools is the better primary parent given the purview of the Testing team would extend well beyond libtest

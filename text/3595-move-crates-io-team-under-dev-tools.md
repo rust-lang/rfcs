@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#3595](https://github.com/rust-lang/rfcs/pull/3595)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 This RFC proposes merging the Crates.io team into the Dev tools team as a subteam. The membership of the Crates.io and Dev tools teams proper remain the same.[^subteam]
 
 [^subteam]: Note: Members of subteams are not automatically direct members of their parent team. So Crates.io members will be part of the wider Dev tools team family but *not* direct members of the team proper. In practical terms this means, among other things, that Crates.io team members would not have checkbox authority associated with direct Dev tool team membership, but Crates.io team members could serve as the Leadership Council representative for Dev tools.
 
-# Motivation
+## Motivation
 
 The Crates.io team has a much smaller membership base than other teams when both top-level members and the number of subteams are taken into account. It is the only team without any subteams[^subteam-requirement].
 
@@ -49,7 +49,7 @@ Currently, the representation burden is not productive or fair: by virtue of the
 
 For the purposes of actual decision making, the Crates.io subteam retains all decision-making power with regard to crates.io related issues (i.e., this proposal does not change who makes any particular decision and is purely a change in Council representation). This may change over time should the Dev tools team choose to structure itself in a different way.
 
-# Practicalities
+## Practicalities
 
 Once this proposal is accepted, the Crates.io team will move to be a subteam of Dev tools. The Dev tools team does not change its top-level form.
 
@@ -57,17 +57,17 @@ The Dev tools team's Council representative would continue to serve on the Counc
 
 [^plan]: It is currently the unofficial plan that Carol Nichols will step down in her role as the Crates.io representative, and Eric Huss would take over as the rep, but this would be made official after the merger through internal Dev tools team process.
 
-# Alternatives
+## Alternatives
 
-## Merge Crates.io into Infrastructure
+### Merge Crates.io into Infrastructure
 
 Crates.io uses infrastructure such as Fastly, CloudFront, S3, Heroku, GitHub, and other services that are managed by the Infrastructure team. There's certainly an argument to be made that the Crates.io team belongs there, however, the docs.rs team is in a similar situation and they are a subteam of Dev tools.
 
-## Be a subteam of both Dev tools and Infra
+### Be a subteam of both Dev tools and Infra
 
 The Types team provides precedence for this; technically the Types team is a subteam of both the Compiler and Lang teams. However, the teams repo doesn't really support multiple inheritance. The Crates.io team would like to cultivate a closer relationship with the Cargo team especially, and thinks the relationship with the Infra team could be continued in the current manner.
 
-## Creating a new team
+### Creating a new team
 
 There are aspects of the Crates.io Team's purview that are more policy decisions than they are implementation details, such as what information Crates.io should surface about each crate, how to handle different crate ownership situations, or what browsers the site should support.
 
@@ -75,7 +75,7 @@ There could be a new team dedicated to policy questions such as these and other 
 
 However, it isn't clear if a policy team would be feasible and desirable. If so, this division could be done as a future enhancement; this RFC does not prevent such.
 
-# Prior Art
+## Prior Art
 
 Many thanks to Ryan Levick's [RFC 3533], much of which was copy-pastaed into this one. ❤️
 

@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#342](https://github.com/rust-lang/rfcs/pull/342)
 - Rust Issue: [rust-lang/rust#17862](https://github.com/rust-lang/rust/issues/17862)
 
-# Summary
+## Summary
 
 Reserve `abstract`, `final`, and `override` as possible keywords.
 
-# Motivation
+## Motivation
 
 We intend to add some mechanism to Rust to support more efficient inheritance
 (see, e.g., RFC PRs #245 and #250, and this
@@ -17,19 +17,19 @@ used, to remain reserved), `abstract`, `final`, and `override`, so it makes
 sense to reserve these now to make the eventual implementation as backwards
 compatible as possible.
 
-# Detailed design
+## Detailed design
 
 Make `abstract`, `final`, and `override` reserved keywords.
 
-# Drawbacks
+## Drawbacks
 
 Takes a few more words out of the possible vocabulary of Rust programmers.
 
-# Alternatives
+## Alternatives
 
 Don't do this and deal with it when we have an implementation. This would mean
 bumping the language version, probably.
 
-# Unresolved questions
+## Unresolved questions
 
 N/A

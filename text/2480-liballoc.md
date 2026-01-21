@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2480](https://github.com/rust-lang/rfcs/pull/2480)
 - Rust Issue: [rust-lang/rust#27783](https://github.com/rust-lang/rust/issues/27783)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Stabilize the `alloc` crate.
@@ -13,17 +13,17 @@ a global allocator (unlike the `core` crate) and an allocation error handler,
 but not other operating system capabilities (unlike the `std` crate).
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Background: `no_std`
+### Background: `no_std`
 
 In some environments the `std` crate is not available:
 micro-controllers that don’t have an operating system at all, kernel-space code, etc.
 The `#![no_std]` attribute allows a crate to not link to `std` implicitly,
 using `core` instead with only the subset of functionality that doesn’t have a runtime dependency.
 
-## `no_std` with an allocator
+### `no_std` with an allocator
 
 The `core` crate does not assume even the presence of heap memory,
 and so it excludes standard library types like `Vec<T>`.
@@ -39,7 +39,7 @@ but larger than “only `core`” can serve such environments.
 
 [wee-alloc]: https://github.com/rustwasm/wee_alloc
 
-## Libraries
+### Libraries
 
 In 2018 there is a [coordinated push]
 toward making `no_std` application compatible with Stable Rust.
@@ -94,10 +94,10 @@ use alloc::vec::Vec;
 maintainers can rely on the stability promise made by the Rust project.
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## For libraries
+### For libraries
 
 When using `#![no_std]` in a crate, that crate does not implicitly depend on `std`
 but depends on `core` instead. For example:
@@ -139,7 +139,7 @@ use alloc::string::ToString;
 use alloc::vec::Vec;
 ```
 
-## For programs¹
+### For programs¹
 
 [¹] … and other roots of a dependency graph, such as `staticlib`s.
 
@@ -169,7 +169,7 @@ somewhere in the dependency graph (not necessarily in the root crate).
 [Tracking issue #51540]: https://github.com/rust-lang/rust/issues/51540
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `alloc` crate already exists (marked unstable),
@@ -225,7 +225,7 @@ The structure of the standard library is therefore:
 
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 [Tracking issue #27783] is the tracking issue for the `alloc` crate and, historically, some other crates.
@@ -242,10 +242,10 @@ would be unnecessary.
 By stabilizing the `alloc` crate, we commit to having it − and its public API − exist “forever”.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
-## Single-crate standard library
+### Single-crate standard library
 
 The `core` and the `no_std` attribute are already stable,
 so in a sense it’s already too late for the “pure” version of the vision described above
@@ -267,7 +267,7 @@ leaving heap allocation for `no_std` in unstable limbo for the foreseeable futur
 
 [desirable]: https://aturon.github.io/2018/02/06/portability-vision/#the-vision
 
-## Require randomness
+### Require randomness
 
 [PR #51569] proposed adding a source of randomness to the other requirements
 made by the `alloc` crate.
@@ -292,7 +292,7 @@ The downside of that crate is that although based on a copy of the same code,
 it is a different type incompatible in the type system with `std::collections::HashMap`.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 I am not aware of a mechanism similar to `no_std` in another programming language.
@@ -303,7 +303,7 @@ It does provide a memory allocator through `malloc` and related functions, uncon
 [Newlib]: https://sourceware.org/newlib/
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Did I miss something in [PR #51569] that makes `alloc` not a subset of `std`?

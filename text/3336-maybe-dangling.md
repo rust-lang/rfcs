@@ -1,16 +1,16 @@
-# `maybe_dangling`
+## `maybe_dangling`
 
 - Feature Name: `maybe_dangling`
 - Start Date: 2022-09-30
 - RFC PR: [rust-lang/rfcs#3336](https://github.com/rust-lang/rfcs/pull/3336)
 - Tracking Issue: [rust-lang/rust#118166](https://github.com/rust-lang/rust/issues/118166)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Declare that references and `Box` inside a new `MaybeDangling` type do not need to satisfy any memory-dependent validity properties (such as `dereferenceable` and `noalias`).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 ### Example 1
@@ -88,7 +88,7 @@ The examples described above are far from artificial, here are some real-world c
 - [Yoke](https://github.com/unicode-org/icu4x/issues/3696) and [Yoke again](https://github.com/unicode-org/icu4x/issues/2095) (the first needs opting-out of `dereferenceable` for the yoke, the latter needs opting-out of `noalias` for both yoke and cart)
 - [ouroboros](https://github.com/joshua-maros/ouroboros/issues/88)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 To handle situations like this, Rust has a special type called `MaybeDangling<P>`:
@@ -127,7 +127,7 @@ struct OwningRef<U, T: StableDeref<Target=U>> {
 
 As long as the `buffer` field is not used, the pointer stored in `ref_` will remain valid.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The standard library contains a type `MaybeDangling<P>` that is safely convertible with `P` (i.e., the safety invariant is the same), and that has all the same niches as `P`, but that does allow passing around dangling boxes and references within unsafe code.
@@ -187,7 +187,7 @@ Miri is adjusted as follows:
 - `MaybeDangling`: disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDangling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - For users of `ManuallyDrop` that don't need this exceptions, we might miss optimizations if we start allowing example 1.
@@ -196,7 +196,7 @@ Miri is adjusted as follows:
   It's easy to get lost in this sea of types and mix up what exactly they are acting on and how.
   In particular, it is easy to think that one should do `&mut MaybeDangling<T>` (which is useless, it should be `MaybeDangling<&mut T>`) -- this type applies in the exact opposite way compared to `UnsafeCell` (where one uses `&UnsafeCell<T>`, and `UnsafeCell<&T>` is useless).
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - The most obvious alternative is to declare `ManuallyDrop` to be that magic type with the memory model exception.
@@ -239,7 +239,7 @@ Miri is adjusted as follows:
   The 2nd and 3rd example could use `MaybeUninit` to pass around the closure / the buffer in a UB-free way.
   That will however require `unsafe` code, and leaves `ManuallyDrop<Box<T>>` with its footgun (1st example).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The author cannot think of prior art in other languages; the issue arises because of Rust's unique combination of strong safety guarantees with low-level types such as `ManuallyDrop` that manage memory allocation in a very precise way.
@@ -250,7 +250,7 @@ Notice that `UnsafeCell` acts "behind references" while `MaybeDangling`, like `M
 There is a [crate](https://docs.rs/maybe-dangling) offering these semantics on stable Rust via `MaybeUninit`.
 (This is not "prior" art, it was published after this RFC came out. "Related work" would be more apt. Alas, the RFC template forces this structure on us.)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What should the type be called?
@@ -260,7 +260,7 @@ There is a [crate](https://docs.rs/maybe-dangling) offering these semantics on s
   Other possible names might be things like `InertPointers` or `SuspendedPointers`.
 - Should `MaybeDangling` implement `Deref` and `DerefMut` like `ManuallyDrop` does, or should accessing the inner data be more explicit since that is when the aliasing and dereferencability requirements do come back in full force?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - One issue with this proposal is the "yet another wrapper type" syndrome, which leads to lots of syntactic salt and also means one loses the special `Box` magic (such as moving out of fields).

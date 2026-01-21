@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#26](https://github.com/rust-lang/rfcs/pull/26)
 - Rust Issue: [rust-lang/rust#13535](https://github.com/rust-lang/rust/issues/13535)
 
-# Summary
+## Summary
 
 This RFC is a proposal to remove the usage of the keyword `priv` from the Rust
 language.
 
-# Motivation
+## Motivation
 
 By removing `priv` entirely from the language, it significantly simplifies the
 privacy semantics as well as the ability to explain it to newcomers. The one
@@ -45,7 +45,7 @@ Private enum variants are a rarely used feature of the language, and are
 generally not regarded as a strong enough feature to justify the `priv` keyword
 entirely.
 
-# Detailed design
+## Detailed design
 
 There remains only one use case of the `priv` visibility qualifier in the Rust
 language, which is to make enum variants private. For example, it is possible
@@ -70,13 +70,13 @@ longer serve any purpose.
 This RFC would demote the identifier `priv` from being a keyword to being a
 reserved keyword (in case we find a use for it in the future).
 
-# Alternatives
+## Alternatives
 
 * Allow private enum variants, as-is today.
 * Add a new keyword for `enum` which means "my variants are all private" with
   controls to make variants public.
 
-# Unresolved questions
+## Unresolved questions
 
 * Is the assertion that private enum variants are rarely used true? Are there
   legitimate use cases for keeping the `priv` keyword?

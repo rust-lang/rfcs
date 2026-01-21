@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3550](https://github.com/rust-lang/rfcs/pull/3550)
 - Tracking Issue: [rust-lang/rust#123741](https://github.com/rust-lang/rust/issues/123741)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Change the range operators `a..b`, `a..`, and `a..=b` to resolve to new types `std::range::Range`, `std::range::RangeFrom`, and `std::range::RangeInclusive` in Edition 2024. These new types will not implement `Iterator`, instead implementing `Copy` and `IntoIterator`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The current iterable range types ([`Range`], [`RangeFrom`], [`RangeInclusive`]) implement `Iterator` directly. This is now widely considered to be a mistake, because it makes implementing `Copy` for those types hazardous due to how the two traits interact.
@@ -33,7 +33,7 @@ However, there is considerable demand for `Copy` range types for multiple reason
 
 Another primary motivation is the extra size of `RangeInclusive`. It uses an extra `bool` field to keep track of when the upper bound has been yielded by the iterator, but this extra size is useless when the type is not used as an iterator.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Rust has several different types of "range" syntax, including the following:
@@ -76,7 +76,7 @@ for n in (0..5).rev() {
 }
 ```
 
-## Legacy Range Types
+### Legacy Range Types
 
 In Rust editions prior to 2024, `a..b`, `a..=b`, and `a..` resolved to a different set of types (now found in `std::range::legacy`). These legacy range types did not implement `Copy`, and implemented `Iterator` directly (rather than `IntoIterator`).
 
@@ -91,7 +91,7 @@ range.for_each(|n| {
 
 There exist `From` impls for converting from the new range types to the legacy range types.
 
-### Migrating
+#### Migrating
 [migrating]: #migrating
 
 In many cases, no changes need to be made at all. This includes most places where a `RangeBounds` or `IntoIterator` is expected:
@@ -145,7 +145,7 @@ pub fn takes_range(range: std::range::legacy::Range<usize>) { ... }
 takes_range((0..5).into());
 ```
 
-## Migrating Libraries
+### Migrating Libraries
 
 Some libraries have range types in their public interface. To use the new range types with such a library, users will need to add explicit conversions.
 
@@ -213,7 +213,7 @@ impl Index<std::range::Range<usize>> for Bar { ... }
 - These changes to libraries should happen when _users_ of a given library transition to the new edition
 - These changes do not require the library itself to transition to the new edition
 
-## Diagnostics
+### Diagnostics
 
 There is a substantial amount of educational material in the wild which assumes the range types implement `Iterator`. If a user references this outdated material, it is important that compiler errors guide them to the new solution.
 
@@ -230,7 +230,7 @@ error[E0599]: `Range<usize>` is not an iterator
           `Range<usize>: Iterator`
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 **Note:** The exact names and module paths in this RFC are for demonstration purposes only, and can be finalized by _T-libs-api_ after the proposal is accepted.
@@ -239,7 +239,7 @@ Add replacement types only for the current `Range`, `RangeFrom`, and `RangeInclu
 
 The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/reference/expressions/range-expr.html) will change to read as follows
 
-> ## Edition 2024 and later
+> ### Edition 2024 and later
 >
 > The `..` and `..=` operators will construct an object of one of the `std::range::Range` (or `core::range::Range`) variants, according to the following table:
 >
@@ -274,7 +274,7 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 > assert_eq!(x, y);
 > ```
 >
-> ## Prior to Edition 2024
+> ### Prior to Edition 2024
 >
 > The `..` and `..=` operators will construct an object of one of the `std::range::legacy::Range` (or `core::range::legacy::Range`) variants, according to the following table:
 >
@@ -311,7 +311,7 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 > assert_eq!(x, z);
 > ```
 
-## New paths
+### New paths
 
 There is no language support for edition-dependent path resolution, so these types must continue to be accessible under their current paths. However, their canonical paths will change to live under `std::range::legacy`:
 
@@ -333,7 +333,7 @@ The `RangeFull`, `RangeTo`, and `RangeToInclusive` types will remain unchanged. 
 - `std::ops::RangeTo` will be a re-export of `std::range::RangeTo`
 - `std::ops::RangeToInclusive` will be a re-export of `std::range::RangeToInclusive`
 
-## Iterator types
+### Iterator types
 
 Because the three new types will implement `IntoIterator` directly, they need three new respective `IntoIter` types:
 
@@ -362,7 +362,7 @@ impl<Idx> IterRangeInclusive<Idx> {
 }
 ```
 
-## Changed structure and API
+### Changed structure and API
 
 `std::range::Range` and `std::range::RangeFrom` will have identical structure to the existing types, with public fields for the bounds. However, `std::range::RangeInclusive` will be changed:
 - `start` and `end` will be changed to public fields
@@ -411,7 +411,7 @@ impl<Idx> Range<Idx> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This change has the potential to cause a significant amount of churn in the ecosystem. There are two main sources of churn:
@@ -428,16 +428,16 @@ This is not uncommon in the ecosystem. For instance, both [`rustc-rayon`](https:
 
 A [Github search for this pattern](https://github.com/search?type=code&q=language%3Arust+NOT+is%3Afork+%28%22Index%3CRange%3C%22+OR+%22Index%3Cops%3A%3ARange%3C%22+OR+%22Index%3Cstd%3A%3Aops%3A%3ARange%3C%22+OR+%22Index%3Ccore%3A%3Aops%3A%3ARange%3C%22+OR+%22Index%3CRangeInclusive%3C%22+OR+%22Index%3Cops%3A%3ARangeInclusive%3C%22+OR+%22Index%3Cstd%3A%3Aops%3A%3ARangeInclusive%3C%22+OR+%22Index%3Ccore%3A%3Aops%3A%3ARangeInclusive%3C%22+OR+%22Index%3CRangeFrom%3C%22+OR+%22Index%3Cops%3A%3ARangeFrom%3C%22+OR+%22Index%3Cstd%3A%3Aops%3A%3ARangeFrom%3C%22+OR+%22Index%3Ccore%3A%3Aops%3A%3ARangeFrom%3C%22%29) yields 784 files, almost all of which appear to be true matches. It's hard to say how many of those are published libraries, but it does indicate that this could have a significant impact.
 
-## Mitigation
+### Mitigation
 
 To mitigate these drawbacks, we recommend introducing and stabilizing an MVP of the new types as soon as possible, well before Edition 2024 releases (even before the implementation of the syntax feature is complete). This will give libraries time to issue updates supporting the new range types.
 
 Some users may depend on libraries that are not updated before Edition 2024. These users do not just have to accept adding explicit conversions to their code. They also have the option to stay on a prior edition.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Just implement `Copy` on the types as-is
+### Just implement `Copy` on the types as-is
 
 `Copy` iterators are a large footgun. It was decided to [remove `Copy` from all iterators back in 2015](https://github.com/rust-lang/rust/pull/21809), and that decision is unlikely to be reversed.
 
@@ -450,7 +450,7 @@ None of these approaches would resolve the following serious issues:
 - `RangeInclusive` being larger than necessary for range purposes
 - Incorrect `ExactSizeIterator` implementations
 
-## Name the new types something besides `Range`
+### Name the new types something besides `Range`
 
 We could choose to introduce these new types with a name other than `Range`. Some alternatives that have been proposed:
 - Interval
@@ -462,7 +462,7 @@ We believe that it is best to keep the `Range` naming for several reasons:
 - Large amount of legacy educational material and code using the `Range` naming
 - It's best to match the name of the syntax (["range expressions"](https://doc.rust-lang.org/reference/expressions/range-expr.html))
 
-## Use legacy range types as the iterators for the new range types
+### Use legacy range types as the iterators for the new range types
 
 We could choose to make `new_range.into_iter()` resolve to a legacy range type. This would reduce the number of new types we need to add to the standard library.
 
@@ -474,7 +474,7 @@ One of the strongest arguments for new types is the incorrect `ExactSizeIterator
 
 Finally, the cost of adding these iterator types is extremely low, given we're already adding a set of new types for the ranges themselves.
 
-## Inherent `map` should map the bounds, not return an iterator
+### Inherent `map` should map the bounds, not return an iterator
 
 Some argue that inherent `map` should not return an iterator. Some say that they may expect it to map each bound individually (`(1..11).map(|x| x*2)` -> `2..22`). Others say these methods should return `IntoIterator` types instead.
 
@@ -500,7 +500,7 @@ for n in (1..11).map(|n| n*2) {
 
 If there is demand for a method that maps the bounds, it should be added under a different name, such as `map_bounds` , perhaps even as a method on `RangeBounds`.
 
-## Implicit conversions (coercions)
+### Implicit conversions (coercions)
 
 This proposal specifically avoids involving any form of implicit conversion. Adding coercions from the new to legacy types would have a few benefits:
 
@@ -515,7 +515,7 @@ Coercions would effectively eliminate the main drawback of this RFC. However, ad
 
 In this specific case, the coercion would also need to be considered during trait resolution to be significantly useful, which is not currently done in other cases like deref coercion.
 
-### Range literal
+#### Range literal
 
 We could treat range expressions as a kind of literal, and only "coerce" them into the legacy range types at the point of the range syntax. Similar to integer literals, the concrete type would be chosen based on context, like how `4` can be used anywhere expecting any integer type.
 
@@ -523,12 +523,12 @@ This would have fewer serious downsides than coercions, but both approaches add 
 
 We don't consider the downsides of either approach to be justified given the relative rarity of libraries needing changes in the first place, the ease of adding explicit conversions when necessary, and the option for users to continue to use prior editions while waiting for library support.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The [copy-range](https://docs.rs/copy-range) crate provides types similar to those proposed here.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 ### Ecosystem Disruption
@@ -562,7 +562,7 @@ impl<Idx> From<legacy::RangeInclusive<Idx>> for RangeInclusive<Idx> {
 }
 ```
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - Hide or deprecate range-related items directly under `ops` (without breaking existing links or triggering deprecation warnings on previous editions).

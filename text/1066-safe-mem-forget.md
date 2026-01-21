@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1066](https://github.com/rust-lang/rfcs/pull/1066)
 - Rust Issue: [rust-lang/rust#25186](https://github.com/rust-lang/rust/issues/25186)
 
-# Summary
+## Summary
 
 Alter the signature of the `std::mem::forget` function to remove `unsafe`.
 Explicitly state that it is not considered unsafe behavior to not run
 destructors.
 
-# Motivation
+## Motivation
 
 It was [recently discovered][scoped-bug] by @arielb1 that the `thread::scoped`
 API was unsound. To recap, this API previously allowed spawning a child thread
@@ -44,7 +44,7 @@ discussion of possible mitigation strategies for various aspects of this
 problem. This strategy proposed in this RFC aims to fit uninvasively into the
 standard library to avoid large overhauls or destabilizations of APIs.
 
-# Detailed design
+## Detailed design
 
 Primarily, the `unsafe` annotation on the `mem::forget` function will be
 removed, allowing it to be called from safe Rust. This transition will be made
@@ -66,7 +66,7 @@ signature of the function being altered, but it is expected that most code will
 not break in practice and this would be an acceptable change to cherry-pick into
 the 1.0 release.
 
-# Drawbacks
+## Drawbacks
 
 It is clearly a very nice feature of Rust to be able to rely on the fact that a
 destructor for a type is always run (e.g. the `thread::scoped` API). Admitting
@@ -75,7 +75,7 @@ even accidental unsafety. This route, however, is the least invasive for the
 standard library and does not require radically changing types like `Rc` or
 fast-tracking bug fixes to panicking destructors.
 
-# Alternatives
+## Alternatives
 
 The main alternative this proposal is to provide the guarantee that a destructor
 for a type is always run and that it is memory unsafe to not do so. This would
@@ -118,7 +118,7 @@ collections may want to take `T: ?Leak`).
 Overall the changes necessary for this strategy are more invasive than admitting
 destructors may not run, so this alternative is not proposed in this RFC.
 
-# Unresolved questions
+## Unresolved questions
 
 Are there remaining APIs in the standard library which rely on destructors being
 run for memory safety?

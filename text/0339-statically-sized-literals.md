@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#339](https://github.com/rust-lang/rfcs/pull/339)
 - Rust Issue: [rust-lang/rust#18465](https://github.com/rust-lang/rust/issues/18465)
 
-# Summary
+## Summary
 
 Change the types of byte string literals to be references to statically sized types.
 Ensure the same change can be performed backward compatibly for string literals in the future.
 
-# Motivation
+## Motivation
 
 Currently byte string and string literals have types `&'static [u8]` and `&'static str`.
 Therefore, although the sizes of the literals are known at compile time, they are erased from their types and inaccessible until runtime.
@@ -42,7 +42,7 @@ static FR_FILE: FixedString<_> = LANG_DIR + *"fr";
 let DE_FILE = LANG_DIR + *"de"; // Performed at runtime if not optimized
 ```
 
-# Detailed design
+## Detailed design
 
 Change the type of byte string literals from `&'static [u8]` to `&'static [u8, ..N]`.
 Leave the door open for a backward compatible change of the type of string literals from `&'static str` to `&'static FixedString<N>`.
@@ -74,9 +74,9 @@ So, we don't propose to make these changes today and suggest to wait until gener
 C and C++ string literals are lvalue `char` arrays of fixed size with static duration.
 C++ library proposal for strings of fixed size ([link][1]), the paper also contains some discussion and motivation.
 
-# Rejected alternatives and discussion
+## Rejected alternatives and discussion
 
-## Array literals
+### Array literals
 
 The types of array literals potentially can be changed from `[T, ..N]` to `&'a [T, ..N]` for consistency with the other literals and ergonomics.
 The major blocker for this change is the inability to move out from a dereferenced array literal if `T` is not `Copy`.
@@ -85,7 +85,7 @@ let mut a = *[box 1i, box 2, box 3]; // Wouldn't work without special-casing of 
 ```
 Despite that array literals as references have better usability, possible `static`ness and consistency with other literals.
 
-### Usage statistics for array literals
+#### Usage statistics for array literals
 
 Array literals can be used both as slices, when a view to array is sufficient to perform the task, and as values when arrays themselves should be copied or modified.
 The exact estimation of the frequencies of both uses is problematic, but some regex search in the Rust codebase gives the next statistics:
@@ -95,7 +95,7 @@ In the rest *10%* of cases the usage is unclear.
 
 So, in most cases the change to the types of array literals will lead to shorter notation.
 
-### Static lifetime
+#### Static lifetime
 
 Although all the literals under consideration are similar and are essentially arrays of fixed size, array literals are different from byte string and string literals with regard to lifetimes.
 While byte string and string literals can always be placed into static memory and have static lifetime, array literals can depend on local variables and can't have static lifetime in general case.
@@ -106,11 +106,11 @@ fn f() -> &'static [int] {
 }
 ```
 
-## Alternatives
+### Alternatives
 
 The alternative design is to make the literals the values and not the references.
 
-### The changes
+#### The changes
 
 1)
 Keep the types of array literals as `[T, ..N]`.
@@ -142,7 +142,7 @@ static FR_FILE: FixedString<_> = LANG_DIR + "fr";
 let DE_FILE = LANG_DIR + "de"; // Performed at runtime if not optimized
 ```
 
-### Drawbacks of the alternative design
+#### Drawbacks of the alternative design
 
 Special rules about (byte) string literals being static lvalues add a bit of unnecessary complexity to the specification.
 
@@ -166,11 +166,11 @@ fn main() {
 }
 ```
 
-### Status quo
+#### Status quo
 
 Status quo (or partial application of the changes) is always an alternative.
 
-### Drawbacks of status quo
+#### Drawbacks of status quo
 
 Examples:
 ```
@@ -191,11 +191,11 @@ static FR_FILE: FixedString<_> = LANG_DIR + "fr".to_fixed();
 ```
 Note, that in the "Future" scenario the return *type* of `to_fixed` depends on the *value* of `self`, so it requires sufficiently advanced CTE, for example C++14 with its powerful `constexpr` machinery still doesn't allow to write such a function.
 
-# Drawbacks
+## Drawbacks
 
 None.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 

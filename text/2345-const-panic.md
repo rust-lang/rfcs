@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2345](https://github.com/rust-lang/rfcs/pull/2345)
 - Rust Issue: [rust-lang/rust#51999](https://github.com/rust-lang/rust/issues/51999)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow the use of `panic!`, `assert!` and `assert_eq!` within constants and
 report their evaluation as a compile-time error.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 It can often be desirable to terminate a constant evaluation due to invalid
@@ -21,7 +21,7 @@ compile-time. There are already ways to abort compilation, e.g. by invoking
 compile-time error pointing at the span of the index operation. But this hack is
 not very convenient to use and produces the wrong error message.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 You can now use `panic!` and `assert!` within `const fn`s. This means that when
@@ -58,7 +58,7 @@ note: during the evaluation of
    | ^^^^^^^^^^^^^^^^^
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 MIR interpretation gets a special case for the panic machinery (which isn't
@@ -74,13 +74,13 @@ in a way that will keep allowing MIR interpretation to evaluate it. All future
 changes will have to address this directly and regression tests should ensure
 that we never break the const evaluability.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 We have to implement some magic around processing `fmt::Arguments` objects and
 producing the panic message from that.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 * We could add a special constant error reporting mechanism. This has the
@@ -92,7 +92,7 @@ producing the panic message from that.
   right now. We can improve the error message in the future with the `String` +
   formatting alternative. This is the most minimalistic alternative to this RFC
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Should there be some additional message in the error about this being a panic

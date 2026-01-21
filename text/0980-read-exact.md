@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#980](https://github.com/rust-lang/rfcs/pull/980)
 - Rust Issue: [rust-lang/rust#27585](https://github.com/rust-lang/rust/issues/27585)
 
-# Summary
+## Summary
 
 Rust's `Write` trait has the `write_all` method, which is a convenience
 method that writes a whole buffer, failing with `ErrorKind::WriteZero`
@@ -13,7 +13,7 @@ This RFC proposes adding its `Read` counterpart: a method (here called
 `read_exact`) that reads a whole buffer, failing with an error (here
 called `ErrorKind::UnexpectedEOF`) if the buffer cannot be read in full.
 
-# Motivation
+## Motivation
 
 When dealing with serialization formats with fixed-length fields,
 reading or writing less than the field's size is an error. For the
@@ -46,7 +46,7 @@ conversion into the native endianness (as can happen when using the
 `byteorder` crate) into a single-instruction direct load from the buffer
 into a register.
 
-# Detailed design
+## Detailed design
 
 First, a new variant `UnexpectedEOF` is added to the `io::ErrorKind` enum.
 
@@ -118,7 +118,7 @@ rely on any property of the contents of `buf` being true. It is
 recommended that implementations only write data to `buf` instead of
 reading its contents.
 
-# About ErrorKind::Interrupted
+## About ErrorKind::Interrupted
 
 Whether or not `read_exact` can return an `ErrorKind::Interrupted` error
 is orthogonal to its semantics. One could imagine an alternative design
@@ -138,7 +138,7 @@ or in the middle. Therefore, the cleanest semantics is to always retry.
 There's precedent for this choice in the `read_to_end` method. Users who
 need finer control should use the `read` method directly.
 
-# About the read pointer
+## About the read pointer
 
 This RFC proposes a `read_exact` function where the read pointer
 (conceptually, what would be returned by `Seek::seek` if the stream was
@@ -173,7 +173,7 @@ discard the stream anyways.
 Users who need finer control should use the `read` method directly, or
 when available use the `Seek` trait.
 
-# About the buffer contents
+## About the buffer contents
 
 This RFC proposes that the contents of the output buffer be undefined on
 an error return. It might be untouched, partially overwritten, or
@@ -197,7 +197,7 @@ can't make use of the valid data.
 
 Users who need finer control should use the `read` method directly.
 
-# Naming
+## Naming
 
 It's unfortunate that `write_all` used `WriteZero` for its `ErrorKind`;
 were it named `UnexpectedEOF` (which is a much more intuitive name), the
@@ -211,7 +211,7 @@ this buffer, and fail if you couldn't read them all". The previous
 discussion led to `read_exact` for the later meaning, and `read_full`
 for the former meaning.
 
-# Drawbacks
+## Drawbacks
 
 If this method fails, the buffer contents are undefined; the
 `read_exact' method might have partially overwritten it. If the caller
@@ -226,7 +226,7 @@ the buffer.
 Situations that require lower level control can still use `read`
 directly.
 
-# Alternatives
+## Alternatives
 
 The first alternative is to do nothing. Every Rust user needing this
 functionality continues to write their own read_full or read_exact

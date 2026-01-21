@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1884](https://github.com/rust-lang/rfcs/pull/1884)
 - Rust Issue: [rust-lang/rust#40585](https://github.com/rust-lang/rust/issues/40585)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add an unstable sort to libcore.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 At the moment, the only sort function we have in libstd is `slice::sort`. It is stable,
@@ -74,7 +74,7 @@ A: Generally, no. There is no fundamental property in computer science saying so
 but this has always been true in practice. Zero-allocation and instability go
 hand in hand.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The API will consist of three functions that mirror the current sort in libstd:
@@ -86,7 +86,7 @@ The API will consist of three functions that mirror the current sort in libstd:
 By contrast, C++ has functions `std::sort` and `std::stable_sort`, where the
 defaults are set up the other way around.
 
-### Interface
+#### Interface
 
 ```rust
 pub trait SliceExt {
@@ -106,7 +106,7 @@ pub trait SliceExt {
 }
 ```
 
-### Examples
+#### Examples
 
 ```rust
 let mut v = [-5i32, 4, 1, -3, 2];
@@ -121,7 +121,7 @@ v.sort_unstable_by_key(|k| k.abs());
 assert!(v == [1, 2, -3, 4, -5]);
 ```
 
-### Implementation
+#### Implementation
 
 Proposed implementation is available in the [pdqsort][stjepang-pdqsort] crate.
 
@@ -172,7 +172,7 @@ radix sort is incompatible with comparison-based sorting, which makes it
 an awkward choice for a general-purpose API. On top of all this, it's
 not even that much faster than pdqsort anyway.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Stability is a confusing and loaded term. Function `slice::sort_unstable` might be
@@ -184,7 +184,7 @@ clearly state what "stable" and "unstable" mean.
 as a faster non-allocating alternative. The documentation for
 `slice::sort_unstable` must also clearly state that it guarantees no allocation.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The amount of code for sort algorithms will grow, and there will be more code
@@ -194,7 +194,7 @@ It might be surprising to discover cases where `slice::sort` is faster than
 `slice::sort_unstable`. However, these peculiarities can be explained in
 documentation.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Unstable sorting is indistinguishable from stable sorting when sorting
@@ -211,7 +211,7 @@ Unstable sort can also be provided as a standalone crate instead of
 within the standard library. However, every other systems programming language
 has a fast unstable sort in standard library, so why shouldn't Rust, too?
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

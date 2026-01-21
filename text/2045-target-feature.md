@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2045](https://github.com/rust-lang/rfcs/pull/2045)
 - Rust Issue: [rust-lang/rust#44839](https://github.com/rust-lang/rust/issues/44839)
 
-# Motivation and Summary
+## Motivation and Summary
 [summary]: #summary
 
 While architectures like `x86_64` or `ARMv8` define the lowest-common denominator of instructions that all CPUs must support, many CPUs extend these with vector ([AVX](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)), bitwise manipulation ([BMI](https://en.wikipedia.org/wiki/Bit_Manipulation_Instruction_Sets)) and/or cryptographic ([AES](https://en.wikipedia.org/wiki/AES_instruction_set)) instruction sets. By default, the Rust compiler produces portable binaries that are able to run on all CPUs of a particular architecture. Users that know in which CPUs their binaries are going to run on are able to allow the compiler to use these extra instructions by using the compiler flags `--target-feature` and `--target-cpu`. Running these binaries on mismatching CPUs is undefined behavior. Currently, these users have no way in stable Rust to:
@@ -20,10 +20,10 @@ The objective of this RFC is to extend the Rust language to solve these three pr
 - **run-time feature detection**: using the `cfg_feature_enabled!("avx2")` API to detect whether the current host supports the feature, and
 - **unconditional code generation**: using the function attribute `#[target_feature(enable = "avx2")]` to allow the compiler to generate code under the assumption that this code will only be reached in hosts that support the feature.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Target features
+### Target features
 
 Each rustc target has a default set of target features that can be controlled via
 the backend compilation options. The target features for each target should
@@ -44,7 +44,7 @@ writing, for example, `#![allow(target_feature_avx2)]`. Since this is currently
 not required, a grace period of one full release cycle will be given in which
 this will raise a soft error before turning this requirement into a hard error.
 
-## Backend compilation options
+### Backend compilation options
 
 There are currently two ways of passing target feature information to rustc's code
 generation backend on stable Rust.
@@ -75,7 +75,7 @@ Whether the backend compilation options `-C --target-feature/--target-cpu` also 
 some stabilized features or not should be resolved by the RFCs suggesting the stabilization
 of particular target features.
 
-## Unconditional code generation: `#[target_feature]`
+### Unconditional code generation: `#[target_feature]`
 
 (note: the function attribute `#[target_feature]` is similar to clang's and
 gcc's
@@ -165,7 +165,7 @@ unsafe fn moo() {
 }
 ```
 
-## Conditional compilation: `cfg!(target_feature)`
+### Conditional compilation: `cfg!(target_feature)`
 
 The
 [`cfg!(target_feature = "feature_name")`](https://github.com/rust-lang/rust/issues/29717) macro
@@ -223,7 +223,7 @@ unsafe fn foo() {
 }
 ```
 
-## Run-time feature detection
+### Run-time feature detection
 
 Writing safe wrappers around `unsafe` functions annotated with
 `#[target_feature]` requires run-time feature detection. This RFC adds the following
@@ -247,7 +247,7 @@ If the API of run-time feature detection turns out to be controversial before
 stabilization, a follow-up RFC that focus on run-time feature detection will need
 to be merged, blocking the stabilization of this RFC.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 There are two parts to this story, the low-level part, and the high-level part.
@@ -349,7 +349,7 @@ kinds of documentation. For the low level part:
 For the high-level part we should aim to bring third-party crates implementing
 `ifunc!` or similar close to 1.0 releases before stabilization.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Obvious increase in language complexity.
@@ -360,15 +360,15 @@ different features (SIMD, BMI, AES, ...) cannot be written efficiently in stable
 Rust.
 
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-# Backend options
+## Backend options
 
 An alternative would be to mix stable, unstable, unknown,
 and backend-specific features into `--target-feature`.
 
-## Make `#[target_feature]` safe
+### Make `#[target_feature]` safe
 
 Calling a function annotated with `#[target_feature]` on a host that does not
 support the feature invokes undefined behavior in LLVM, the assembler, and
@@ -390,7 +390,7 @@ This RFC chooses that the `#[target_feature]` attribute only applies to `unsafe 
 
 Note that we can always make `#[target_feature]` safe in the future without breaking backwards compatibility, but the opposite is not true. That is, if somebody figures out a way of making `#[target_feature]` safe such that the above holds, we can always make that change.
 
-## Guarantee no segfaults from `unsafe` code
+### Guarantee no segfaults from `unsafe` code
 
 Calling a `#[target_feature]`-annotated function on a platform that does not
 support it invokes undefined behavior. We could guarantee that this does not
@@ -405,13 +405,13 @@ sensitive one.
 The "Future Extension"s section discusses how to implement this in an opt-in way,
 e.g., as a sort of binary instrumentation.
 
-## Make `#[target_feature] + #[inline(always)]` incompatible
+### Make `#[target_feature] + #[inline(always)]` incompatible
 
 This RFC requires the compiler to error when a function marked with both `#[target_feature]` and the `#[inline(always)]` attribute cannot be inlined in a particular call site due to incompatible features. So we might consider to simplify this RFC by just making these attributes incompatible.
 
 While this is technically correct, the compiler must detect when any function (`#[inline(always)]`, `#[inline]`, generics, ...) is inlined into an incompatible context, and prevent this from happening. Erroring if the function is `#[inline(always)]` does not significantly simplify the RFC nor the compiler implementation.
 
-## Removing run-time feature detection from this RFC
+### Removing run-time feature detection from this RFC
 
 This RFC adds an API for run-time feature detection to the
 standard library.
@@ -437,7 +437,7 @@ It might turn out that the people from the future are able to come up with a bet
 API. But in that case we can always deprecate the current API and include the new
 one in the standard library.
 
-## Adding full cpuid support to the standard library
+### Adding full cpuid support to the standard library
 
 The `cfg_feature_enable!` macro is designed to work specifically with the features
 that can be used via `cfg_target_feature` and `#[target_feature]`. However, in the
@@ -451,10 +451,10 @@ does not prevent us from adding more comprehensive functionality in the future, 
 it does not prevent us from reusing any of these libraries in the internal
 implementation of the macro.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
-## How accurate should cfg!(feature) be?
+### How accurate should cfg!(feature) be?
 
 What happens if the macro `cfg!(target_feature = "feature_name")` is used inside a function for which `feature_name` is not enabled, but that function gets inlined into a context in which the feature is enabled? We want the macro to accurately return `true` in this case, that is, to be as accurate as possible so that users always get the most efficient algorithms, but whether this is even possible is an unresolved question.
 
@@ -462,7 +462,7 @@ This might result in monomorphization errors if `#![cfg(target_feature)]` is use
 
 We might want to amend this RFC with more concrete semantics about this as we improve the compiler.
 
-## How do we handle ABI issues with portable vector types?
+### How do we handle ABI issues with portable vector types?
 
 The ABI of `#[target_feature]` functions does not change for all types currently available in stable Rust. However, there are types that we might want to add to the language at some point, like portable vector types, for which this is not the case.
 
@@ -494,13 +494,13 @@ unsafe fn bar() {
 }
 ```
 
-# Future Extensions
+## Future Extensions
 
-## Mutually exclusive features
+### Mutually exclusive features
 
 In some cases, e.g., when enabling AVX but disabling SSE4 the compiler should probably produce an error, but for other features like `thumb_mode` the behavior is less clear. These issues should be addressed by the RFC proposing the stabilizaiton of the target features that need them, as future extensions to this RFC.
 
-## Safely inlining `#[target_feature]` functions on more contexts
+### Safely inlining `#[target_feature]` functions on more contexts
 
 The problem is the following:
 
@@ -538,7 +538,7 @@ unsafe fn baz() {
 
 Whether this is worth it or can be done at all is an unresolved question. This RFC does not propose any of this, but leaves the door open for such an extension to be explored and proposed independently in a follow-up RFC.
 
-## Run-time diagnostics
+### Run-time diagnostics
 
 Calling a `#[target_feature]`-annotated function on a platform that does not
 support it invokes undefined behavior. A friendly compiler could use run-time
@@ -575,11 +575,11 @@ unsafe fn foo() { foo_ptr() }
 This is not required for safety and can be implemented into the compiler as an opt-in instrumentation pass without
 going through the RFC process. However, a proposal to enable this by default should go through the RFC process.
 
-## Disabling features
+### Disabling features
 
 This RFC does not allow disabling target features, but suggest an analogous syntax to do so (`#[target_feature(disable = "feature-list")]`, `--disable-feature=feature-list`). Disabling features can result in some [non-sensical situations](https://internals.rust-lang.org/t/pre-rfc-stabilization-of-target-feature/5176/26) and should be pursued as a future extension of this RFC once we want to stabilize a target feature for which it makes sense.
 
-# Acknowledgements
+## Acknowledgements
 [acknowledgments]: #acknowledgements
 
 @parched @burntsushi @alexcrichton @est31 @pedrocr @chandlerc @RalfJung @matthieu-m

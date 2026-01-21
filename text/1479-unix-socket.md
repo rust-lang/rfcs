@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1479](https://github.com/rust-lang/rfcs/pull/1479)
 - Rust Issue: [rust-lang/rust#32312](https://github.com/rust-lang/rust/issues/32312)
 
-# Summary
+## Summary
 [summary]: #summary
 
 [Unix domain sockets](https://en.wikipedia.org/wiki/Unix_domain_socket) provide
@@ -11,7 +11,7 @@ a commonly used form of IPC on Unix-derived systems. This RFC proposes move the
 [unix_socket](https://crates.io/crates/unix_socket/) nursery crate into the
 `std::os::unix` module.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Unix sockets are a common form of IPC on unixy systems. Databases like
@@ -20,7 +20,7 @@ communicate with subprocesses. Even though Unix sockets are not present on
 Windows, their use is sufficiently widespread to warrant inclusion in the
 platform-specific sections of the standard library.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Unix sockets can be configured with the `SOCK_STREAM`, `SOCK_DGRAM`, and
@@ -436,7 +436,7 @@ Differences from `UdpSocket`:
   not currently present on `UdpSocket` but are provided in the `net2` crate and
   are being proposed for addition to the standard library in a separate RFC.
 
-## Functionality not present
+### Functionality not present
 
 Some functionality is notably absent from this proposal:
 
@@ -454,13 +454,13 @@ Some functionality is notably absent from this proposal:
 These features can bake in the `rust-lang-nursery/unix-socket` as they're
 developed.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 While there is precedent for platform specific components in the standard
 library, this will be the by far the largest platform specific addition.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Unix socket support could be left out of tree.
@@ -469,7 +469,7 @@ The naming convention of `UnixStream` and `UnixDatagram` doesn't perfectly
 mirror `TcpStream` and `UdpSocket`, but `UnixStream` and `UnixSocket` seems way
 too confusing.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Is `std::os::unix::net` the right name for this module? It's not strictly

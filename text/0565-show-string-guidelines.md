@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#565](https://github.com/rust-lang/rfcs/pull/565)
 - Rust Issue: [rust-lang/rust#21436](https://github.com/rust-lang/rust/issues/21436)
 
-# Summary
+## Summary
 
 A [recent RFC](https://github.com/rust-lang/rfcs/pull/504) split what was
 previously `fmt::Show` into two traits, `fmt::Show` and `fmt::String`, with
@@ -15,14 +15,14 @@ seeks to do.
 It turns out that, due to the suggested conventions and other
 concerns, renaming the traits is also desirable.
 
-# Motivation
+## Motivation
 
 Part of the reason for splitting up `Show` in the first place was some tension
 around the various use cases it was trying to cover, and the fact that it could
 not cover them all simultaneously. Now that the trait has been split, this RFC
 aims to provide clearer guidelines about their use.
 
-# Detailed design
+## Detailed design
 
 The design of the conventions stems from two basic desires:
 
@@ -43,7 +43,7 @@ As part of the conventions being laid out here, the RFC proposes to:
 1. Rename `fmt::Show` to `fmt::Debug`, and
 2. Rename `fmt::String` to `fmt::Display`.
 
-## Debugging: `fmt::Debug`
+### Debugging: `fmt::Debug`
 
 The `fmt::Debug` trait is intended for debugging. It should:
 
@@ -78,7 +78,7 @@ fields and other abstractions. However, when it is feasible to do so,
 debugging output *should* match Rust syntax; doing so makes it easier
 to copy debug output into unit tests, for example.
 
-## User-facing: `fmt::Display`
+### User-facing: `fmt::Display`
 
 The `fmt::Display` trait is intended for user-facing output. It should:
 
@@ -114,7 +114,7 @@ impl<'a> fmt::Display for ForHtml<'a, MyInterestingType> { ... }
 impl<'a> fmt::Display for ForCli<'a, MyInterestingType> { ... }
 ```
 
-## Rationale for format specifiers
+### Rationale for format specifiers
 
 Given the above conventions, it should be clear that `fmt::Debug` is
 much more commonly *implemented* on types than `fmt::Display`. Why,
@@ -141,7 +141,7 @@ In other words, although more types implement `fmt::Debug`, most
 meaningful uses of interpolation (other than in such implementations)
 will use `fmt::Display`, making `{}` the right choice.
 
-## Use in errors
+### Use in errors
 
 Right now, the (unstable) `Error` trait comes equipped with a `description`
 method yielding an `Option<String>`. This RFC proposes to drop this method an
@@ -154,13 +154,13 @@ the user and should thus be tailored. Tying them to `fmt::Display` makes it
 easier to remember and add such tailoring, and less likely to spew a lot of
 unwanted internal representation.
 
-# Alternatives
+## Alternatives
 
 We've already explored an alternative where `Show` tries to play both of the
 roles above, and found it to be problematic. There may, however, be alternative
 conventions for a multi-trait world. The RFC author hopes this will emerge from
 the discussion thread.
 
-# Unresolved questions
+## Unresolved questions
 
 (Previous questions here have been resolved in an RFC update).
