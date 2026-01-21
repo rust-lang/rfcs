@@ -223,7 +223,6 @@ Configs defined using the existing command-line syntax `--cfg 'name="value"'` ha
     This will accept any version value, but lint when the option is used in a non-version comparison (note that this is an error if the option actually has a version-typed value). This is a more sensible default for versions, which don't have the equivalent of `values(none())`.
 
 *   **`--print cfg`**: User-defined version cfgs are printed in the `name=version("...")` format. Whether to print the built-in `rust_version` and `rust_edition` cfgs is left as an unresolved question to be determined based on tool compatibility. In future editions, the builtin cfgs should always be printed.
-    *   Note: Using editions being careful about passing `--edition` to `rustc --print cfg` invocations, which `cargo` for example does not currently do. This could introduce unexpected inconsistencies.
 
 *   **`--print check-cfg`**: The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them. We can add these immediately because `--print check-cfg` is unstable.
 
@@ -374,6 +373,7 @@ Operating systems include many versions, including kernel versions, public OS ve
 [unresolved-questions]: #unresolved-questions
 
 - Should the builtin `rust_version` and `rust_edition` be printed with `--print cfg` on the command line? We'd like the eventual answer to be "yes", but existing tools that parse the output might break with the new `rust_version=version("1.99")` syntax. If we can manage the breakage we should; otherwise we can gate it on a future edition.
+    -   Note: Using editions requires being careful about passing `--edition` to `rustc --print cfg` invocations, which `cargo` for example does not currently do. This could introduce unexpected inconsistencies.
 - Cargo team: How should `cargo` expose version-typed `cfg`s to build scripts? Should `--cfg foo=version("1.0")` result in `CARGO_CFG_FOO=1.0` or `CARGO_CFG_FOO=version("1.0")`? This is technically out of scope for this RFC but important for the ecosystem.
 
 # Future possibilities
