@@ -1661,15 +1661,18 @@ _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
   unlisted enum values as unknown fields, and changed the semantics to open
   enums with the `proto3` syntax. This was in part because of lessons learned
   from protocol evolution and service deployment as described above.
-- Swift uses both closed and open enums, based on if it is `@frozen`. An
-  `@unknown default` branch is required for open enums, the `@unknown` being
-  another way to achieve the design goals of the
-  `non_exhaustive_omitted_range_patterns` lint.
+- Swift uses both closed and open enums for enums with data, based on if it's
+  compiled in library evolution mode and marked `@frozen`. A `default` branch is
+  required when [`switch`ing on a _nonfrozen enumeration_][swift-open-enums],
+  and an `@unknown default` emits a warning if there are named enumeration cases
+  that utilize that branch. This achieves the same goal as the
+  `non_exhaustive_omitted_range_patterns` lint in a different manner.
 
 [acord-xml]: https://docs.oracle.com/cd/B40099_02/books/ConnACORDFINS/ConnACORDFINSApp_DataType10.html
 [cpp-scoped-enums]: https://en.cppreference.com/w/cpp/language/enum#Scoped_enumerations
 [cs-open-enums]: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/enum#conversions
 [cs-closed-enums]: https://github.com/dotnet/csharplang/issues/3179
+[swift-open-enums]: https://docs.swift.org/swift-book/documentation/the-swift-programming-language/statements/#Switching-Over-Future-Enumeration-Cases
 [protobuf-enum]: https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#enum
 
 ### Other crates that use open enums
