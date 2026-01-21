@@ -1286,10 +1286,12 @@ impl Color {
 
 However:
 
-- Open enums require even more typing for the desired semantics.
-- `derive`s cannot be easily written with enum variant names. In order to avoid
-  duplicating the names, a `derive` macro must directly inter-operate with
-  another macro that generates these pseudo-variants like `open-enum`.
+- Open enums require even more typing for the desired semantics. They remain
+  a degraded experience compared to closed enums.
+- It's very hard to compose macros that use this pattern. Macros cannot easily
+  manipulate enum variant names, especially if a macro is responsible for
+  generating the pseudo-variants. A bespoke attribute must be generated and
+  recognized by other macros that support open enums to use.
 - This is less discoverable than a user trying to `as` cast to an enum and
   having the compiler inform them of `_ = ..` as an option.
 - It's not clear how this would relate to the functionality of the
@@ -1430,6 +1432,7 @@ have to have a name and thus can be assigned to discontiguous ranges.
 What if instead this were valid?
 
 ```rust
+#[repr(u8)]
 enum IpProto {
     Tcp = 6,
     Udp = 17,
@@ -1439,24 +1442,66 @@ enum IpProto {
 
 This is not mutually exclusive with unnamed variants, but this RFC chooses to
 leave reserved ranges of discriminants as anonymous to keep the feature simple.
+It can be left as [future work](#discriminant-ranges-for-named-variants)
+for the language. Some of the issues are:
 
-- It is ambiguous what value should be chosen when `IpProto::Other` is used in
-  an expression.
-- Even with an arbitrary rule to choose a discriminant, a consistently
-  performant `derive(PartialEq)` that compares discriminants instead of ranges
-  of discriminants will result in
-  `matches!(o, IpProto::Other) && o != IpProto::Other`.
-  - A reasonable but less useful alternative is to reject expression usage as
-    well as `derive(PartialEq)`.
-- If discontiguous ranges are allowed as above, the performance of
-  `matches!(o, EnumName::Variant)` gets worse as the number of variants grows.
 - Adding an `Icmp = 1` variant affects `matches!(1 as IpProto, IpProto::Other)`:
-  it is an API-breaking change.
-- A `derive` can be used to determine whether an enum's discriminant is assigned
-  to a named variant.
-- Anonymous discriminant values are useful on their own for enum evolution.
+  it is an API-breaking change. Unnamed variants are more useful for enum
+  evolution - a key design goal.
+- It is ambiguous what value should be chosen when `IpProto::Other` is used in
+  an expression. Some reasonable ways to avoid that are:
+  - Define an arbitrary rule to choose a discriminant for an `IpProto::Other`
+    expression.
+  - Forbid direct construction of `IpProto::Other`. It can only be constructed
+    via `unsafe` or, for open enums, `as`-cast from the backing integer to
+    `IpProto`. There's no check that the discriminant represents an `Other`
+    variant.
+  - A discriminant that is valid for `IpProto::Other` must be provided when
+    constructing the variant. Bikeshed syntax: `x as IpProto::Other`.
+    - A simple implementation requires that the discriminant `x` be a `const`
+      value to be checked at compile time as a valid discriminant for
+      `IpProto::Other`.
+    - To support dynamic values, this would either have to be a fallible enum
+      constructor or use pattern types to ensure that the input value is valid
+      for the `Other` variant.
+- Even if the expression ambiguity issue is resolved, it is not clear how
+  `derive(PartialEq)` should function. Currently it always compares discriminant
+  values, but if that is kept, then it's possible for
+  `matches!(o, IpProto::Other) && o != IpProto::Other`. If `derive(PartialEq)`
+  treats all `IpProto::Other` as equal, then it may drastically reduce the
+  performance of the `derive` without an obvious opt-in by the author.
+  - If named variants' ranges can overlap other named variants as shown above,
+    then the performance of `matches!(o, IpProto::Other)` degrades as further
+    variants are added and the set of discriminants representing `Other` becomes
+    more sparse. No other pattern has this characteristic, where the performance
+    of matching a pattern is affected by unmentioned properties of the matched
+    type.
 
-This can be left as future work for the language.
+Most of the utility provided by named variant discriminant ranges can be
+provided by replacing it with unnamed variants and using a macro to determine
+whether an enum's discriminant is assigned to a named variant. This makes it
+clear that declaring a new named variant with an unnamed variant's discriminant
+will affect the method's return value. For example:
+
+```rust
+#[repr(transparent, u32)]
+#[derive(IsNamedVariant)]
+enum IpProto {
+    Tcp = 6,
+    Udp = 17,
+    _ = ..,
+}
+
+/// Equivalent to fallibly building `IpProto::Other` from `x`.
+fn build_unknown_proto(x: u32) -> Option<IpProto> {
+    (!(x as IpProto).is_named_variant()).then_some(x as u32)
+}
+
+assert!(!(3u32 as IpProto).is_named_variant());
+assert!(build_unknown_proto(3).is_some());
+assert!((6u32 as IpProto).is_named_variant());
+assert!(build_unknown_proto(6).is_none());
+```
 
 ### `..` at the end
 
@@ -1519,24 +1564,7 @@ if let IpProto::Other(x) = IpProto::Other(6) {
 }
 ```
 
-Instead, to get this behavior with this RFC's proposed syntax, the
-author could use a third-party derive to check against the named variants,
-and an `unsafe` transmute or `as` cast to construct the enum value from
-integer. This makes it clear that declaring a new named variant with an
-unnamed variant's discriminant will affect the method's return value.
-
-```rust
-#[repr(transparent, u32)]
-#[derive(IsNamedVariant)]
-enum IpProto {
-    Tcp = 6,
-    Udp = 17,
-    _ = ..,
-}
-
-assert!(!(3u32 as IpProto).is_named_variant());
-assert!((6u32 as IpProto).is_named_variant());
-```
+A `derive(IsNamedVariant)` macro as shown above could replace this behavior.
 
 ### Forbid unnamed variants' discriminants from overlapping named ones
 
