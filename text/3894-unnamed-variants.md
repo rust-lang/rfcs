@@ -6,11 +6,10 @@
 
 ## Summary
 
-Enable ranges of enum discriminants to be reserved ahead of time, requiring
-all users of that enum to consider those values as valid. This includes within
-the declaring crate.
+Enable ranges of enum discriminants to be considered valid by all users ahead
+of time. This includes within the declaring crate.
 
-`_ = RANGE` is an _unnamed variant_ definition. It specifies that enum
+`_ = RANGE` is an _unnamed variant_ declaration. It specifies that enum
 discriminants in `RANGE` are valid. It is sound to construct unnamed variants
 with `unsafe`, and to handle them over FFI. If there is no invalid discriminant
 for an enum, it becomes an _open enum_. If it is [unit-only], it can then be
@@ -72,13 +71,13 @@ What if it isn't feasible to recompile **every** part of the system that uses
 the enum in order to avoid the breaking change?
 
 ```rust
-/// `TaskState` v1 reserves discriminants instead of using `non_exhaustive`.
+/// `TaskState` v1 is an open enum instead of using `non_exhaustive`.
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TaskState {
     Stopped = 0,
     Running = 1,
-    // There are reserved variants for the rest of the discriminants:
+    // There are unnamed variants for the rest of the discriminants:
     // The `_` resembles a wildcard seen when `match`ing.
     _ = ..,
 }
@@ -174,7 +173,7 @@ breakage.
 
 Ensuring ABI compatibility when extending a library requires extra care. While
 `non_exhaustive` grants API compatibility as variants are added, it [does _not_
-provide ABI compatibility][non-exhaustive-ub]. By reserving discriminants for
+provide ABI compatibility][non-exhaustive-ub]. By claiming discriminants for
 future extensions to an enum, libraries can choose to remain ABI
 forwards-compatible as new variants are added.
 
@@ -242,7 +241,7 @@ macro_rules! make_ranged_int {
             type Error = ();
             fn try_from(val: $repr) -> Result<$name, ()> {
                 match val {
-                    // SAFETY: `val` is a valid discriminant for `$name`
+                    // SAFETY: `val` is a valid discriminant for `$name`.
                     $($range)* => Ok(unsafe { mem::transmute(val) }),
                     _ => Err(()),
                 }
@@ -308,8 +307,8 @@ let fruit: Fruit = unsafe { core::mem::transmute(5u32) };
 assert_eq!(mem::transmute(Option::<Fruit>::None, 2u32));
 ```
 
-However, by declaring an **unnamed variant**, the discriminant `5` is _reserved_
-and becomes sound to transmute from.
+However, by declaring an **unnamed variant**, the discriminant `5` is _claimed_
+by `Fruit` and becomes sound to transmute from.
 
 ```rust
 #[repr(u32)]     // An explicit repr is required to declare an unnamed variant.
@@ -319,7 +318,7 @@ enum Fruit {
     Banana = 4,  // Banana is represented with 4u32.
     _ = 5,       // Some future variant will be represented with 5u32.
 }
-// SAFETY: 5 is a reserved discriminant for `Fruit`.
+// SAFETY: 5 is a valid discriminant for `Fruit`.
 let fruit: Fruit = unsafe { core::mem::transmute(5u32) };
 
 // `fruit` is not any of the named variants.
@@ -346,7 +345,7 @@ match fruit {
 ```
 
 An unnamed variant accepts a range as its discriminant expression, which ensures
-each discriminant in the range is reserved and valid to use.
+each discriminant in the range is claimed and valid to use.
 
 ```rust
 #[repr(u32)]     // Fruit is represented with specific discriminants of `u32`.
@@ -354,9 +353,10 @@ enum Fruit {
     Apple,       // Apple is represented with 0u32.
     Orange,      // Orange is represented with 1u32.
     Banana = 4,  // Banana is represented with 4u32.
-    _ = 3..=10,  // 3 through 10 inclusive are valid discriminants for `Fruit`.
+    _ = 3..=10,  // Unnamed variants in `Fruit` are represented with
+                 // discriminants 3 through 10 inclusive.
 }
-// SAFETY: 7 is a reserved discriminant for `Fruit`
+// SAFETY: 7 is a valid discriminant for `Fruit`.
 let fruit: Fruit = unsafe { core::mem::transmute(7u32) };
 ```
 
@@ -371,7 +371,8 @@ enum Fruit {
     Apple,       // Apple is represented with 0u32.
     Orange,      // Orange is represented with 1u32.
     Banana = 4,  // Banana is represented with 4u32.
-    _ = ..,      // The rest of the discriminants in `u32` are reserved.
+    _ = ..,      // Unnamed variants in `Fruit` are represented with the
+                 // remaining discriminants in `u32`.
 }
 // Using an `as` cast from `u32`.
 let fruit = 3 as Fruit;
@@ -413,8 +414,8 @@ enum may be added as the type evolves.
 
 By contrast, an unnamed variant affects API _and_ ABI semver compatibility:
 
-- It reserves specific ranges of discriminants.
-- These reserved discriminants are valid to represent without naming the future
+- It claims specific ranges of discriminants.
+- These claimed discriminants are valid to represent without naming the future
   variants that use them.
 - Crates can manipulate these unnamed enum variants without recompilation.
 - It affects all crates, including the declaring one.
@@ -426,10 +427,12 @@ better choice. This is often the case for enums declaring an explicit `repr`.
 
 ### Unnamed variants
 
-An **unnamed variant** is an enum variant with `_` declared for its name. It
-is assigned to a set of **reserved discriminants**. These discriminants are
-valid for the enum, and may be assigned to a named variant in the future. It is
-valid to `transmute` to an enum type from a reserved discriminant.
+An **unnamed variant declaration** is an `enum` variant declaration with `_` as
+the variant's name. It is assigned a set of **claimed discriminants**, each
+element of that set representing a single **unnamed variant** of the `enum`.
+These unnamed variants are valid for the enum and their claimed discriminants
+may be reassigned to named variants in the future. It is valid to `transmute` to
+an enum type from a claimed discriminant.
 
 An unnamed variant does not declare a constructor scoped under the enum name,
 unlike a named variant. `EnumName::_` remains an invalid expression and pattern.
@@ -444,7 +447,7 @@ To declare an unnamed variant, the `enum` must have an explicit `repr(Int)`.
 with one of these types:
 
 - `Int`
-  - Reserves a particular discriminant value.
+  - Claims a particular discriminant value.
   - The discriminant must not be assigned to another variant of the enum -
     whether named or unnamed.
 
@@ -461,7 +464,7 @@ with one of these types:
 
 - `start..end` (`core::ops::Range<Int>`) or\
   `start..=end` (`core::ops::RangeInclusive<Int>`)
-  - Ensures every discriminant value in the range is reserved.
+  - Ensures every discriminant value in the range is claimed.
   - Named variants have higher precedence than unnamed variants when assigning
     discriminants to variants. Thus, the set of discriminants claimed by an
     unnamed variant declaration may be a discontiguous subset of the specified
@@ -473,13 +476,14 @@ with one of these types:
         Ok = 200,
         NotFound = 404,
         // Ensures the discriminants in 100..=599 are valid for Self.
-        // Actually reserves 100..=199, 201..=403, and 405..=599.
+        // Actually claims 100..=199, 201..=403, and 405..=599.
         _ = 100..=599,
     }
     ```
 
-  - The range must not overlap with discriminants assigned to unnamed variants.
-    Multiple unnamed variants have equal claim to a discriminant value.
+  - The range must not overlap with discriminants claimed by other unnamed
+    variants. Multiple unnamed variant declarations have equal claim to a
+    discriminant value.
 
     ```rust
     #[repr(u8)]
@@ -516,7 +520,7 @@ with one of these types:
   - Equivalent to `Int::MIN..=end` for non-`repr(C)` enums.
 - `..` (`core::ops::RangeFull`)
   - Equivalent to `Int::MIN..=Int::MAX` for non-`repr(C)` enums.
-  - Reserves the rest of the discriminants for `Int`. This always makes an enum
+  - Claims the rest of the discriminants for `Int`. This always makes an enum
     open without consideration for named variants' discriminants.
   - Because unnamed variants cannot have conflicting discriminants, this is the
     only unnamed variant declaration allowed on the enum when used.
@@ -548,16 +552,16 @@ enum X {
     _ = validate::<u32, _>(20..=30),
     // ...
 }
-const fn validate<Int, T: ReserveDiscriminants<Int>>(x: T) -> T { x }
-trait ReserveDiscriminants<Int> {}
-impl ReserveDiscriminants<u32> for u32 {}
-// ... impl ReserveDiscriminants<Int> for Int {} ...
-impl<Int> ReserveDiscriminants<Int> for Range<Int> {}
-impl<Int> ReserveDiscriminants<Int> for RangeInclusive<Int> {}
-impl<Int> ReserveDiscriminants<Int> for RangeFrom<Int> {}
-impl<Int> ReserveDiscriminants<Int> for RangeTo<Int> {}
-impl<Int> ReserveDiscriminants<Int> for RangeToInclusive<Int> {}
-impl<Int> ReserveDiscriminants<Int> for RangeFull {}
+const fn validate<Int, T: ClaimDiscriminants<Int>>(x: T) -> T { x }
+trait ClaimDiscriminants<Int> {}
+impl ClaimDiscriminants<u32> for u32 {}
+// ... impl ClaimDiscriminants<Int> for Int {} ...
+impl<Int> ClaimDiscriminants<Int> for Range<Int> {}
+impl<Int> ClaimDiscriminants<Int> for RangeInclusive<Int> {}
+impl<Int> ClaimDiscriminants<Int> for RangeFrom<Int> {}
+impl<Int> ClaimDiscriminants<Int> for RangeTo<Int> {}
+impl<Int> ClaimDiscriminants<Int> for RangeToInclusive<Int> {}
+impl<Int> ClaimDiscriminants<Int> for RangeFull {}
 ```
 
 #### `repr(C)` behavior
@@ -616,20 +620,20 @@ on what the backing integer would be if no unnamed variants were declared.
 #[repr(C)]
 enum SmallNonnegative {
     X = 0,
-    // Reserves `1..=c_int::MAX`.
+    // Claims `1..=c_int::MAX`.
     _ = 1..,
 }
 
 #[repr(C)]
 enum BigOpen1 {
     X = isize::MAX,
-    // Reserves `isize::MIN..isize::MAX`.
+    // Claims `isize::MIN..isize::MAX`.
     _ = ..,
 }
 
 #[repr(C)]
 enum BigOpen2 {
-    // Reserves `isize::MIN..0`.
+    // Claims `isize::MIN..0`.
     _ = ..0,
     _ = 0..=isize::MAX,
 }
@@ -722,7 +726,7 @@ Given enum versions A and B with some change between them:
 It is an API and ABI fully-compatibile change to:
 
 - Add a named variant to a field-less enum using a discriminant that was
-  previously reserved.
+  previously claimed.
   - When doing the this, removing the last unnamed variant may cause warnings
     for unused code in client libraries, as a wildcard branch is no longer
     required. This can be avoided by then adding `#[non_exhaustive]` to the
@@ -732,7 +736,7 @@ It is an API fully-compatible and ABI backwards-compatible change to:
 
 - Replace `#[non_exhaustive]` on an enum with an unnamed variant.
   - This may require changes to the defining crate to add wildcard branches.
-- Add another reserved discriminant, if an unnamed variant already exists on the
+- Add another claimed discriminant, if an unnamed variant already exists on the
   enum.
 
 It is an API and ABI backwards-compatible change to:
@@ -771,7 +775,7 @@ enum Bar {
 
 - It is almost always a mistake to specify an empty range.
 - An empty or negative range could accidentally cause UB if certain
-  discriminants are expected to be reserved but are not due to reversing the
+  discriminants are expected to be claimed but are not due to reversing the
   `start` and `end` of the range. Thus, it is `deny`-by-default.
 - If `allow`ed, the unnamed variant declaration has no effect.
 - There are rare use cases involving macro or non-literal discriminants
@@ -1214,7 +1218,7 @@ non-integer type that defines `BitOr` and has structural equality.
 
 ## Rationale and alternatives
 
-Unnamed variants enable a large range of discriminants to be reserved for an
+Unnamed variants enable a large range of discriminants to be claimed for an
 enum, whether it's all or some of them. `NonZero`, and an `enum` spelling out
 each discriminant are the only other ways to achieve this in stable Rust today.
 
@@ -1327,8 +1331,8 @@ This has the same interaction with `#[non_exhaustive]`. The drawbacks:
   - There are many alternative syntaxes for this, such as
     `#[non_exhaustive(repr)]` or `[open]` / `#[open(Range)]`. All should require
     a `repr(Int)` be specified.
-- Allowing for a reservation of particular ranges instead of a full opening
-  could be done with a pattern-type-like syntax, but this is less discoverable:
+- Allowing a claim of particular ranges instead of a full opening could be done
+  with a pattern-type-like syntax, but this is less discoverable:
 
   ```rust
   #[repr(u8 in 1..=100)]
@@ -1352,10 +1356,10 @@ This has the same interaction with `#[non_exhaustive]`. The drawbacks:
 #[repr(u32)]
 enum Foo {
     X,
-    // Reserves `1..=4`.
+    // Claims `1..=4`.
     _ = ..,
     Y = 5,
-    // Reserves `6..=10`.
+    // Claims `6..=10`.
     _ = ..=10,
 }
 
@@ -1418,10 +1422,10 @@ enum Foo {
 }
 ```
 
-### Declare niches instead of reserving values
+### Declare niches instead of claiming discriminants
 
 If an enum selects its discriminants such that a desirable niche exists, like
-`0`, perhaps it is better to declare ranges of niches rather than reserving
+`0`, perhaps it is better to declare ranges of niches rather than claiming
 discriminants?
 
 It can be very confusing to mix positive and negative assertions, and this would
@@ -1445,9 +1449,9 @@ enum IpProto {
 ```
 
 This is not mutually exclusive with unnamed variants, but this RFC chooses to
-leave reserved ranges of discriminants as anonymous to keep the feature simple.
-It can be left as [future work](#discriminant-ranges-for-named-variants)
-for the language. Some of the issues are:
+leave claimed ranges of discriminants as anonymous to keep the feature simple.
+It can be left as [future work](#discriminant-ranges-for-named-variants) for the
+language. Some of the issues are:
 
 - Adding an `Icmp = 1` variant affects `matches!(1 as IpProto, IpProto::Other)`:
   it is an API-breaking change. Unnamed variants are more useful for enum
@@ -1589,7 +1593,7 @@ desirable.
 
 - Forbidding named variant overlaps with `_ = ..` makes it nearly useless, since
   it then must be the only variant for the enum.
-- Giving `..` special behavior to reserve "the rest" of the variants is then
+- Giving `..` special behavior to claim "the rest" of the variants is then
   inconsistent with other ranges' behavior.
   - There is precedent for `..` acting differently than other ranges, such as
     when `match`ing a number or `char`. This `..`, however, is an expression and
@@ -1597,15 +1601,16 @@ desirable.
   - It cannot be reasonably be equivalent to `Int::MIN..=Int::MAX` without that
     range allowing named variant overlap.
 
-### Require an unnamed variant reserve at least one discriminant
+### Require an unnamed variant claim at least one discriminant
 
-It is a desirable property for an unnamed variant to always introduce a reserved
-discriminant.
+It is a desirable property for an unnamed variant declaration to always
+claim at least one discriminant.
 
-This would mean that an unnamed variant's presence in an enum always requires a
+This would mean that an unnamed variant declaration in an enum always requires a
 wildcard branch when `match`ing. Otherwise, a peculiar situation is possible in
-which an enum definition declares an unnamed variant, but does not have any
-reserved discriminants and thus no wildcard branch is needed.
+which an enum definition declares unnamed variants, but since the set of claimed
+discriminants is empty, does not actually define any unnamed variants and thus
+no wildcard branch is needed.
 
 However, upholding this requirement prevents `_ = ..` from always working to
 mean "ensure this enum is open". In order for macros or codegen like `bindgen`
@@ -1824,7 +1829,7 @@ assert_eq!(e as u8, 10);
 ### Unnamed variants on enums with field data
 
 Unnamed variants on enums with field data would allow library authors to plan
-for future ABI compatibility by reserving discriminants and data space for an
+for future ABI compatibility by claiming discriminants and data space for an
 enum. This requires significantly more documentation and care regarding ABI
 stability before this can be stabilized.
 
@@ -1839,7 +1844,7 @@ pub enum Shape {
 }
 ```
 
-- This reserves discriminants `2..=10` as valid for the `Shape` enum. It's not
+- This claims discriminants `2..=10` as valid for the `Shape` enum. It's not
   an ABI-breaking change to add new variants with data to `Shape` using these
   discriminants, so long as it doesn't affect the layout of the `Shape`.
 - `Drop` glue is forbidden for field data (for a similar reason as `union`).
@@ -1854,7 +1859,7 @@ pub enum Shape {
     Circle { radius: f32 } = 0,
     Rectangle { width: f32, height: f32 } = 1,
 
-    // This reserves discriminants `2..=10` and the layout to hold a
+    // This claims discriminants `2..=10` and reserves the layout to hold a
     // thin pointer without breaking ABI. It's as if there were a variant
     // for `&'static ()` in the enum's internal `union`.
     _(&'static ()) = 2..=10,
@@ -1973,7 +1978,7 @@ enum X {
 let mut x = X::A;
 assert_eq!(x.0, 0);
 
-// SAFETY: 1 is a valid discriminant for `X`
+// SAFETY: 1 is a valid discriminant for `X`.
 unsafe { x.0 += 1; }
 
 assert!(matches!(x, X::B));
