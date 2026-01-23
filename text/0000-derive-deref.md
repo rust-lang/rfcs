@@ -440,7 +440,7 @@ impl ::core::ops::Deref for MyBoxedInt {
 }
 ```
 
-In case we want to deref more than once, we could allow a non-null positive integers value:
+In case we want to deref more than once, we could allow a positive integer value:
 
 ```rust
 #[derive(Deref)] // generated Deref::Target = T
