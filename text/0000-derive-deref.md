@@ -267,7 +267,7 @@ Type we deref is `$t`;
         type Target = $t;
 
         fn deref(&self) -> &Self::Target {
-            self.0
+            &self.0
         }
     }
     ```
@@ -277,7 +277,7 @@ Type we deref is `$t`;
         type Target = $t;
 
         fn deref(&self) -> &Self::Target {
-            self.$n
+            &self.$n
         }
     }
     ```
@@ -287,7 +287,7 @@ Type we deref is `$t`;
         type Target = $t;
 
         fn deref(&self) -> &Self::Target {
-            self.$f
+            &self.$f
         }
     }
     ```
@@ -331,7 +331,33 @@ Using `#[derive(Deref)]` on unions produces a compilation error.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-While this does enable more Rust code to "just work", it also means that we should be able to produce high-quality error messages in the compiler, as it is trivial to detect how many fields a struct or an enum variant has.
+## Compilation errors
+
+While this does enable more Rust code to "just work", it also means that we need to produce high-quality error messages in the compiler, otherwise it might be more confusing than helpful.
+
+## Smart pointers
+
+`#[derive(Deref)]` as described in this RFC will do the wrong thing for smart pointer types:
+
+```rust
+#[derive(Deref)]
+struct MyPtr1<T>(Box<T>);
+```
+
+`MyPtr1` will deref to `Box<T>` rather than `T`, which is likely harmless but may reveal an implementation detail, increase the number of `*`s needed, or in the case of `derive(DerefMut)`, allow breaking an invariant.
+
+The `#[deref(forward)]` attribute should mitigate this case, but will require users to add it themselves.
+
+## Raw pointers
+
+If you use `#[derive(Deref)]` to dereference to a raw pointer, you will get a raw pointer, which can't be safely dereferenced:
+
+```rust
+#[derive(Deref)]
+struct MyPtr2<T>(*mut T);
+```
+
+The intent would presumably be to dereference to `T`, but it's likely something to discuss if we extend `#[derive(Deref)]` with `#[deref(forward)]`.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -356,11 +382,10 @@ There are several crates that offer deriving the `Deref` trait. The most popular
     #[derive(derive_more::Deref)]
     struct Point(#[deref] i32, i32);
     ```
-- You can use the `#[forward]` attribute to use the `Deref` target of the current derefed item.
+- You can use the `#[deref(forward)]` attribute to use the `Deref` target of the current derefed item.
     ```rust
     #[derive(Deref)]
-    #[deref(forward)]
-    struct MyBoxedInt(Box<i32>);
+    struct MyBoxedInt(#[deref(forward)] Box<i32>);
 
     // generates:
     impl derive_more::core::ops::Deref for MyBoxedInt {
@@ -394,24 +419,23 @@ impl Deref for S {
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-## `#[forward]` attribute
+## `#[deref(forward)]` attribute
 In the future, we could extend the set of supported use-cases. For example, we could allow to have a "traversal" `Deref` when the target already implements `Deref`:
 
 ```rust
 #[derive(Deref)]
-#[deref(forward)]
-struct MyBoxedInt(Box<i32>);
+struct MyBoxedInt(#[deref(forward)] Box<i32>);
 
 ```
 
 which would generate this impl:
 
 ```rust
-impl derive_more::core::ops::Deref for MyBoxedInt {
-    type Target = <Box<i32> as derive_more::core::ops::Deref>::Target;
+impl ::core::ops::Deref for MyBoxedInt {
+    type Target = <Box<i32> as ::core::ops::Deref>::Target;
     #[inline]
     fn deref(&self) -> &Self::Target {
-        <Box<i32> as derive_more::core::ops::Deref>::deref(&self.0)
+        <Box<i32> as ::core::ops::Deref>::deref(&self.0)
     }
 }
 ```
