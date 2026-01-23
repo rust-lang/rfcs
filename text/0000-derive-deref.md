@@ -440,4 +440,16 @@ impl ::core::ops::Deref for MyBoxedInt {
 }
 ```
 
+In case we want to deref more than once, we could allow a non-null positive integers value:
+
+```rust
+#[derive(Deref)] // generated Deref::Target = T
+pub struct CowArc<'a, T> {
+    #[deref(forward = 2)] // maybe `#[deref(count = 2)]`?
+    v: Cow<'a, Arc<T>>,
+}
+```
+
+In this case, `Deref` would give us `Cow<'a, Arc<T>>`, but if we want `T`, we use to "go through" `Cow` and `Arc`, therefore dereferencing two more times, hence `#[deref(forward = 2)]`.
+
 This is similar to how [RFC#3107](https://rust-lang.github.io/rfcs/3107-derive-default-enum.html) extended the deriving of the `Default` trait using the `#[default]` attribute.
