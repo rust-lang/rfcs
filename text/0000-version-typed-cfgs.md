@@ -54,6 +54,9 @@ If your crate's MSRV is at least the version where typed `cfg`s were stabilized,
 fn print_something() {
     #[cfg(rust_version >= "1.92")]
     pretty_print();
+
+    #[cfg(rust_version < "1.92")]
+    println!("something less pretty");
 }
 ```
 
