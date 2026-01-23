@@ -1452,6 +1452,8 @@ for the language. Some of the issues are:
   an expression. Some reasonable ways to avoid that are:
   - Define an arbitrary rule to choose a discriminant for an `IpProto::Other`
     expression.
+  - The enum author uses an attribute to specify the "default" discriminant for
+    an `IpProto::Other` expression.
   - Forbid direct construction of `IpProto::Other`. It can only be constructed
     via `unsafe` or, for open enums, `as`-cast from the backing integer to
     `IpProto`. There's no check that the discriminant represents an `Other`
