@@ -325,8 +325,8 @@ let fruit: Fruit = unsafe { core::mem::transmute(5u32) };
 // `fruit` is not any of the named variants.
 assert!(!matches!(fruit, Fruit::Apple | Fruit::Orange | Fruit::Banana));
 
-// These are both rejected: an unnamed variant can't construct reserved
-// discriminants or patttern match on them.
+// These are both rejected: unnamed variants can't be constructed with
+// a variant expression, nor pattern match directly on them.
 // assert!(!matches!(fruit, Fruit::_));
 // let fruit = Fruit::_;
 ```
@@ -431,16 +431,17 @@ is assigned to a set of **reserved discriminants**. These discriminants are
 valid for the enum, and may be assigned to a named variant in the future. It is
 valid to `transmute` to an enum type from a reserved discriminant.
 
-An unnamed variant does not declare an identifier scoped under the enum name,
+An unnamed variant does not declare a constructor scoped under the enum name,
 unlike a named variant. `EnumName::_` remains an invalid expression and pattern.
 
-An unnamed variant may be specified more than once on the same enum. It is valid
-to reserve multiple ranges of discriminants. Those ranges may be discontiguous.
+An unnamed variant declaration may be specified more than once on the same enum.
+It is valid to claim multiple ranges of discriminants. Those ranges may be
+discontiguous.
 
-An explicit `repr(Int)` is required on an enum to declare an unnamed variant.
+To declare an unnamed variant, the `enum` must have an explicit `repr(Int)`.
 `Int` is one of the primitive integers or `C`. If it is `C`, then `Int` below is
-`isize`. An unnamed variant must specify a discriminant expression with one of
-these types:
+`isize`. An unnamed variant declaration must specify a discriminant expression
+with one of these types:
 
 - `Int`
   - Reserves a particular discriminant value.
@@ -462,7 +463,9 @@ these types:
   `start..=end` (`core::ops::RangeInclusive<Int>`)
   - Ensures every discriminant value in the range is reserved.
   - Named variants have higher precedence than unnamed variants when assigning
-    discriminants to variants.
+    discriminants to variants. Thus, the set of discriminants claimed by an
+    unnamed variant declaration may be a discontiguous subset of the specified
+    range.
 
     ```rust
     #[repr(u32)]
@@ -499,23 +502,24 @@ these types:
 
   - The range should be non-empty. A
     [`deny`-by-default lint](#empty-discriminant-ranges) is produced if this is
-    violated.
-  - There should be at least one discriminant available to reserve in the range.
+    violated and the unnamed variant declaration does not introduce an unnamed
+    variant.
+  - There should be at least one discriminant available to claim in the range.
     A [`warn`-by-default lint](#taken-discriminant-ranges) is produced if this
-    is violated.
+    is violated and the unnamed variant declaration does not introduce an
+    unnamed variant.
 - `start..` (`core::ops::RangeFrom<Int>`)
-  - Equivalent to `start..=Int::MAX`.
+  - Equivalent to `start..=Int::MAX` for non-`repr(C)` enums.
 - `..end` (`core::ops::RangeTo<Int>`)
-  - Equivalent to `Int::MIN..end`.
+  - Equivalent to `Int::MIN..end` for non-`repr(C)` enums.
 - `..=end` (`core::ops::RangeToInclusive<Int>`)
-  - Equivalent to `Int::MIN..=end`.
+  - Equivalent to `Int::MIN..=end` for non-`repr(C)` enums.
 - `..` (`core::ops::RangeFull`)
-  - Equivalent to `Int::MIN..=Int::MAX`.
+  - Equivalent to `Int::MIN..=Int::MAX` for non-`repr(C)` enums.
   - Reserves the rest of the discriminants for `Int`. This always makes an enum
     open without consideration for named variants' discriminants.
   - Because unnamed variants cannot have conflicting discriminants, this is the
-    only unnamed variant allowed on the enum when used. It is called the enum's
-    _open variant_.
+    only unnamed variant declaration allowed on the enum when used.
 
     ```rust
     // error: discriminant value `1` assigned more than once
@@ -602,11 +606,11 @@ const _: () = assert!(
 );
 ```
 
-The unbounded end of a discriminant range never affects the backing integer of a
-`repr(C)` enum. When a range with an unbounded end (`start..`, `..end`,
-`..=end`, `..`) is used as an unnamed variant's discriminant expression in a
-`repr(C)` enum, the set of discriminants that is reserved by that unbounded end
-is dependent on the other variants' discriminants.
+The unbounded end of a discriminant range **never** affects the backing integer
+of a `repr(C)` enum. For a `repr(C)` enum, when a range with an unbounded end
+(`start..`, `..end`, `..=end`, `..`) is used as an unnamed variant declaration's
+discriminant expression, the effective bound of the claimed range is dependent
+on what the backing integer would be if no unnamed variants were declared.
 
 ```rust
 #[repr(C)]
@@ -644,11 +648,11 @@ This behavior means that it is sound to expose a C enum defined like this:
 enum Foo {
     Name1 = Value1,
     Name2 = Value2,
-    // etc.
+    // ...
 };
 ```
 
-as this Rust enum, regardless of the discriminant values assigned:
+as this Rust open enum, regardless of the discriminant values assigned:
 
 ```rust
 // `allow` effective when there are 256 variants within the `u8`/`i8` range on
@@ -658,10 +662,7 @@ as this Rust enum, regardless of the discriminant values assigned:
 enum Foo {
     Name1 = Value1,
     Name2 = Value2,
-    // etc.
-
-    // The rest of the discriminants for an enum with the named variants
-    // are reserved and valid. Unchecked casts can't invoke UB.
+    // ...
     _ = ..,
 }
 ```
@@ -781,8 +782,10 @@ enum Bar {
 
 `taken_discriminant_ranges` is a new `warn`-by-default lint. It should be
 produced if every discriminant in the range assigned to an unnamed variant is
-already assigned to a named variant. Thus, the unnamed variant does not
-introduce any reserved discriminants and has no effect on the enum.
+already assigned to a named variant. This results in the unnamed variant
+definition having no effect. While an unnamed variant is syntactically present,
+no unnamed variant is introduced to the `enum` as it has no discriminants to
+claim.
 
 ```rust
 #[repr(u8)]
@@ -936,8 +939,8 @@ enum Bar {
 ##### Forgot to mention a named variant
 
 The unstable [`non_exhaustive_omitted_patterns`] `allow`-by-default lint should
-be produced if a `match` on an enum with reserved discriminants mentions some,
-but not all, of the named variants.
+be produced if a `match` on an enum with unnamed variants mentions some, but not
+all, of the named variants.
 
 [`non_exhaustive_omitted_patterns`]: https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint_defs/builtin/static.NON_EXHAUSTIVE_OMITTED_PATTERNS.html
 
@@ -973,8 +976,8 @@ let name = match b {
 
 #### Next variant's implicit discriminant
 
-When a named variant without an explicit discriminant follows an unnamed
-variant, the assigned implicit discriminant is the next integer after the
+When a named variant without an explicit discriminant follows an unnamed variant
+declaration, the assigned implicit discriminant is the next integer after the
 declared discriminant range for that unnamed variant. If the unnamed variant is
 assigned to an integer, it is the next integer.
 
@@ -1013,7 +1016,7 @@ enum Overflow {
 
 #### Non-literal discriminant expression
 
-A non-literal range or integer is allowed for an unnamed variant.
+A non-literal range or integer is allowed for an unnamed variant declaration.
 
 ```rust
 const VALID_FOO: Range<u32> = 10..100;
@@ -1031,8 +1034,9 @@ let _: Foo = unsafe { mem::transmute(15u32) };
 
 #### Only variant
 
-An unnamed variant may be the only variant for an enum. In this case, an `as`
-cast or `transmute` is the only way to construct an enum value.
+An unnamed variant declaration may be the only variant declaration for an enum.
+In this case, an `as` cast or `transmute` is the only way to construct an enum
+value.
 
 ```rust
 #[repr(u32)]
@@ -1048,11 +1052,10 @@ integer is a valid discriminant.
 
 - An open enum always has an explicit `repr` backing integer, or is `repr(C)`.
 - An enum is open if every discriminant value for that integer is associated
-  with a named variant or is reserved with an unnamed variant.
+  with a named or unnamed variant.
   - For a field-less enum, this means every initialized bit pattern is valid.
-- A [unit-only] open enum may be `as` cast from its backing integer:
+- A [unit-only] open enum may be `as` cast from its backing integer _only_:
   `2u8 as Color`. See below for `repr(C)` behavior.
-  - Casting from other integer types is rejected.
 - If an expression with the `{integer}` inference variable type is used as the
   source for an `as` cast to an open enum, it is uniquely constrained to the
   explicit backing integer type. This excludes `repr(C)`; see below.
@@ -1177,16 +1180,17 @@ _ = signed_byte as SmallSigned;
 
 ### Interaction with the standard library
 
-- `derive(Debug)` formats as `EnumName(X)` when `X` is a reserved discriminant.
-  A `Debug` format changing is not considering an API-breaking change.
-- `Default` forbids `#[default]` from being specified on an unnamed variant,
-   but this may change in the future.
+- `derive(Debug)` formats as `EnumName(X)` when formatting an unnamed variant:
+  `X` is its claimed discriminant. A `Debug` format changing is not considering
+  an API-breaking change.
+- `Default` forbids `#[default]` from being specified on an unnamed variant, but
+  this may change in the future.
 - The derives `Clone`, `Copy`, `Eq`, `Hash`, `Ord`, `PartialEq`, and
-  `PartialOrd` are unaffected by unnamed variants on a field-less enum.
-  They all operate on discriminants, and this includes reserved discriminants.
-- `mem::Discriminant` continues to operate as before, always treating
-  field-less enum values with the same discriminant integers as equal and
-  those with different discriminant integers as non-equal.
+  `PartialOrd` are unaffected by unnamed variants on a field-less enum. They all
+  operate on discriminants, including those assigned to unnamed variants.
+- `mem::Discriminant` continues to operate as before, always treating field-less
+  enum values with the same discriminant integers as equal and those with
+  different discriminant integers as non-equal.
 
 ## Drawbacks
 
