@@ -74,7 +74,7 @@ Calling the `bar` function is valid and will behave like `foo` in both the secur
 
 ### Argument passing
 
-The main technical limitation of the cmse ABIs versus plain AAPCS is that the cmse ABIs cannot use the stack for passing function arguments or return values. That leaves only the 4 standard registers to pass arguments, and only supports 1 register worth of return value, unless the return type is ABI-compatible with a 64-bit scalar, which is supported.
+The main technical limitation of the cmse ABIs versus plain AAPCS is that the cmse ABIs cannot use the stack for passing function arguments or return values. That leaves only the 4 standard registers to pass arguments, and only supports 1 register worth of return value, unless the return type is a (transparently wrapped) 64-bit scalar (`f64`, `i64` or `u64`), which is supported.
 
 ```rust
 // Valid
@@ -90,7 +90,7 @@ type T3 = extern "cmse-nonsecure-call" fn(_: i64, _: u8, _: u8, _: u8) -> i64;
 // Invalid: return type too large
 type T4 = extern "cmse-nonsecure-call" fn() -> i128;
 
-// Invalid: return type does not fit in one register, and is not abi-compatible with a 64-bit scalar
+// Invalid: return type does not fit in one 32-bit register, and is not a (optionally transparently wrapped) 64-bit scalar.
 #[repr(C)] struct WrappedI64(i64);
 type T5 = extern "cmse-nonsecure-call" fn(_: i64, _: i64) -> WrappedI64;
 ```
