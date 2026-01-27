@@ -165,7 +165,7 @@ The exact algorithm is deferred to whatever the default target C compiler does w
 > 
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 ### struct
-Structs are laid out in memory in declaration order, with padding bytes added as necessary to preserve alignment.
+When applying `repr(ordered_fields)` structs are laid out in memory in declaration order, with padding bytes added as necessary to preserve alignment.
 The alignment of a struct is the same as the alignment of the most aligned field.
 
 ```rust
@@ -186,7 +186,10 @@ Would be laid out in memory like so
 a...bbbbcc..dddd
 ```
 ### union
-Unions would be laid out with the same size as their largest field, and the same alignment as their most aligned field. 
+When applying `repr(ordered_fields)` to an unions would be laid out as followed:
+* the same size as their largest field
+* the same alignment as their most aligned field
+* all fields are at offset 0
 
 ```rust
 // assuming that u32 is aligned to 4 bytes
@@ -202,8 +205,14 @@ union FooUnion {
 
 `FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
 ### enum
-The enum's tag type is the same type that is used for `repr(C)` in edition <= 2024, and the discriminants are assigned the same way as `repr(C)` (in edition <= 2024).  This means the discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order.
-This does mean that the tag type will be platform-specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning (name TBD). This warning should suggest the smallest integer type that can hold the discriminant values (preferring signed integers to break ties).
+When applying `repr(ordered_fields)` to an enum, the enum's tag type and discriminant will be the same as when applying `repr(C)` to the enum in edition <= 2024.
+This does mean that the tag type will be platform-specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning (name TBD).
+This warning should suggest the smallest integer type that can hold the discriminant values (preferring signed integers to break ties).
+
+For discriminants, this means that it will follow the given algorithm for each variant in declaration order of the variants:
+* if a variant has an explicit discriminant value, then that value is assigned
+* else if this is the first variant in declaration order, then the discriminant is zero
+* else the discriminant value is one more than the previous variant's discriminant (in declaration order)
 
 If an enum doesn't have any fields, then it is represented exactly by its discriminant. 
 ```rust
@@ -229,6 +238,8 @@ enum FooEnumUnsigned {
 ```
 
 Enums with fields will be laid out as if they were a struct containing the tag and a union of structs containing the data.
+NOTE: This is different from `repr(iN)`/`repr(uN)` which are laid out as a union of structs, where the first field of the struct is the tag.
+These two layouts are *NOT* compatible, and adding `repr(ordered_fields)` to `repr(iN)`/`repr(uN)` changes the layout of the enum!
 
 For example, this would be laid out the same as the union below
 ```rust
