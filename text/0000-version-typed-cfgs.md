@@ -16,20 +16,24 @@ This design solves a long-standing problem of conditionally compiling code for d
 # Motivation
 [motivation]: #motivation
 
-There are two primary use cases for conditional compilation based on versions, whether that is the version of the Rust language or the version of a dependency:
+This RFC solves a class of problems requiring conditional compilation based on versions. Today, the only stable tool for this is a build script (`build.rs`), but these add significant compilation overhead, are clunky to write and maintain, and make it difficult to express ranged version constraints like "between versions 18 and 27".
+
+In general, conditional compilation is required to do one of two things:
 
 1.  **Exposing new features** when code is compiled with newer versions of the language or library while maintaining compatibility with older versions.
-2.  **Straddling a breaking change** in an API, allowing code to compile against both the old and new versions, which are mutually incompatible.
+2.  **Straddling breaking changes** in an API, allowing code to compile against both the old and new versions, which are mutually incompatible.
 
-The `rust_version` cfg proposed in this RFC is designed for the first use case, while `rust_edition` is a tool for the second. This RFC also provides a general mechanism for `version`-typed `cfg`s that can be used for libraries, which addresses both use cases.
+We verify our solution by checking that it is general enough to handle three kinds of versions:
 
-This RFC also aims to solve long-standing problems that have been approached with more specific RFCs in the past. For example, the `cfg_target_version` RFC ([#3750](https://github.com/rust-lang/rfcs/pull/3750)) proposed a way to compare against the target platform's minimum supported OS version (e.g., `#[cfg(target_version(macos >= "10.15"))]`). This is crucial for safely using platform-specific APIs that are only available in newer OS versions. Instead of a one-off feature, the general `version` type proposed in this RFC provides a robust foundation to solve this problem. A build script could detect the platform version and emit a `version`-typed cfg (`--cfg 'macos_version=version("10.15")'`), allowing for the same ergonomic comparisons in code: `#[cfg(macos_version >= "10.15")]`. These platform-specific version keys can be added into the language in future RFCs.
+* The version of **Rust**, the language and standard library being used to compile the current crate.
+* The version of the **target platform** the code is being compiled for.
+* The version of **dependencies**, like system libraries and Rust crates.
 
-The only stable tool for this today is a build script (`build.rs`). However, build scripts add significant compilation overhead and are clunky to write and maintain.
-
-RFC [#2523](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html) tried to solve this, but ran into an unfortunate issue: its proposed syntax, e.g. `#[cfg(version(1.85))]`, was a syntax error on older compilers. This means that to use the feature, a library would first have to bump its MSRV to the version that introduced the syntax, somewhat defeating the primary purpose of the feature. If we knew this was the syntax we wanted going forward, this tradeoff might be worth it. But on close inspection the earlier RFC, which merged in 2019, had left the syntax question undecided due to this very issue, and the current lang team did not have consensus on the syntax used in the RFC.
+We directly address the Rust version use case in this RFC, introducing the `rust_version` cfg as a tool for crates to expose new Rust features and `rust_edition` as a tool for straddling breaking changes to Rust itself. These are built atop a general mechanism for `version`-typed `cfg`s that can be used for target platforms and libraries.
 
 This RFC proposes a solution that avoids these pitfalls, solves related versioning problems besides just the Rust version, and builds a scaffolding for related `cfg` features we might add in the future.
+
+## Example: Diagnostic attributes
 
 One motivating example is making it ergonomic to adopt attributes that were stabilized after a crate's MSRV. For example, the `#[diagnostic::on_unimplemented]` attribute is a stable feature that library authors can use to provide better error messages. However, if a library has an MSRV from before this attribute was stabilized, they cannot use it without a build script. A build script is often too much overhead for such a small, non-essential feature.
 
@@ -43,7 +47,7 @@ This RFC makes it trivial to adopt even in a crate that doesn't want to use a bu
 impl<T> MyTrait for T { /* ... */ }
 ```
 
-With this feature we hope to see more people using useful attributes like `on_unimplemented`, even with MSRVs before when the diagnostic attribute namespace was added. Gated `diagnostic` attributes like this will not be active until the Rust version where this feature ships, but adding them still adds value. While some crates must hold a low MSRV to allow building in environments with older compilers, like Linux distros, most active Rust development still takes place on recent compiler versions. Using this gating mechanism will mean that most users of a crate benefit from the attributes, without changing the crate's MSRV or adding a build script.
+With this feature we hope to see more people using useful attributes like `on_unimplemented`, even with MSRVs before when the diagnostic attribute namespace was added. Gated `diagnostic` attributes like this will not be active until the Rust version where this feature ships, but using them still adds value. While some crates must hold a low MSRV to allow building in environments with older compilers, like Linux distros, most active Rust development still takes place on recent compiler versions. Using this gating mechanism will mean that most users of a crate benefit from the attributes, without changing the crate's MSRV or using a build script.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -262,7 +266,20 @@ This section is subject to change prior to stabilization.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+### History
+
+This RFC builds on insights from previous work:
+
+RFC [#2523](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html) introduced `#[cfg(version(1.xx))]` and established the idea of conditional compilation based on the language version.
+
+RFC [#3857](https://github.com/rust-lang/rfcs/pull/3857) proposed `#[cfg(version_since(rust, ...))]`, which solved the MSRV problem by allowing `#[cfg(rust)]` and generalized the mechanism beyond Rust versions, while defining the interaction with command line flags like `--check-cfg`.
+
+RFC ([#3750](https://github.com/rust-lang/rfcs/pull/3750)) `cfg_target_version` proposed a way to compare against the target platform's minimum supported OS version (e.g., `#[cfg(target_version(macos >= "10.15"))]`), which was used to validate this design.
+
+Pre-RFC [Mutually-exclusive, global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618) described a Cargo use case for single-valued config types as well as a `cfg_value!()` macro.
+
 ### Why this design?
+
 The syntax `rust_version >= "1.85"` is highly intuitive and directly expresses the user's intent. It is a general design that can be used to solve an entire class of adjacent problems, including platform versioning. It is a principled design, as by introducing a `version` type to the `cfg` system, we create a sound basis for comparison operators and other config types in the future. The syntax avoids the semantic confusion of proposals like `rust_version = "1.85"` which would have overloaded the meaning of `=` for a single special case.
 
 This design directly solves the MSRV problem in a way that RFC 2523 did not. The fact that crates maintaining an MSRV will be able to adopt it for newer version constraints buys back some of the time that was spent designing and implementing the newer iteration of this feature.[^buy-back] While sometimes it is better to ship something functional quickly, the fact that users have an functional workaround in the form of build scripts pushes the balance more in the direction of waiting to deliver a high quality solution.
@@ -280,7 +297,9 @@ Single-valued config types give us a chance to revisit some earlier decisions li
 This was the original accepted RFC for version-based conditional compilation.
 
 #### Rationale for not choosing
-The syntax of this RFC was [left as an open question](https://github.com/rust-lang/rfcs/pull/2523#discussion_r326361347) by the RFC author after a concern was raised by the maintainer of the libc crate about the MSRV issue. Since then, the lang team has not been able to reach a consensus on the syntax. Several problems have been identified:
+The syntax in the RFC is an error on older compilers, meaning a library would first have to bump its MSRV to the version that introduced the syntax. After this issue was pointed out on the RFC, the syntax was [left as an open question](https://github.com/rust-lang/rfcs/pull/2523#discussion_r326361347) that was not revisited by the lang team between the RFC merging in 2019 and a stabilization discussion in 2025.
+
+The current lang team did not reach consensus on the syntax from the RFC. Several problems were identified:
 
 * The word `version` does not sufficiently communicate that it's the Rust version we're talking about.
 * The mechanism is special-purpose and geared toward one use case (detecting the Rust version).
@@ -390,6 +409,7 @@ Operating systems include many versions, including kernel versions, public OS ve
 - **More comparison operators:** While this RFC only proposes `>=` and `<`, the underlying `version` type makes it natural to add support for `<=`, `==`, `!=`, etc., in the future.
 - **Dependency Version `cfg`s:** The "typed `cfg`" infrastructure could be extended to query the versions of direct dependencies, e.g., `#[cfg(serde >= "1.0.152")]`. This would require significant integration with Cargo.
 - **System library versions supplied by `sys` crates:** Cargo could allow `sys` crates to expose the versions of their system libraries to dependents as version-typed cfgs.
+- **Builtin platform version `cfg`s:** Rust can add target version configs like `#[cfg(macos_target_version >= "26.0")]` on a platform-specific basis.
 - **Other `cfg` types:** We could introduce other types, such as integers or single-valued strings. This could be useful for a variety of features, from system library versioning schemes ([kconfig](https://docs.kernel.org/kbuild/kconfig-language.html)) to enabling things like [mutually exclusive global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
 - **Namespaced `cfg`s:** We could group Rust-specific `cfg`s under a `rust::` namespace, e.g., `#[cfg(rust::version >= "1.85")]`. This RFC intentionally keeps `rust_version` at the top level to simplify the initial implementation and stabilization, but namespacing could be explored in the future to better organize the growing number of built-in `cfg`s.
 - **Macro that evaluates to a cfg value:** We can add a `cfg_value!()` macro for single-valued configs that evalutes to its value.
