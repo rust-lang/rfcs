@@ -69,7 +69,7 @@ Splitting `repr(C)` also allows making progress on a workaround for the MSVC bug
 
 The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8 bytes, and may instead only align them to 4 bytes.
 
-Any proper workaround will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting what `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
+Any proper workaround will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
 
 For AIX, the issue is that `f64` is treated as aligned to 4 bytes if it is not the first field in a struct. i.e.
 ```C
@@ -84,7 +84,7 @@ Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has
 
 For more details, see this discussion on [irlo](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594/3).
 
-In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes) and a size of 24 bytes. Since the first field has a natural alignment of 8 bytes - AKA the size is 8 bytes.
+In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes) and a size of 24 bytes. Since the first field has a natural alignment of 8 bytes - AKA its size is 8 bytes.
 
 ```C
 struct Floats {
@@ -186,7 +186,7 @@ Would be laid out in memory like so
 a...bbbbcc..dddd
 ```
 ### union
-When applying `repr(ordered_fields)` to an unions would be laid out as followed:
+When applying `repr(ordered_fields)`, unions would be laid out as follows:
 * the same size as their largest field
 * the same alignment as their most aligned field
 * all fields are at offset 0
@@ -403,6 +403,7 @@ See Rationale and Alternatives as well
     * `repr(linear)`
     * `repr(ordered)`
     * `repr(sequential)`
+    * `repr(serial)`
     * `repr(consistent)`
     * `repr(declaration_order)`
     * something else?
