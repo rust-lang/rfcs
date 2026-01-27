@@ -187,8 +187,8 @@ a...bbbbcc..dddd
 ```
 ### union
 When applying `repr(ordered_fields)`, unions would be laid out as follows:
-* the same size as their largest field
 * the same alignment as their most aligned field
+* the same size as their largest field, rounded up to the next multiple of the union's alignment
 * all fields are at offset 0
 
 ```rust
