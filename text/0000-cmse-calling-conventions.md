@@ -95,7 +95,16 @@ type T4 = extern "cmse-nonsecure-call" fn() -> i128;
 type T5 = extern "cmse-nonsecure-call" fn(_: i64, _: i64) -> WrappedI64;
 ```
 
-An error is emitted when the program contains a signature that violates the calling convention's constraints:
+The arguments fit if:
+
+- the sum of their sizes, each rounded up to the next multiple of 4, is 16 bytes or less
+
+A return value fits if either:
+
+- its size is 4 bytes or less
+- it is an (optionally transparently wrapped) `i64`, `u64` or `f64`
+
+When the arguments or return type do not fit in the available registers, an error is emitted:
 
 ```
 error[E0798]: arguments for `"cmse-nonsecure-entry"` function too large to pass via registers
