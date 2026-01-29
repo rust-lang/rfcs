@@ -160,3 +160,4 @@ that could help simplify the life of people who otherwise would have to keep wri
 - We should also consider adding aliases (like c32 and c64) for floating points once they are established, to allow for a shorthand syntax.
 - Eventually, we should also consider adding polar conversions (e.g, `modulus` and `angle`)
 - And also, we should consider adding complex trig functions (`csin`, `ccos`, etc.) that were deliberately left out of the MVP.
+- Compatibility with other `core::num` types (`NonZero`, `Saturating`, `Wrapping`)
