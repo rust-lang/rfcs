@@ -16,15 +16,24 @@ Introduce two new warnings
 # Motivation
 [motivation]: #motivation
 
-Currently `repr(C)` serves two roles
+Currently `repr(C)` serves two roles:
 1. Provide a consistent, cross-platform, predictable layout for a given type
 2. Match the target C compiler's struct/union layout algorithm and ABI
 
-But in some cases, these two cases are in tension due to platform weirdness (even on major platforms like Windows MSVC)
-* https://github.com/rust-lang/unsafe-code-guidelines/issues/521
-* https://github.com/rust-lang/rust/issues/81996
+But in some cases, these two roles are in tension due to platform's C layout not matching the [simple, general algorithm](https://doc.rust-lang.org/stable/reference/type-layout.html#r-layout.repr.c.struct.size-field-offset) Rust always uses:
+* On MSVC, a struct with a single field that is a zero-sized array has size 1. (https://github.com/rust-lang/rust/issues/81996)
+* On MSVC, a `repr(C, packed)` with `repr(align)` fields has special behavior: the inner `repr(align)` takes priority, so fields can be highly aligned even in a packed struct. (https://github.com/rust-lang/rust/issues/100743)
+  (Rust tries to avoid this by forbidding `repr(align)` fields in `repr(packed)` structs, but that check is easily bypassed with generics.)
+* On MSVC-x32, `u64` fields are 8-aligned in structs, but the type is only 4-aligned when allocated on the stack. (https://github.com/rust-lang/rust/issues/112480)
+* On AIX, `f64` fields sometimes but not always get 8-aligned in structs. (https://github.com/rust-lang/rust/issues/151910)
 
-Code in case 1 generally falls into one of these buckets:
+These are all niche cases, but they add up.
+Furthermore, it is just fundamentally wrong for Rust to claim that `repr(C)` layout matches C code for the same target while also specifying an exact algorithm for `repr(C)`:
+the C standard does not prescribe any particular struct layout, so any target/ABI is in principle free to come up with whatever bespoke rules they like.
+
+However, fixing this is hard because of (unsafe) code that relies on the other role of `repr(C)`, giving a deterministic layout.
+We therefore cannot just "fix" `repr(C)`, we need some sort of transition plan.
+This code generally falls into one of these buckets:
 * rely on the exact layout being consistent across platforms
 	* for example, zero-copy deserialization (see [rkyv](https://crates.io/crates/rkyv))
 * manually calculating the offsets of fields
@@ -34,20 +43,17 @@ Code in case 1 generally falls into one of these buckets:
 * match layouts of two different types (or even, two different monomorphizations of the same generic type)
 	* see [here](https://github.com/rust-lang/rust/pull/68099), where in `alloc` this is done for `Rc` and `Arc` to give a consistent layout for all `T`
 
-So, providing any fix for case 2 would subtly break any users of case 1. This breakage cannot be checked easily since it affects unsafe code making assumptions about data layouts. Making it difficult to fix within a single edition/existing editions.
+So, providing any fix for role 2 of `repr(C)` would subtly break any users of role 1.
+This breakage cannot be checked easily since it affects unsafe code making assumptions about data layouts, making it difficult to fix within a single edition/existing editions.
 
-Here are some examples of the tension and some other RFCs which could benefit from splitting up `repr(C)`'s two cases.
+### Layout issues
 
-1. Windows MSVC ZSTs
-2. the RFC [#3718](https://github.com/rust-lang/rfcs/pull/3718) for `repr(C, packed(N))` containing overaligned fields
-3. A Windows MSVC bug
-4. An [AIX](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594) layout bug
+Before we delve into the proposed solution, we go into a little more detail about the aforementioned platform layout issues.
+Some of them cannot be solved with this RFC alone, but all of them have require some approach to split up the two roles of `repr(C)`.
 
-Examples 3 and 4 cannot be solved with this RFC alone, but any fix would require splitting up `repr(C)`.
+## MSVC: zero-length arrays
 
-## MSVC ZST
-
-As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
+On Windows MSVC, `repr(C)` doesn't always match what MSVC does for ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
 
 ```rust
 // should have size 8, but has size 0
@@ -57,50 +63,54 @@ struct SomeFFI([i64; 0]);
 
 Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for case 1. They want it to be size 0 (as it currently is). 
 
-## RFC #3718
+## MSVC: `repr(align)` inside `repr(packed)`
 
-This also plays a role in [#3718](https://github.com/rust-lang/rfcs/pull/3718), where `repr(C, packed(N))` wants allow fields which are `align(M)` (while making the `repr(C, ...)` struct less packed). This is a footgun for normal uses of `repr(packed)`, so it would be better to relegate this strictly to the FFI use-case. However, since `repr(C)` plays two roles, this is difficult.
+This also plays a role in [#3718](https://github.com/rust-lang/rfcs/pull/3718), where `repr(C, packed(N))` wants to allow fields which are `align(M)`.
+On most targets, and with Rust's `repr(C, packed)` specification, the `packed` takes precedence:
 
-By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, packed(N))` to contain over-aligned fields (while making the struct less packed), and (continuing to) disallow `repr(ordered_fields, packed(N))` from containing aligned fields. Thus keeping the Rust-only case free of warts, without compromising on FFI use-cases[<sup>1</sup>](#ordered_fields_align).
+```rust
+#[repr(C, align(8))]
+struct I(u8);
 
-## MSVC bug
-
-Splitting `repr(C)` also allows making progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480). 
-
-The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8 bytes, and may instead only align them to 4 bytes.
-
-Any proper workaround will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
-
-For AIX, the issue is that `f64` is treated as aligned to 4 bytes if it is not the first field in a struct. i.e.
-```C
-struct Foo {
-	char a;
-	double b;
+#[repr(C, packed)]
+struct O {
+  // At offset 0
+  f1: u8,
+  // At offset 1
+  f2: I,
 }
 ```
-Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has alignment 8 in Rust). Again, any proper workaround will require reducing the alignment of `f64`, and adjusting `repr(C)`.
 
-## AIX layout bug
+However, MSVC will put `f2` at offset 8, so arguably that is what `repr(C, packed)` should do on that target.
+This is a footgun for normal uses of `repr(packed)`, so it would be better to relegate this strictly to the FFI use-case. However, since `repr(C)` plays two roles, this is difficult.
 
+By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, packed(N))` to contain over-aligned fields (while making the struct less packed), and (continuing to) disallow `repr(ordered_fields, packed(N))` from containing aligned fields. This keeps the Rust-only case free of warts without compromising on FFI use-cases[<sup>1</sup>](#ordered_fields_align).
+
+## MSVC-x32: u64 alignment
+
+Splitting `repr(C)` also allows making progress on dealing with the MSVC "quirk" [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480).
+
+The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8 bytes, and may instead only align them to 4 bytes.
+Our interpretation of this behavior is that `alignof` reports the *preferred* alignment (rather than the required alignment) for the type, and MSVC chooses to sometimes overalign `u64` fields in structs.
+
+No matter the reason for this behavior, any proper solution to this issue will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
+
+## AIX: f64 alignment
+
+For AIX, the issue is that `f64` is sometimes treated as aligned to 8 bytes and sometimes as aligned to 4 bytes (the comments indicate the desired layout as computed by a C compiler):
+```rust
+// Size: 24
+#[repr(C)]
+struct Floats {
+  a: f64, // at offset 0
+  b: u8, // at offset 8
+  c: f64, // at offset 12
+}
+```
+There is no way to obtain such a layout using Rust's `repr(C)` layout algorithm.
 For more details, see this discussion on [irlo](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594/3).
 
-In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes) and a size of 24 bytes. Since the first field has a natural alignment of 8 bytes - AKA its size is 8 bytes.
-
-```C
-struct Floats {
-    double a;
-    char b;
-    double c;
-};
-```
-
-This is because
-> In aggregates, the first member of this data type is aligned according to its natural alignment \[its size\] value; subsequent members of the aggregate are aligned on 4-byte boundaries.
-> - [IBM Documentation](https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes) (Table 1, Note 1, which applies to `double` and `long double` data types)
-
-On AIX `__alignof__(double)` is 8, but field `c` is laid out at a 4-byte boundary. This is fine because `__alignof__` designates the *preferred* alignment, not the *required* alignment. Note that in Rust, we only ever use the *required* alignment and don't have a concept of a *preferred* alignment. So in Rust, we have designated the alignment of `f64` to be 8 bytes.
-
-Any fix for this would require splitting up `repr(C)`, since reducing the alignment of `f64` would reduce the size of `Floats` from `24` to `20`, which also doesn't match `C`, and we cannot special case the alignment of `Floats` to be larger since that doesn't match the algorithm currently specified for `repr(C)` (making it a breaking change).
+Any fix for this requires splitting up `repr(C)`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
