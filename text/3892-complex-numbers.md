@@ -152,7 +152,7 @@ impl f32 {
   }
 }
 ```
-that could help simplify the life of people who otherwise would have to keep writing `Complex::new()`?
+that could help simplify the life of people who otherwise would have to keep writing `Complex::new()`? It would also require an `Add<Prim>` implementation, which could be made later
 - Should we support Imaginary eventually? This RFC doesn't cover it, but I think we can do this later in another RFC.
 - Eventually we may support Gaussian integers (an extension of the real integers) which have a Euclidean division procedure with remainder. GCC has these, and we could theoretically eventually support these integers alongside GCC FFI.
 - We can also support f16 and f128 once methods for them are stabilised. 
