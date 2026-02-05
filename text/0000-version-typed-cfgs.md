@@ -419,6 +419,9 @@ Operating systems include many versions, including kernel versions, public OS ve
 - **Macro that evaluates to a cfg value:** We can add a `cfg_value!()` macro for single-valued configs that evaluates to its value.
 - **Short-circuiting `cfg` predicates:** Change `any` and `all` predicates to short-circuit instead of evaluating all their arguments. This would make introducing new predicates and comparison operators much easier.
 - **Const eval in `cfg`:** In the future `cfg` can be expressed entirely in terms of const eval, with a simple macro desugaring for cfg-specific predicates into proper Rust expressions. This RFC is compatible with that vision; see [this demo](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=9207bb80756b64ea99f51f54c3369f0d) of how the desugaring can work.
+- **`cfg_alias`**: `#[cfg_alias]` ([RFC 3804]) would allow the use of named identifiers for features instead of using raw version numbers throughout the codebase.
+
+[RFC 3804]: https://github.com/rust-lang/rfcs/pull/3804
 
 ### Pre-releases
 
