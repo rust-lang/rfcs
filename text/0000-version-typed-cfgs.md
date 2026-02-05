@@ -229,7 +229,7 @@ Configs defined using the existing command-line syntax `--cfg 'name="value"'` ha
     --check-cfg 'cfg(my_app_version, version())'
     ```
 
-    This will accept any version value, but lint when the option is used in a non-version comparison (note that this is an error if the option actually has a version-typed value). This is a more sensible default for versions, which don't have the equivalent of `values(none())`.
+    This will accept any version value, but lint when the option is used in a non-version comparison (note that this is an error if the option actually has a version-typed value). Accepting any version is a more sensible default for `version()`, which doesn't have the equivalent of `values(none())`.
 
 *   **`--print cfg`**: User-defined version cfgs are printed in the `name=version("...")` format. Whether to print the built-in `rust_version` and `rust_edition` cfgs is left as an unresolved question to be determined based on tool compatibility. In future editions, the builtin cfgs should always be printed.
 
