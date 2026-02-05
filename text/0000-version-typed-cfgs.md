@@ -88,7 +88,9 @@ fn my_function() {
 }
 ```
 
-Note that because new compilers can still compile older editions, the `#[cfg(rust_edition)]` stacking pattern is less useful than it is for `rust_version`. The primary use case for rust_edition is within macros or code generation that needs to produce different code depending on the edition context it's being expanded into.
+Note that because new compilers can still compile older editions, the `#[cfg(rust_edition)]` stacking pattern is less useful than it is for `rust_version`. The primary use case for rust_edition is within macros or code generators like bindgen that need to produce different code depending on the edition context they are being used in.[^edition-use-cases]
+
+[^edition-use-cases]: See [this comment](https://github.com/rust-lang/rfcs/pull/3905#discussion_r2670623191) for a list of edition-related issues where this would have been helpful.
 
 For this RFC, the only supported comparison operators are `>=` and `<`.
 
