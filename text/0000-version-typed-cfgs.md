@@ -405,10 +405,10 @@ Operating systems include many versions, including kernel versions, public OS ve
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- **More expressive check-cfg:** We can support specifying an expected number of fields in check-cfg, or an expected set of values to compare against, as in editions:
-    - `--check-cfg 'cfg(foo, version("2018", "2022", "2025"))'`
-    - `--check-cfg 'cfg(foo, version(values >= "1.75"))'`
-    - `--check-cfg 'cfg(foo, version(fields <= 2))'`
+- **More expressive check-cfg:**, including
+    - `--check-cfg 'cfg(foo, version("2018", "2022", "2025"))'`: supported versions (discrete)
+    - `--check-cfg 'cfg(foo, version(values >= "1.75"))'`: supported versions (range)
+    - `--check-cfg 'cfg(foo, version(fields <= 2))'`: max supported precision within a version
 - **"Compatible-with" operator:** We can introduce a `~=` operator that works like Cargo's caret requirements. For example, `cfg(some_dep ~= "1.5")` would be equivalent to `cfg(all(some_dep >= "1.5", some_dep < "2.0"))`. The rationale for not doing this now is that it's easy enough to write by hand.
 - **More comparison operators:** While this RFC only proposes `>=` and `<`, the underlying `version` type makes it natural to add support for `<=`, `==`, `!=`, etc., in the future.
 - **Dependency Version `cfg`s:** The "typed `cfg`" infrastructure can be extended to query the versions of direct dependencies, e.g., `#[cfg(serde >= "1.0.152")]`. This would require significant integration with Cargo.
