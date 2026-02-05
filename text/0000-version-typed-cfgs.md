@@ -218,7 +218,7 @@ This can also be used to override built-in version cfgs (e.g. `--cfg 'rust_versi
 * If a cfg that is not a version type is used in a version comparison, a hard error is emitted. For undefined cfgs, this could be relaxed to evaluate to false in the future.
 * If a cfg that is a version type is used in a non-version comparison (`=`), a hard error is emitted.
 * Version typed cfgs are single-valued. Setting more than one value for the flag is a hard error. This includes values of other types, so given the example above, adding both `--cfg my_app_version` and `--cfg my_app_version="foo"` would cause a hard error.
-* Setting the _same_ value multiple times on the command line should also be a hard error initially. This is a conservative choice that the compiler team may choose to relax, e.g. for build system integration reasons.
+* Setting the _same_ value multiple times on the command line can be a hard error initially. This is a conservative choice that the compiler team may choose to relax, e.g. for build system integration reasons.
 
 Configs defined using the existing command-line syntax `--cfg 'name="value"'` have the `default` config type. The name of this type is not user-facing and may change.
 
