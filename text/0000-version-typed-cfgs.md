@@ -416,6 +416,7 @@ Operating systems include many versions, including kernel versions, public OS ve
 - **Namespaced `cfg`s:** We could group Rust-specific `cfg`s under a `rust::` namespace, e.g., `#[cfg(rust::version >= "1.85")]`. This RFC intentionally keeps `rust_version` at the top level to simplify the initial implementation and stabilization, but namespacing could be explored in the future to better organize the growing number of built-in `cfg`s.
 - **Macro that evaluates to a cfg value:** We can add a `cfg_value!()` macro for single-valued configs that evalutes to its value.
 - **Short-circuiting `cfg` predicates:** Change `any` and `all` predicates to short-circuit instead of evaluating all their arguments. This would make introducing new predicates and comparison operators much easier.
+- **Const eval in `cfg`:** In the future `cfg` could be expressed entirely in terms of const eval, with a simple macro desugaring for cfg-specific predicates into proper Rust expressions. This RFC is compatible with that vision; see [this demo](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=9207bb80756b64ea99f51f54c3369f0d) of how the desugaring can work.
 
 ### Pre-releases
 
