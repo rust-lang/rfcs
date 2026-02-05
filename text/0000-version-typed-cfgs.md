@@ -288,6 +288,8 @@ This design directly solves the MSRV problem in a way that RFC 2523 did not. The
 
 Single-valued config types give us a chance to revisit some earlier decisions like the use of `=` in predicates. For now these are a hard error. Future extensions might add `==` comparisons with a more natural meaning for single-valued configs.
 
+This RFC proposes to lint on any unknown version, including future versions and editions of Rust, with the `version_constraint_unknown_version` lint. This helps prevent mistakes and accidental "syntax bombs" where a piece of code is never compiled until a future version of Rust, at which point it introduces a compiler error. The recommendation for testing older compilers in CI is to disable this lint for older compilers specifically.
+
 [^buy-back]:
     A quick [sample][crate-sample] of two MSRV-preserving popular crates that already make use of feature gating, serde and proc-macro2, showed that those crates would be able to drop their build scripts roughly **a year earlier** with a solution that did not break MSRV compatibility. Obviously, this analysis is incomplete, but it has the benefit of emphasizing popular crates that show up in the critical path of many build graphs.
 
