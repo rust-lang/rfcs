@@ -218,6 +218,10 @@ files ([?][rationale-cargo-lock]).
 A perma-unstable Cargo feature for disabling all standard library dependencies will
 be added to allow the `core` crate to be defined.
 
+When a crate has no builtin dependency on `std` (or an optional builtin
+dependency on `std`), then Cargo will pass `-Zcrate-attr=no_std` to rustc (or
+some equivalent; [?][rationale-no_std]).
+
 *See the following sections for rationale/alternatives:*
 
 - [*Why explicitly declare dependencies on the standard library in `Cargo.toml`?*][rationale-why-explicit-deps]
@@ -229,6 +233,7 @@ be added to allow the `core` crate to be defined.
 - [*Why disallow renaming standard library dependencies?*][rationale-package-key]
 - [*Why disallow source replacement on `builtin` packages?*][rationale-source-replacement]
 - [*Why add standard library dependencies to Cargo.lock?*][rationale-cargo-lock]
+- [*Why pass `-Zcrate-attr=no_std` to rustc?*][rationale-no_std]
 
 *See the following sections for relevant unresolved questions:*
 
@@ -237,7 +242,6 @@ be added to allow the `core` crate to be defined.
 
 *See the following sections for future possibilities:*
 
-- [*Replace `#![no_std]` as the source-of-truth for whether a crate depends on `std`*][future-replace-no_std]
 - [*Allow unstable crate names to be referenced behind cfgs without requiring nightly*][future-cfg-unstable-crate-name]
 - [*Allow `builtin` source replacement*][future-source-replacement]
 - [*Remove `rustc_dep_of_std`*][future-rustc_dep_of_std]
@@ -915,6 +919,25 @@ as Cargo does not force new lockfile versions.
 
 ↩ [*Proposal*][proposal]
 
+### Why pass `-Zcrate-attr=no_std` to rustc?
+[rationale-no_std]: #why-pass--zcrate-attrno_std-to-rustc
+
+The introduction of explicit dependencies means that there are now two ways to
+indicate whether a crate depends on the standard library - builtin dependencies
+in the Cargo manifest and the `#![no_std]` attribute. This isn't ideal.
+
+By passing `-Zcrate-attr=no_std` to rustc (or some equivalent), users no longer
+need to specify the attribute explicitly in their source code. The attribute can
+still be explicitly specified this way, which is useful when rustc is used
+without a build system like Cargo. Other build systems can similarly pass
+`-Zcrate-attr=no_std` if emulating how build-std works in Cargo.
+
+Removing or replacing `#![no_std]` as a mechanism is left as a follow-up to avoid
+introducing a language change in this RFC - see [*Replace `#![no_std]` as the
+source-of-truth for whether a crate depends on `std`*][future-replace-no_std].
+
+↩ [*Proposal*][proposal]
+
 ### Why unstably permit patching of the standard library dependencies?
 [rationale-patching]: #why-unstably-permit-patching-of-the-standard-library-dependencies
 
@@ -1122,30 +1145,28 @@ There are also many possible follow-ups to this part of the RFC:
 [future-replace-no_std]: #replace-no_std-as-the-source-of-truth-for-whether-a-crate-depends-on-std
 
 Crates can currently use the crate attribute `#![no_std]` to indicate a lack of
-dependency on `std`. Introducing `build-std.crates` from [RFC #3874][rfcs#3874]
-or explicit dependencies would add a second way for the user to indicate a lack
-of dependency on the standard library. It could therefore be desirable to
-deprecate `#![no_std]` so that there remains only a single way to express a
-dependency on the standard library.
+dependency on `std`. `#![no_std]` serves two purposes - it stops the compiler
+from adding `std` to the extern prelude and it prevents the user from depending
+on anything from `std` accidentally.
 
-`#![no_std]` serves two purposes - it stops the compiler from adding `std` to
-the extern prelude and it prevents the user from depending on anything from
-`std` accidentally. rustc's default behaviour of loading `std` when not
-explicitly provided the crate via an `--extern` flag should be preserved for
-backwards-compatibility with existing direct invocations of rustc.
+rustc's default behaviour of loading `std` when not explicitly provided the
+crate via an `--extern` flag must be preserved for backwards-compatibility
+with existing direct invocations of rustc.
 
-Initially, if a crate has the `#![no_std]` attribute and has implicit
-dependencies on the standard library in its `Cargo.toml`, a lint could be
-emitted to suggest that their Cargo dependencies are adjusted.
+Ideally, `#![no_std]` would be removed entirely and the compiler would only load
+`std` if it were used, but this isn't possible with the current compiler
+implementation.
 
-Eventually, `#![no_std]` could instead become a compiler flag which would
-indicate to the compiler that `std` should not be loaded by default and that
-`core`'s prelude should be used instead. Cargo would use this flag when driving
-rustc, providing explicit paths to the newly-built or pre-built standard library
-crates, just as with any other dependency.
+Therefore, an explicit flag or attribute is necessary to tell rustc whether to
+load `std`. `-Zcrate-attr=no_std` could be replaced with a explicit compiler
+flag `--no-std` (naming subject to bikeshed) that Cargo and other drivers of
+rustc could use. `#![no_std]` could be removed over an edition alongside
+addition of builtin dependencies to the Cargo manifest.
 
-In addition, uses of the `#![no_std]` attribute could be migrated to denying a
-lint which would prevent use of items from `std`.
+As removing `#![no_std]` could easily be left to a follow-up, and is a change to
+a stable attribute in the surface language (which would require language team
+approval), it isn't included in this proposal to keep scope and the number of
+required approvals small.
 
 ↩ [*Proposal*][proposal]
 
