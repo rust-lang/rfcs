@@ -1,6 +1,6 @@
 - Feature Name: `maybe_dropped`
 - Start Date: 2026-10-2
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000) (todo)
+- RFC PR: [rust-lang/rfcs#3918](https://github.com/rust-lang/rfcs/pull/3918)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 ## Summary
