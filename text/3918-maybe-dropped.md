@@ -120,11 +120,7 @@ The seperation is clear.
 
 void do_some_work() {
     // ...
-    if (!dropped) {
-        rust_work(possibly_dropped, false)
-    } else {
-        rust_work(possibly_dropped, true)
-    }
+    rust_work(possibly_dropped, is_dropped);
 }
 ```
 And then, in rust
@@ -132,7 +128,7 @@ And then, in rust
 // imports...
 
 #[unsafe(no_mangle)]
-extern "C" fn rust_work(dropped: MaybeDropped<c_int>, is_dropped: bool) {
+extern "C" fn rust_work(dropped: MaybeDropped<SomeStruct>, is_dropped: bool) {
     let as_option = if is_dropped {
         None
     } else {
