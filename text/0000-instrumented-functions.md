@@ -18,16 +18,16 @@ partial support in Rust today:
 
 * mcount, a counting function inserted into the prologue of each function which takes the caller and callee
 addresses, and performs interesting things with them. This is historically used with the prof or gprof
-utilities available on GNU/linux or BSD.
+utilities available on GNU/Linux or BSD.
 * fentry, a derivative of mcount with a slightly different ABI. It is meant to intercept function entry
 to inspect or manipulate arguments as well as the traditional mcount features
 * [XRay](https://llvm.org/docs/XRay.html), an LLVM project to instrument both entry and exit of functions,
 with dynamic enablement.
 
-These features are all very similar, are effectively mutually exclusive (e.g., mcount and fentry).
+These features are very similar, and are effectively mutually exclusive (e.g., mcount and fentry).
 
 mcount deserves a little extra background. This feature has existed on many C toolchains for decades, and
-gcc/clang have developed extensions to support novel features like linux's [ftrace](https://docs.kernel.org/trace/ftrace.html).
+gcc/clang have developed extensions to support novel features like Linux's [ftrace](https://docs.kernel.org/trace/ftrace.html).
 Those features include tracking the location of instrumentation insertion (`-mrecord-mcount`), and the
 ability to generate nop's in place of the call (`-mnop-mcount`).
 
@@ -56,7 +56,7 @@ example, on x86_64-linux `__fentry__` or `mcount` is the expected counting funct
 functions is expected to be stable despite their lack of documentation (e.g., glibc provides these symbols).
 
 gcc and clang provide the following options which are used to instrument functions for common usages:
-* ftrace: linux only, `-pg` or `-pg -fentry` with `-mrecord-mcount` and optionally `-mnop-mcount`.
+* ftrace: Linux only, `-pg` or `-pg -fentry` with `-mrecord-mcount` and optionally `-mnop-mcount`.
 * gprof: `-pg` or `-pg -fentry` with an altered set of crt libraries (see `gcrt1.o` vs `crt1.o` on glibc).
 * XRay: clang/llvm only, `-fxray-instrument` which links a special compiler-rt runtime.
 
@@ -86,7 +86,7 @@ framework specific configuration options described below.
   * `call`, `no-call`: Insert a call to the counting function or a nop of equal size.
 
 `-Zinstrument-xray-opts`:
-  * `ignore-loops`: Ignore presence of loops, instrument functions based only on instruction count.
+  * `ignore-loops`: Ignore loop behavior when deciding to instrument a function.
   * `instruction-threshold=10`: Set a different instruction threshold for instrumentation.
   * `no-entry`: Do not instrument function entry.
   * `no-exit`: Do not instrument function exit.
@@ -109,8 +109,8 @@ $ RUSTFLAGS="-Zinstrument-function=xray -Zinstrument-xray-opts=ignore-loops" car
 ### Language additions
 
 A single builtin attribute, `instrument_fn`, will be added. It will be applied to functions and methods
-only. It will accept two options `entry="on|off"` and `exit="on|off"` which will control insertion of the
-counting function in the respective function locations.
+only. It will accept two list entries `entry="on|off"` and `exit="on|off"`. Additionally, a simpler form
+`#[instrument_fn = "off"]` will disable all instrumentation.
 
 Usage will look like the following:
 
@@ -124,7 +124,11 @@ fn no_exit_instrument() {
 }
 
 #[instrument_fn(entry = "off", exit = "off")]
-fn no_instrument() {
+fn no_instrument_verbose() {
+}
+
+#[instrument_fn = "off"]
+fn no_instrument_terse() {
 }
 ```
 
@@ -158,6 +162,11 @@ Likewise, there may not be reason to bundle all function instrumentation into a 
 [prior-art]: #prior-art
 
 Similar features exist in gcc and clang as noted above. This extends those features into Rust.
+
+When using mcount or fentry with recording and nop insertion, this feature can behave similarly
+to patchable-function-entries presented in rfc#3543. There are some minor differences in the details
+of how nops are recorded. However, both can be used simultaneously without issue. This is the case
+for some Linux kernel configurations (e.g., x86-64 on fedora at the time of writing).
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
