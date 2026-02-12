@@ -24,21 +24,19 @@ However, an `Option<T>` here is correct, but the following issues arise:
 While an `Option<T>` works, its not truly an `Option`. For example, the type should not be instantiated as `None`, and the value should only be
 `None` after it's usage is completed.
 
-Take this example, from the standard library (simplified)
+Take this example.
 
 ```rust
-pub struct Fuse<I> {
+pub struct Fuse<I: Iterator> {
+  done: bool,
   iter: I
 }
 ```
 
-The actual iterator is not needed after it yields  `None` once, so in this case (not in the standard library, 
-however, due to a possible breaking change), We can replace the `I` with a `MaybeDropped`, which can optimize code by dropping the value early
+The actual iterator is not needed after it yields `None` once. So in this case, We can replace the `I` with a `MaybeDropped`, which can optimize code by dropping the value early, since we track if it is done elsewhere.
 (eg. by freeing allocator space, releasing a lock, etc.)
 
-But you may realize this is exactly the same as using an `Option` (Which `Fuse` does). However, the following point contradicts this.
-
-2. it is more optimized (for size)
+2. it has no additional storage.
 
 `MaybeDropped<T>` has the same memory layout as `ManuallyDrop<T>`, which has the same memory layout as `T`. This can allow optimizations if
 there is no need to store the drop state of `T`.
@@ -148,16 +146,19 @@ The following is *__not__* undefined behaviour:
 the following *__is__* undefined behaviour:
 
 - Dropping a `MaybeDropped` twice.
-- Creating an uninitialized `MaybeDropped`
-- any access to the inner memory if it is already dropped.
-- Obtaining references to the inner memory (even if not used)
+- Creating an uninitialized `MaybeDropped` (where `T` cannot be unintialized)
+- any access to `T` after drop.
+- Obtaining references to `T` after drop.
 - Writing a value to the `MaybeDropped` after it has already been dropped.
 
 #### Examples
 ```rust
-let dropped = MaybeDropped::<i32>::dropped();
+let dropped = MaybeDropped::<i32>::dropped(10); // creating a logically dropped `MaybeDrop` without a value to drop would be the same as making it uninitialized, which isn't always valid.
+
 // this is not ok
 // let uninit = MaybeUninit::<MaybeDropped<i32>>::uninit().assume_init();
+// this is ok (ZST)
+let uninit_unit = MaybeUninit::<MaybeDropped<()>>::unint().assume_init();
 
 // this is not ok
 // let reference = dropped.assume_alive();
@@ -168,11 +169,13 @@ let ptr = dropped.as_ptr();
 // this fails to compile (not mutable), but is otherwise ok UB-wise
 // let mut_ptr = dropped.as_mut_ptr();
 
+let to_be_dropped = MaybeDropped::new(10);
+
 unsafe {
     // this is ok
-    dropped.assume_alive_drop();
+    to_be_dropped.assume_alive_drop();
     // this is not
-    dropped.assume_alive_drop();
+    // to_be_dropped.assume_alive_drop();
 };
 
 // this is not ok
@@ -184,18 +187,29 @@ unsafe {
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This feature's implementation will be similar to `MaybeUninit`
+This is the definition
 
 ```
-union MaybeDropped<T> {
-    value: ManuallyDrop<T>,
-    dropped: ()
+#[repr(transparent)]
+pub struct MaybeDropped<T: ?Sized> {
+    value: MaybeUninit<ManuallyDrop<T>>
 }
 ```
 
 it does *not* store any drop-state information.
 
-the public API will expose methods to either create it with an initialized value, or create it *logically dropped*.
+the public API will expose the following:
+
+```
+impl<T> MaybeDropped<T> {
+    pub unsafe fn assume_alive_drop(self);
+    pub unsafe fn assume_alive(self) -> T;
+    pub unsafe fn assume_alive_ref(&self) -> &T;
+    pub unsafe fn assume_alive_mut(&mut self) -> &mut Self;
+    pub unsafe fn as_ptr(&self) -> *const T;
+    pub unsafe fn as_mut_ptr(&mut self) -> *mut T;
+}
+```
 
 ### Dropping
 
@@ -307,12 +321,8 @@ In systems programming contexts outside of Rust, it is common to distinguish bet
 [unresolved-questions]: #unresolved-questions
 
 > - What parts of the design do you expect to resolve through the RFC process before this gets merged?
-  
-  - What is considered `undefined behaviour` in `MaybeDropped`?
 
 > - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-  
-  - How will we expose the public API?
   - Trait implementations
     - For example, `Unpin`, `Send`, `Sync`?
 
