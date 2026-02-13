@@ -17,7 +17,7 @@ which Cargo can aggregate and report back which dependencies are unused.
 
 However, not all dependencies exist for using their `extern` in the current package, including
 - activating a feature on a transitive dependency
-- pinning the version of a transitive dependency in `Cargo.toml` (however, normally this would be done via `Cargo.lock`)
+- pinning the version of a transitive dependency in `Cargo.toml` (however, normally this would be done via `Cargo.lock` or `target."cfg(false)".dependencies`)
 
 The user needs a way to be able to augment what the compiler reports with their intentions.
 
@@ -218,6 +218,16 @@ ignored = ["prost"]
 [package.metadata.cargo-shear]
 ignored = ["crate-name"]
 ```
+
+### `cfg(false)` dependencies
+
+To specify a version requirement on a package without using it, you can do:
+```toml
+[target."cfg(false)".dependencies]
+foo = "1.0.0"
+```
+
+This would not work for feature activations.
 
 ### `peerDependencies`
 
