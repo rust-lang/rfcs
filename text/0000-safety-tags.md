@@ -278,7 +278,8 @@ against [Semantic Versioning][semver].
   an undefined tag just emits a warning-by-default diagnostic.
 * Renaming a tag definition is a **major** change, because it's the result of removal and addition.
 * Changing the definition of a tag in an *equivalent* or in a way that *requires less* (the old tag
-  implies the new tag), is a **minor** change.
+  implies the new tag), is a **minor** change, as long as that new definition is correct for all
+  published versions within the same major version (**if unsure, rename the tag instead**).
 * Changing the definition of a tag in a way that *requires more*, is a **major** change, because
   callsites only checked the weaker requirement for this tag.
   * However, adding more safety requirements to an existing tag definition is strongly discouraged:
