@@ -909,7 +909,13 @@ If the sub-trait defines an item of the same name as an item in the super-trait,
 
 In this scenario, any item in an impl block of the sub-trait using the ambiguous name will always be resolved to the item from the sub-trait. This means that the only way to override the item from the super trait is to use `extern impl` or an overriding `auto impl` block inside the sub-trait `impl` block.
 
-If the sub-trait definition contains two `auto impl` directives and a sub-trait implementation has an item with a name that can be resolved to an associated item in both of the `auto impl` supertraits, irrespective of the associated item kind, then it **must** also be rejected as ambiguity. Either an `extern impl` statement or an overriding `auto impl` block is required for supplying an alternative definition of this item for each relevant supertrait.
+If the sub-trait definition contains two `auto impl` directives and a sub-trait implementation has an item with a name that ...
+
+- can be resolved to an associated item in both of the `auto impl` supertraits,
+- but cannot be resolved to an associated item in the sub-trait trait definition,
+then, irrespective of the associated item kind, the item **must** also be rejected as ambiguity. Either an `extern impl` statement or an overriding `auto impl` block is required for supplying an alternative definition of this item for each relevant supertrait.
+
+On the contrary, when the sub-trait definition defines an item name and an `auto impl` whose supertriat also defines an item with a matching name, this name appearing in all implementations of this sub-trait will always resolve to the item associated to the sub-trait.
 
 ## Nesting `auto impl` in sub-trait defintion
 
