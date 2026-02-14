@@ -38,7 +38,7 @@ impl Subtrait2 for MyType {
 
 ## Trait evolution
 
-Trait evolution is a treatment to existing trait hierarchy in a library. Difficulty has arised in the past that hoisting items from the current trait into a new supertrait, or introduction of a second trait.
+Trait evolution is a treatment to existing trait hierarchy in a library. Difficulty has arose in the past that hoisting items from the current trait into a new supertrait, or introduction of a second trait.
 
 This RFC promises to improve the situation around trait evolution. It captures the common cases under this theme and aims to reduce rewrites in downstream crates, should the need to re-organise trait hierarchy arises.
 
@@ -131,7 +131,7 @@ where
 
 ### Example: relaxed bounds via new supertraits
 
-A common use case of supertraits is weaken bounds involved in associated items. There are occassions that a weakend supertrait could be useful. Suppose that we have a factory trait in the following example. In this example, the `async fn make` factory method could be weakened so that the future returned could be used in the context where the future is not required to be of `Send`. This has been enabled through the use of [the `trait_variant` crate](https://docs.rs/trait-variant/latest/trait_variant/). The [`tower::Service`](https://docs.rs/tower/latest/tower/trait.Service.html) trait would benefit greatly from this proposal by having also the `!Send` bound for local service without major refactoring.
+A common use case of supertraits is weaken bounds involved in associated items. There are occasions that a weakened supertrait could be useful. Suppose that we have a factory trait in the following example. In this example, the `async fn make` factory method could be weakened so that the future returned could be used in the context where the future is not required to be of `Send`. This has been enabled through the use of [the `trait_variant` crate](https://docs.rs/trait-variant/latest/trait_variant/). The [`tower::Service`](https://docs.rs/tower/latest/tower/trait.Service.html) trait would benefit greatly from this proposal by having also the `!Send` bound for local service without major refactoring.
 
 ```rust
 #[trait_variant::make(IntFactory: Send)]
@@ -319,6 +319,12 @@ For some traits, it's difficult to implement the trait directly because the "raw
 The serde traits are notoriously difficult to implement directly. It's almost always done by macro. Imagine if you could write this:
 
 ```rs
+// For reference, the Serialize trait is taken from a recent version of the serde crate.
+pub trait Serialize {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+       where S: Serializer;
+}
+
 struct MyStruct {
     name: String,
     int: i32,
@@ -557,7 +563,7 @@ The `extern impl MyTrait` declaration specifies the impl block does not automati
 
 ### Example: Trait evolution
 
-Over time, needs have arised to establish a hierarchy of traits, so that the parts and pieces of existing "big" library traits, be it from `std` or ecosystem crates, can be extraced and pulled back into supertraits without requiring a breaking change in the downstream crates. In most cases, the assoication of methods to be "refactored" and the destination supertraits can be determined without ambiguity. This falls under a bigger theme of trait evolution, which concerns how a historically big trait can be broken down and refined into smaller traits and trait hierarchy. [RFC 1210](https://rust-lang.github.io/rfcs/1210-impl-specialization.html#the-default-keyword) provided an example of a trait evolution and how specialisation could have eased the refactoring.
+Over time, needs have arose to establish a hierarchy of traits, so that the parts and pieces of existing "big" library traits, be it from `std` or ecosystem crates, can be extracted and pulled back into supertraits without requiring a breaking change in the downstream crates. In most cases, the association of methods, that are to be "refactored", and the destination supertraits can be determined without ambiguity. This falls under a bigger theme of trait evolution, which concerns how a historically big trait can be broken down and refined into smaller traits and trait hierarchy. [RFC 1210](https://rust-lang.github.io/rfcs/1210-impl-specialization.html#the-default-keyword) provided an example of a trait evolution and how specialisation could have eased the refactoring.
 
 With this proposal, specialisation is not required and, instead, the pulled-back supertrait implementation applies directly within the context of the subtrait implementation.
 
@@ -913,9 +919,66 @@ If the sub-trait definition contains two `auto impl` directives and a sub-trait 
 
 - can be resolved to an associated item in both of the `auto impl` supertraits,
 - but cannot be resolved to an associated item in the sub-trait trait definition,
+
 then, irrespective of the associated item kind, the item **must** also be rejected as ambiguity. Either an `extern impl` statement or an overriding `auto impl` block is required for supplying an alternative definition of this item for each relevant supertrait.
 
-On the contrary, when the sub-trait definition defines an item name and an `auto impl` whose supertriat also defines an item with a matching name, this name appearing in all implementations of this sub-trait will always resolve to the item associated to the sub-trait.
+```rust
+pub trait TraitA {
+    fn foo();
+}
+
+pub trait TraitB {
+    fn foo();
+}
+
+pub trait Subtrait: TraitA + TraitB {
+    auto impl TraitA; // OK
+    auto impl TraitB; // OK
+}
+
+impl Subtrait for MyType {
+    fn foo(); //~ ERROR ambiguous associated item `foo`
+    // Reason: it could be resolved to either `TraitA::foo` or `TraitB::foo`
+    //~ ERROR missing `auto impl TraitA` or `extern impl TraitA`
+    //~^ ERROR missing `auto impl TraitB` or `extern impl TraitB`
+    // ... because `foo` is not used to discharge `auto impl TraitA` or `auto impl TraitB`
+}
+
+let _ = <MyType as Subtrait>::foo(); //~ ERROR `Subtrait` has no associated method called `foo`
+````
+
+On the contrary, when the sub-trait definition defines an item name and an `auto impl` whose supertrait also defines an item with a matching name, this name appearing in all implementations of this sub-trait will always resolve to the item associated to the sub-trait.
+
+```rust
+pub trait TraitA {
+    fn foo();
+}
+
+pub trait TraitB {
+    fn foo();
+}
+
+pub trait Subtrait: TraitA + TraitB {
+    auto impl TraitA; // OK
+    auto impl TraitB; // OK
+    fn foo();         // Also OK (*)
+}
+
+// Now, `Subtrait::foo` always resolves to the definition (*)
+
+impl Subtrait for MyType {
+    auto impl TraitA {
+        fn foo() {}
+    }
+    auto impl TraitB {
+        fn foo() {}
+    }
+    fn foo() {} // (**)
+}
+
+let _ = <MyType as Subtrait>::foo(); // OK, `Subtrait::foo` resolves to the instance (**)
+// NOT `<MyType as TraitA>::foo` or `<MyType as TraitB>::foo`
+```
 
 ## Nesting `auto impl` in sub-trait defintion
 
@@ -1070,7 +1133,7 @@ This is a SemVer hazard and mandates a major change. The implementors should ins
 
 This is a SemVer hazard and mandates a minor change. Provided that both the sub-trait and the super-trait remains SemVer stable, this constitutes only a change in implementation detail.
 
-### Change in the proper defintion of super- and sub-traits
+### Change in the proper definition of super- and sub-traits
 
 This is a SemVer hazard and mandates a major change. The justification follows API change in trait irregardless of super- or sub-trait relationship. This scenario encompasses any changes in types, function signature, bounds, names.
 
