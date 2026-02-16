@@ -502,8 +502,8 @@ This kind of code where `SmartPtr` *sometimes* implements `Deref` but *always* i
 - Backward-compatibility
   - We need to maintain that all the current `impl` blocks to compile, specifically the `impl Deref` litmus test mentioned in the [deref-receiver] motivating example.
   - This demand also extends to other possible library traits that may see relocation of items into a future supertrait, while ensuring that the existing `impl` blocks continue to compile.
-- Intuitional readability and clear syntatical signal
-  - We strive for a syntax that is intuitional and easily connected to the existing constructs.
+- Intuitive readability and clear syntatical signal
+  - We strive for a syntax that is Intuitive and easily connected to the existing constructs.
   - A successful design is one that enables a user to easily build a correct mental picture of the trait `impl`s with assistance from the syntatical features.
   - By extension, supertrait `impl`s should appear clearly in connection with subtrait `impl`s.
 - Flexibility
@@ -686,9 +686,11 @@ The `MouseEventHandler` trait could even come from a different crate than `Event
 
 ## Unsafe auto impl
 
-It's possible to declare that an auto implementation is unsafe.
+When the supertrait is an `unsafe trait`, its auto implementation must also be `unsafe`.
 
 ```rs
+unsafe trait MyTrait {}
+
 trait MySubTrait: MyTrait {
     unsafe auto impl MyTrait;
     
@@ -696,7 +698,7 @@ trait MySubTrait: MyTrait {
 }
 ```
 
-This means that it is unsafe to override the auto implementation.
+This implies that it is unsafe to override the auto implementation.
 
 ```rs
 impl MySubTrait for String {
@@ -900,14 +902,12 @@ trait Subtrait<'a>: for<'a> Supertrait<'a> {
 
 ## Unsafe auto implementations
 
-The `auto impl` items can be marked `unsafe`, which declares that implementing the sub-trait without using the auto implementation is unsafe.
-
-When an `auto impl` is declared unsafe, then:
-
-- To opt-out, you must write `unsafe extern impl`.
-- If any methods from the `unsafe auto impl` block are overridden, then the `impl` block must be `unsafe`.
-
 If the super trait is `unsafe`, then the `auto impl` declaration must also be `unsafe`.
+
+When an `auto impl` is declared unsafe, then the choices are
+
+- To opt-out, and you must write `unsafe extern impl`.
+- If any methods from the `unsafe auto impl` block are to be overridden, then the `auto impl` block must be `unsafe`.
 
 ## Naming ambiguity
 
