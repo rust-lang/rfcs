@@ -246,6 +246,23 @@ Is `reason` justified?
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
+### Programmatic reason
+
+The user being able to tell Cargo the reason in a way that it can verify it and still warn if the reason no longer applies.
+
+For example, say we had:
+```toml
+[package]
+name = "user"
+
+[dependencies]
+abstraction = "1.0"
+mechanism = { version = "1.0", features = ["semantic-addition"], used.transitive = true }
+```
+Then if `abstraction` is removed, we could start warning about `mechanism` again.
+
+For `transitive`, this could get complicated to have access to the dependency resolution graph at the time the warning is being handled.
+
 ### Potential lints that may need configuration
 
 - [#5340: Lint against non semver-open dependencies](https://github.com/rust-lang/cargo/issues/5340)
