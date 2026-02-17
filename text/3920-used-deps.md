@@ -11,7 +11,7 @@ Extend Cargo's dependency specifications so users can mark that a dependency is 
 ## Motivation
 [motivation]: #motivation
 
-Rusts can report to Cargo
+Rustc can report to Cargo
 [unused externs](https://doc.rust-lang.org/nightly/rustc/json.html#unused-dependency-notifications)
 which Cargo can aggregate and report back which dependencies are unused.
 
