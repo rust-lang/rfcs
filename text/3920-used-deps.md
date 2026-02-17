@@ -238,7 +238,7 @@ This would not work for feature activations.
 npm has the concept of
 [`peerDependencies`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#peerdependencies)
 for requiring a version of a package if it exists without actually building against this.
-This was developed for plugins to specify the version of what they plug into ([announcment](https://nodejs.org/en/blog/npm/peer-dependencies)).
+This was developed for plugins to specify the version of what they plug into ([announcement](https://nodejs.org/en/blog/npm/peer-dependencies)).
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
