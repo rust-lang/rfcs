@@ -111,6 +111,10 @@ Type:
 In contrast, Rust's `reason` can be applied to `warn`, `deny`, and `forbid` lints and reported back in the diagnostic
 ([reference](https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons)).
 
+With any of the current options,
+if the dependency ever becomes truly unused,
+there is no way to report this to the user.
+
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
