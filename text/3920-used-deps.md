@@ -81,10 +81,11 @@ name = "user"
 
 [dependencies]
 abstraction = "1.0"
-mechanism = { version = "1.0", features = ["semantic-addition"], used.reason = "feature activation" }
+# For feature activation
+mechanism = { version = "1.0", features = ["semantic-addition"], used = true }
 ```
 
-Cargo would see that a `reason` is provided for why this is `used` and silence the lint.
+Cargo would see that the dependency is marked as `used` and silence the lint.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -100,16 +101,10 @@ Applicability:
 - `[workspace.dependencies]`: no
 - `[patch]`: no
 
-Type:
-- `used = <bool>`: `true` if used, `false` if unused
-- `used.reason = <string>`: used, the description is unused and for documentation purposes only
+Type: `bool`
 
 ## Drawbacks
 [drawbacks]: #drawbacks
-
-`reason` is unused by Cargo and could just as well be a comment.
-In contrast, Rust's `reason` can be applied to `warn`, `deny`, and `forbid` lints and reported back in the diagnostic
-([reference](https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons)).
 
 With any of the current options,
 if the dependency ever becomes truly unused,
@@ -127,6 +122,12 @@ Pros:
 
 Downsides:
 - Manifest schema is being extended for control of a one off lint which can be incongruous with other lints and encourage the doing this for other lints which could overcomplicate manifest files
+
+### `used.reason`
+
+If we added `reason`, it would be unused by Cargo and could just as well be a comment.
+In contrast, Rust's `reason` can be applied to `warn`, `deny`, and `forbid` lints and reported back in the diagnostic
+([reference](https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons)).
 
 ### Lint config
 
@@ -245,8 +246,6 @@ This was developed for plugins to specify the version of what they plug into ([a
 
 Is this the right direction?
 
-Is `reason` justified?
-
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -265,7 +264,7 @@ mechanism = { version = "1.0", features = ["semantic-addition"], used.transitive
 ```
 Then if `abstraction` is removed, we could start warning about `mechanism` again.
 
-For `transitive`, this could get complicated to have access to the dependency resolution graph at the time the warning is being handled.
+However for `transitive`, this could get complicated to have access to the dependency resolution graph at the time the warning is being handled.
 
 ### Potential lints that may need configuration
 
