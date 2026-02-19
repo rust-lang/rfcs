@@ -237,7 +237,7 @@ However, the second restriction is somewhat significant: for systems where `usiz
 
 It's worth noting that `u32::MAX` bits is equivalent to 0.5 GiB, and thus no integer in Rust will be able to be larger than this amount. This is seen as acceptable because at that size, people can just use their own big-integer types. For now, adding a dedicated big-integer type to the standard library is left as a potential future change.
 
-The compiler should be allowed to restrict `N` even further, maybe even as low as `u16::MAX`, due to other restrictions that may apply. For example, the LLVM backend currently only allows integers with widths up to `u<23>::MAX` (not a typo; 23, not 32). On 16-bit targets, using `usize` further restricts these integers to `u16::MAX` bits.
+The compiler should be allowed to restrict `N` even further, maybe even as low as `u16::MAX`, due to other restrictions that may apply. For example, the LLVM backend currently only allows integers with widths up to `u<23>::MAX` (not a typo; twenty three). On 16-bit targets, using `usize` further restricts these integers to `u16::MAX` bits.
 
 While `N` could be a `u32` instead of `usize`, keeping it at `usize` makes things slightly more natural when converting bits to array lengths and other length-generics, and these quite high cutoff points are seen as acceptable. In particular, this helps using `N` for an array index until [`generic_const_exprs`] is stabilized.
 
