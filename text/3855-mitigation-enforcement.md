@@ -199,8 +199,9 @@ via `-C allow-partial-mitigations=<mitigation>` and turned off by
 These flags act like every other compiler flag, with the last flag winning if there are multiple
 values for the same mitigation.
 
-There is no "resetting" of the allow/deny status if the mitigation is overriden, but see
-the alternative [with order dependency].
+When a mitigation option appears (for example, `-C stack-protector=strong`), the mitigation
+is denied for partial use. This is needed to allow for distributors and the like to
+set a default that allows partial mitigations without weakening the security of users.
 
 For example,
 ```
@@ -209,18 +210,8 @@ For example,
 ```
 
 Will allow partial mitigations for stack-protector (since there's an allow)
-and kcfi (since enabling the sanitizer does not "reset" the allow status),
 but deny partial mitigations for `overflow-checks` (since the later deny overrides
-the allow). If we decide to go [with order dependency], then in that example
-kcfi would deny partial mitigations, since the `-Csanitizer=kcfi` would reset the
-`-C allow-partial-mitigations=kcfi`.
-
-[with order dependency]: #with-order-dependency
-
-The default of allow/deny is mitigation-dependent, but can also depend on edition (for
-example, it might be best to make `-C control-flow-guard` only deny-by-default from the next
-edition), and if we decide to add mitigation enforcement for overflow checks,
-it would probably be best to make it allow-by-default.
+the allow) and `kcfi` (since `-Csanitizer=cfi` resets enforcement for CFI).
 
 > It is possible to bikeshed the exact naming scheme.
 
@@ -258,11 +249,6 @@ as follows:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The `-C allow-partial-mitigations=stack-protector` syntax
-does not allow for easy appending, unless made order-dependent.
-
-The `-noenforce` syntax is ugly.
-
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -280,34 +266,11 @@ If a program has multiple flags of the same kind, the last flag wins, so e.g.
 `-C stack-protector=strong-noenforce -C stack-protector=strong` is the same as
 `-C stack-protector=strong`.
 
-This is uglier, but acts nicer if distributors want to set flags by default,
-see [with order dependency](#with-order-dependency).
-
 #### -C stack-protector=none-noenforce
 
 The option `-C stack-protector=none-noenforce` is the same as
 `-C stack-protector=none`. I am not sure whether we should have both, but
 it feels that orthogonality is in favor of having both.
-
-### With order dependency
-
-With the way the flag is specified now,
-`-C stack-protector=strong -C allow-partial-mitigations=stack-protector -C stack-protector=strong`
-is the same as `-C stack-protector=strong -C allow-partial-mitigations=stack-protector`.
-
-This is unfortunate, because `-C stack-protector=strong -C allow-partial-mitigations=stack-protector` is
-a pretty good default for distributions to set. If a distribution sets that, and an application
-believes they are turning on enforcing stack protection by using `-C stack-protector=strong`,
-the application will not be getting enforcement due to the distribution setting
-`-C allow-partial-mitigations=stack-protector`.
-
-With a small amount of implementation effort, we could have `-C stack-protector=strong` reset the
-`-C allow-partial-mitigations=stack-protector` state, so that
-`-C stack-protector=strong -C allow-partial-mitigations=stack-protector -C stack-protector=strong`
-is equivalent to `-C stack-protector=strong`.
-
-This would work quite well, but I am not sure that rustc wants to have order between different
-kinds of CLI arguments.
 
 ## Limiting the set of crates that are allowed to bypass enforcement
 
@@ -368,18 +331,13 @@ breakage, but they can fairly easily turn a mitigation on in a non-enforcing way
 We do want the combination of defaults to combine in a nice way - if the
 distribution sets `-C stack-protector=strong -C allow-partial-mitigations=stack-protector`,
 and the user adds `-C stack-protector=strong`, we want the result to be stack-protector set
-to strong and enforcing.
+to strong and enforcing. This is done by the "resetting" behavior of the CLI - setting
+`-C stack-protector=strong -C allow-partial-mitigations=stack-protector -C stack-protector=strong`
+acts as if the `-C allow-partial-mitigations=stack-protector` was not passed.
 
-On the other hand, maybe there is not actually desire to add
-`-C stack-protector=strong -C allow-partial-mitigations=stack-protector` as a default,
-which would make this less interesting?
-
-Currently, the best way for a distribution to enable a mitigation by default would be
-to patch `rustc`, as opposed to setting a `RUSTFLAGS`.
-
-Maybe it is actually possible to ship a `-C stack-protector=strong` standard library and
-add a `-C stack-protector=strong` default, since the enforcement check only works
-"towards roots"?
+Distributors and packagers can set defaults for mitigations by setting some sort of
+`RUSTFLAGS` argument, or by patching the compiler to act as if there was an
+"implicit" prepended `RUSTFLAGS` argument.
 
 [by Ubuntu with `-fstack-protector-strong`]: https://wiki.ubuntu.com/ToolChain/CompilerFlags
 
