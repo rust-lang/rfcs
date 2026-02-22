@@ -92,10 +92,10 @@ example:
 
 With all that in mind, we've now identified problems that can arise via
 exceptions (an invariant is broken and then observed) as well as methods to
-ensure that prevent this from happening. In languages like C++ this means that
-we can be memory safe in the face of exceptions and in languages like Java we
-can ensure that our logical invariants are upheld. Given this background let's
-take a look at how any of this applies to Rust.
+ensure we prevent this from happening. In languages like C++ this means that we
+can be memory safe in the face of exceptions and in languages like Java we can
+ensure that our logical invariants are upheld. Given this background let's take
+a look at how any of this applies to Rust.
 
 ## Background: What is exception safety in Rust?
 
