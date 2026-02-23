@@ -803,6 +803,13 @@ Other benefits of `ignore` attribute include:
 - Similar to how multiple `#[derive]`s are merged into a single `#[derive]` by rustfmt, multiple `#[ignore]`
   attributes could be merged into a single `#[ignore]` attribute
 
+## Why disallow more than 1 of the same path?
+
+It is an error to pass 2 paths to the `ignore` attribute that resolve to the same item because:
+
+- It doesn't do anything, and is likely a mistake on the user's part
+- If we ever want to allow duplicate paths, we can always relax the restriction. But adding the restriction will not be possible.
+
 ## What is the impact of not doing this?
 
 - Less standardization in the ecosystem. Each crate can have its own way to do things.
