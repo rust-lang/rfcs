@@ -476,7 +476,7 @@ The span of `#[ignore]` attribute received by derive macro `Debug` will be the s
 
 This RFC additionally proposes to add 2 new deny-by-default lints:
 
-- Types that implement `Eq` with fields that ignore **just one of** `Hash` or `PartialEq` issue a lint,
+- Types that implement or derive `Eq` with fields that ignore **just one of** `Hash` or `PartialEq` issue a lint,
   because types `k1` and `k2` implementing `Eq` and `Hash` are expected to follow the property:
 
   ```
@@ -485,9 +485,19 @@ This RFC additionally proposes to add 2 new deny-by-default lints:
 
   Violating this property is a logic error, so it would be incorrect to `#[ignore]` only 1 of those traits.
 
+  If the type manually implements either `Hash` or `PartialEq`, the lint does not fire
+
 - Types with fields that ignore **just one, or just two of** `PartialEq`, `PartialOrd` and `Ord` issue a lint,
   because it is logically incorrect for the implementations to differ.
   See the [documentation](https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html) for details.
+ 
+  Essentially, fields must either ignore all of them `#[ignore(PartialEq, PartialOrd, Ord)]`, or none.
+
+  If the type manually implements any of `PartialEq`, `PartialOrd`, or `Ord` the lint does not fire
+
+In some circumstances mentioned above, lints won't fire because checking if the given properties are upheld will require checking body of the
+trait implementations and scanning for used/unused fields. While this could theoretically be accomplished with some heuristics, this RFC does not require that
+to happen
 
 ## Standard library derives supporting the `ignore` attribute
 
