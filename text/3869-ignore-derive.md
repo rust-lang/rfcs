@@ -116,7 +116,7 @@ In the above example, `Foo` derives `Clone` but not `PartialEq` - so passing `Pa
 
 ## Variants
 
-You can also apply `#[derive]` to enum variants, too:
+You can also apply `#[ignore]` to enum variants, too:
 
 ```rust
 #[derive(Serialize, Deserialize, Debug)]
