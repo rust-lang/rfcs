@@ -181,6 +181,14 @@ Open questions:
   - My guess is unified with [opaque dependencies](https://github.com/rust-lang/cargo/issues/3573#issuecomment-3498262549) being a way to make them not unified.
 - Does this cover all false-positive cases?
 
+Pros:
+- Close to the dependency
+- Low overhead for design and implementation
+- Won't build if it goes stale, avoiding slowing down builds
+
+Downsides:
+- Requires a comment to make sense of it
+
 As an aside: is `lib` or `link` a more appropriate field name?
 
 ## Prior art
