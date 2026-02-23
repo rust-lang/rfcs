@@ -163,6 +163,26 @@ Downsides:
 - The Cargo team was hesitant to officially support something similar for features ([#10794](https://github.com/rust-lang/cargo/issues/10794))
 - Affects sort order, moving it away from any related packages
 
+### Link control
+
+```toml
+mechanism = { version = "1.0", lib = false, features = ["semantic-addition"] }
+```
+
+[Artifact dependencies](https://doc.rust-lang.org/cargo/reference/unstable.html#artifact-dependencies)
+has a `lib` field to control whether a package links to that dependency.
+
+We could stabilize that piece independent of the rest of artifact dependencies
+and shift the focus of this lint to `unused_lib_dependencies`.
+We could suggest to users to remove the dependency or set `lib = false`.
+
+Open questions:
+- How would artifact / unlinked dependencies resolve features?  Independent of the rest of unified?
+  - My guess is unified with [opaque dependencies](https://github.com/rust-lang/cargo/issues/3573#issuecomment-3498262549) being a way to make them not unified.
+- Does this cover all false-positive cases?
+
+As an aside: is `lib` or `link` a more appropriate field name?
+
 ## Prior art
 [prior-art]: #prior-art
 
