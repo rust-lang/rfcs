@@ -91,6 +91,10 @@ override for a specific dependency.
 A profile specifying an `opt-level` will not override a higher
 `hints.min-opt-level` specified in a dependency.
 
+Note that a hint provided by a given library crate only applies to that
+specific crate, not that package's dependencies. If the code that needs
+optimizing is in a dependency, that dependency would need to add the hint.
+
 ## Drawbacks
 [drawbacks]: #drawbacks
 
@@ -118,6 +122,10 @@ We could have a simple boolean, e.g. `optimize-in-dev = true`, and leave it to
 Cargo whether that means opt-level 1, 2, or 3. This would be simpler, but would
 prevent crates from determining whether they benefit from opt-level 3 (e.g.
 aggressive vectorization and loop unrolling) or not.
+
+We could have a hint apply recursively to dependencies. This seems like more
+control than a library crate could have, as a dependency may be used in
+multiple places in the crate graph.
 
 ## Prior art
 [prior-art]: #prior-art
