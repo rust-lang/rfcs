@@ -109,28 +109,20 @@ $ RUSTFLAGS="-Zinstrument-function=xray -Zinstrument-xray-opts=ignore-loops" car
 ### Language additions
 
 A single builtin attribute, `instrument_fn`, will be added. It will be applied to functions and methods
-only. It will accept two list entries `entry="on|off"` and `exit="on|off"`. Additionally, a simpler form
-`#[instrument_fn = "off"]` will disable all instrumentation.
-
-Usage will look like the following:
+only. The attribute will accept an "on" or "off" option as `#[instrument_fn = "on|off"]`.
 
 ```rust
-#[instrument_fn(entry = "off")]
-fn no_entry_instrument() {
-}
-
-#[instrument_fn(exit = "off")]
-fn no_exit_instrument() {
-}
-
-#[instrument_fn(entry = "off", exit = "off")]
-fn no_instrument_verbose() {
+#[instrument_fn = "on"]
+fn always_instrument() {
 }
 
 #[instrument_fn = "off"]
-fn no_instrument_terse() {
+fn never_instrument() {
 }
 ```
+
+For XRay, "on" and "off" are equivalent to always and never instrumenting. For mcount and fentry,
+"on" has no effect.
 
 Likewise, if no instrumentation is enabled, this attribute is quietly ignored.
 
@@ -180,5 +172,6 @@ for some Linux kernel configurations (e.g., x86-64 on fedora at the time of writ
 This RFC assumes only one form of instrumentation would ever be needed at any time. It is conceivable
 different parts of a binary could be compiled to use different instrumentation frameworks.
 
-It is possible new frameworks will be added to support instrumenting functions. The command line and
-attribute syntax should be expandable to meet those needs.
+It might be desirable to provide finer control over instrumentation. This could be done by extending the
+attribute with options, e.g.: `#[instrument_fn(xray="off", mcount="on")]`. Similarly, this extension could
+be used to supply individual instrumentation options to a function.
