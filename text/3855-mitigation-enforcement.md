@@ -146,7 +146,7 @@ However, it would be good to see that enforcement fits well with sanitizers.
 3. [`-Z retpoline`] and `-Z retpoline-external-thunk` - Spectre-type mitigation
 4. [`-Z sanitizer`]-based mitigations. A fairly large use case.
    As far as I can tell, enforcement makes sense for
-   `-Zsanitizer=cfi, -Zsanitizer=memtag, -Zsanitizer=shadow-call-stack`
+   `-Zsanitizer=kcfi, -Zsanitizer=memtag, -Zsanitizer=shadow-call-stack`
    and does not make sense for
    `-Zsanitizer=address, -Zsanitizer=dataflow, -Zsanitizer=hwaddress, -Zsanitizer=leak, -Zsanitizer=memory, -Zsanitizer=thread` (`-Z sanitizer=address` should probably be a [target modifier])
 4. [`-Z stack-protector`] - stack smashing protection, local-type mitigation
@@ -211,7 +211,7 @@ For example,
 
 Will allow partial mitigations for stack-protector (since there's an allow)
 but deny partial mitigations for `overflow-checks` (since the later deny overrides
-the allow) and `kcfi` (since `-Csanitizer=cfi` resets enforcement for CFI).
+the allow) and `kcfi` (since `-Csanitizer=kcfi` resets enforcement for CFI).
 
 > It is possible to bikeshed the exact naming scheme.
 
