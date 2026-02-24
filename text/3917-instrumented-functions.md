@@ -1,6 +1,6 @@
 - Feature Name: instrument-functions
 - Start Date: 2026-02-05
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3917)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 ## Summary
