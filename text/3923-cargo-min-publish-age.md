@@ -36,6 +36,9 @@ using a version older than some age.
 As such, it would be useful to have an option to put a limit on commands like `cargo add` and `cargo update`
 so that they can only use package releases that are older than some threshold.
 
+Note that this is **not** a full solution to compromised dependencies. It can increase the protection against certain types of
+"supply chain" attacks, but not all of them. As such, using this feature should not be relied upon for security by itself.
+
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -54,6 +57,17 @@ it is possible to disable the min-publish-age checking.
 It is also possible to configure the `min-publish-age` per cargo registry. `registries.<name>.min-publish-age` sets
 the minimum publish age for the `<name>` registry. And `registry.min-publish-age` sets it for the default registry
 crates.io registry.
+
+### Using newer version
+
+In some cases, it may be desirable to use a version that is newer than the minimum publish age. For example, because a new
+version has a critical security fix, or because it is part of the same family of crates as the dependent crate, and they should
+be released together.
+
+If `resolver.incompatible-publish-age` is "fallback" (the default), it is possible to bypass the check by updating the version range to require
+the newer version in `Cargo.toml`, or with `cargo add`, or specify the exact version to use with `cargo update --precise`.
+
+In the future, additional controls may be provided (see [Future Possibilities](#future-possibilities)).
 
 [1]: https://doc.rust-lang.org/cargo/reference/config.html
 [^1]: As specified in `.cargo/config.toml` files
@@ -176,6 +190,10 @@ The biggest drawback is that if this is widely used, it could potentially lead t
 However, most likely, there will be a spread of values used, depending on risk tolerance, and hopefully the result is actually that there will be a more gradual rollout in most
 cases.
 
+Also, even if all users of a crate set a minimum publish age there is still value in a delay, because it provides time for automated security scanners, and human reviewers
+to review the changes before the new version is pulled in by updates. And in the case of a malicious release made using compromised credentials, it give the actual developer
+time to realize their credentials have been compromised and yank the version before it is widely used.
+
 ## Rationale and Alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -189,6 +207,9 @@ However, these tools only work for updating and adding dependencies outside of c
 have any impact on explicitly run built-in cargo commands such as `cargo update` and `cargo add`.
 Having built-in support makes it easier to enforce a minimum publish age policy.
 
+Furthermore, these tools depend on the existence of a `Cargo.lock` file to lock the versions. Or having
+strict version constraints in `Cargo.toml`. If a `Cargo.lock` file does not yet exist, commands such as `cargo build` won't
+be protected.
 
 ### Configuration Locations
 
@@ -307,8 +328,6 @@ There is an existing experimental third-party crate that provides a plugin for e
 ## Unresolved Questions
 [unresolved-questions]: #unresolved-questions
 
-* Should "deny" be an allowed value for `resolver.incompatible-publish-age`? And if so, how does that behave? What is the error message? Is it overridden
-  by a version specified in `Cargo.lock` or with the `--precise` flag?
 * Would it be better to have `registry.min-publish-age` be the global setting, and `registries.crates-io.min-publish-age` be the setting for the crates.io registry?
   The current proposal is based on precedent of "credential-provider" and "global-credential-provider", but perhaps we shouldn't follow that precedent?
 * How do we make it clear when things are held back?
@@ -323,5 +342,9 @@ There is an existing experimental third-party crate that provides a plugin for e
 
 - Support "deny" for `resolver.incompatible-publish-age`.
     - This is initially excluded, because it isn't clear how this should behave with respect to versions already in Cargo.lock, or use with the `--precise` flag.
-- Add a way to specify that the minimum age doesn't apply to certain packages
+    - What would an error look like?
+- Add a way to specify that the minimum age doesn't apply to certain packages. For example, by having an array of crates that should always use the newest version.
+    - I excluded this from the initial RFC, because implementing it adds significant complexity to the proposal, and it is relatively easy to work around by explicitly updating
+      those packages to newer versions in Cargo.toml and/or Cargo.lock.
+    - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
 
