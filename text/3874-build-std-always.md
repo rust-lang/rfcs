@@ -6,8 +6,8 @@
 ## Summary
 [summary]: #summary
 
-Add a new Cargo configuration option, `build-std = "always|never"`, which will
-unconditionally rebuild standard library dependencies. The set of standard
+Add a new Cargo configuration option, `build-std.when = "always|never"`, which
+will unconditionally rebuild standard library dependencies. The set of standard
 library dependencies can optionally be customised with a new `build-std.crates`
 option. It also describes how Cargo (or external tools) should build the
 standard library crates on stable (i.e., which flags to pass and features to
@@ -77,13 +77,14 @@ This proposal section is quite broad, and a
 [summary of changes][summary-of-changes] is available for a very brief list of
 proposed changes.
 
-Cargo configuration will contain a new key `build-std` under the `[build]`
-section ([?][rationale-build-std-in-config]), permitting one of two values -
-"never" ([?][rationale-build-std-never]) or "always", defaulting to "never":
+Cargo configuration will contain a new table `build-std` under the `[build]`
+section ([?][rationale-build-std-in-config]), with a `when` key permitting one
+of two values - "never" ([?][rationale-build-std-never]) or "always", defaulting
+to "never":
 
 ```toml
 [build]
-build-std = "never" # or `always`
+build-std.when = "never" # or `always`
 ```
 
 `build-std` can also be specified in the `[target.<triple>]` and
@@ -91,7 +92,7 @@ build-std = "never" # or `always`
 
 ```toml
 [target.aarch64-unknown-illumos]
-build-std = "never" # or `always`
+build-std.when = "never" # or `always`
 ```
 
 The `build-std` configuration locations have the following precedence
@@ -119,13 +120,6 @@ environment variable.
 > possible should be moved to the Cargo profile for these packages so that the
 > artifacts produced by build-std match the pre-built standard library as much
 > as is feasible.
-
-`build-std` is a short-hand for an object which sets the `when` key:
-
-```toml
-[build]
-build-std = { when = "always" }
-```
 
 Alongside `build-std`, a `build-std.crates` key will be introduced
 ([?][rationale-build-std-crate]), which can be used to specify which crates from
@@ -245,6 +239,7 @@ target in the project.
 
 *See the following sections for future possibilities:*
 
+- [*Adding a shorthand*][future-shorthand]
 - [*Allow reusing sysroot artifacts if available*][future-reuse-sysroot]
 
 [Opaque dependencies]: https://github.com/rust-lang/cargo/issues/3573#issuecomment-3498262549
@@ -879,10 +874,10 @@ with an automatic build-std mechanism while still being useful for users of tier
 three targets. By leaving an automatic mechanism for a later RFC, fewer of the
 technical challenges of build-std need to be addressed all at once.
 
-Having an opt-in mechanism initially, such as `build-std = "always"`, allows for
-early issues with build-std to be ironed out without potentially affecting more
-users like an automatic mechanism. Later proposals will extend the `build-std`
-option with an automatic mechanism.
+Having an opt-in mechanism initially, such as `build-std.when = "always"`,
+allows for early issues with build-std to be ironed out without potentially
+affecting more users like an automatic mechanism. Later proposals will extend
+the `build-std` option with an automatic mechanism.
 
 ↩ [*Proposal*][proposal]
 
@@ -1386,9 +1381,9 @@ What is the most intuitive name for the values of the `build-std` setting?
 `always`? `manual`? `unconditional`?
 
 `always` combined with the configuration option being named `build-std` -
-`build-std = "always"` - is imperfect as it reads as if the standard library
-will be re-built every time, when it actually just avoids use of the pre-built
-standard library and caches the newly-built standard library.
+`build-std.when = "always"` - is imperfect as it reads as if the standard
+library will be re-built every time, when it actually just avoids use of the
+pre-built standard library and caches the newly-built standard library.
 
 ↩ [*Proposal*][proposal]
 
@@ -1445,6 +1440,14 @@ of the build-std context RFC.
 [future-possibilities]: #future-possibilities
 
 There are many possible follow-ups to this part of the RFC:
+
+### Adding a shorthand
+[future-shorthand]: #adding-a-shorthand
+
+A `build-std = "always"` shorthand could be introduced for `build-std.when` if
+it was deemed appropriate.
+
+↩ [*Proposal*][proposal]
 
 ### Allow reusing sysroot artifacts if available
 [future-reuse-sysroot]: #allow-reusing-sysroot-artifacts-if-available
@@ -1517,7 +1520,7 @@ toolchain grouped by the project team whose purview the change would fall under:
   - [`rust-self-contained` components][self-contained-objects]
   - [Testing build-std in rust-lang/rust CI][summary-constraints]
 - Cargo
-  - [`build-std = "always"`][proposal]
+  - [`build-std.when = "always"`][proposal]
     - [Extending Cargo subcommmands][cargo-subcommands]
   - [Prohibiting custom targets][custom-targets]
 - Compiler
