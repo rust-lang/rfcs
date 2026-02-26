@@ -205,7 +205,9 @@ depend on whether [*Standard library dependencies*][rfcs#3875] are implemented:
 > directory of the crate or workspace like any other dependency.
 >
 > Standard library crates are provided to the compiler using the `--extern` flag
-> with the `noprelude` modifier ([?][rationale-noprelude-with-extern]).
+> with the `noprelude` modifier ([?][rationale-noprelude-with-extern]). Standard
+> library crates are also provided with the `nounused` modifier to avoid being
+> considered an unused crate dependency.
 
 The host pre-built standard library will always be used for procedural macros
 and build scripts ([?][rationale-host-deps-cross],
