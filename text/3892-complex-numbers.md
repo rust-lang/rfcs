@@ -13,6 +13,7 @@ FFI-compatible and calling-convention-compatible complex types are to be introdu
 
 The C standard defines the _memory layout_ of a complex number, but not their _calling convention_. 
 This means crates like `num-complex` require workarounds to interface with FFI using `_Complex`, and cannot pass values directly.
+The addition of complex numbers to Rust as a lang-item ensures a correct calling convention consistent with C on all platforms, thus better allowing C interop.
 
 In essence, this RFC makes code like this:
 ```C
@@ -51,8 +52,7 @@ let d = float_second / float_first; // 0.44 - 0.8i
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `core` crate will provide implementations for operator traits for possible component types. For now, complex operations like `Mul` and `Div` are defined specifically for each floating-point type, while `Add` and `Sub` are defined for any components that themselves implement `Add` and `Sub`.
-Calls to some `libgcc` functions may also be needed, and will be emitted by the backend via compiler-builtins, specifically `__mulsc3`, `__muldc3`, `__divsc3` and `__divdc3` for the proper and complete implementation of these types. This is because if we implemented these operations generically, to implement any overflow checks, we would need to implement a trait that can generically call, say, a `max()` function and compare between values. `Add` and `Sub` do not have this problem (as they are relatively straightforward and do not hold any intermediate values)
+The `core` crate will provide implementations for operator traits for possible component types.
 They will have an internal representation similar to this (with public fields for real and imaginary parts):
 ```rust
 // in core::num::complex, which would be a private module holding complex types
@@ -67,17 +67,13 @@ impl Complex<T> {
   fn new(re: T, im: T) -> Self;
 }
 ```
-and have arithmetic implementations similar to this:
+and have simple arithmetic implementations supported:
 ```rust
-// `Add` and `Sub` work on individual components so can be used with any `T`
 impl<T: Add> Add for Complex<T> { type Output = Self; /* ... */ }
 impl<T: Sub> Sub for Complex<T> { type Output = Self; /* ... */ }
 
-// `Mul` and `Div` may not work for all types in a generic way, so they are
-// implemented only on concrete types. 
-impl Mul for Complex<f64> { type Output = Self; /* ... */ }
-impl Div for Complex<f64> { type Output = Self; /* ... */ }
-// Also f16, f32, and f128
+impl Mul for Complex<T> where T: Add + Sub + Mul{ type Output = Self; /* ... */ }
+impl Div for Complex<T> where Complex<T>: Div<T> { type Output = Self; /* ... */ }
 ```
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -101,7 +97,7 @@ for all functions you wish for. But this still needs to happen in C.
 
 ### Alternatives:
 - Don't do this: There are, obviously, millions of alternatives on crates.io, the foremost being `num-complex`. However, I believe that if we wish to support proper FFI with C, then a standard type that matches calling conventions with C complex numbers is an important feature of the language. Hence, I do not recommend this idea.
-- Use a polar layout: Polar complex numbers are undoubtedly a more optimal solution for multiplying complexes. However, I believe that if we wish to have proper FFI with C, then complex number layout should be chosen in accordance with the layout that is used in the C standard, and that is the orthogonal layout. This is also the layout used by most other languages and other crates on crates.io. Additionally, the polar form suffers from many structual issues: it is not a "natural" form for expressing complex numbers in computers - you cannot express pi exactly, so you cannot use radians for angle units. Additionally, polar complex numbers do not have a unique representation for each number - it has an infinity of zeros with all possible angles. The third problem, and in my opinion the most fatal, is the complexity of addition:
+- Use a polar layout: Polar complex numbers are undoubtedly a more optimal solution for multiplying complexes. However, I believe that if we wish to have proper FFI with C, then complex number layout should be chosen in accordance with the layout that is used in the C standard, and that is the orthogonal layout. This is also the layout used by most other languages and other crates on crates.io. Additionally, the polar form suffers from many structual issues: it is not a "natural" form for expressing complex numbers in computers - you cannot express pi exactly, so you cannot use radians for angle units. Moreover, polar complex numbers do not have a unique representation for each number - it has an infinity of zeros with all possible angles. The final problem, and in my opinion the most fatal, is the complexity of addition:
 
 $\left(r_1\angle\theta_1\right) + \left(r_2\angle\theta_2\right) = \left(\sqrt{r_1^2+r_2^2+2r_1r_2\cos(\theta_1-\theta_2)}\right)\angle(atan2({r_1\sin\theta_1+r_2\sin\theta_2},{r_1\cos\theta_1+r_2\cos\theta_2}))$
 
