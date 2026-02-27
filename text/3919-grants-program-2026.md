@@ -78,7 +78,7 @@ Starting conservatively makes sense.  The previous grants program had communicat
 
 ### Grant amounts
 
-Each grant provides **$1,400 per month**, paid quarterly for a **twelve-month term**.
+Each grant provides **$1,400 per month**, paid quarterly ($4,200 per quarter) for a **twelve-month term** ($16,800 per year).
 
 At this rate, $100,800 funds six grants for the full year.
 
