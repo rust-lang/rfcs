@@ -9,7 +9,7 @@ This RFC charters the Grants team and establishes a grants program for 2026, fun
 
 ## Summary
 
-This RFC allocates $100,000 from the council's budget to support approximately five contributors at $1,500 per month for twelve months.  A Grants team of five people, appointed by the council, selects recipients and oversees the program.  The program expects light reporting from grantees, coordinated through our program managers, to ensure we can demonstrate success and continue to improve.
+This RFC allocates $100,800 from the council's budget to support six contributors at $1,400 per month for twelve months.  A Grants team of five people, appointed by the council, selects recipients and oversees the program.  The program expects light reporting from grantees, coordinated through our program managers, to ensure we can demonstrate success and continue to improve.
 
 This program is distinct from, but complementary to, the Rust Foundation Maintainers Fund (RFMF).  Where the RFMF focuses on sustainable, corporate-funded support for maintainers through the Foundation, this program gives the Project the ability to directly support contributors whose situations or contributions don't fit that model.
 
@@ -72,17 +72,17 @@ This is also why some degree of reporting is necessary — not because we want p
 
 ### Budget allocation
 
-This RFC allocates **$100,000** for this program in 2026.  This leaves approximately $50,000 in reserve from the council's unallocated funds for other potential needs.
+This RFC allocates **$100,800** for this program in 2026.  This leaves approximately $28,000 in reserve council funds for other potential needs.
 
 Starting conservatively makes sense.  The previous grants program had communication issues, and we want to restart carefully.  Better to support fewer people well, learn from the experience, and scale up than to overcommit and struggle to manage the program effectively.
 
 ### Grant amounts
 
-Each grant provides **$1,500 per month**, paid quarterly for a **twelve-month term**.
+Each grant provides **$1,400 per month**, paid quarterly for a **twelve-month term**.
 
-At this rate, $100,000 supports approximately five grants for the full year, with some buffer for administrative costs and flexibility.
+At this rate, $100,800 funds six grants for the full year.
 
-Why $1,500?  This matches the rate used for the October 2024 fellowships.  It's enough to make a meaningful difference — covering living expenses in many parts of the world, or providing significant supplemental income elsewhere — without attempting to be a salary replacement.  We acknowledge that the purchasing power of this amount varies considerably depending on where someone lives, and that's acceptable.
+Why $1,400?  This is similar to the $1,500 rate used for the October 2024 fellowships.  It's designed to be enough that someone can justify spending meaningfully more time contributing to Rust — for example, by allowing a person to avoid taking on a second job or by making it easier to turn down extra freelance work.  We're not trying to replace a salary.  We're trying to remove a barrier.  We acknowledge that the purchasing power of this amount varies considerably depending on where someone lives, and that's acceptable.
 
 ### Eligibility
 
@@ -132,7 +132,7 @@ We'll discuss what happens when circumstances change in more detail below.
 
 Quarterly payments minimize payment overhead for the Foundation, align with our expected quarterly updates, and keep everything synchronized with the Grants team's review cadence.
 
-When we describe grant amounts as "$1,500 per month," we mean this as a rate — $4,500 paid each quarter, not twelve separate monthly payments.
+When we describe grant amounts as "$1,400 per month," we mean this as a rate — $4,200 paid each quarter, not twelve separate monthly payments.
 
 ### Why twelve months?
 
@@ -528,7 +528,7 @@ The Rust Foundation previously administered a comprehensive Community Grants Pro
 
 #### Fellowship program
 
-The Fellowship program offered three types of fellowships, all at the same $1,500 per month rate we're proposing:
+The Fellowship program offered three types of fellowships, all at $1,500 per month — a rate similar to what we're proposing:
 
 **Project Fellowships** (12 months): For Rust Project Team and Working Group members to support contributions serving team goals.  Included a $4,000 combined travel, hardware, and training allowance (up to $1,500 for hardware).
 
@@ -674,9 +674,9 @@ We chose the term "grants" deliberately.
 
 Alternative terms like "stipends," "fellowships," or "awards" each carry different connotations that we wanted to avoid.  "Stipends" suggests smaller, more incidental payments.  "Fellowships" implies a selective honor.  "Awards" suggests recognition of achievement.  "Grants" is the most neutral term that accurately describes what we're providing.
 
-#### "Why $1,500 per month specifically?"
+#### "Why $1,400 per month specifically?"
 
-This matches the rate used for the October 2024 fellowships.  It's enough to be meaningful without attempting to be a salary.  We acknowledge that purchasing power varies globally.
+This is similar to the $1,500 rate used for the October 2024 fellowships.  It's designed to be enough that someone can justify spending meaningfully more time contributing to Rust — for example, by making it possible to avoid taking on a second job.  We're not trying to replace a salary; we're trying to remove a barrier.  We acknowledge that purchasing power varies globally.
 
 #### "Why twelve-month terms?"
 
