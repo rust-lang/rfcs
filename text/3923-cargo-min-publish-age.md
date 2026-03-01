@@ -47,7 +47,7 @@ The `registry.global-min-publish-age` [configuration option][1][^1] for Cargo ca
 
 When set, it contains a duration specified as an integer followed by a unit of "seconds", "minutes", "days", or "weeks".
 If a new crate would be added with a command such as `cargo add` or `cargo update`, it will use a version with a publish
-time ("pubtime") before that is older than that duration, if possible.
+time ("pubtime") before that is older than that duration, if possible. `cargo` may print a message in such a case.
 
 The `resolver.incompatible-publish-age` configuration can also be used to control how `cargo` handles versions whose
 publish time is newer than the min-publish-age. By default, it will try to use an older version, unless none is available
