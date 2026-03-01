@@ -45,7 +45,7 @@ Note that this is **not** a full solution to compromised dependencies. It can in
 
 The `registry.global-min-publish-age` [configuration option][1][^1] for Cargo can be used to specify a minimum age for published versions to use.
 
-When set, it contains a duration specified as an integer followed by a unit of "seconds", "minutes", "days", "weeks", or "months".
+When set, it contains a duration specified as an integer followed by a unit of "seconds", "minutes", "days", or "weeks".
 If a new crate would be added with a command such as `cargo add` or `cargo update`, it will use a version with a publish
 time ("pubtime") before that is older than that duration, if possible.
 
