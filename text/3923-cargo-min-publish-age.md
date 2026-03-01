@@ -219,6 +219,12 @@ consistent with existing Cargo options, as described in [Related Options in Carg
 ## Prior Art
 [prior-art]: #prior-art
 
+### Debian "testing"
+
+Debian's "testing" distribution consists of packages from unstable that have been in the "unstable" distribution for a certain minimum age (2-10 days depending on an `urgency` field in the package changelog), have been built for all previously supported targets, have their dependencies in testing, and don't have any new release-critical bugs.
+
+Users of "unstable" include early adopters who don't mind being the canary when things break (and reporting the aforementioned bugs, release-critical or otherwise). Users of "testing" get slightly older packages and a reduced chance of release-critical bugs.
+
 ### pnpm
 
 `minimumReleaseAge` is a configuration option which takes a number of minutes as an argument. It then won't update or install releases that were released less than that many minutes ago. This also applies to transitive dependencies.
