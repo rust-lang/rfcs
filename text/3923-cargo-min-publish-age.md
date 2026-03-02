@@ -10,6 +10,15 @@ This proposal adds a new configuration option to cargo that specifies a minimum 
 updates. When adding or updating a dependency, cargo won't use a version of that crate that
 is newer than the minimum age by default with a way to override to get urgent security fixes.
 
+An example configuration would be:
+
+```toml
+[registry]
+global-min-publish-age = "14 days"
+```
+
+Or it could be specified on the command line with `--config registry.global-min-publish-age '14 days'`.
+
 ## Motivation
 [motivation]: #motivation
 
@@ -26,12 +35,9 @@ and when that release is used by your project. See for example the blog post
 
 Another reason to wish to delay using a new release, is because new versions can introduce new bugs. By only
 using versions that have had some time to "mature", you can mitigate the risk of encountering those bugs a little.
-Hopefully the bugs will be found before you start using the new version and thus could update to a version that fixes those bugs,
-or lock your version, so you don't get the buggy version, if the bugs apply to you.
-
-Although cargo, of course, allows you to specify exact versions in `Cargo.toml` and has a lock file that can freeze the versions used,
-that requires manually inspecting each version of each transitive dependency to confirm it complies with a policy of
-using a version older than some age.
+Different people (or groups of people) have different tolerance for risk, and this provides
+a mechanism whereby new versions can roll out gradually to users depending on the tolerance
+for risk of those users.
 
 As such, it would be useful to have an option to put a limit on commands like `cargo add` and `cargo update`
 so that they can only use package releases that are older than some threshold.
@@ -53,6 +59,10 @@ The `resolver.incompatible-publish-age` configuration can also be used to contro
 publish time is newer than the min-publish-age. By default, it will try to use an older version, unless none is available
 that also complies with the specified version constraint, or the `rust-version`. However by setting this to "allow"
 it is possible to disable the min-publish-age checking.
+
+Most likely, `resolver.incompatible-publish-age` will usually be left at its default of `fallback`, however it may occasionally
+be desirable to use it to temporarily turn off the minimum age check, especially if there are configurations for multiple
+registries.
 
 It is also possible to configure the `min-publish-age` per cargo registry. `registries.<name>.min-publish-age` sets
 the minimum publish age for the `<name>` registry. And `registry.min-publish-age` sets it for the default registry
@@ -162,8 +172,10 @@ than allowed by the appropriate `min-publish-age` setting.
 
 In addition to what is specified above
 
-* `min-publish-age` only apply to dependencies fetched from a registry, such as crates.io. They do not apply to git or path dependencies, in
+* `min-publish-age` only apply to dependencies fetched from a registry that publishes `pubtime`, such as crates.io. They do not apply to git or path dependencies, in
   part because there is not always an obvious publish time, or a way to find alternative versions.
+  They do not apply to registries that don't set `pubtime`, as there is no reliable way to know when the version
+  was published.
 * At this time, if a specific version is explicitly specified in Cargo.toml, or on the command line, that has higher precedence than the publish time check,
   and will be assumed to be valid. In the future it may be possible to change this behavior.
 * `cargo add`
@@ -210,6 +222,16 @@ Having built-in support makes it easier to enforce a minimum publish age policy.
 Furthermore, these tools depend on the existence of a `Cargo.lock` file to lock the versions. Or having
 strict version constraints in `Cargo.toml`. If a `Cargo.lock` file does not yet exist, commands such as `cargo build` won't
 be protected.
+
+### Using Cargo.toml and Cargo.lock
+
+You can pin versions in your `Cargo.toml` but that is a manual process and doesn't cover transitive
+dependencies.
+
+`Cargo.lock` records versions but those are at the time of last change.
+Adding a new dependency can cause you to pull in transitive dependencies that are outside
+your desired minimum age. There isn't a manageable way to run `cargo update` and intentionally
+get versions that are inside of your desired minimum age.
 
 ### Configuration Locations
 
@@ -342,6 +364,7 @@ There is an existing experimental third-party crate that provides a plugin for e
     * Locking message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) is in UTC time, see [Tracking Issue for _lockfile-publish-time_ #16271](https://github.com/rust-lang/cargo/issues/16271), when relative time differences likely make local time more relevant
 * Implementation wise, will there be much complexity in getting per registry information into `VersionPreferences` and using it?
 * `fallback` precedence between this and `incompatible-rust-version`?
+* Can we, and should we make any guarantees about security when using this feature, such as "a release of a malicious version of a crate will not compromise the build
 
 ## Future Possibilities
 [future-possibilities]: #future-possibilities
@@ -349,8 +372,11 @@ There is an existing experimental third-party crate that provides a plugin for e
 - Support "deny" for `resolver.incompatible-publish-age`.
     - This is initially excluded, because it isn't clear how this should behave with respect to versions already in Cargo.lock, or use with the `--precise` flag.
     - What would an error look like?
+    - How would you be able to override this for specific crates for important security updates, or for related crates that should be released at the same time?
 - Add a way to specify that the minimum age doesn't apply to certain packages. For example, by having an array of crates that should always use the newest version.
     - I excluded this from the initial RFC, because implementing it adds significant complexity to the proposal, and it is relatively easy to work around by explicitly updating
       those packages to newer versions in Cargo.toml and/or Cargo.lock.
     - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
-
+- Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
+- Provide a mechanism to compare the publish time against a time other than the current system time. For example, comparing to the time of some snapshot, or the timestamp
+  of a local cache.
