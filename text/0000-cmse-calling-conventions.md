@@ -313,6 +313,16 @@ The [`cortex_m`](https://docs.rs/cortex-m/latest/cortex_m/cmse/index.html) crate
 
 - is the lint relying on the (unstable) internals of safe transmute a problem. I believe this is fine because it's just a lint.
 
+## A type changing (e.g. due to `repr(Rust)` changing) can cause a program to stop compiling
+
+Because of the limits that the ABI imposes on the number of argument and return registers, changing the size of a type can mean that a signature no longer fits. Using `repr(Rust)` types in cmse ABI signatures triggers the `improper_ctypes_definitions` lint, but so far a layout change would only cause miscompilation when invalid assumptions about the layout were made. With this ABI, users might run into actual compilation errors.
+
+Ralf Jung [notes](https://github.com/rust-lang/rfcs/pull/3884#discussion_r2737096128) that technically layout changes can already cause programs to stop compiling:
+
+> After all, changing the size of a type can already lead to compilation failures due to repr(transparent).
+
+So really nothing fundamentally new is happening here, but it's good to be aware of this behavior. Practically speaking, CMSE signatures should be using non-`repr(Rust)` types and perhaps occasionally a ZST, so breakage in practice would be very rare.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
