@@ -110,6 +110,14 @@ Crates could overuse this mechanism, requiring optimization even when they
 don't actually need it. We should provide clear documentation recommending when
 to use it and when not to use it.
 
+Even when used for the intended purpose, different users may have different
+tradeoffs. The override mechanism allows users to retain control, but the
+defaults will not be ideal for *all* users. The mechanism proposed by this RFC
+is making a deliberate tradeoff, and proposes that the defaults will work
+better for more users than the *current* default of not providing these hints,
+but this RFC does not claim the new default will be an improvement for every
+user.
+
 If a crate using this mechanism wishes to nonetheless build with different
 optimizations within its own workspace, it would have to add an override.
 
