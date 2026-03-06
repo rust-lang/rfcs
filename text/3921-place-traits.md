@@ -42,12 +42,12 @@ unsafe trait Place: DerefMut {
 }
 ```
 
-The `Place` trait essentially allows values of the type to be treated as an already-
-existing box. That is, they behave like a variable of the type `Deref::Target`, just
-stored in a different location than the stack. This means that values of type
-`Deref::Target` can be (partially) moved in and out of dereferences of the type, with the
-borrow checker ensuring soundness of the resulting code. As an example, if `Foo`
-implements `Place` for type `Bar`, the following would become valid rust code:
+The `Place` trait allows values of the type to be treated as a `Box` with a content. That
+is, they behave like a variable of type `Deref::Target`, just (potentially) stored in a
+different location than the stack. The contents can be (partially) moved in and out of
+dereferences of the type, with the borrow checker ensuring soundness of the resulting
+code. As an example, if `Foo` implements `Place` for type `Bar`, the following would be
+valid rust code:
 ```rust
 fn baz(mut x: Foo) -> Foo {
     let y = *x;
@@ -56,14 +56,18 @@ fn baz(mut x: Foo) -> Foo {
 }
 ```
 
-When implementing this trait, the type itself effectively transfers some of the responsibilities for managing the value behind the pointer returned by `Place::place`, also called the content, to the compiler. In particular, the type itself should no longer count on the ccontent being properly initialized and dropable when its `Drop` implementation or `Place::place` implementation is called. However, the compiler still guarantees that, as long as the type implementing the place is always created with a value in it, and that value is never removed through a different mechanism than dereferencing the type, all other calls to member functions can assume the value to be implemented.
+In implementing the `Place` trait, the type transfers responsibility for managing its
+content to the compiler. In particular, the type should not assume the contents are
+initialized when `Place::place` and `Place::place_mut` are called.
 
-In general, the compilers requirements are met when
-- The pointer returned by `place` should be safe to mutate through, and should be live
-  for the lifetime of the mutable reference to `self` passed to `Place::place`.
-- On consecutive calls to `Place::place`, the status of whether the content is initialized should not be changed.
-- Drop must not drop the contents, only the storage for it.
-- Newly initialized values of the type implementing `Place` must have their content initialized.
+It also transfers responsibiltiy for dropping the contents to the compiler. This will
+be done in drop glue, and the `Drop::drop` function will therefore see the contents as
+uninitialized.
+
+The transfer of responsibility also puts requirements on the implementer of `Place`. In
+particular, instances of the type where the contents are uninitialized through a means
+other than moving out of a dereference should not be created. Breaking this rule and
+dereferencing the resulting instance is immediate undefined behavior.
 
 There is one oddity in the behavior of types implementing `Place` to be aware of.
 Automatically elaborated dereferences of values of such types will always trigger an abort
@@ -74,26 +78,57 @@ dereferencing, even if the underlying type also implements Place.
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This proposal introduces one new main language item, the traits `Place`. We also introduce a number of secondary language items which are used to make implementation easier and more robust, which we shall define as they come up below.
+This proposal introduces one new main language item, the traits `Place`. We also introduce
+a number of secondary language items which are used to make implementation easier and more
+robust, which we shall define as they come up below.
 
-A type implementing the trait Place is required to act as a place for borrow checking. Throughout the rest of this text, the contents of the memory pointed at by the pointer returned by the `Place::place` function shall be refered to as the content of the place. For a type to satisfy the above requirement, its implementation must in particular guarantee that
-- Safe code shall not modify the initialization status of the contents.
-- Unsafe code shall preserve the initialization status of the contents between two derefences of teh type's values.
-- Values of the place type for which the content is uninitialized shall not be able to be created in safe code.
-In the above context, the contents is also considered uniitialized if the whole or parts of the value of the contents has been moved out, or a destructor has been called upon them.
+Instances of a type implementing the trait Place shall provide a "contents" of type
+`Deref::Target`, which shall act as a place for borrow checking. The implementer of the
+`Place` trait shall ensure that:
+- The `Place::place` and `Place::place_mut` return pointers to the storage of the content
+  valid for the lifetime of the self reference.
+- The `Place::place` and `Place::place_mut` functions shall not assume the contents to
+  be initialized
+- The `Drop::drop` function shall not interact with the content, but only with its storage.
+- With the exception of uninitialization through moving out of a dereference of the instance,
+  the implementer shall ensure that the contents are always initialized when dereferencing
+  or dropping instances of the type.
 
-Dereferences of a type implementing `Place` can therefore be lowered directly to MIR, only
-being elaborated in a pass after borrow checking. This allows the borrow checker to fully
-check that the moves of data into and out of the type are valid.
+In return, the compiler shall guarantee that:
+- When the contents are uninitialized through moving out of a dereference of an instance,
+  references to that instance will only be available through invocations of `Place::place`,
+  `Place::place_mut` and `Drop::drop` by the compiler itself.
+- The contents shall be dropped or moved out of by the compiler before invoking `Drop::drop`
+  of the instance.
 
-The dereferences and drops of the contained value can then be elaborated in the passes
-after borrow checking. This process will be somewhat similar to what is already done for
-Box, with the difference that dereferences of types implementing `Place` may panic. We
-propose to handle these panics by aborting to avoid introducing interactions with drop
-elaboration and new execution paths not checked by the borrow checker.
+Furthermore, as there seems to be no good reasons for `Place::place` and `Place::place_mut`
+to panic, the compiler shall handle panics in non-explicit calls to these functions by
+aborting. This allows the compiler to compile code more efficiently and provides more
+avenues for optimizations.
 
-In order to generate the function calls to the `Place::place` and `Deref::deref` during
-the dereference elaboration we propose making these functions additional language items.
+Note that the above requirements explicitly allow changes in the storage location of the
+contents. This is only restricted by the contract imposed by `Place` during the lifetime
+of self pointers passed to `Place::place` and `Place::place_mut`.
+
+As a consequence, `Pin<Foo>` does not automatically satisfy all the requirements of Pin
+when Foo implements place. This will need to be verified on an implementation by
+implementation basis.
+
+### Implementation details
+
+Given the above contract, dereferences of a type implementing `Place` can be lowered
+directly to MIR, only being elaborated after borrow checking. This allows the borrow
+checker and drop elaboration logic to provide the guarantees above, and ensure that
+dereferences are sound in the pressence of moves out of the contents.
+
+The dereferences and drops of the contained value can be elaborated in the passes after
+borrow checking. This process will be somewhat similar to what is already done for Box,
+with the difference that dereferences of types implementing `Place` may panic. These
+panics will be handled by aborting, avoiding significant changes in the control flow graph.
+
+In order to generate the function calls to the `Place::place` and `Place::place_mut`
+during the dereference elaboration we propose making these functions additional language
+items.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -227,12 +262,13 @@ properly drop the internal value, instead leaking it.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Right now, the design states that panic in calls to `Place::place` or `Place::place_mut` can
-cause an abort when the call was generated in the MIR. This is done as it is at this point
-somewhat unclear how to handle proper unwinding at the call sites for these functions.
-However, it may turn out to be possible to implement this with proper unwinding, in which
-case we may want to consider handling panics at these call sites the same as for ordinary
-code.
+Right now, the design states that panic in calls to `Place::place` or `Place::place_mut`
+can cause an abort when the call was generated in the MIR. This is done to make compilation
+and the resulting code more performant. It is however possible to implement these with
+proper unwinding, at the cost of generating a more complicated control flow graph before
+borrow checking for code using the dereference behavior of `Place`. This would likely
+result in longer compile times and less optimized results, however that could be judged
+to be a worthwhile tradeoff.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
