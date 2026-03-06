@@ -218,6 +218,22 @@ would add additional complexity in understanding the control flow of the resulti
 This could make understanding uses of these traits significantly more difficult for end
 users of types implement these traits.
 
+### Nadrieril custom_refs proposal
+
+Similar functionality is also being discussed as part of the [custom reference proposal
+orignally created by Nadrieril](https://hackmd.io/N0sjLdl1S6C58UddR7Po5g). This is also
+fits in the category of significantly more complicated traits. However, the very large
+amount of additional affordances it could offer may make it more worth it in this
+specific case.
+
+This RFC still prefers the simpler approach, as pretty much all of the Nadrieril
+proposal would need to be implemented to get `Place`-like behavior. This would bring
+significant implementation effort and risk.
+
+If desired, the functionality of this proposal can at a latter time be reimplemented
+through the trait in that proposal, meaning that this can be seen as an intermediate
+step.
+
 ### Limited macro based trait
 
 Going the other way in terms of complexity, a `Place` trait with constraints on how the
