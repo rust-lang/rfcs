@@ -7,7 +7,7 @@
 [summary]: #summary
 
 This RFC introduces the `DerefMove` trait. This trait allows arbitrary types to implement the
-special derefence behavior of the `Box` type. In particular, it allows an arbitrary type
+special dereference behavior of the `Box` type. In particular, it allows an arbitrary type
 to act as an owned place allowing values to be (partially) moved out and moved back in
 again.
 
@@ -60,7 +60,7 @@ In implementing the `DerefMove` trait, the type transfers responsibility for man
 content to the compiler. In particular, the type should not assume the contents are
 initialized when `DerefMove::place` and `DerefMove::place_mut` are called.
 
-It also transfers responsibiltiy for dropping the contents to the compiler. This will
+It also transfers responsibility for dropping the contents to the compiler. This will
 be done in drop glue, and the `Drop::drop` function will therefore see the contents as
 uninitialized.
 
@@ -119,7 +119,7 @@ implementation basis.
 Given the above contract, dereferences of a type implementing `DerefMove` can be lowered
 directly to MIR, only being elaborated after borrow checking. This allows the borrow
 checker and drop elaboration logic to provide the guarantees above, and ensure that
-dereferences are sound in the pressence of moves out of the contents.
+dereferences are sound in the presence of moves out of the contents.
 
 The dereferences and drops of the contained value can be elaborated in the passes after
 borrow checking. This process will be somewhat similar to what is already done for Box,
@@ -141,7 +141,7 @@ could result in undefined behavior that is difficult to find.
 Second, with the current design the underlying type is no longer aware of whether or not
 the space it has allocated for the value is populated or not. This inhibits functionality
 which would use this information on drop to automate removal from a container. Note
-however that such usecases can use a workaround with the user explicitly requesting
+however that such use cases can use a workaround with the user explicitly requesting
 removal before being able to move out of a smart-pointer like type.
 
 Finally, the type does not have runtime-awareness of when the value is exactly added.
@@ -157,7 +157,7 @@ has, which is considered acceptable in its current state.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Ideas for something like the `DerefMove` trait design here can be found in past discussions of
-DerefMove traits and move references. The desire for some way of doing move derefences
+`DerefMove` traits and move references. The desire for some way of doing move dereferences
 goes back to at least https://github.com/rust-lang/rfcs/issues/997.
 
 The rationale behind the current design is that it explicitly sticks very closely to what
@@ -168,7 +168,7 @@ implementation phase.
 
 ### DerefMove trait
 
-Designs based on a simpler DerefMove trait have been previously proposed in the unmerged
+Designs based on a simpler `DerefMove` trait have been previously proposed in the unmerged
 [RFC2439](https://github.com/rust-lang/rfcs/pull/2439) and an [internals forum thread](https://internals.rust-lang.org/t/derefmove-without-move-why-dont-we-have-it/19701).
 These come down to a trait of the form
 ```
@@ -221,7 +221,7 @@ users of types implement these traits.
 ### Nadrieril custom_refs proposal
 
 Similar functionality is also being discussed as part of the [custom reference proposal
-orignally created by Nadrieril](https://hackmd.io/N0sjLdl1S6C58UddR7Po5g). This is also
+originally created by Nadrieril](https://hackmd.io/N0sjLdl1S6C58UddR7Po5g). This is also
 fits in the category of significantly more complicated traits. However, the very large
 amount of additional affordances it could offer may make it more worth it in this
 specific case.
