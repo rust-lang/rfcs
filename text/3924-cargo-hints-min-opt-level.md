@@ -30,7 +30,8 @@ opt-level = 3
 
 This RFC adds a mechanism for crates to *hint* that builds should use
 optimization by default, while still allowing the top-level crate to easily
-override this.
+override this. Handling this in dependencies makes it automatic for users, and
+also makes it easier to keep up with an evolving dependency tree.
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
