@@ -46,7 +46,7 @@ system to provide a minimum optimization level:
 min-opt-level = 2
 ```
 
-When building with  a profile with a default optimization level lower than the
+When building with a profile with a default optimization level lower than the
 `hints.min-opt-level` value, the crate will be built with the specified minimum
 optimization level instead. When building with a profile with a higher
 default optimization level, that higher optimization level will take precedence.
