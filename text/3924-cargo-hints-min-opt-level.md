@@ -103,6 +103,16 @@ Crates could overuse this mechanism, requiring optimization even when they
 don't actually need it. We should provide clear documentation recommending when
 to use it and when not to use it.
 
+### Limitations
+
+Library crates cannot set this for dependencies they do not maintain; a crate
+can only set the min-opt-level for itself. This may cause issues for crates
+whose performance depends heavily on its dependencies; such crates may still
+have to rely on user documentation.
+
+Library optimizations may not apply to code inlined or monomorphized by a
+user's crate.
+
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -165,3 +175,10 @@ compilation *faster*, such as by sending less code to the codegen backend (e.g.
 LLVM). This might reduce the number of crates motivated to use this mechanism,
 but the mechanism would remain important, as there are library crates which
 strongly benefit from opt-level 2 or 3.
+
+We may want to provide a further mechanism for libraries whose performance
+depends heavily on their dependencies to optimize those dependencies.
+
+We may want to provide a mechanism for libraries to optimize code inlined or
+monomorphized by a user's crate. That would likely require compiler
+enhancements.
