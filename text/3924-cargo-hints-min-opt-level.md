@@ -137,6 +137,16 @@ Cargo whether that means opt-level 1, 2, or 3. This would be simpler, but would
 prevent crates from determining whether they benefit from opt-level 3 (e.g.
 aggressive vectorization and loop unrolling) or not.
 
+We could support `"z"` or `"s"` somehow. This would be more complex and require
+more design, since those aren't on a linear scale like the numeric optimization
+levels. Furthermore, these seem less likely to be usefully determined by
+dependencies: whether a dependency will have massive performance issues if
+built without optimization is something the dependency may know, while the need
+for size optimization seems likely to be use-case-dependent and better set by
+the top-level crate. (The use of crates *designed* for embedded, for instance,
+does not necessarily indicate that the user is size-constrained and would
+*prefer* size optimizations.)
+
 We could have a hint apply recursively to dependencies. This seems like more
 control than a library crate could have, as a dependency may be used in
 multiple places in the crate graph.
