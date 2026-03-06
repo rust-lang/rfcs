@@ -75,12 +75,19 @@ opt-level = 0
 # Overrides hints.min-opt-level specified in a dependency.
 ```
 
+Note that setting `opt-level = "s"` or `opt-level = "z"` in the top-level
+crate's profile *will* override `min-opt-level` in a dependency, on the theory
+that crates optimizing for size are likely to want size-over-speed
+optimizations in their dependencies as well.
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `hints.min-opt-level` key requires an integer, and only supports numeric
-hint levels (0, 1, 2, 3). Non-numeric hint levels like `s` and `z` are not
-supported, because they don't fit into a strictly ordered progression.
+hint levels (0, 1, 2, 3). Non-numeric hint levels like `"s"` and `"z"` are not
+supported, because they don't fit into a strictly ordered progression, and
+because they're more likely to be use-case-dependent and better determined by
+the top-level crate.
 
 `hints.min-opt-level`, like any hint, does not affect a crate's MSRV; older
 versions of Cargo will ignore it.
@@ -168,6 +175,14 @@ Cargo has
 C and C++ compilers provide directives such as `#pragma optimize` or
 `__attribute__((optimize))`, which let individual files or functions define an
 optimization level.
+
+## Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+Should a profile with `opt-level = "s"` or `opt-level = "z"`
+override a dependency's `min-opt-level`? This RFC says it should,
+but sometimes users might not want that. We could also give more
+control over that.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
