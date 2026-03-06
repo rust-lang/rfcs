@@ -172,6 +172,11 @@ crate better than their users do.
 We could in particular have a `max-opt-level`, for crates that don't benefit
 from `opt-level = 3` to lower the optimiation level to 2.
 
+The mechanism to override a dependency's opt-level using `profile.dev.package`
+forces a given opt-level whether the dependency asks for higher or lower. Users
+of overrides, particularly those for `"*"`, might want a mechanism for setting
+a minimum without overriding a higher optimization level.
+
 We may in the future want to change the default optimization level for the dev
 profile to 1, rather than 0. opt-level 1 includes optimizations that can make
 compilation *faster*, such as by sending less code to the codegen backend (e.g.
