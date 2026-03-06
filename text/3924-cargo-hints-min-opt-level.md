@@ -103,6 +103,9 @@ Crates could overuse this mechanism, requiring optimization even when they
 don't actually need it. We should provide clear documentation recommending when
 to use it and when not to use it.
 
+If a crate using this mechanism wishes to nonetheless build with different
+optimizations within its own workspace, it would have to add an override.
+
 ### Limitations
 
 Library crates cannot set this for dependencies they do not maintain; a crate
