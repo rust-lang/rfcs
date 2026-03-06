@@ -1,4 +1,4 @@
-- Feature Name: `place_traits`
+- Feature Name: `deref_move_trait`
 - Start Date: 2026-01-23
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3921)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-This RFC introduces the `Place` trait. This trait allows arbitrary types to implement the
+This RFC introduces the `DerefMove` trait. This trait allows arbitrary types to implement the
 special derefence behavior of the `Box` type. In particular, it allows an arbitrary type
 to act as an owned place allowing values to be (partially) moved out and moved back in
 again.
@@ -34,19 +34,19 @@ in the context of an implementation of garbage collection.
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This proposal introduces a new unsafe trait `Place`:
+This proposal introduces a new unsafe trait `DerefMove`:
 ```rust
-unsafe trait Place: DerefMut {
+unsafe trait DerefMove: DerefMut {
     fn place(&self) -> *const Self::Target;
     fn place_mut(&mut self) -> *mut Self::Target;
 }
 ```
 
-The `Place` trait allows values of the type to be treated as a `Box` with a content. That
+The `DerefMove` trait allows values of the type to be treated as a `Box` with a content. That
 is, they behave like a variable of type `Deref::Target`, just (potentially) stored in a
 different location than the stack. The contents can be (partially) moved in and out of
 dereferences of the type, with the borrow checker ensuring soundness of the resulting
-code. As an example, if `Foo` implements `Place` for type `Bar`, the following would be
+code. As an example, if `Foo` implements `DerefMove` for type `Bar`, the following would be
 valid rust code:
 ```rust
 fn baz(mut x: Foo) -> Foo {
@@ -56,38 +56,38 @@ fn baz(mut x: Foo) -> Foo {
 }
 ```
 
-In implementing the `Place` trait, the type transfers responsibility for managing its
+In implementing the `DerefMove` trait, the type transfers responsibility for managing its
 content to the compiler. In particular, the type should not assume the contents are
-initialized when `Place::place` and `Place::place_mut` are called.
+initialized when `DerefMove::place` and `DerefMove::place_mut` are called.
 
 It also transfers responsibiltiy for dropping the contents to the compiler. This will
 be done in drop glue, and the `Drop::drop` function will therefore see the contents as
 uninitialized.
 
-The transfer of responsibility also puts requirements on the implementer of `Place`. In
+The transfer of responsibility also puts requirements on the implementer of `DerefMove`. In
 particular, instances of the type where the contents are uninitialized through a means
 other than moving out of a dereference should not be created. Breaking this rule and
 dereferencing the resulting instance is immediate undefined behavior.
 
-There is one oddity in the behavior of types implementing `Place` to be aware of.
+There is one oddity in the behavior of types implementing `DerefMove` to be aware of.
 Automatically elaborated dereferences of values of such types will always trigger an abort
 on panic, instead of unwinding when that is enabled. However, generic types constrained to
-only implement Deref or DerefMut but not Place will always unwind on panics during
-dereferencing, even if the underlying type also implements Place.
+only implement `Deref` or `DerefMut` but not `DerefMove` will always unwind on panics during
+dereferencing, even if the underlying type also implements `DerefMove`.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This proposal introduces one new main language item, the traits `Place`. We also introduce
+This proposal introduces one new main language item, the traits `DerefMove`. We also introduce
 a number of secondary language items which are used to make implementation easier and more
 robust, which we shall define as they come up below.
 
-Instances of a type implementing the trait Place shall provide a "contents" of type
+Instances of a type implementing the trait `DerefMove` shall provide a "contents" of type
 `Deref::Target`, which shall act as a place for borrow checking. The implementer of the
-`Place` trait shall ensure that:
-- The `Place::place` and `Place::place_mut` return pointers to the storage of the content
+`DerefMove` trait shall ensure that:
+- The `DerefMove::place` and `DerefMove::place_mut` return pointers to the storage of the content
   valid for the lifetime of the self reference.
-- The `Place::place` and `Place::place_mut` functions shall not assume the contents to
+- The `DerefMove::place` and `DerefMove::place_mut` functions shall not assume the contents to
   be initialized
 - The `Drop::drop` function shall not interact with the content, but only with its storage.
 - With the exception of uninitialization through moving out of a dereference of the instance,
@@ -96,19 +96,19 @@ Instances of a type implementing the trait Place shall provide a "contents" of t
 
 In return, the compiler shall guarantee that:
 - When the contents are uninitialized through moving out of a dereference of an instance,
-  references to that instance will only be available through invocations of `Place::place`,
-  `Place::place_mut` and `Drop::drop` by the compiler itself.
+  references to that instance will only be available through invocations of `DerefMove::place`,
+  `DerefMove::place_mut` and `Drop::drop` by the compiler itself.
 - The contents shall be dropped or moved out of by the compiler before invoking `Drop::drop`
   of the instance.
 
-Furthermore, as there seems to be no good reasons for `Place::place` and `Place::place_mut`
+Furthermore, as there seems to be no good reasons for `DerefMove::place` and `DerefMove::place_mut`
 to panic, the compiler shall handle panics in non-explicit calls to these functions by
 aborting. This allows the compiler to compile code more efficiently and provides more
 avenues for optimizations.
 
 Note that the above requirements explicitly allow changes in the storage location of the
-contents. This is only restricted by the contract imposed by `Place` during the lifetime
-of self pointers passed to `Place::place` and `Place::place_mut`.
+contents. This is only restricted by the contract imposed by `DerefMove` during the lifetime
+of self pointers passed to `DerefMove::place` and `DerefMove::place_mut`.
 
 As a consequence, `Pin<Foo>` does not automatically satisfy all the requirements of Pin
 when Foo implements place. This will need to be verified on an implementation by
@@ -116,17 +116,17 @@ implementation basis.
 
 ### Implementation details
 
-Given the above contract, dereferences of a type implementing `Place` can be lowered
+Given the above contract, dereferences of a type implementing `DerefMove` can be lowered
 directly to MIR, only being elaborated after borrow checking. This allows the borrow
 checker and drop elaboration logic to provide the guarantees above, and ensure that
 dereferences are sound in the pressence of moves out of the contents.
 
 The dereferences and drops of the contained value can be elaborated in the passes after
 borrow checking. This process will be somewhat similar to what is already done for Box,
-with the difference that dereferences of types implementing `Place` may panic. These
+with the difference that dereferences of types implementing `DerefMove` may panic. These
 panics will be handled by aborting, avoiding significant changes in the control flow graph.
 
-In order to generate the function calls to the `Place::place` and `Place::place_mut`
+In order to generate the function calls to the `DerefMove::place` and `DerefMove::place_mut`
 during the dereference elaboration we propose making these functions additional language
 items.
 
@@ -156,7 +156,7 @@ has, which is considered acceptable in its current state.
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Ideas for something like the `Place` trait design here can be found in past discussions of
+Ideas for something like the `DerefMove` trait design here can be found in past discussions of
 DerefMove traits and move references. The desire for some way of doing move derefences
 goes back to at least https://github.com/rust-lang/rfcs/issues/997.
 
@@ -203,13 +203,13 @@ attractive on the whole.
 
 ### More complicated place traits
 
-Several more complicated `Place` traits have been proposed by tema2 in two threads on the
+Several more complicated `DerefMove` traits have been proposed by tema2 in two threads on the
 internals forum:
 - [DerefMove without `&move` refs](https://internals.rust-lang.org/t/derefmove-without-move-refs/17575)
 - [`DerefMove` as two separate traits](https://internals.rust-lang.org/t/derefmove-as-two-separate-traits/16031)
 
 These traits aimed at providing more feedback with regards to the length of use of the
-pointer returned by the `Place::place` method, and the status of the value in that
+pointer returned by the `DerefMove::place` method, and the status of the value in that
 location after use. Such a design would open up more possible use cases, but at the cost
 of significantly more complicated desugarings.
 
@@ -227,7 +227,7 @@ amount of additional affordances it could offer may make it more worth it in thi
 specific case.
 
 This RFC still prefers the simpler approach, as pretty much all of the Nadrieril
-proposal would need to be implemented to get `Place`-like behavior. This would bring
+proposal would need to be implemented to get `DerefMove`-like behavior. This would bring
 significant implementation effort and risk.
 
 If desired, the functionality of this proposal can at a latter time be reimplemented
@@ -236,11 +236,11 @@ step.
 
 ### Limited macro based trait
 
-Going the other way in terms of complexity, a `Place` trait with constraints on how the
+Going the other way in terms of complexity, a `DerefMove` trait with constraints on how the
 projection to the actual location to be dereferenced was proposed in [another internals forum thread](https://internals.rust-lang.org/t/derefmove-without-move-references-aka-box-magic-for-user-types/19910).
 
-This proposal effectively constrains the `Place::deref` method to only doing field
-projections and other dereferences. The advantage of this is that such a trait has far
+This proposal effectively constrains the `DerefMove::place` method to only doing field
+projections and other dereferences. The advantage of this is that such a trait has 
 less severe safety implications, and by its nature cannot panic making its use more
 predictable.
 
@@ -272,17 +272,17 @@ a special way.
 In terms of implementability, a small experiment has been done implementing the deref
 elaboration for an earlier version of this trait at
 https://github.com/davidv1992/rust/tree/place-experiment. That implementation is
-sufficiently far along to support running code using the Place trait, but does not yet
-properly drop the internal value, instead leaking it.
+sufficiently far along to support running code using the `DerefMove` trait, but does not yet
+properly drop the content, instead leaking it.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Right now, the design states that panic in calls to `Place::place` or `Place::place_mut`
+Right now, the design states that panic in calls to `DerefMove::place` or `DerefMove::place_mut`
 can cause an abort when the call was generated in the MIR. This is done to make compilation
 and the resulting code more performant. It is however possible to implement these with
 proper unwinding, at the cost of generating a more complicated control flow graph before
-borrow checking for code using the dereference behavior of `Place`. This would likely
+borrow checking for code using the dereference behavior of `DerefMove`. This would likely
 result in longer compile times and less optimized results, however that could be judged
 to be a worthwhile tradeoff.
 
@@ -302,5 +302,5 @@ interesting use cases are already available without it.
 Finally, there is potential for the trait as presented here to become useful in the in
 place initialization project. It could be a building block for generalizing things like
 partial initialization to smart pointers. This would require future design around an api
-for telling the borrow checker about new empty values implementing Place, but that seems
+for telling the borrow checker about new empty values implementing `DerefMove`, but that seems
 orthogonal to the design here.
