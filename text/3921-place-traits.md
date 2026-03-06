@@ -37,7 +37,8 @@ in the context of an implementation of garbage collection.
 This proposal introduces a new unsafe trait `Place`:
 ```rust
 unsafe trait Place: DerefMut {
-    fn place(&mut self) -> *mut Self::Target
+    fn place(&self) -> *const Self::Target;
+    fn place_mut(&mut self) -> *mut Self::Target;
 }
 ```
 
@@ -226,11 +227,7 @@ properly drop the internal value, instead leaking it.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-The current design would require the use of `Deref::deref` in desugaring non-moving
-accesses to types implementing `Place`. However, it is currently unclear whether it is
-sound to do so if the value has already been partially moved out.
-
-Right now, the design states that panic in calls to `Deref::deref` or `Place::place` can
+Right now, the design states that panic in calls to `Place::place` or `Place::place_mut` can
 cause an abort when the call was generated in the MIR. This is done as it is at this point
 somewhat unclear how to handle proper unwinding at the call sites for these functions.
 However, it may turn out to be possible to implement this with proper unwinding, in which
