@@ -407,6 +407,7 @@ There is an existing experimental third-party crate that provides a plugin for e
     * Locking message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) is in UTC time, see [Tracking Issue for _lockfile-publish-time_ #16271](https://github.com/rust-lang/cargo/issues/16271), when relative time differences likely make local time more relevant
 * Implementation wise, will there be much complexity in getting per registry information into `VersionPreferences` and using it?
 * `fallback` precedence between this and `incompatible-rust-version`?
+    * Most likely, `incompatible-rust-version` should have higher precedence to increase the chance of builds succeeding.
 * Can we, and should we make any guarantees about security when using this feature, such as "a release of a malicious version of a crate will not compromise the build
 
 ## Future Possibilities
@@ -423,3 +424,4 @@ There is an existing experimental third-party crate that provides a plugin for e
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
 - Provide a mechanism to compare the publish time against a time other than the current system time. For example, comparing to the time of some snapshot, or the timestamp
   of a local cache.
+- Allow specifying a timestamp for the `min-publish-age`.
