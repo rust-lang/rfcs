@@ -81,7 +81,9 @@ If it isn't possible to satisfy a dependency with a version that meets the minim
 fall back to using the best version that matches. In this cases, a warning will be printed next to the message for adding the
 crate, similar to the warning for an incompatible rust version. It looks like:
 
-$${\color{green}Adding} example v1.2.3 {\color{red}(published less than 2 days ago on 2026-03-07)}$$
+```
+Adding example v1.2.3 (published less than 2 days ago on 2026-03-07)
+```
 
 Most likely, `resolver.incompatible-publish-age` will usually be left at its default of `fallback`, however it may occasionally
 be desirable to use it to temporarily turn off the minimum age check, especially if there are configurations for multiple
