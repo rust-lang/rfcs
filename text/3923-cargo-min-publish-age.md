@@ -55,18 +55,61 @@ When set, it contains a duration specified as an integer followed by a unit of "
 If a new crate would be added with a command such as `cargo add` or `cargo update`, it will use a version with a publish
 time ("pubtime") before that is older than that duration, if possible. `cargo` may print a message in such a case.
 
+For example with
+
+```toml
+[registry]
+global-min-publish-age = "7 days"
+```
+
+running a command like `cargo update`, `cargo add`, `cargo build`, etc. will prefer to use versions of required crates that were published
+at least 7 days ago.
+
+The time can be indicated as an integer followed by a time unit such as minutes, hours, days, etc.
+
+Crates that use path or git, rather than a registry will never trigger this check, as there isn't a relevant publish time to use. Also,
+this check won't be preformed for crates published on registries that don't publish the `pubtime` information (note that crates.io does
+include `pubtime`).
+
 The `resolver.incompatible-publish-age` configuration can also be used to control how `cargo` handles versions whose
 publish time is newer than the min-publish-age. By default, it will try to use an older version, unless none is available
 that also complies with the specified version constraint, or the `rust-version`. However by setting this to "allow"
 it is possible to disable the min-publish-age checking.
 
+If it isn't possible to satisfy a dependency with a version that meets the minimum release age requirement and
+`resolver.incompatible-publish-age` is set to "fallback", then Cargo will
+fall back to using the best version that matches. In this cases, a warning will be printed next to the message for adding the
+crate, similar to the warning for an incompatible rust version. It looks like:
+
+$${\color{green}Adding} example v1.2.3 {\color{red}(published less than 2 days ago on 2026-03-07)}$$
+
 Most likely, `resolver.incompatible-publish-age` will usually be left at its default of `fallback`, however it may occasionally
 be desirable to use it to temporarily turn off the minimum age check, especially if there are configurations for multiple
-registries.
+registries. This would typically be done with a command line argument like `--config 'resolver.incompatible-publish-age="allow"'` or an
+environment variable like `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow`.
 
 It is also possible to configure the `min-publish-age` per cargo registry. `registries.<name>.min-publish-age` sets
 the minimum publish age for the `<name>` registry. And `registry.min-publish-age` sets it for the default registry
 crates.io registry.
+
+For example:
+```toml
+[registries.example]
+index = "https://crates.example.com"
+min-publish-age = "2 hours"
+
+[registry.local]
+index = "https://registry.local"
+min-publish-age = 0 # this registry is fully trusted
+
+[registry]
+# Default for any registry without a specific value
+global-min-publish-age = "2 days"
+# Value to use for crates.io
+min-publish-age = "5 days"
+```
+
+This will use a minimum publish age of 5 days for crates.io, 2 hours for crates.exalmple.com, no minimum for registry.local, and 2 days for any other registry.
 
 ### Using newer version
 
