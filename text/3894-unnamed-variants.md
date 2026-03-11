@@ -1925,7 +1925,8 @@ assert!(
 
 #### Discriminant field access
 
-`.0` provides direct access to the discriminant value:
+`.0` provides direct access to the discriminant value of `enum`s with an
+explicit representation:
 
 ```rust
 let mut c = Color::Blue;
@@ -1939,6 +1940,9 @@ This is subjectively ugly and undiscoverable syntax to access the discriminant
 of an `enum`. One possibility: when introduced, treat as deprecated and throw a
 warning to recommend a better syntax than `.0` but still allow the desired
 non-breaking migration.
+
+As with unnamed variants, the `enum` must not be `repr(Rust)` in order to
+guarantee that an integer is used as the discriminant.
 
 There are a few distinct advantages compared to `as` casting:
 
