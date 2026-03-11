@@ -1990,6 +1990,12 @@ assert!(matches!(x, X::B));
 
 [unsafe field]: https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html
 
+There are also existing proposals to [read][rfc-3607] and [write][rfc-3727] this
+discriminant directly with different syntax.
+
+[rfc-3607]: https://github.com/rust-lang/rfcs/pull/3607
+[rfc-3727]: https://github.com/rust-lang/rfcs/pull/3727
+
 ### Extracting the integer value of the discriminant for fielded enums
 
 A fielded enum with `#[repr(Int)]` and/or `#[repr(C)]` is guaranteed to have its
