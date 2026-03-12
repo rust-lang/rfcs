@@ -1111,7 +1111,9 @@ Allowing `builtin` dependencies to be used in `dependencies` and
 
 However, supporting `builtin` dependencies in `build-dependencies` would permit
 no-std build scripts. It is unclear whether supporting no-std build scripts
-would be desirable.
+would be desirable. Not supporting `build-dependencies` initially is a safe
+default that can be changed later if this is deemed necessary, without breaking
+any existing users.
 
 ↩ [*`dev-dependencies` and `build-dependencies`*][dev-dependencies-and-build-dependencies]
 
