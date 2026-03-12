@@ -1769,10 +1769,10 @@ concepts by reserving space for `payload` to be held in the enum.
 
 ### `repr(open)` RFC
 
-There's an [unmerged RFC][enum-repr-open] that defines a `repr(open)` syntax as
+There's an [RFC proposal][enum-repr-open] that defines a `repr(open)` syntax as
 described in the Alternatives section above.
 
-[enum-repr-open]: https://github.com/madsmtm/rfcs/blob/enum-repr-no-niches/text/3803-enum-repr-open.md
+[enum-repr-open]: https://github.com/rust-lang/rfcs/pull/3803
 
 ## Unresolved questions
 
@@ -1991,7 +1991,9 @@ assert!(matches!(x, X::B));
 [unsafe field]: https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html
 
 There are also existing proposals to [read][rfc-3607] and [write][rfc-3727] this
-discriminant directly with different syntax.
+discriminant directly. They propose alternative syntax, with
+`.enum#discriminant` rather than `.0` and `discriminant_of!`/`set_discriminant`
+built-ins respectively.
 
 [rfc-3607]: https://github.com/rust-lang/rfcs/pull/3607
 [rfc-3727]: https://github.com/rust-lang/rfcs/pull/3727
