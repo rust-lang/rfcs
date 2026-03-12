@@ -893,7 +893,8 @@ By minimising the differences between a newly-built std and a pre-built std,
 there is less chance of the user experiencing bugs or unexpected behaviour from
 the well-tested and supported pre-built std. Later proposals will extend the
 `build-std` option with customised standard library builds that use the user's
-profile.
+profile (see
+[*`build-std.when = "compatible"` and `build-std.when = "match-profile"`*][future-next-rfcs]).
 
 ↩ [*Proposal*][proposal]
 
@@ -1509,6 +1510,25 @@ included in part of the standard library build.
 build-std could build both the `dylib` and `rlib` of the standard library.
 
 ↩ [*Why not produce a `dylib` for the standard library?*][rationale-no-dylib]
+
+### `build-std.when = "compatible"` and `build-std.when = "match-profile"`
+[future-next-rfcs]: #build-stdwhen--compatible-and-build-stdwhen--match-profile
+
+There are follow-up draft proposals prepared which extend the `build-std.when`
+option with variants that will automatically re-build the standard library only
+when it strictly necessary for the build to succeed (i.e. when a target modifier
+changes), and that match the user's profile.
+
+These proposals are drafts and are intended only to signpost future direction
+for this feature, and ensure compatibility with the current proposal:
+
+- [`build-std.when = "compatible"`][build-std-part-four-draft]
+- [`build-std.when = "match-profile"`][build-std-part-five-draft]
+
+[build-std-part-four-draft]: https://github.com/davidtwco/rfcs/blob/build-std-part-four-compatible/text/0000-build-std-compatible.md
+[build-std-part-five-draft]: https://github.com/davidtwco/rfcs/blob/build-std-part-five-match-profile/text/0000-build-std-match-profile.md
+
+↩ [*Why does "always" rebuild in release profile?*][rationale-release-profile]
 
 ## Summary of proposed changes
 [summary-of-changes]: #summary-of-proposed-changes
