@@ -111,8 +111,9 @@ contents. This is only restricted by the contract imposed by `DerefMove` during 
 of self pointers passed to `DerefMove::place` and `DerefMove::place_mut`.
 
 As a consequence, `Pin<Foo>` does not automatically satisfy all the requirements of `Pin`
-when Foo implements `DerefMove`. This will need to be verified on an implementation by
-implementation basis.
+when Foo implements `DerefMove`. Whether a function transforming `Foo` to `Pin<Foo>` is safe
+will have to be checked manually by the implementer of `Foo` using the requirements imposed
+by `Pin`.
 
 ### Implementation details
 
