@@ -110,8 +110,8 @@ Note that the above requirements explicitly allow changes in the storage locatio
 contents. This is only restricted by the contract imposed by `DerefMove` during the lifetime
 of self pointers passed to `DerefMove::place` and `DerefMove::place_mut`.
 
-As a consequence, `Pin<Foo>` does not automatically satisfy all the requirements of Pin
-when Foo implements place. This will need to be verified on an implementation by
+As a consequence, `Pin<Foo>` does not automatically satisfy all the requirements of `Pin`
+when Foo implements `DerefMove`. This will need to be verified on an implementation by
 implementation basis.
 
 ### Implementation details
@@ -216,7 +216,7 @@ of significantly more complicated desugarings.
 Furthermore, allowing actions based on whether a value is present or not in the place
 would add additional complexity in understanding the control flow of the resulting binary.
 This could make understanding uses of these traits significantly more difficult for end
-users of types implement these traits.
+users of types that implement these traits.
 
 ### Nadrieril custom_refs proposal
 
@@ -278,7 +278,7 @@ properly drop the content, instead leaking it.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Right now, the design states that panic in calls to `DerefMove::place` or `DerefMove::place_mut`
+Right now, the design states that panics in calls to `DerefMove::place` or `DerefMove::place_mut`
 can cause an abort when the call was generated in the MIR. This is done to make compilation
 and the resulting code more performant. It is however possible to implement these with
 proper unwinding, at the cost of generating a more complicated control flow graph before
