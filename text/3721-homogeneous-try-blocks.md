@@ -635,6 +635,63 @@ if tcx.sess.opts.unstable_opts.dump_mir_graphviz {
 }
 ```
 
+## Why `Residual::TryType` isn't a GAT
+
+One might expect that, rather than having a generic parameter on the trait, `Residual` would look like
+
+```rust
+pub trait Residual {
+    type TryType<V>: ops::Try<Output = V, Residual = Self>;
+}
+```
+
+The reason it's not done that way is that today we have no way to let an implementation add
+additional constraints for which types can be passed to that GAT.  That means it'd be impossible
+to implement `Residual` for a type that needed `Copy` or only supported `()`, for example.
+
+Take this type, trying to match the common C idiom of "zero is success; non-zero is error":
+```rust
+#[repr(transparent)]
+pub struct CResult(c_int);
+
+pub struct CResultResidual(NonZero<c_int>);
+
+impl Try for CResult {
+    type Output = ();
+    type Residual = CResultResidual;
+
+    fn from_output((): ()) -> Self {
+        CResult(0)
+    }
+    fn branch(self) -> ControlFlow<CResultResidual> {
+        match NonZero::new(self.0) {
+            Some(e) => ControlFlow::Break(CResultResidual(e)),
+            None => ControlFlow::Continue(()),
+        }
+    }
+}
+
+impl FromResidual for CResult {
+    fn from_residual(r: CResultResidual) -> Self {
+        CResult(r.0.get())
+    }
+}
+
+impl Residual<()> for CResultResidual {
+    type TryType = CResult;
+}
+```
+<!-- https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=46db8907c4a7c8fd52940595980f1995 -->
+
+The proposed trait structure lets us have that `impl Residual<()> for CResultResidual`,
+whereas trying to implement some kind of
+```rust
+impl Residual for CResultResidual {
+    type TryType<V> = …;
+}
+```
+just can't work because there's nowhere to put an arbitrary `V` in `CResult`.
+
 
 # Prior art
 [prior-art]: #prior-art
