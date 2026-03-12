@@ -1125,6 +1125,21 @@ crate graph and would benefit from knowledge of the standard library's
 dependencies, but this leaks internal details of the standard library and is
 counter to the intent behind opaque dependencies.
 
+This is primarily a compatibility concern, though were `builtin` dependencies to
+be included in the metadata, it is expected that it would not be too disruptive,
+as:
+
+- `cargo pkgid` and `cargo build --message-format` will unconditionally use the
+  new `pkgid` spec anyway;
+- `cargo_metadata` does not currently parse the pkgid spec so this won't break
+  all users;
+- and this will also show up in the source which is still opaque and
+  `cargo_metadata` does not parse
+
+Therefore this would only be a problem for users who are parsing the pkgid specs
+using `cargo-util-schemas` or their own parser, which is unlikely to be
+disruptive.
+
 ↩ [*Cargo subcommands*][cargo-subcommands]
 
 ## Prior art
