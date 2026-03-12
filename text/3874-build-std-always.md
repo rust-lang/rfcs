@@ -68,6 +68,12 @@ in this RFC (when required to support existing stable features of Cargo), the
 enabling and disabling of arbitrary standard library features is handled by
 [RFC #3875][rfcs#3875-features].
 
+A key goal of this proposal is that the standard library produced by
+`build-std.when = "always"` be a drop-in replacement for the pre-build standard
+library, so that the new surface area of the standard library exposed by
+build-std is minimal (while providing extension points for this to be changed in
+future in limited and controlled ways).
+
 [rfcs#3875-features]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#features
 
 ## Proposal
@@ -889,12 +895,12 @@ the `build-std` option with an automatic mechanism.
 The release profile most closely matches the existing pre-built standard
 library, which has proven itself suitable for a majority of use cases.
 
-By minimising the differences between a newly-built std and a pre-built std,
-there is less chance of the user experiencing bugs or unexpected behaviour from
-the well-tested and supported pre-built std. Keeping the newly-built std and
-pre-built std as close as possible reduces the scope of this proposal for the
-library team, and for the vast majority of users, build-std will be a drop-in
-replacement for std, and so should act the same by default.
+With `build-std.when = "always"`, it is intended that build-std be a drop-in
+replacement for std, and so should act the same by default. By minimising the
+differences between a newly-built std and a pre-built std, there is less chance
+of the user experiencing bugs or unexpected behaviour from the well-tested and
+supported pre-built std. Keeping the newly-built std and pre-built std as close
+as possible reduces the scope of this proposal for the library team.
 
 Later proposals will extend the `build-std` option with customised standard
 library builds that use the user's profile (see [*`build-std.when =
