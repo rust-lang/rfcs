@@ -893,7 +893,8 @@ By minimising the differences between a newly-built std and a pre-built std,
 there is less chance of the user experiencing bugs or unexpected behaviour from
 the well-tested and supported pre-built std. Keeping the newly-built std and
 pre-built std as close as possible reduces the scope of this proposal for the
-library team.
+library team, and for the vast majority of users, build-std will be a drop-in
+replacement for std, and so should act the same by default.
 
 Later proposals will extend the `build-std` option with customised standard
 library builds that use the user's profile (see [*`build-std.when =
