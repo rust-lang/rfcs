@@ -406,14 +406,16 @@ standard library are not supported in `build-dependencies`.
 ### Registries
 [registries]: #registries
 
-Standard library dependencies will be present in the registry index
-([?][rationale-cargo-index]). A `builtin_deps` key is added to the
-[index's JSON schema][cargo-json-schema] ([?][rationale-cargo-builtindeps]).
-`builtin_deps` is similar to the existing `deps` key and contains a list of JSON
-objects, each representing a dependency that is "builtin" to the Rust toolchain
-and cannot otherwise be found in the registry. The
-["publish" endpoint][cargo-registry-web-publish] of the Registry Web API will
-similarly be updated to support `builtin_deps`.
+Standard library dependencies will be present in the registry index such that
+standard library dependencies can be dependencies of other crates, but not as
+top-level crates in the registry ([?][rationale-cargo-index]).
+
+A `builtin_deps` key is added to the [index's JSON schema][cargo-json-schema]
+([?][rationale-cargo-builtindeps]). `builtin_deps` is similar to the existing
+`deps` key and contains a list of JSON objects, each representing a dependency
+that is "builtin" to the Rust toolchain and cannot otherwise be found in the
+registry. The ["publish" endpoint][cargo-registry-web-publish] of the Registry
+Web API will similarly be updated to support `builtin_deps`.
 
 > [!NOTE]
 >
@@ -982,13 +984,20 @@ dependencies?*][rationale-explicit-noprelude]).
 
 ↩ [*Public and private dependencies*][public-and-private-dependencies]
 
-### Why add standard library crates to Cargo's index?
-[rationale-cargo-index]: #why-add-standard-library-crates-to-cargos-index
+### Why include standard library crates in Cargo's index format?
+[rationale-cargo-index]: #why-include-standard-library-crates-in-cargos-index-format
 
-When Cargo builds the dependency graph, it is driven by the index (not
-`Cargo.toml`), so builtin dependencies need to be included in the index format
-(so that packages can have builtin dependencies - standard library crates will
-not exist as top-level packages in the index).
+When Cargo builds the unit graph - roughly speaking, think of this as the
+compiler invocations it will eventually make - it queries the dependency
+resolver as to which dependencies a given crate has. The dependency resolver
+only looks at the source of a dependency, in many cases a registry source (i.e.
+a dependency from crates.io). In practice, this is the entry in the Cargo index
+for that dependency. As this is the only information available, that a crate
+depends on the standard library must be reflected in the index entry.
+
+Alternatively, the Cargo manifests of dependencies would need to be parsed in
+order to determine whether they have standard library dependencies as the index
+entry would be insufficient.
 
 ↩ [*Registries*][registries]
 
