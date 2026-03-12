@@ -246,6 +246,12 @@ The async version of [`take_mut`] cannot be created as it relies on cleanup code
 
 [`take_mut`]: https://docs.rs/take_mut/latest/take_mut/
 
+### Bumpalo and allocators in general
+
+[`bumpalo`] is a fast bump allocation arena for Rust. Their `Box` [cannot](https://github.com/fitzgen/bumpalo/issues/186) be soundly pinned, because you can `forget` the pinned box and then reset the allocator, invalidating the memory (otherwise you are prevented from calling reset by the shared reference to the allocator).
+
+[`bumpalo`]: https://github.com/fitzgen/bumpalo/
+
 ### Performance
 
 As we saw earlier, `async` code is forced into `'static` bounds on any non-trivial task such as spawning or sending messages between tasks. That way, references cannot be used, and users must fall back into `Arc` or owned types. `Arc` will [ping-pong] cache line with the counter between the cores, while owned types enforce unnecessary allocations and clones. Example would be a [rumqttc `publish`] which takes `topic` as `Into<String>`. Why? Because it sends this topic to another task. If `!Forget` types were available, a better API choice would be to make the `Future` returned by `publish` be `!Forget` and wait until another task formats the `topic` into the output buffer and reports either success or failure of the publish.
