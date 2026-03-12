@@ -891,10 +891,19 @@ library, which has proven itself suitable for a majority of use cases.
 
 By minimising the differences between a newly-built std and a pre-built std,
 there is less chance of the user experiencing bugs or unexpected behaviour from
-the well-tested and supported pre-built std. Later proposals will extend the
-`build-std` option with customised standard library builds that use the user's
-profile (see
-[*`build-std.when = "compatible"` and `build-std.when = "match-profile"`*][future-next-rfcs]).
+the well-tested and supported pre-built std. Keeping the newly-built std and
+pre-built std as close as possible reduces the scope of this proposal for the
+library team.
+
+Later proposals will extend the `build-std` option with customised standard
+library builds that use the user's profile (see [*`build-std.when =
+"compatible"` and `build-std.when = "match-profile"`*][future-next-rfcs]). These
+later proposals are intended to support more niche cases like enabling target
+modifier flags that require the entire crate graph to agree on - due to ABI
+incompatibility, for example - and where it wouldn't be appropriate for that to
+be the default for std. The project could ship pre-built standard libraries for
+those cases, but this would end up with an combinatorial explosion of pre-built
+standard libraries.
 
 ↩ [*Proposal*][proposal]
 
