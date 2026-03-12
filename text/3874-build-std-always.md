@@ -1413,10 +1413,25 @@ with the name of only a single crate. `up-to` might be better.
 [unresolved-inherit-rustflags]: #should-the-standard-library-inherit-rustflags
 
 Existing designs for *[Opaque dependencies]* intended that `RUSTFLAGS` would not
-apply to the opaque dependency. However, if a target modifier were set using
-`RUSTFLAGS` and build-std ignored the variable, then rustc would fail to build
-the user's project due to incompatible target modifiers. This would necessitate
-that every stable target modifier be exposed via Cargo to be usable in practice.
+apply to the opaque dependency.
+
+`RUSTFLAGS` is an escape hatch for setting rustc flags, and could be used to set
+a target modifier flag. If the standard library build ignored this variable,
+then rustc would fail to build the user's project due to incompatible target
+modifiers. By respecting this escape hatch, the purpose of `RUSTFLAGS` isn't
+prevented from having its desired effect.
+
+`RUSTFLAGS` as a mechanism for customising the compilation has overlap with
+Cargo's profiles - and this proposal's treatment of `RUSTFLAGS` and profiles is
+deliberately inconsistent:
+
+Cargo typically does not inspect `RUSTFLAGS`, treating it as a low-level escape
+hatch that is opaque to Cargo in the implications of the flags it passes.
+Inheriting the `RUSTFLAGS` variable is consistent with this approach as it
+remains opaque to Cargo with no special treatment and applies to all rustc
+invocations. This is contrast with profiles, which are a first-class Cargo
+concept, and thus can have different behaviours in different contexts when it
+makes sense to do so.
 
 ↩ [*Proposal*][proposal]
 
