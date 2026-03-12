@@ -44,11 +44,9 @@ The full deletion criteria becomes:
 * or if all the following conditions are met:
     * The crate has a single owner,
     * The crate has been downloaded less than 100 times for each month it has been published,
-    * The crate is not depended upon by any other crate on crates.io (i.e. it has no reverse dependencies), excluding yanked versions of crates that were published over a year ago
-
-Similarly, a new policy is added, stating that:
-
-* Any version of a crate which has been failing to compile on the latest stable version of Rust for over 4 years may be yanked without the approval of the crate author.
+    * The crate is not depended upon by any other crate on crates.io (i.e. it has no reverse dependencies):
+        * The only crate versions that directly depend on the to-be-deleted crate (including dev and build dependencies) were published at least a year ago and have been yanked for at least a month
+        * Versions of crates which have failed to compile on stable Rust for approximately four years may be yanked without their authors' approval to help satisfy this requirement
 
 These changes effectively allow for long-broken crates and reverse dependencies due to mistakes to be still valid under the deletion criteria.
 
