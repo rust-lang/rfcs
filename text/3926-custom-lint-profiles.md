@@ -25,36 +25,42 @@ There are multiple ways that lint levels can be toggled in modern Rust. For the 
      - This **does** allow fine grained control over individual lints
      - This **cannot** be easily tweaked at runtime without having to edit code
      - This **cannot** be easily shared between crates
+     - Changing this invalidates the build cache for the edited file/crate.
  - In code, by means of `[lints]` in Cargo.toml.
      - This **does not** support use with `cfg`
-     - This **does** allow fine grained control over code sections
+     - This **does not** allow fine grained control over code sections
      - This **does** allow fine grained control over individual lints
      - This **cannot** be easily tweaked at runtime without having to edit code
      - This **can** be easily shared between crates (via workspaces)
- - In code, by means of `[profiles.foo.rustflags]` and `-Afoobar`
+     - Changing this invalidates the build cache for the edited crate (or the entire workspace if this was in the workspace)
+ - In code, by means of `[profiles.foo.rustflags]` (unstable) and `-Afoobar`
      - This **does not** support use with `cfg`
      - This **does not** allow fine grained control over code sections
      - This **does** allow fine grained control over individual lints
      - This **cannot** be easily tweaked at runtime
      - This **can** be easily shared between crates (via workspaces)
+     - Changing this invalidates the entire build
  - In the CLI, by means of `RUSTFLAGS=-Afoobar` and friends. 
      - This **does not** support use with `cfg`
      - This **does not** allow fine grained control over code sections
      - This **does** allow fine grained control over individual lints
      - This **can** be easily tweaked at runtime
      - This **is always** shared between crates
+     - Changing this invalidates the entire build
  - In the CLI, by means of `RUSTFLAGS=-Dwarnings` or `CARGO_BUILD_WARNINGS=deny`
      - This **does not** support use with `cfg`
      - This **does not** allow fine grained control over code sections
      - This **does not** allow fine grained control over individual lints
      - This **can** be easily tweaked at runtime
      - This **is always** shared between crates
+     - Changing this invalidates the entire build
   - In the CLI, by choosing to call `cargo clippy`
       - (This is technically a modality too)
+      - This usually rebuilds the workspace.
 
 At first glance, it appears that fine grained control is available at both "code editing time" and at runtime, however `-Afoobar` is not pleasant to use at all when you are configuring hundreds of lints. What is missing is a way to toggle groups of lints on and off at runtime, where these groups can be controlled by the developer at a fine grained level in source code somewhere.
 
-Furthermore, `-Afoobar`, either via `[profiles]` or via `RUSTFLAGS` works poorly with Cargo: most solutions for doing this at runtime can trigger recompilation of the entire crate. `[lints]` was developed in part as a way to avoid this problem.
+Furthermore, `-Afoobar`, either via `[profiles]` or via `RUSTFLAGS` works poorly with Cargo: most solutions for doing this at runtime can trigger recompilation of the entire crate graph. `[lints]` was developed in part as a way to avoid this problem.
 
 By and large, people currently use a mix of `-Dwarnings` and separately calling `cargo clippy` as a way to run different sets of lints on the same codebase. This proposal aims to expand this ability.
 
@@ -107,13 +113,15 @@ This isn't a lint, but similar workflows can be found around `rustfmt`'s "format
 Currently, this requires a manual specification of all the relevant lints.
 
 
-### Only on non-test-code
+### Only on certain types of targets
 
 Some lints protect production code from things like panics and bad API choices, things which aren't as much of a big deal (or even, counterproductive to prevent) for test code. It's common to do something like `#[cfg_attr(test, allow(...))]`, however this can't be combined with the Cargo `[lints]` table, making it less useful as a feature.
 
 Typically you want something that applies to `cargo test`, `cargo bench`, and test/bench targets during `cargo check --all-targets`.
 
 Clippy has a patchwork of config options that disable lints in tests, like `allow-unwrap-in-tests`, however not all lints have this, and [they don't work consistently in all test code](https://github.com/rust-lang/rust-clippy/issues/13981). So far most codebases I have worked on end up with a lot of allows in test code for lints that would be easier to global allow.
+
+Similarly, someone may wish to only enable certain lints on bin targets.
 
 
 ### "Teaching" lints
@@ -158,6 +166,7 @@ $ cargo build --lints ci
 
 Open question: What should the `--lints` flag be called? `--lints`? `--lint-profiles`?
 
+Open question: `profile` is ambiguous with build profiles. Should we pick a different name?
 
 ## Inheritance and workspaces
 
@@ -451,6 +460,8 @@ I think the main drawback here is that this is Cargo.toml-focused, so it require
 
 This is also not a simple system: is the complexity worth it?
 
+Similarly, the Cargo team is worried about adding too many CLI flags, since each flag affects the discoverability of other flags.
+
 # Rationale and alternatives
 
 Overall I think there are a lot of reasons to have "modalities" for lints, some already in use, some attained by a patchwork of features, and some that people would likely use if they were more convenient. Having profiles directly addresses them by giving the user a way to define and name a modality, so they or their CI/IDE/tooling/whatever can pick the right one based on the context.
@@ -475,6 +486,7 @@ These designs are superficially similar, but not super similar in the details. C
 These are all mentioned inline in the RFC under "open question", but duplicated here for referencing. I prefer having these discussions inline in the RFC.
 
  - What should the `--lints` flag be called? `--lints`? `--lint-profiles`?
+ - `profile` is ambiguous with build profiles. Should we pick a different name?
  - Should it be possible to also access the default profile via `[lints.profile.default]`?
  - Someone should pick how `warn = "deny"` prioritizes with [`build.warnings`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#warnings).
  - Should it be `warn = "deny"` or `warnings = "deny"`?
@@ -485,6 +497,9 @@ These are all mentioned inline in the RFC under "open question", but duplicated 
  - When should it be a hard error to specify `--lints foo` for a nonexistant profile `foo`? 
  - Would it hurt to *by default* inherit lint profiles from the workspace?
 
+Other unresolved questions:
+
+Should using this feature require an MSRV bump? Technically crates consuming your crate do not need to care about the `[lints]` section, but older versions of Cargo are likely to misinterpret `lints.profile`. Needs investigation.
 
 
 # Future work
