@@ -155,9 +155,15 @@ Lint profiles can be controlled from the CLI:
 $ cargo build --lints ci
 ```
 
+
+Open question: What should the `--lints` flag be called? `--lints`? `--lint-profiles`?
+
+
 ## Inheritance and workspaces
 
-Lint profiles can be inherited from the same package and from the workspace
+Lint profiles can be inherited from the same package and from the workspace. The profile specified in `[lints]` is called `default`.
+
+Open question: Should it be possible to also access the default profile via `[lints.profiles.default]`? What's the behavior of specifying both? Probably doesn't matter too much. Either way, we should reserve the profile name `default`.
 
 
 
@@ -193,8 +199,7 @@ ptr-eq = "deny" # this is a lint
 correctness = "warn" # this is a lint group
 ```
 
-
-Note that if you wish to inherit from a profile defined in the worksp
+Note that if you wish to inherit from a profile defined in the workspace, you must first inherit the profile via `lints.profiles.profilename.workspace = true`, and then you can inherit from `profilename`.
 
 
 ## Changing warn levels wholesale
@@ -210,6 +215,10 @@ warn = "deny"
 ```
 
 The only allowed values here `"deny"`, `"warn"`, and `"allow"`.
+
+Open question: Someone should pick how `warn = "deny"` prioritizes with [`build.warnings`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#warnings). I don't see any particular choice as having more merit, but a choice must be made.
+
+Open question: Should it be `warn = "deny"` or `warnings = "deny"`?
 
 This can be used when inheriting profiles to map `warn` to `deny` for the lint groups that are inherited:
 
@@ -272,7 +281,9 @@ Note that currently, `[lints] workspace = true` cannot be combined with explicit
 
 ## Test-only lint levels
 
-There are two ways of making test modalities work here. One is less powerful but simpler, the other will complicate the implementation. This RFC has not yet selected one, but it prefers Option 1
+There are two ways of making test modalities work here. One is less powerful but simpler, the other will complicate the implementation. This RFC has not yet selected one, but I prefer Option 1.
+
+Open question: Should we go with Option 1 or 2 for tests?
 
 
 ### Option 1: A `test` subprofile
@@ -303,6 +314,9 @@ When inheriting a profile into a regular profile, its `test` sub-profile is also
 
 (It's unclear if this really needs to support inheritance.)
 
+Open question: Should we introduce `bench`/`doc` lint profiles as well? I don't quite see this as necessary, but it's a simple enough extension.
+
+Open question: Should we support inheritance with test profiles?
 
 ### Option 2: Cfg-gated lints
 
@@ -344,7 +358,11 @@ The "default" lint profile specified as `[lints]` can also have the same fields.
 The profile can be selected via a `--lints` flag available in all commands that produce a build: `build`, `test`, `run`, `check`, `bench`.
 
 
-Note that currently [workspace overriding is not supported][ws-override]. More on that below
+Custom profiles cannot be named `default`. The name `default` is reserved for referencing the default profile.
+
+Rustc cannot add lints named `workspace`, `inherits`, `warn`, or `test`.
+
+Note that currently [workspace overriding is not supported][ws-override]. More on that below.
 
 ## Inheritance
 
@@ -352,8 +370,9 @@ Internally, each lint profile is *resolved* to a list of lints and lint levels, 
 
 When profiles are inherited via `inherits` or `workspace = true`, it is the resolved profile that is inherited. Further overrides are applied on top of that resolved profile, producing a new resolved profile. We do not have multiple inheritance: a single resolved profile is inherited and further overrides can be applied on top of it.
 
-`lints.workspace = true` inherits all lint profiles (including the default one) from the workspace.
+Loops are not allowed during inheritance.
 
+`lints.workspace = true` copies all resolved lint profiles (including the default one) from the workspace.
 
 When using `{inherits = "someprofile", warn = "deny"}`, the resolved profile has all `warn` entries replaced with `deny` entries before being inherited.
 
@@ -386,6 +405,9 @@ Lint profiles set via CLI flag are only relevant for the current workspace. Depe
 
 Not having such a profile is not a hard error in this mode since it's acceptable to not have the profile defined on every workspace crate.
 
+Open question: When should it be a hard error to specify `--lints foo` for a nonexistant profile `foo`? 
+
+Open question: Would it hurt to *by default* inherit lint profiles from the workspace? A straightforward implementation would break current behavior of `[lints]` (which does not autoinherit, though perhaps it ought to?), but we could make this behavior kick in only when you specify `--lint someprofile` and `someprofile` is defined on the workspace but not the individual crate.
 
 ## Interaction with rustc
 
@@ -406,6 +428,8 @@ The way I see it is that the regular compilation profile is about what kind of a
 Regular profiles already have inheritance (etc), so it _is_ tempting to merge the two, and integrates nicely. But this will tie lint profiles to regular profiles which may lead to people needing to define profiles like `release-default` and `release-ci` to get different sets of lints.
 
 Overall I see the use case of toggling lints to be different from that of toggling other compilation flags.
+
+Open question: Maybe we want to merge lint profiles with profiles anyway? Or perhaps provide a way to set a profile's default lint profile? I haven't seen a strong motivation for this yet.
 
 ## Testing: Testing subprofiles (Option 1)
 
@@ -443,21 +467,23 @@ Both of these solutions are likely to be simpler, though.
 The [custom named Cargo profiles](https://rust-lang.github.io/rfcs/2678-named-custom-cargo-profiles.html) RFC is probably the main prior art here. I think this feature works well, including profile inheritance.
 
 
+These designs are superficially similar, but not super similar in the details. Cargo profiles are workspace-level, whereas this is package-level. The inheritance works similarly, where each profile is a list of key-value pairs, and when inherited that list of pairs is inherited with overrides being applied on top.
 
 # Unresolved questions
 
 
+These are all mentioned inline in the RFC under "open question", but duplicated here for referencing. I prefer having these discussions inline in the RFC.
+
  - What should the `--lints` flag be called? `--lints`? `--lint-profiles`?
- - Should it be possible to also access the default profile via `[lints.profiles.default]`? What's the behavior of specifying both? Probably doesn't matter too much. Either way, we should reserve the profile name `default`.
- - Someone should pick how `warn = "deny"` prioritizes with [`build.warnings`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#warnings). I don't see any particular choice as having more merit, but a choice must be made.
+ - Should it be possible to also access the default profile via `[lints.profiles.default]`?
+ - Someone should pick how `warn = "deny"` prioritizes with [`build.warnings`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#warnings).
  - Should it be `warn = "deny"` or `warnings = "deny"`?
  - Should we go with Option 1 or 2 for tests?
- - In Option 1, should we introduce `bench`/`doc` lint profiles as well? I don't quite see this as necessary, but it's a simple enough extension.
+ - In Option 1, should we introduce `bench`/`doc` lint profiles as well?
  - In Option 1, should we support inheritance with test profiles?
- - I've made an argument against merging lint profiles and regular profiles, but maybe we want to merge it with profiles anyway? Or perhaps provide a way to set a profile's default lint profile? I haven't seen a strong motivation for this yet.
+ - Maybe we want to merge lint profiles with profiles anyway? 
  - When should it be a hard error to specify `--lints foo` for a nonexistant profile `foo`? 
- - Would it hurt to *by default* inherit lint profiles from the workspace? A straightforward implementation would break current behavior of `[lints]` (which does not autoinherit, though perhaps it ought to?), but we could make this behavior kick in only when you specify `--lint someprofile` and `someprofile` is defined on the workspace but not the individual crate.
- 
+ - Would it hurt to *by default* inherit lint profiles from the workspace?
 
 
 
