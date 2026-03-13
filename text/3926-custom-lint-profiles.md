@@ -90,6 +90,14 @@ _Ideally_ one can do this in the same CI task as "deny in CI".
 Something similar can happen for IDEs which have a relatively muted lint display (often a small :warning: icon near the offending line of code): it's somewhat fine to inundate the programmer with lints because they'll only see the ones affecting the files they are editing, not every file. This expands the scope of lints a user is exposed to without necessarily showing them more than a manageable number of lints.
 
 
+### Upgrade workflows
+
+Large projects, as is recommended, often pin a Rust version for their clippy CI, so that their developers are not hit by piles of failures just because the compiler updated.
+
+Usually, once a new Rust compiler is released, these projects will spend some time updating everything and make a new PR.
+
+It is sometimes nice to be able to do this at a crate-by-crate level. Especially large projects would like to be able to update their CI toolchain without needing to fix lints everywhere. Having more flexible control over lint levels would allow them to e.g. disable new lints by default, but allow individual crates to opt in to the newer lints, giving a smoother migration path that can be handled at an appropriate pace for individual subcomponents.
+
 ### Check at release time
 
 In some cases, a lint would be too noisy to deny in CI, but people expect to have the release be lint-free and use that as an opportunity to clean things up. Such a workflow typically involves calling `cargo clippy -D{lints}  --fix ` and then `cargo clippy -D{lints}` to catch any stragglers. I've mostly seen this around lints that are _automatable_: It's just not worth it to ask contributors to fix this each PR, but it is worth it to run a pass right before release. 
@@ -333,10 +341,10 @@ test = {} # can contain all the same fields as above, except for `test` itself
 
 The "default" lint profile specified as `[lints]` can also have the same fields.
 
-Note that currently [workspace overriding is not supported][ws-override]. The inheritance mechanism in this RFC provides a straightforward way to support workspace overriding, but it's not necessary to fix to support this RFC.
+The profile can be selected via a `--lints` flag available in all commands that produce a build: `build`, `test`, `run`, `check`, `bench`.
 
 
- [ws-override]: https://github.com/rust-lang/cargo/issues/13157
+Note that currently [workspace overriding is not supported][ws-override]. More on that below
 
 ## Inheritance
 
@@ -345,6 +353,16 @@ Internally, each lint profile is *resolved* to a list of lints and lint levels, 
 When profiles are inherited via `inherits` or `workspace = true`, it is the resolved profile that is inherited. Further overrides are applied on top of that resolved profile, producing a new resolved profile. We do not have multiple inheritance: a single resolved profile is inherited and further overrides can be applied on top of it.
 
 `lints.workspace = true` inherits all lint profiles (including the default one) from the workspace.
+
+
+When using `{inherits = "someprofile", warn = "deny"}`, the resolved profile has all `warn` entries replaced with `deny` entries before being inherited.
+
+
+When running with a resolved profile, it is simply a matter of applying the `-A`/`-W`/etc flags specified by the lint list in the resolved profile. Inheritance is already "handled" once you compute a resolved profile.
+
+The interaction of testing solutions with resolved profiles will be covered below.
+
+### The workspace override issue
 
 If we choose to fix the [workspace override][ws-override] issue in this RFC, then the following will work:
 
@@ -358,15 +376,8 @@ some-lint = "allow"
 some-other-lint = "allow"
 ```
 
-Here, the crate will have a default and `ci` profile copied from the workspace, with overrides applied on top.
+Here, the crate will have a default and `ci` resolved profile copied from the workspace, with overrides applied on top.
 
-
-When using `{inherits = "someprofile", warn = "deny"}`, the resolved profile has all `warn` entries replaced with `deny` entries before being inherited.
-
-
-When running with a resolved profile, it is simply a matter of applying the `-A`/`-W`/etc flags specified by the lint list in the resolved profile. Inheritance is already "handled" once you compute a resolved profile.
-
-The interaction of testing solutions with resolved profiles will be covered below.
 
 
 ## Interaction with workspaces
@@ -412,7 +423,9 @@ As noted before, these inherit with their predicates. When computing the set of 
 
 # Drawbacks
 
-I think the main drawback here is that this is Cargo.toml-focused, so it requires people to buy in to doing lints via `[lints]` and not any other method if they wish to have the benefits. It also
+I think the main drawback here is that this is Cargo.toml-focused, so it requires people to buy in to doing lints via `[lints]` and not any other method if they wish to have the benefits.
+
+This is also not a simple system: is the complexity worth it?
 
 # Rationale and alternatives
 
