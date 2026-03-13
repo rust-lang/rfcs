@@ -69,6 +69,11 @@ Tools like rust-analyzer can also change the dynamic here, such that "warn" lint
 
 In essence, lints can have different effects in different contexts.
 
+
+
+ [clippy-action]: https://github.com/giraffate/clippy-action
+ [clippy-sarif]: https://crates.io/crates/clippy-sarif
+
 ## Lint modalities and their use cases
 
 Overall, it's quite common in codebases to want to have different "modes" for lints for the different contexts a linter might be run in.
@@ -107,10 +112,8 @@ Clippy has a patchwork of config options that disable lints in tests, like `allo
 
 A proposal that comes up semi-regularly is for there to be lints that teach you more about your code. These may not even point out _mistakes_, but rather teach you things about code you are writing. While lint profiles doesn't solve this problem entirely, being able to toggle sets of lints for the purposes of "I am learning Rust and want some more helpful nudges" helps solve part of the problem for designs here.
 
+# Guide level explanation
 
-
-
-# Design
 
 Currently, in Cargo.toml, it is possible to control lints with the `[lints]` section, like this:
 
@@ -144,19 +147,87 @@ Lint profiles can be controlled from the CLI:
 $ cargo build --lints ci
 ```
 
-Open question: what should the flag be called? Should it also be available as an environment variable? `--lints` is short but perhaps too short, `--lint-profiles` also seems nice.
+## Inheritance and workspaces
 
-Open question: Should it be possible to also access the default profile via `[lints.profiles.default]`? What's the behavior of specifying both? Probably doesn't matter too much.
+Lint profiles can be inherited from the same package and from the workspace
 
-## Interaction with workspaces
 
-Lint profiles set via CLI flag are only relevant for the current workspace. Dependencies outside of the workspace cannot be expected to use the same naming scheme for profiles, and it is unlikely that users will wish to run lints on third-party dependencies. `--lints ci` will set lints to the levels defined by the `ci` profile for all crates in the workspace, for crates with such a profile (falling back to `default` otherwise).
 
-Not having such a profile is not a hard error in this mode since it's acceptable to not have the profile defined on every workspace crate.
+```toml
+# Simple inheritance
 
-Open question: When should it be a hard error to specify `--lints foo` for a nonexistant profile `foo`? 
+[lints]
+unused = "allow"
+missing-debug-implementations = "warn"
+[lint.profiles.ci]
+inherits = "default" # inherits from the default profile
+unused = "deny" # overrides `unused` preference
 
-Open question: Would it hurt to *by default* inherit lint profiles from the workspace? A straightforward implementation would break current behavior of `[lints]` (which does not autoinherit, though perhaps it ought to?), but we could make this behavior kick in only when you specify `--lint someprofile` and `someprofile` is defined on the workspace but not the individual crate.
+# Workspace examples
+
+# Inherit all lints and lint profiles from workspace
+[lints]
+workspace = true
+
+# Inherit just the ci profile from the workspace
+[lint.profiles.ci]
+workspace = true
+
+# Inherit just the default profile (`[lints.lintname]` / `[lints.clippy.lintname]`) from the workspace
+[lints.profiles.default]
+workspace = true
+
+# Inherit the ci profile from the workspace but override some things
+[lint.profiles.ci]
+workspace = true
+[lint.profiles.ci.clippy]
+ptr-eq = "deny" # this is a lint
+correctness = "warn" # this is a lint group
+```
+
+
+Note that if you wish to inherit from a profile defined in the worksp
+
+
+## Changing warn levels wholesale
+
+It is possible to use lint profiles to map warnings to another level.
+
+For example, the following is equivalent to using `-Dwarnings` in CI: 
+
+
+```toml
+[lints.profiles.ci]
+warn = "deny"
+```
+
+The only allowed values here `"deny"`, `"warn"`, and `"allow"`.
+
+This can be used when inheriting profiles to map `warn` to `deny` for the lint groups that are inherited:
+
+
+```toml
+[lints]
+some-lint = "warn"
+some-other-lint = "warn"
+[lints.profiles.ci]
+inherits = { profile = "default", warn = "deny" }
+[lints.profiles.ci]
+deprecated = "warn"
+clippy.some-noisy-lint = "warn"
+clippy.some-other-noisy-lint = "warn"
+```
+
+This creates a profile that inherits from the default profile, but with all warnings replaced with hard errors, and further tweaks to some other lints.
+
+This has no impact on lint levels specified in the source code, or warnings that come from places other than the warning system (in other words, this does not apply `-Dwarnings`)
+
+
+This is useful with PR-integrated CI linters, where you want to simultaneously:
+
+ - Ensure the code is lint-free with the regular (default) profile
+ - Ensure additional nitpicky lints _show up_ on PRs so that people try to fix them (but don't block landing)
+
 
 
 ### Workspace inheritance
@@ -189,144 +260,122 @@ Use of `workspace = true` does not prevent addition of new profiles or tweaking 
 Note that currently, `[lints] workspace = true` cannot be combined with explicitly specified lints.
 
 
-## Applying `-Dwarnings` to a build
 
-This straight up applies `-Dwarnings`. The only allowed values here are `"deny"`, `"warn"`, and `"allow"`.
+
+## Test-only lint levels
+
+There are two ways of making test modalities work here. One is less powerful but simpler, the other will complicate the implementation. This RFC has not yet selected one, but it prefers Option 1
+
+
+### Option 1: A `test` subprofile
+
+Each lint profile contains a "test" sub-profile, which behaves like a normal profile, but is applied when you build `cfg(test)` binaries with that profile in test mode. These are integration tests, unit tests, doctests, and benchmarks.
+
 
 
 ```toml
-[lints.profiles.ci]
-warn = "deny"
+[lints.profiles.ci.test]
+some-lint = "allow"
 ```
 
-Open question: Someone should pick how this prioritizes with [`build.warnings`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#warnings). I don't see any particular choice as having more merit, but a choice must be made.
-
-Open question: `warn` or `warnings`?
-
-## Changing lint levels in bulk based on existing profile
-
-This provides a more flexible way to do `-Dwarnings`-style transforms when inheriting.
+This profile can inherit from other profiles normally:
 
 ```toml
-[lints.profiles.ci]
-inherits = { profile = "default", warn = "deny" }
-[lints.profiles.ci.rust]
-deprecated = "warn"
-[lints.profiles.ci.clippy]
-some-noisy-lint = "warn"
-some-other-noisy-lint = "warn"
+[lints.profiles.testprofile]
+some-lint = "allow"
+
+[lints.profiles.ci.test]
+some-other-lint = "allow"
+inherits = "testprofile"
 ```
 
-This creates a profile that inherits from the default profile, but with all warnings replaced with hard errors, and further tweaks to some other lints.
+When building with `--lints ci`, all the lints specified in the `ci` profile will be used, plus any overrides from the testing subprofile.
 
-This can be used to turn `warn` or `deny` lint level into any other lint level _when inheriting_. This has no impact on lint levels specified in the source code, or warnings that come from places other than the warning system (in other words, this does not apply `-Dwarnings`)
+When inheriting a profile into a regular profile, its `test` sub-profile is also inherited.
 
-This could work well with PR-integrated CI linters, where you want to simultaneously:
-
- - Ensure the code is lint-free with the regular (default) profile
- - Ensure additional nitpicky lints _show up_ on PRs so that people try to fix them (but don't block landing)
+(It's unclear if this really needs to support inheritance.)
 
 
-## Test modalities
+### Option 2: Cfg-gated lints
 
-There are two ways of making test modalities work here. One is less powerful but simpler, the other will complicate the implementation.
-
-Open question: Pick one
-
-### Option 1: A magic `test` profile
-
-By default, all crates have the implicit equivalent of this:
+This works similarly to how you can specify cfg-specific dependencies
 
 ```toml
-[lints.profiles.test]
-inherits = "default"
-```
-
-This profile is what is chosen when running `cargo test`/`cargo bench` or building `test` (including integration, unit, and doc tests) and `bench` targets during `cargo check --all-targets`.
-
-Explicity filling in the `test` profile allows for selecting a different set of lints to include there. For example, one may choose to:
-
-```toml
-[lints.profiles.test.clippy]
+[lints.profiles.ci.'cfg(test)']
 indexing-slicing = "allow"
-unwrap-used = "allow"
-expect-used = "allow"
 ```
 
-Open question: A potential tweak would be to introduce separate `bench`/`doc` lint profiles as well. I don't quite see this as necessary, but it's a simple enough extension.
+This is a lot more flexible, but it might be too flexible: is there actually a use case for target-specific lints? There is some use case for different lints based on `cfg(test)`, `cfg(doc)`, `cfg(bench)`, etc, but less so for `cfg(windows)`.
 
-This profile selection can still be overridden with `--lints somethingelse`
+On the other hand, this does not allow for inheritance, which is simpler. Similar to dependencies, this just lets you conditionally specify additional members.
 
-This is pretty straightforward, but a lot of the other configurability in this feature is lost on tests. With a special `test` profile, one can't, for example, have a distinction between test and non-test lints work for PR integrated CI linters.
+# Reference-level explanation
 
-### Option 2: Test-only contexts
+## General feature
 
-Instead, a different way to do this would be to have lint inheritance work contextually; so you can define a test profile but only inherit from it in a test context.
+A lint profile can be specified as
+
+```toml
+[lints.profiles.nameofprofile]
+workspace = true
+lintname = "allow" # allow, warn, deny, forbid
+clippy.lintname = "allow" # same
+warn = "deny" # allow, warn, deny
+inherits = "default" # a name of a profile
+# or
+inherits = {profile = "default", warn = "deny"}  # name of a profile, and an allow/warn/deny value
+# Option 1
+test = {} # can contain all the same fields as above, except for `test` itself
+# Option 2
+'cfg(test)'.lintname = "allow"
+
+```
+
+The "default" lint profile specified as `[lints]` can also have the same fields.
+
+Note that currently [workspace overriding is not supported][ws-override]. The inheritance mechanism in this RFC provides a straightforward way to support workspace overriding, but it's not necessary to fix to support this RFC.
+
+
+ [ws-override]: https://github.com/rust-lang/cargo/issues/13157
+
+## Inheritance
+
+Internally, each lint profile is *resolved* to a list of lints and lint levels, plus an optional `warn = "somelevel"` setting. In case we go with Option 1 for tests, each profile contains an additional "test" profile. If we go with option 2, it also contains a list of lints and lint levels with `cfg` predicates. This lint is sorted in definition order.
+
+When profiles are inherited via `inherits` or `workspace = true`, it is the resolved profile that is inherited. Further overrides are applied on top of that resolved profile, producing a new resolved profile. We do not have multiple inheritance: a single resolved profile is inherited and further overrides can be applied on top of it.
+
+`lints.workspace = true` inherits all lint profiles (including the default one) from the workspace.
+
+If we choose to fix the [workspace override][ws-override] issue in this RFC, then the following will work:
 
 ```toml
 [lints]
-inherits = { profile = "testprofile", context = "test" }
+workspace = true
+some-lint = "allow"
 
-[lints.profiles.testprofile.clippy]
-indexing-slicing = "allow"
-unwrap-used = "allow"
-expect-used = "test"
+
+[lints.profiles.ci] # assume the workspace has a `ci` profile
+some-other-lint = "allow"
 ```
 
-(The name "testprofile" is used here so it's unambiguous when "test" is used as a keyword)
+Here, the crate will have a default and `ci` profile copied from the workspace, with overrides applied on top.
 
 
-Open question: Does configuring the default profile happen on `[lints]`, `[lints.profiles.default]`, or both?
+When using `{inherits = "someprofile", warn = "deny"}`, the resolved profile has all `warn` entries replaced with `deny` entries before being inherited.
 
 
-`context` can be `normal`, `all` (default), or `test`. Other contexts can be added if desired.
+When running with a resolved profile, it is simply a matter of applying the `-A`/`-W`/etc flags specified by the lint list in the resolved profile. Inheritance is already "handled" once you compute a resolved profile.
 
-In this case the `testprofile` profile is automatically inherited from when constructing the lint set for `cargo test`, `cargo bench`, or test targets in `cargo test --all-targets`, but ignored otherwise.
-
-
-This is more powerful but it complicates lint profile inheritance and lint profiles need to keep a list of their lint sets for test and non-test contexts. The benefit of this is that it allows full configurability for test profiles, for example, one can do this:
-
-```toml
-[lints]
-inherits = { profile = "testprofile", context = "test" }
-
-[lints.profiles.testprofile.clippy]
-indexing-slicing = "allow"
-unwrap-used = "allow"
-expect-used = "allow"
-
-[lints.profiles.ci]
-inherits = { profile = "testprofile", context = "test" }
-[lints.profiles.ci.rust]
-deprecated = "warn"
-```
-
-Now the CI profile is also able to ignore certain lints in test mode.
+The interaction of testing solutions with resolved profiles will be covered below.
 
 
-This does open up the question of multiple inheritance: if we want to inherit both a normal and a test context profile, we may need some form of multiple inheritance. There are three ways to do this that fit well with this design:
+## Interaction with workspaces
 
- - `inherits` accepts an array: `inherits = ["default", {profile = "testprofile", context = "test"}]`
- - `inherits` instead takes a profile name: `inherits.default = true`, `inherits.testprofile = {context = "test"}`
- - We add a separate `inherits-test` key: `inherits-test = "testprofile"`
+Lint profiles set via CLI flag are only relevant for the current workspace. Dependencies outside of the workspace cannot be expected to use the same naming scheme for profiles, and it is unlikely that users will wish to run lints on third-party dependencies. `--lints ci` will set lints to the levels defined by the `ci` profile for all crates in the workspace, for crates with such a profile (falling back to `default` otherwise).
 
-The former two allow multiple inheritance in general, though we could disallow that. The first and third fits well with the existing syntax of `inherits`, which is modeled after _regular_ profile inheritance. The second feels a bit cleaner.
+Not having such a profile is not a hard error in this mode since it's acceptable to not have the profile defined on every workspace crate.
 
-Open question: should this only apply to inheritance, or if it should be possible to directly specify lints as being contextual, like so:
 
-```toml
-
-[lints.clippy]
-indexing-slicing = [{profile = "normal", level = "warn", profile = "test", level = "allow"}]
-```
-
-It seems like the underlying data model will likely need the ability to store multiple contextual levels per lint, so it might be worth allowing the user to do that too.
-
-Open question: For `#[test]` in `--lib` test targets, should these lint levels apply _only_ to the tests, or all of the code? The latter is the easy option, the former needs extensions to rustc. I don't really see a strong motivation for this, but I'm calling it out as something to think about.
-
- [clippy-action]: https://github.com/giraffate/clippy-action
- [clippy-sarif]: https://crates.io/crates/clippy-sarif
- 
 ## Interaction with rustc
 
 This design lives entirely in Cargo: In essence it uses the existing `[lints]` infrastructure (which just feeds `rustc` a bunch of flags).
@@ -347,7 +396,18 @@ Regular profiles already have inheritance (etc), so it _is_ tempting to merge th
 
 Overall I see the use case of toggling lints to be different from that of toggling other compilation flags.
 
-Open question: Maybe we want to merge it with profiles anyway? Or perhaps provide a way to set a profile's default lint profile? I haven't seen a strong motivation for this yet.
+## Testing: Testing subprofiles (Option 1)
+
+Each profile's `test` subprofile is resolved by taking the "parent" profile and then overlaying any overrides from the test subprofile. It is applied whenever something is being built with `--cfg test` while using that profile. The `test` subprofile is itself resolved
+
+When inheriting a profile, the resolved `test` subprofile is also inherited, and further overrides can be applied on top.
+
+It's not clear if `test` profiles need to support inheritance, but if we decide to support that, then an `inherits = ` key in a test subprofile will *switch* the base profile used for inheritance to being the specified profile, rather than the parent profile.
+
+## Testing: CFG'd lints (option 2)
+
+
+As noted before, these inherit with their predicates. When computing the set of lint levels, the resolved profile is taken, and all `cfg-`predicated lint levels that apply to the current build setting are applied in definition order (inherited cfgs apply first).
 
 
 # Drawbacks
@@ -373,11 +433,19 @@ The [custom named Cargo profiles](https://rust-lang.github.io/rfcs/2678-named-cu
 
 # Unresolved questions
 
-I've marked most unresolved questions as "open question" in the text of this RFC. I'd rather not duplicate them here, but I can do so if people like.
 
-Picking a way to handle tests is one major question.
+ - What should the `--lints` flag be called? `--lints`? `--lint-profiles`?
+ - Should it be possible to also access the default profile via `[lints.profiles.default]`? What's the behavior of specifying both? Probably doesn't matter too much. Either way, we should reserve the profile name `default`.
+ - Someone should pick how `warn = "deny"` prioritizes with [`build.warnings`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#warnings). I don't see any particular choice as having more merit, but a choice must be made.
+ - Should it be `warn = "deny"` or `warnings = "deny"`?
+ - Should we go with Option 1 or 2 for tests?
+ - In Option 1, should we introduce `bench`/`doc` lint profiles as well? I don't quite see this as necessary, but it's a simple enough extension.
+ - In Option 1, should we support inheritance with test profiles?
+ - I've made an argument against merging lint profiles and regular profiles, but maybe we want to merge it with profiles anyway? Or perhaps provide a way to set a profile's default lint profile? I haven't seen a strong motivation for this yet.
+ - When should it be a hard error to specify `--lints foo` for a nonexistant profile `foo`? 
+ - Would it hurt to *by default* inherit lint profiles from the workspace? A straightforward implementation would break current behavior of `[lints]` (which does not autoinherit, though perhaps it ought to?), but we could make this behavior kick in only when you specify `--lint someprofile` and `someprofile` is defined on the workspace but not the individual crate.
+ 
 
-There's also a bunch of tricky design around how inheritance works around the "default" profile.
 
 
 # Future work
