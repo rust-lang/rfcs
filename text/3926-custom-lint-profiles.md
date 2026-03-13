@@ -53,7 +53,7 @@ There are multiple ways that lint levels can be toggled in modern Rust. For the 
      - This **does not** allow fine grained control over individual lints
      - This **can** be easily tweaked at runtime
      - This **is always** shared between crates
-     - Changing this invalidates the entire build
+     - Changing RUSTFLAGS invalidates the entire build, but `CARGO_BUILD_WARNINGS` does not invalidate anything.
   - In the CLI, by choosing to call `cargo clippy`
       - (This is technically a modality too)
       - This usually rebuilds the workspace.
@@ -180,11 +180,11 @@ Open question: Should it be possible to also access the default profile via `[li
 # Simple inheritance
 
 [lints]
-unused = "allow"
-missing-debug-implementations = "warn"
+rust.unused = "allow"
+rust.missing-debug-implementations = "warn"
 [lint.profile.ci]
 inherits = "default" # inherits from the default profile
-unused = "deny" # overrides `unused` preference
+rust.unused = "deny" # overrides `unused` preference
 
 # Workspace examples
 
@@ -234,12 +234,12 @@ This can be used when inheriting profiles to map `warn` to `deny` for the lint g
 
 ```toml
 [lints]
-some-lint = "warn"
-some-other-lint = "warn"
+rust.some-lint = "warn"
+rust.some-other-lint = "warn"
 [lints.profile.ci]
 inherits = { profile = "default", warn = "deny" }
 [lints.profile.ci]
-deprecated = "warn"
+rust.deprecated = "warn"
 clippy.some-noisy-lint = "warn"
 clippy.some-other-noisy-lint = "warn"
 ```
@@ -277,8 +277,8 @@ workspace = true
 [lint.profile.ci]
 workspace = true
 [lint.profile.ci.clippy]
-ptr_eq = "deny" # this is a lint
-correctness = "warn" # this is a lint group
+rust.ptr_eq = "deny" # this is a lint
+rust.correctness = "warn" # this is a lint group
 ```
 
 Use of `workspace = true` does not prevent addition of new profiles or tweaking of existing ones. 
@@ -310,10 +310,10 @@ This profile can inherit from other profiles normally:
 
 ```toml
 [lints.profile.testprofile]
-some-lint = "allow"
+rust.some-lint = "allow"
 
 [lints.profile.ci.test]
-some-other-lint = "allow"
+rust.some-other-lint = "allow"
 inherits = "testprofile"
 ```
 
@@ -333,7 +333,7 @@ This works similarly to how you can specify cfg-specific dependencies
 
 ```toml
 [lints.profile.ci.'cfg(test)']
-indexing-slicing = "allow"
+clippy.indexing-slicing = "allow"
 ```
 
 This is a lot more flexible, but it might be too flexible: is there actually a use case for target-specific lints? There is some use case for different lints based on `cfg(test)`, `cfg(doc)`, `cfg(bench)`, etc, but less so for `cfg(windows)`.
@@ -349,7 +349,7 @@ A lint profile can be specified as
 ```toml
 [lints.profile.nameofprofile]
 workspace = true
-lintname = "allow" # allow, warn, deny, forbid
+rust.lintname = "allow" # allow, warn, deny, forbid
 clippy.lintname = "allow" # same
 warn = "deny" # allow, warn, deny
 inherits = "default" # a name of a profile
@@ -358,7 +358,7 @@ inherits = {profile = "default", warn = "deny"}  # name of a profile, and an all
 # Option 1
 test = {} # can contain all the same fields as above, except for `test` itself
 # Option 2
-'cfg(test)'.lintname = "allow"
+'cfg(test)'.rust.lintname = "allow"
 
 ```
 
@@ -369,9 +369,11 @@ The profile can be selected via a `--lints` flag available in all commands that 
 
 Custom profiles cannot be named `default`. The name `default` is reserved for referencing the default profile.
 
-Rustc cannot add lints named `workspace`, `inherits`, `warn`, or `test`.
+Linter types named `workspace`, `inherits`, `warn`, or `test` are forbidden.
 
 Note that currently [workspace overriding is not supported][ws-override]. More on that below.
+
+ [ws-override]: https://github.com/rust-lang/cargo/issues/13157
 
 ## Inheritance
 
@@ -397,11 +399,11 @@ If we choose to fix the [workspace override][ws-override] issue in this RFC, the
 ```toml
 [lints]
 workspace = true
-some-lint = "allow"
+rust.some-lint = "allow"
 
 
 [lints.profile.ci] # assume the workspace has a `ci` profile
-some-other-lint = "allow"
+rust.some-other-lint = "allow"
 ```
 
 Here, the crate will have a default and `ci` resolved profile copied from the workspace, with overrides applied on top.
@@ -508,7 +510,7 @@ Should using this feature require an MSRV bump? Technically crates consuming you
 ## Custom lint groups
 
 
-A thing this feature does *not* let one do is toggle multiple lints at once in code sections, a feature that is useful to have. A *potential* extension of this feature would be to allow profiles to be defined as lint groups so that one can write `#[allo w(customprofile)]`. There's a lot of subtletlies of such a design, including:
+A thing this feature does *not* let one do is toggle multiple lints at once in code sections, a feature that is useful to have. A *potential* extension of this feature would be to allow profiles to be defined as lint groups so that one can write `#[allow(customprofile)]`. There's a lot of subtletlies of such a design, including:
 
  - How does one provide this specification to rustc?
  - Profiles contain `allow`s and `warns` and other things, they are not _just_ a grouping of lints. What does it mean to `#[warn(group)]` for a group that contains some `allow`s and some `warn`s? Does it turn on every lint explicitly mentioned in the profile? Does it turn on every `allow` lint from the profile? There's not an easy answer here.
