@@ -139,9 +139,9 @@ In the context of this proposal, this set of lint settings will be called the "d
 This proposal adds the ability to define custom lint profiles:
 
 ```toml
-[lints.profiles.ci]
+[lints.profile.ci]
 inherits = "default"
-[lints.profiles.ci.clippy]
+[lints.profile.ci.clippy]
 pedantic = "allow"
 correctness = "deny"
 ```
@@ -163,7 +163,7 @@ Open question: What should the `--lints` flag be called? `--lints`? `--lint-prof
 
 Lint profiles can be inherited from the same package and from the workspace. The profile specified in `[lints]` is called `default`.
 
-Open question: Should it be possible to also access the default profile via `[lints.profiles.default]`? What's the behavior of specifying both? Probably doesn't matter too much. Either way, we should reserve the profile name `default`.
+Open question: Should it be possible to also access the default profile via `[lints.profile.default]`? What's the behavior of specifying both? Probably doesn't matter too much. Either way, we should reserve the profile name `default`.
 
 
 
@@ -173,7 +173,7 @@ Open question: Should it be possible to also access the default profile via `[li
 [lints]
 unused = "allow"
 missing-debug-implementations = "warn"
-[lint.profiles.ci]
+[lint.profile.ci]
 inherits = "default" # inherits from the default profile
 unused = "deny" # overrides `unused` preference
 
@@ -184,22 +184,22 @@ unused = "deny" # overrides `unused` preference
 workspace = true
 
 # Inherit just the ci profile from the workspace
-[lint.profiles.ci]
+[lint.profile.ci]
 workspace = true
 
 # Inherit just the default profile (`[lints.lintname]` / `[lints.clippy.lintname]`) from the workspace
-[lints.profiles.default]
+[lints.profile.default]
 workspace = true
 
 # Inherit the ci profile from the workspace but override some things
-[lint.profiles.ci]
+[lint.profile.ci]
 workspace = true
-[lint.profiles.ci.clippy]
+[lint.profile.ci.clippy]
 ptr-eq = "deny" # this is a lint
 correctness = "warn" # this is a lint group
 ```
 
-Note that if you wish to inherit from a profile defined in the workspace, you must first inherit the profile via `lints.profiles.profilename.workspace = true`, and then you can inherit from `profilename`.
+Note that if you wish to inherit from a profile defined in the workspace, you must first inherit the profile via `lints.profile.profilename.workspace = true`, and then you can inherit from `profilename`.
 
 
 ## Changing warn levels wholesale
@@ -210,7 +210,7 @@ For example, the following is equivalent to using `-Dwarnings` in CI:
 
 
 ```toml
-[lints.profiles.ci]
+[lints.profile.ci]
 warn = "deny"
 ```
 
@@ -227,9 +227,9 @@ This can be used when inheriting profiles to map `warn` to `deny` for the lint g
 [lints]
 some-lint = "warn"
 some-other-lint = "warn"
-[lints.profiles.ci]
+[lints.profile.ci]
 inherits = { profile = "default", warn = "deny" }
-[lints.profiles.ci]
+[lints.profile.ci]
 deprecated = "warn"
 clippy.some-noisy-lint = "warn"
 clippy.some-other-noisy-lint = "warn"
@@ -257,17 +257,17 @@ The following patterns are all legal:
 workspace = true
 
 # Inherit the ci profile from the workspace
-[lint.profiles.ci]
+[lint.profile.ci]
 workspace = true
 
 # Inherit just the default profile (`[lints.lintname]` / `[lints.clippy.lintname]`) from the workspace
-[lints.profiles.default]
+[lints.profile.default]
 workspace = true
 
 # Inherit the ci profile from the workspace but override some things
-[lint.profiles.ci]
+[lint.profile.ci]
 workspace = true
-[lint.profiles.ci.clippy]
+[lint.profile.ci.clippy]
 ptr_eq = "deny" # this is a lint
 correctness = "warn" # this is a lint group
 ```
@@ -293,17 +293,17 @@ Each lint profile contains a "test" sub-profile, which behaves like a normal pro
 
 
 ```toml
-[lints.profiles.ci.test]
+[lints.profile.ci.test]
 some-lint = "allow"
 ```
 
 This profile can inherit from other profiles normally:
 
 ```toml
-[lints.profiles.testprofile]
+[lints.profile.testprofile]
 some-lint = "allow"
 
-[lints.profiles.ci.test]
+[lints.profile.ci.test]
 some-other-lint = "allow"
 inherits = "testprofile"
 ```
@@ -323,7 +323,7 @@ Open question: Should we support inheritance with test profiles?
 This works similarly to how you can specify cfg-specific dependencies
 
 ```toml
-[lints.profiles.ci.'cfg(test)']
+[lints.profile.ci.'cfg(test)']
 indexing-slicing = "allow"
 ```
 
@@ -338,7 +338,7 @@ On the other hand, this does not allow for inheritance, which is simpler. Simila
 A lint profile can be specified as
 
 ```toml
-[lints.profiles.nameofprofile]
+[lints.profile.nameofprofile]
 workspace = true
 lintname = "allow" # allow, warn, deny, forbid
 clippy.lintname = "allow" # same
@@ -391,7 +391,7 @@ workspace = true
 some-lint = "allow"
 
 
-[lints.profiles.ci] # assume the workspace has a `ci` profile
+[lints.profile.ci] # assume the workspace has a `ci` profile
 some-other-lint = "allow"
 ```
 
@@ -475,7 +475,7 @@ These designs are superficially similar, but not super similar in the details. C
 These are all mentioned inline in the RFC under "open question", but duplicated here for referencing. I prefer having these discussions inline in the RFC.
 
  - What should the `--lints` flag be called? `--lints`? `--lint-profiles`?
- - Should it be possible to also access the default profile via `[lints.profiles.default]`?
+ - Should it be possible to also access the default profile via `[lints.profile.default]`?
  - Someone should pick how `warn = "deny"` prioritizes with [`build.warnings`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#warnings).
  - Should it be `warn = "deny"` or `warnings = "deny"`?
  - Should we go with Option 1 or 2 for tests?
