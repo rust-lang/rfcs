@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-The `todo!()` macro is meant as a placeholder, often used to make type check pass while still writing the code. However, since it diverges, all code that comes after it is marked as unreachable. The author proposes changing that to reduce the `unreachable_code` churn, while adding a `todo_macro_used` lint that can be deactivated while the code is still work in progress and activated before pushing to production. 
+The `todo!()` macro is meant as a placeholder, often used to make type check pass while still writing the code. However, since it diverges, all code that comes after it is marked as unreachable. The author proposes changing that to reduce the `unreachable_code` churn, while adding a `todo_macro_uses` lint that can be deactivated while the code is still work in progress and activated before pushing to production. 
 
 ## Motivation
 [motivation]: #motivation
@@ -60,21 +60,21 @@ A proof of concept implementation is in [#149543](https://github.com/rust-lang/r
 - From a theoretical standpoint, implementing this RFC disturbs the conceptual purity of `todo!()`, which is now somehow more than just any old diverging expression with a suggestive name
 - There is a reasonably small bit of complexity added to the compiler, which we need to maintain
 - There is one more lint that people will encounter (although it will merely replace `unreachable_code` on all `todo!()` macro expressions, not add any new messages)
-- People might be confused why they get a lint for `todo!()` instead for unreachable code, especially if they had `#[allow(unreachable_code)]` in their code. However, this is easily countered with documentation
+- People might be confused why they get a lint for `todo!()` instead for unreachable code, especially if they had `#[allow(unreachable_code)]` in their code. The author suggests that this is easily countered with documentation
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - We could do nothing. This leaves the users with the problem stated above.
-- We could make `unreachable_code` ignore `todo!()` without adding a `todo_macros_used` lint. However, people would need to run clippy (or use a search or other such IDE feature) to get rid of their `todo!()` calls. This is deemed suboptimal from a user experience standpoint.
-- We could only add a `todo_macros_used` lint without omitting the `todo!()` macro from `unreachable_code` warnings. That would allow people to allow the `unreachable_code` lint while fixing up all `todo!()`s and only then fix the other unreachable code. However, again, the user might forget reactivating the `unreachable_code` lint, potentially leaving their code in a subpar state  
+- We could make `unreachable_code` ignore `todo!()` without adding a `todo_macros_uses` lint. However, people would need to run clippy (or use a search or other such IDE feature) to get rid of their `todo!()` calls. This is deemed suboptimal from a user experience standpoint.
+- We could only add a `todo_macros_uses` lint without omitting the `todo!()` macro from `unreachable_code` warnings. That would allow people to allow the `unreachable_code` lint while fixing up all `todo!()`s and only then fix the other unreachable code. However, again, the user might forget reactivating the `unreachable_code` lint, potentially leaving their code in a subpar state
 
 Please note that this is a language proposal only insofar as that a lint (which is technically part of the language) is changed in accordance with a standard library item. It is not possible to do this without compiler support. There may be a way to implement this so that users could write their own `placeholder!()` macros that do not trip up the `unreachable_code` lint, although at this point the author sees no value in that.
 
 ## Prior art
 [prior-art]: #prior-art
 
-In clippy, there is a `todo` lint that would be deprecated as soon as `todo_macro_used` is available on stable. Also in clippy, we have done a lot of work to reduce low-benefit lint warnings churn over the last years, so this is merely an extension of that work to the compiler.
+In clippy, there is a `todo` lint that would be deprecated as soon as `todo_macro_uses` is available on stable. Also in clippy, we have done a lot of work to reduce low-benefit lint warnings churn over the last years, so this is merely an extension of that work to the compiler.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
