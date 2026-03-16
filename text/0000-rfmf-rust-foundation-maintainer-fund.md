@@ -17,7 +17,7 @@ The Funding team is additionally charged with ensuring the program's overall suc
 
 [RFC 3919]: https://github.com/rust-lang/rfcs/pull/3919
 
-This RFC was jointly written by the [RFMF Design Committee.](https://github.com/rust-lang/team/blob/main/teams/rfmf-design-committee.toml)
+This RFC was jointly written by the [RFMF Design Committee](https://github.com/rust-lang/team/blob/0acc660a6bce2b9166362d4bfcbed872508085a6/teams/rfmf-design-committee.toml).
 
 # Motivation
 [motivation]: #motivation
