@@ -139,7 +139,7 @@ The `=` comparison is only valid when the option is undefined or of type `defaul
 
 A `cfg` identifier is of type `version` if:
 *   It is one of the built-in identifiers `rust_version` or `rust_edition`.
-*   It is declared with `--check-cfg 'cfg(name, version)'` and is passed to the compiler with the special syntax `--cfg 'name=version("...")'`.
+*   It is declared with the special syntax `--cfg 'name=version("...")'` and if using `--check-cfg` is declared appropriately with `--check-cfg 'cfg(name, version())'`.
 
 The `ident` must be a known `cfg` identifier of type `version`. The `literal` must be a string literal that represents a valid version.
 
