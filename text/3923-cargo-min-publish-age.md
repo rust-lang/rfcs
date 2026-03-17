@@ -367,7 +367,7 @@ The options below can be provided in global, or project-specific configuration f
 
 `minimumReleaseAge` specifies a duration which all updates must be older than for renovate to create an update. It looks like the duration specification uses units (ex. "3 days"), however, again I can't find a precise specification for the syntax.
 
-I think it is possible to create separate rules with different `minimumReleaseAge` configurations.
+It is possible to create separate rules with different `minimumReleaseAge` configurations, on per-package basis, or across groups of packages/registries.
 
 "Security" updates bypass the minimum release age checks.
 
