@@ -12,7 +12,7 @@ Make trait methods callable in const contexts. This includes the following parts
 * Allow marking `trait` impls as `const`.
 * Allow marking trait bounds as `const` to make methods of them callable in const contexts.
 
-Fully contained example ([Playground of currently working example](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=2ab8d572c63bcf116b93c632705ddc1b)):
+Fully contained example ([Playground of currently working example](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=802ebb58d88a4f85a8f2d6ed82cbb139)):
 
 ```rust
 const trait Default {
@@ -163,16 +163,6 @@ const trait Trait {
 A method's (optional) default body must satisfy everything a `const fn` body must, making them callable in const contexts.
 Impls can now rely on the default methods being const, too, and don't need to override them with a const body.
 
-Note that on nightly the syntax is
-
-```rust
-#[const_trait]
-trait Trait {
-    fn thing();
-}
-```
-
-and a result of this RFC would be to turn `#[const_trait]` into `const trait` syntax for trait declarations.
 Free functions are unaffected and will stay as `const fn`.
 
 ### `const` methods and non-`const` methods on the same trait
@@ -274,27 +264,30 @@ which we definitely do not support and have historically rejected over and over 
 Any `impl const Trait for Type` is allowed to have `[const]` trait bounds:
 
 ```rust
+use std::ops::Add;
+
 struct MyStruct<T>(T);
 
-impl<T: [const] Add<Output = T>> const Add for MyStruct<T> {
+const impl<T: [const] Add<Output = T>> Add for MyStruct<T> {
     type Output = MyStruct<T>;
     fn add(self, other: MyStruct<T>) -> MyStruct<T> {
         MyStruct(self.0 + other.0)
     }
 }
 
-impl<T> const Add for &MyStruct<T>
+const impl<T> Add for &MyStruct<T>
 where
-    for<'a> &'a T: [const] Add<Output = T>,
+    for<'a> &'a T: ~const Add<Output = T>,
 {
     type Output = MyStruct<T>;
     fn add(self, other: &MyStruct<T>) -> MyStruct<T> {
         MyStruct(&self.0 + &other.0)
     }
 }
+
 ```
 
-See [this playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=313a38ef5c36b2ddf489f74167c1ac8a) for an example that works on nightly today.
+See [this playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=11f9dd9ebcb2e618910a3e295da9f889) for an example that works on nightly today.
 
 ### Derives
 
