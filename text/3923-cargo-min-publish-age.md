@@ -150,15 +150,15 @@ This RFC adds a few new configuration options to [cargo configuration](https://d
 ### Added to [Configuration Format](https://doc.rust-lang.org/cargo/reference/config.html#configuration-format)
 
 ```toml
- [resolver]
- incompatible-publish-age = "fallback" # Specifies how resolver reacts to these
+[resolver]
+incompatible-publish-age = "fallback" # Specifies how resolver reacts to these
 
- [registries.<name>]
- min-publish-age = "..."  # Override `registry.global-min-publish-age` for this registry
+[registries.<name>]
+min-publish-age = "..."  # Override `registry.global-min-publish-age` for this registry
 
- [registry]
- min-publish-age = "0"  # Override `registry.global-min-publish-age` for crates.io
- global-min-publish-age = "0"  # Minimum time span allowed for packages from this registry
+[registry]
+min-publish-age = "0"  # Override `registry.global-min-publish-age` for crates.io
+global-min-publish-age = "0"  # Minimum time span allowed for packages from this registry
  ```
 
 ### Added to [`[resolver]`](https://doc.rust-lang.org/cargo/reference/config.html#resolver)
