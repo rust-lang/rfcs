@@ -278,13 +278,46 @@ Adding a new dependency can cause you to pull in transitive dependencies that ar
 your desired minimum age. There isn't a manageable way to run `cargo update` and intentionally
 get versions that are inside of your desired minimum age.
 
-### Configuration Locations
+### Configuration Locations and Names
 
 The locations and names of the configuration options in this proposal were chosen to be
 consistent with existing Cargo options, as described in [Related Options in Cargo](#related-options).
 
+The term "publish" was used rather than "package", "version", or "release" to make it
+clear that this only applies to crates that are published in a registry.
+
+### fallback and deny
+
+We default `resolver.incompatible-publish-age` to "fallback" rather than deny
+and defer support for "deny" to future possibilities, because that allows user to allow
+users to easily override the minimum age for specific crates when necessary.
+
+Specifically, with "fallback" it is possible to override the minimum age behavior for
+specific crates by specifying a more specific version in Cargo.toml, or using `cargo update --precise`.
+
+Furthermore, with "fallback", and the ability to override versions as mentioned above,
+it isn't as critical to have a way to list crates to exclude from the rule in configuration.
+
+We anticipate that "fallback" will be sufficient for most use cases, but the possibility of a  "deny" option
+can be revisited if necessary.
+
+### Per-registry configuration
+
+Allowing the minimum age to be configurable per registry provides a simple mechanism
+to use different minimum ages for different sets of packages, including possibly no
+minimum in common situations such as using an internal registry where the crates
+are completely trusted.
+
+This makes it less necessary to have more complicated configuration for rules for including
+and excluding sets of packages from the age policy, or setting different age policies
+for different packages.
+
+
 ## Prior Art
 [prior-art]: #prior-art
+
+["Package Managers Need to Cool Down"](https://nesbitt.io/2026/03/04/package-managers-need-to-cool-down.html) discusses several implementations of this in various
+package managers (including this RFC).
 
 ### Debian "testing"
 
