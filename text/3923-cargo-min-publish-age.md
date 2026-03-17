@@ -162,31 +162,30 @@ global-min-publish-age = "0"  # Minimum time span allowed for packages from this
  ```
 
 ### Added to [`[resolver]`](https://doc.rust-lang.org/cargo/reference/config.html#resolver)
+
 #### `resolver.incompatible-publish-age`
 
 * Type: String
 * Default: `"fallback"`
 * Environment: `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE`
 
-
-When resolving the version of a dependency to use, specify the behavior for versions with a `pubtime` (if present) that is incompatible with `registry.min-publish-age`. Values include:
+When resolving the version of a dependency, specify the behavior for versions with a `pubtime` (if present) that is incompatible with `registry.min-publish-age`. Values include:
 
 * `allow`: treat pubtime-incompatible versions like any other version
 * `fallback`: only consider pubtime-incompatible versions if no other version matched
 
-
 If the value is `fallback`, then cargo will print a warning if no suitable version can be found and the resolver is forced to select a version that is newer
 than allowed by the appropriate `min-publish-age` setting.
 
-
  See the [resolver](https://doc.rust-lang.org/cargo/reference/resolver.html#rust-version) chapter for more details.
+
 ### Added to [`[registries]`](https://doc.rust-lang.org/cargo/reference/config.html#registries)
+
 #### `registries.min-publish-age`
 
 * Type: String
 * Default: none
 * Environment: `CARGO_REGISTRIES_<name>_MIN_PUBLISH_AGE`
-
 
  Specifies the minimum timespan since a version's `pubtime` that it may be considered for `resolver.incompatible-publish-age` for packages from this registry. If not set, `registry.global-min-publish-age` will be used.
 
@@ -197,14 +196,13 @@ than allowed by the appropriate `min-publish-age` setting.
 * An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”
 * `"0"` to allow all packages
 
-
 ### Added to [`[registry]`](https://doc.rust-lang.org/cargo/reference/config.html#registry)
+
 #### `registry.min-publish-age`
 
 * Type: String
 * Default: none
 * Environment: `CARGO_REGISTRY_<name>_MIN_PUBLISH_AGE`
-
 
  Specifies the minimum timespan since a version's `pubtime` that it may be considered for `resolver.incompatible-publish-age` for packages from crates.io not set, `registry.global-min-publish-age` will be used.
 
@@ -227,7 +225,6 @@ Generally, `0`, `"N days"`, and `"N weeks"` will be used.
 
 * An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”
 * `"0"` to allow all packages
-
 
 ### Behavior
 
