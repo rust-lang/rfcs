@@ -32,7 +32,13 @@ For more background on version maturity requirements as a risk mitigation, see
 [We should all be using dependency cooldowns](https://blog.yossarian.net/2025/11/21/We-should-all-be-using-dependency-cooldowns) and
 [Dependency cooldowns, redux](https://blog.yossarian.net/2025/12/13/cooldowns-redux).
 
-Another reason to wish to delay using a new release, is because new versions can introduce regressions. Different projects have different risks tolerances for regressions and by giving projects control over how mature their dependencies are, they can choose the level of risk they will accept.  This has the effect on the ecosystem of creating a gradual roll out for package versions where early adopters help to mature the package by the time it makes it to the more risk averse projects.  Granted, the fixes will have the same minimum age requirement but projects can choose to use newer versions to get the fixes relevant to them.
+There would be value in a gradual roll out scheme for the ecosystem.
+New versions can introduce inadvertent breaking changes, bugs, or security vulnerabilities.
+Having everyone discover these problems at once leads to a wider, costlier disruption to the ecosystem.
+Some maintainers are fine being on the bleeding edge, taking on those costs, and act as a canary for the ecosystem.
+Those who are more risk averse can choose how much stagnation they are willing to accept for others to discover these problems and get them worked out.
+Maintainers may even want to blend these in one project: keep risks down for local development while CI has a dependency version canary job to identify future problems and track their status.
+Granted, any fixes will also be subject to the minimum-release age but at least these will be available to upgrade to so long as there is an exception mechanism.
 
 As such, it would be useful to have an option to put a limit on commands that update the `Cargo.lock` file (not just  `cargo add` and `cargo update` but other commands after editing `Carg.toml` like `cargo check`, etc)
 so that they can only use package releases that are older than some threshold.
