@@ -440,7 +440,7 @@ on generic parameters of your trait or your methods.
 
 These `const` or `[const]` trait bounds desugar to normal trait bounds without modifiers, plus an additional constness bound that has no surface level syntax.
 
-A much more detailed explanation can be found in https://hackmd.io/@compiler-errors/r12zoixg1l#What-now
+A much more detailed explanation can be found in https://rustc-dev-guide.rust-lang.org/effects.html
 
 In contrast to other keywords like `unsafe` or `async` (that give you raw pointer derefs or `await` calls respectively),
 the `const` keyword on functions or blocks restricts what you can do within those functions or blocks.
