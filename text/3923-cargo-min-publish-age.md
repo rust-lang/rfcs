@@ -50,50 +50,55 @@ Note that this is **not** a full solution to compromised dependencies. It can in
 [guide-level-explanation]: #guide-level-explanation
 
 The `registry.global-min-publish-age` [configuration option][1][^1] for Cargo can be used to specify a minimum age for published versions to use.
+When set, Cargo will select versions with a publish time ("pubtime") that is older than that duration,
+if possible.
 
-When set, it contains a duration specified as an integer followed by a unit of "seconds", "minutes", "days", or "weeks".
-If a new crate would be added with a command such as `cargo add` or `cargo update`, it will use a version with a publish
-time ("pubtime") before that is older than that duration, if possible. `cargo` may print a message in such a case.
+This is paired with `resolver.incompatible-publish-age` to control the behavior across all registries,
+whether to `allow` newer packages or only `fallback` to them when no others are available.
 
-For example with
+For example, in your `<repo>/.cargo/config.toml`, you may have:
 
 ```toml
 [registry]
 global-min-publish-age = "7 days"
 ```
 
-running a command like `cargo update`, `cargo add`, `cargo build`, etc. will prefer to use versions of required crates that were published
-at least 7 days ago.
-
-The time can be indicated as an integer followed by a time unit such as minutes, hours, days, etc. Note that it
-is best not to use a time longer than a couple of weeks.
-
-Crates that use path or git, rather than a registry will never trigger this check, as there isn't a relevant publish time to use. Also,
-this check won't be preformed for crates published on registries that don't publish the `pubtime` information (note that crates.io does
-include `pubtime`).
-
-The `resolver.incompatible-publish-age` configuration can also be used to control how `cargo` handles versions whose
-publish time is newer than the min-publish-age. By default, it will try to use an older version, unless none is available
-that also complies with the specified version constraint, or the `rust-version`. However by setting this to "allow"
-it is possible to disable the min-publish-age checking.
-
-If it isn't possible to satisfy a dependency with a version that meets the minimum release age requirement and
-`resolver.incompatible-publish-age` is set to "fallback", then Cargo will
-fall back to using the best version that matches. In this cases, a warning will be printed next to the message for adding the
-crate, similar to the warning for an incompatible rust version. It looks like:
-
-```
-Adding example v1.2.3 (published less than 2 days ago on 2026-03-07)
+Running `cargo update` will look something like:
+```console
+$ cargo update
+Updating index
+ Locking 1 package to recent Rust 1.60 compatible version
+  Adding example v1.2.3 (available: v1.6.0, published 2 days ago)
 ```
 
-Most likely, `resolver.incompatible-publish-age` will usually be left at its default of `fallback`, however it may occasionally
-be desirable to use it to temporarily turn off the minimum age check, especially if there are configurations for multiple
-registries. This would typically be done with a command line argument like `--config 'resolver.incompatible-publish-age="allow"'` or an
-environment variable like `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow`.
+While a CI job runs:
+```
+env:
+  CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: allow
+  CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE: allow
+steps:
+  - uses: actions/checkout@v4
+  - run: rustup update stable && rustup default stable
+  - run: cargo update --verbose
+  - run: cargo build --verbose
+  - run: cargo test --verbose
+```
 
-It is also possible to configure the `min-publish-age` per cargo registry. `registries.<name>.min-publish-age` sets
-the minimum publish age for the `<name>` registry. And `registry.min-publish-age` sets it for the default registry
-crates.io registry.
+This will mean that:
+- Locally, `cargo add foo` will default the version requirement on `foo` to be low enough to support the 7 day old package
+- Locally, `cargo update` will update your `Cargo.lock` to versions within the minimum-release age
+- This CI job will verify the latest versions of your dependencies
+
+Note: this check does not apply to
+- path dependencies
+- git dependencies
+- registries that do not include `pubtime` (crates.io supports it)
+
+### Per-registry configuration
+
+It is also possible to configure the `min-publish-age` per cargo registry.
+`registries.<name>.min-publish-age` sets the minimum publish age for the `<name>` registry.
+And `registry.min-publish-age` sets it for crates.io.
 
 For example:
 ```toml
@@ -112,18 +117,27 @@ global-min-publish-age = "2 days"
 min-publish-age = "5 days"
 ```
 
-This will use a minimum publish age of 5 days for crates.io, 2 hours for crates.exalmple.com, no minimum for registry.local, and 2 days for any other registry.
+This will use a minimum publish age of
+- 5 days for crates.io
+- 2 hours for crates.exalmple.com
+- no minimum for registry.local
+- 2 days for any other registry.
 
 ### Using newer version
 
-In some cases, it may be desirable to use a version that is newer than the minimum publish age. For example, because a new
-version has a critical security fix, or because it is part of the same family of crates as the dependent crate, and they should
-be released together.
+In some cases, it may be desirable to use a version that is newer than the minimum publish age.
 
-If `resolver.incompatible-publish-age` is "fallback" (the default), it is possible to bypass the check by updating the version range to require
-the newer version in `Cargo.toml`, or with `cargo add`, or specify the exact version to use with `cargo update --precise`.
+Say `example` from the [guide section](#guide-level-explanation) has a fix for a vulnerability in v1.3.0, you could do one of:
+```console
+$ cargo update example --precise 1.3.0
+Updating index
+ Locking 1 package to recent Rust 1.60 compatible version
+  Adding example v1.2.3 (published 10 days ago, available: v1.6.0, published 2 days ago)
+$ # or ...
+$ cargo add example@1.3.0
+```
 
-In the future, additional controls may be provided (see [Future Possibilities](#future-possibilities)).
+This is due to the `resolver.incompatible-publish-age = "fallback"` default which preserves your `Cargo.lock` and respects too-high of version requirements despite your minimum-release age.
 
 [1]: https://doc.rust-lang.org/cargo/reference/config.html
 [^1]: As specified in `.cargo/config.toml` files
@@ -199,6 +213,7 @@ than allowed by the appropriate `min-publish-age` setting.
  * An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”
  * `"0"` to allow all packages
 
+Generally, `0`, `"N days"`, and `"N weeks"` will be used.
 
 #### `registry.global-min-publish-age`
 
@@ -236,6 +251,7 @@ In addition to what is specified above
       newer than the policy would otherwise allow (although in the future, there may be an option to deny that).
     * If the version of a crate in the lockfile is already newer than `min-publish-age`, then `cargo update` will not update that crate, nor will
       it downgrade to an older version. It will leave the version as it is.
+    * When locking to an older version, that will be included like with the MSRV-aware resolver
 * When a lockfile is generated, as with `cargo generate-lockfile` or other commands such as `cargo build` that can do so, then versions will be
   selected that comply with the `min-publish-age` policy, if possible.
 * If the only version of a crate that satisfies the `min-publish-age` constraint is a yanked version, it will behave as if no versions satisfied the
