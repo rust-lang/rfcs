@@ -275,7 +275,7 @@ The earmark is broad: Maintainers in Residence, project grants, and the program 
 
 ## What does this RFC deliberately not specify?
 
-This RFC defines how the RFMF collects sponsorships, the precise tiers or benefits sponsors receive, the precise pay structure, or other fine-grained details. The Funding team and Foundation can work these out.
+This RFC does not define how the RFMF collects sponsorships, the precise tiers or benefits sponsors receive, the precise pay structure, or other fine-grained details. The Funding team and Foundation can work these out.
 
 # Prior art
 [prior-art]: #prior-art
