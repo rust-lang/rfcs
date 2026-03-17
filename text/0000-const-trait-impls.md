@@ -111,8 +111,7 @@ So, we need some annotation that differentiates a `T: Default` bound from one th
 
 ### Const trait methods
 
-Traits can declare methods as `const`. Doing so is a breaking change, as all impls are now required to provide a `const` method,
-which existing impls can't.
+Traits can declare methods as `const`. Changing an existing non-`const` method to a `const` one is a breaking change, as all impls are now required to provide the method as `const`, which existing impls can't.
 
 ```rust
 trait Trait {
