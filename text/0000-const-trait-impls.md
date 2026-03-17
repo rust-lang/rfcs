@@ -15,7 +15,7 @@ Make trait methods callable in const contexts. This includes the following parts
 Fully contained example ([Playground of currently working example](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=2ab8d572c63bcf116b93c632705ddc1b)):
 
 ```rust
-[const] trait Default {
+const trait Default {
     fn default() -> Self;
 }
 
@@ -152,10 +152,10 @@ fn compile_time_default<T: const Default>() -> T {
 
 ### Conditionally const traits methods
 
-Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `[const]` and all the methods will become const callable.
+Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `const` and all the methods will become const callable.
 
 ```rust
-[const] trait Trait {
+const trait Trait {
     fn thing();
 }
 ```
@@ -172,24 +172,24 @@ trait Trait {
 }
 ```
 
-and a result of this RFC would be to turn `#[const_trait]` into `[const] trait` syntax for trait declarations.
+and a result of this RFC would be to turn `#[const_trait]` into `const trait` syntax for trait declarations.
 Free functions are unaffected and will stay as `const fn`.
 
 ### `const` methods and non-`const` methods on the same trait
 
-If the trait is marked as `[const] trait Trait`, then all methods under an `impl const Foo for Trait` are assumed
-to be callable in const contexts. Thus the only way to implement a `[const] trait` using non-const operations
+If the trait is marked as `const trait Trait`, then all methods under an `impl const Foo for Trait` are assumed
+to be callable in const contexts. Thus the only way to implement a `const trait` using non-const operations
 would be to use a non-const `impl`: `impl Foo for Trait`. There is no opt-out from const per-method because it's a
 niche use case that can be trivially worked around.
 
 ### Conditionally-const trait bounds
 
-Many generic `const fn` and especially many `[const] trait`s do not actually require a const methods in the trait impl for their generic parameters.
+Many generic `const fn` and especially many `const trait`s do not actually require a const methods in the trait impl for their generic parameters.
 As `const fn` can also be called at runtime, it would be too strict to require it to only be able to call things with const methods in the trait impls.
 Picking up the example from [the beginning](#summary):
 
 ```rust
-[const] trait Default {
+const trait Default {
     fn default() -> Self;
 }
 
@@ -471,12 +471,12 @@ Thus that approach was abandoned after proponents and opponents cooperated in tr
 
 Everywhere where non-const trait bounds can be written.
 
-### Sites where `(const) Trait` bounds can be used
+### Sites where `[const] Trait` bounds can be used
 
 * `const fn`
 * `impl const Trait` blocks
 * NOT in inherent impls, the individual `const fn` need to be annotated instead
-* `[const] trait` declarations
+* `const trait` declarations
     * super trait bounds
     * where bounds
     * associated type bounds
@@ -612,7 +612,7 @@ In the future we will also want to support `dyn [const] Trait` bounds, which inv
 While that can in generic contexts always be handled by adding more `[const] Destruct` bounds, it would be more similar to how normal `dyn` safety
 works if there were implicit `[const] Destruct` bounds for (most?) `[const] Trait` bounds.
 
-Thus we lint all `[const] trait`s with methods that take `self` by value to also have a `(const) Destruct` super trait bound to ensure users don't need to add `[const] Destruct` bounds everywhere.
+Thus we lint all `const trait`s with methods that take `self` by value to also have a `(const) Destruct` super trait bound to ensure users don't need to add `[const] Destruct` bounds everywhere.
 Other traits may want to add them, and some traits with `self` by value methods may not want to add them. Since it is not backwards compatible to require or relax that super trait bound later,
 we aren't requiring users to choose either, but are suggesting good defaults via lints.
 
@@ -621,7 +621,7 @@ we aren't requiring users to choose either, but are suggesting good defaults via
 It is legal to add `[const]` to `Drop` impls' bounds, even though the struct doesn't have them:
 
 ```rust
-[const] trait Bar {
+const trait Bar {
     fn thing(&mut self);
 }
 
