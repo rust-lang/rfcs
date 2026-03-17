@@ -294,6 +294,20 @@ it isn't as critical to have a way to list crates to exclude from the rule in co
 We anticipate that `fallback` will be sufficient for most use cases, but the possibility of a `deny` option
 can be revisited if necessary.
 
+### Exclude list
+
+Exclude lists tend to be used either for:
+- Forcing a specific newer version: we have this covered through the `fallback` mechanism
+- Marking a source as always trusted: we have this covered through per-registry configuration
+
+One problem with an exclude list is that they tend to be a static solution (all versions) for a transient problem (a subset of versions).
+
+An exclude list can always be added in the future if a strong enough use case presents itself.
+By delaying, we can also take into account any future changes.
+For example, if the focus is on different levels trust within the same registry,
+we could design a solution around [registry namespacing](https://internals.rust-lang.org/t/survey-of-organizational-ownership-and-registry-namespace-designs-for-cargo-and-crates-io/24027/4),
+assuming support is added.
+
 ### Per-registry configuration
 
 Allowing the minimum age to be configurable per registry provides a simple mechanism
