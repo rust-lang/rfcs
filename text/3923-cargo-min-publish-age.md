@@ -267,10 +267,12 @@ time to realize their credentials have been compromised and yank the version bef
 ## Rationale and Alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-### Configuration Locations and Names
+### Configuration Locations
 
 The locations and names of the configuration options in this proposal were chosen to be
 consistent with existing Cargo options, as described in [Related Options in Cargo](#related-options).
+
+### Configuration Names
 
 The term "publish" was used rather than "package", "version", or "release" to make it
 clear that this only applies to crates that are published in a registry.
