@@ -404,7 +404,7 @@ parameters, too:
 
 
 ```rust
-const fn foo<T: [const] Debug, F: (const) Fn(T)>(f: F, arg: T) {
+const fn foo<T: [const] Debug, F: [const] Fn(T)>(f: F, arg: T) {
     f(arg)
 }
 
@@ -612,7 +612,7 @@ In the future we will also want to support `dyn [const] Trait` bounds, which inv
 While that can in generic contexts always be handled by adding more `[const] Destruct` bounds, it would be more similar to how normal `dyn` safety
 works if there were implicit `[const] Destruct` bounds for (most?) `[const] Trait` bounds.
 
-Thus we lint all `const trait`s with methods that take `self` by value to also have a `(const) Destruct` super trait bound to ensure users don't need to add `[const] Destruct` bounds everywhere.
+Thus we lint all `const trait`s with methods that take `self` by value to also have a `[const] Destruct` super trait bound to ensure users don't need to add `[const] Destruct` bounds everywhere.
 Other traits may want to add them, and some traits with `self` by value methods may not want to add them. Since it is not backwards compatible to require or relax that super trait bound later,
 we aren't requiring users to choose either, but are suggesting good defaults via lints.
 
@@ -784,7 +784,7 @@ where
 }
 ```
 
-Note that `const<true>` implies `const<false>` and thus also `for<C> const<C>`, just like `const Trait` implies `(const) Trait`.
+Note that `const<true>` implies `const<false>` and thus also `for<C> const<C>`, just like `const Trait` implies `[const] Trait`.
 
 We do not know of any cases where such an explicit syntax would be useful (only makes sense if you can do math on the bool),
 so a more reduced version could be
@@ -793,7 +793,7 @@ so a more reduced version could be
 const fn foo<T>(t: T)
 where
     T: Trait + OtherTrait,
-    <T as Trait>::bikeshed#effect = (const),
+    <T as Trait>::bikeshed#effect = [const],
     <T as OtherTrait>::bikeshed#effect = const,
 {
     ...
@@ -803,7 +803,7 @@ where
 or
 
 ```rust
-const fn foo<T: Trait<bikeshed#effect = (const)> + OtherTrait<bikeshed#effect = const>>(t: T) { ... }
+const fn foo<T: Trait<bikeshed#effect = [const]> + OtherTrait<bikeshed#effect = const>>(t: T) { ... }
 ```
 
 ## Make all `const fn` arguments `[const] Trait` by default and require an opt out `?const Trait`
@@ -970,8 +970,8 @@ just call all of these `const` and only separate the `[const] Trait` bounds from
 
 ## `const fn()` pointers
 
-Just like `const fn foo(x: impl (const) Trait) { x.method() }` and `const fn foo(x: &dyn (const) Trait) { x.method() }` we want to allow
-`const fn foo(f: (const) fn()) { f() }`.
+Just like `const fn foo(x: impl [const] Trait) { x.method() }` and `const fn foo(x: &dyn [const] Trait) { x.method() }` we want to allow
+`const fn foo(f: [const] fn()) { f() }`.
 
 These require changing the type system, making the constness of a function pointer part of the type.
 This in turn implies that a `const fn()` function pointer, a `[const] fn()` function pointer and a `fn()` function pointer could have
