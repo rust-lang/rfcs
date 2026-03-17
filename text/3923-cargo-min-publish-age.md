@@ -35,7 +35,7 @@ and when that release is used by your project. See for example the blog post
 
 Another reason to wish to delay using a new release, is because new versions can introduce regressions. Different projects have different risks tolerances for regressions and by giving projects control over how mature their dependencies are, they can choose the level of risk they will accept.  This has the effect on the ecosystem of creating a gradual roll out for package versions where early adopters help to mature the package by the time it makes it to the more risk averse projects.  Granted, the fixes will have the same minimum age requirement but projects can choose to use newer versions to get the fixes relevant to them.
 
-As such, it would be useful to have an option to put a limit on commands like `cargo add` and `cargo update`
+As such, it would be useful to have an option to put a limit on commands that update the `Cargo.lock` file (not just  `cargo add` and `cargo update` but other commands after editing `Carg.toml` like `cargo check`, etc)
 so that they can only use package releases that are older than some threshold.
 
 Note that this is **not** a full solution to compromised dependencies. It can increase the protection against certain types of
