@@ -277,6 +277,8 @@ consistent with existing Cargo options, as described in [Related Options in Carg
 The term "publish" was used rather than "package", "version", or "release" to make it
 clear that this only applies to crates that are published in a registry.
 
+`cooldown` was avoided due to term generally referring to throttling while we are looking for a certain maturity.
+
 ### fallback and deny
 
 We default `resolver.incompatible-publish-age` to "fallback" rather than deny
