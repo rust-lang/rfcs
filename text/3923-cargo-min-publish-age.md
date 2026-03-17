@@ -447,6 +447,8 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 ## Unresolved Questions
 [unresolved-questions]: #unresolved-questions
 
+* When a version requirement is incompatible with minimum-release age, should we pick the oldest or newest version?
+* Should we name this to also cover the [`cargo generate-lockfile --publish-time`](https://github.com/rust-lang/cargo/issues/16271) use case?
 * Would it be better to have `registry.min-publish-age` be the global setting, and `registries.crates-io.min-publish-age` be the setting for the crates.io registry?
   The current proposal is based on precedent of "credential-provider" and "global-credential-provider", but perhaps we shouldn't follow that precedent?
 * How do we make it clear when things are held back?
@@ -472,6 +474,3 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
     - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
   - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
-- Provide a mechanism to compare the publish time against a time other than the current system time. For example, comparing to the time of some snapshot, or the timestamp
-  of a local cache.
-- Allow specifying a timestamp for the `min-publish-age`.
