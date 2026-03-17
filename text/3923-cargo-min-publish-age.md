@@ -33,11 +33,7 @@ are older than some age. This creates a window of time between when a dependency
 and when that release is used by your project. See for example the blog post
 "[We should all be using dependency cooldowns](https://blog.yossarian.net/2025/11/21/We-should-all-be-using-dependency-cooldowns)".
 
-Another reason to wish to delay using a new release, is because new versions can introduce new bugs. By only
-using versions that have had some time to "mature", you can mitigate the risk of encountering those bugs a little.
-Different people (or groups of people) have different tolerance for risk, and this provides
-a mechanism whereby new versions can roll out gradually to users depending on the tolerance
-for risk of those users.
+Another reason to wish to delay using a new release, is because new versions can introduce regressions. Different projects have different risks tolerances for regressions and by giving projects control over how mature their dependencies are, they can choose the level of risk they will accept.  This has the effect on the ecosystem of creating a gradual roll out for package versions where early adopters help to mature the package by the time it makes it to the more risk averse projects.  Granted, the fixes will have the same minimum age requirement but projects can choose to use newer versions to get the fixes relevant to them.
 
 As such, it would be useful to have an option to put a limit on commands like `cargo add` and `cargo update`
 so that they can only use package releases that are older than some threshold.
