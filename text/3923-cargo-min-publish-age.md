@@ -294,6 +294,17 @@ it isn't as critical to have a way to list crates to exclude from the rule in co
 We anticipate that `fallback` will be sufficient for most use cases, but the possibility of a `deny` option
 can be revisited if necessary.
 
+### Per-registry configuration
+
+Allowing the minimum age to be configurable per registry provides a simple mechanism
+to use different minimum ages for different sets of packages, including possibly no
+minimum in common situations such as using an internal registry where the crates
+are completely trusted.
+
+This makes it less necessary to have more complicated configuration for rules for including
+and excluding sets of packages from the age policy, or setting different age policies
+for different packages.
+
 ### Exclude list
 
 Exclude lists tend to be used either for:
@@ -307,17 +318,6 @@ By delaying, we can also take into account any future changes.
 For example, if the focus is on different levels trust within the same registry,
 we could design a solution around [registry namespacing](https://internals.rust-lang.org/t/survey-of-organizational-ownership-and-registry-namespace-designs-for-cargo-and-crates-io/24027/4),
 assuming support is added.
-
-### Per-registry configuration
-
-Allowing the minimum age to be configurable per registry provides a simple mechanism
-to use different minimum ages for different sets of packages, including possibly no
-minimum in common situations such as using an internal registry where the crates
-are completely trusted.
-
-This makes it less necessary to have more complicated configuration for rules for including
-and excluding sets of packages from the age policy, or setting different age policies
-for different packages.
 
 ### Using Cargo.toml and Cargo.lock (i.e. "do nothing")
 
