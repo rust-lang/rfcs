@@ -38,10 +38,9 @@ Having everyone discover these problems at once leads to a wider, costlier disru
 Some maintainers are fine being on the bleeding edge, taking on those costs, and act as a canary for the ecosystem.
 Those who are more risk averse can choose how much stagnation they are willing to accept for others to discover these problems and get them worked out.
 Maintainers may even want to blend these in one project: keep risks down for local development while CI has a dependency version canary job to identify future problems and track their status.
-Granted, any fixes will also be subject to the minimum-release age but at least these will be available to upgrade to so long as there is an exception mechanism.
+Granted, this only helps if the problems are discovered by yourself or others.  Any fixes will also be subject to the minimum-release age but at least these will be available to upgrade to so long as there is an exception mechanism.
 
-As such, it would be useful to have an option to put a limit on commands that update the `Cargo.lock` file (not just  `cargo add` and `cargo update` but other commands after editing `Carg.toml` like `cargo check`, etc)
-so that they can only use package releases that are older than some threshold.
+Allowing maintainers to encourage a certain degree of maturity for dependency versions can help these use cases.
 
 Note that this is **not** a full solution to compromised dependencies. It can increase the protection against certain types of
 "supply chain" attacks, but not all of them. As such, using this feature should not be relied upon for security by itself.
