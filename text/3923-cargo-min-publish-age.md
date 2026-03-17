@@ -449,8 +449,10 @@ There is an existing experimental third-party crate that provides a plugin for e
     - What would an error look like?
     - How would you be able to override this for specific crates for important security updates, or for related crates that should be released at the same time?
 - Add a way to specify that the minimum age doesn't apply to certain packages. For example, by having an array of crates that should always use the newest version.
-    - I excluded this from the initial RFC, because implementing it adds significant complexity to the proposal, and it is relatively easy to work around by explicitly updating
-      those packages to newer versions in Cargo.toml and/or Cargo.lock.
+    - The use case is solved through other means and we'll need to get runtime and gather use cases before deciding how to further evolve this
+    - The "I need a security fix now" use case is handled by  bumping versions in `Cargo.toml` and/or `Cargo.lock`
+    - The "I have a trusted package source" is handled by the making this configurable per-registry
+      - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
     - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
 - Provide a mechanism to compare the publish time against a time other than the current system time. For example, comparing to the time of some snapshot, or the timestamp
