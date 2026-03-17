@@ -1,7 +1,7 @@
 - Feature Name: `const_trait_methods`
 - Start Date: 2024-12-13
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#67792](https://github.com/rust-lang/rust/issues/67792)
+- Rust Issue: [rust-lang/rust#143874](https://github.com/rust-lang/rust/issues/143874)
 
 # Summary
 [summary]: #summary
