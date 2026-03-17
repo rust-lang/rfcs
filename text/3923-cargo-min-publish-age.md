@@ -6,9 +6,11 @@
 ## Summary
 [summary]: #summary
 
-This proposal adds a new configuration option to cargo that specifies a minimum age for package
-updates. When adding or updating a dependency, cargo won't use a version of that crate that
-is newer than the minimum age when specified, with a way to override to get urgent security fixes.
+This proposal adds a new configuration option to cargo allowing users to specify a minimum age for dependency versions.
+When adding or updating a dependency, cargo will prefer versions of a registry crate that
+are older than the minimum age.
+`Cargo.lock`, version requirements, and `cargo update --precise` can bypass this, allowing
+for exceptions like for urgent security fixes.
 
 An example configuration would be:
 
@@ -16,8 +18,6 @@ An example configuration would be:
 [registry]
 global-min-publish-age = "14 days"
 ```
-
-Or it could be specified on the command line with `--config registry.global-min-publish-age '14 days'`.
 
 ## Motivation
 [motivation]: #motivation
