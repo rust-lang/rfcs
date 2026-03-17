@@ -404,7 +404,7 @@ parameters, too:
 
 
 ```rust
-const fn foo<T: [const] Debug, F: [const] Fn(T)>(f: F, arg: T) {
+const fn foo<T, F: [const] Fn(T)>(f: F, arg: T) {
     f(arg)
 }
 
