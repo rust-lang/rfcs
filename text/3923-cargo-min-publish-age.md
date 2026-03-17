@@ -230,29 +230,28 @@ Generally, `0`, `"N days"`, and `"N weeks"` will be used.
 
 In addition to what is specified above
 
-* `min-publish-age` only apply to dependencies fetched from a registry that publishes `pubtime`, such as crates.io. They do not apply to git or path dependencies, in
-  part because there is not always an obvious publish time, or a way to find alternative versions.
-  They do not apply to registries that don't set `pubtime`, as there is no reliable way to know when the version
-  was published.
-* At this time, if a specific version is explicitly specified in Cargo.toml, or on the command line, that has higher precedence than the publish time check,
-  and will be assumed to be valid. In the future it may be possible to change this behavior.
+* `min-publish-age` only apply to dependencies fetched from a registry that publishes `pubtime`, such as crates.io.
+  * They do not apply to git or path dependencies, in
+    part because there is not always an obvious publish time, or a way to find alternative versions.
+  * They do not apply to registries that don't set `pubtime`, as there is no reliable way to know when the version was published.
+* If a specific version is explicitly specified in Cargo.toml, or on the command line, that has higher precedence than the publish time check,
+  and will be assumed to be valid.
 * `cargo add`
-    * If a version is not explicitly specified by the user and the package is fetched from a registry (not a path or git), `min-publish-age` options
-      will be respected.
+    * If a version is not explicitly specified by the user and the package is fetched from a registry (not a path or git), the version requirement will default to one that includes a version compatible with `min-publish-age`
 * `cargo install`
     * If a specific version is not specified by the user, respect `registries.min-publish-age` for the version of the crate itself,
       as well as transitive dependencies when possible.
-* `cargo update`
-    * Unless `--precise` is used to specify a specific version, any crates updated from the registry will only consider versions published
-      before the time specified by the appropriate `min-publish-age` option. If `--precise` is used, that version will be used, even if it
-      newer than the policy would otherwise allow (although in the future, there may be an option to deny that).
+* When resolving dependencies:
+    * Any crates updated from the registry will only consider versions published
+      before the time specified by the appropriate `min-publish-age` option.
     * If the version of a crate in the lockfile is already newer than `min-publish-age`, then `cargo update` will not update that crate, nor will
       it downgrade to an older version. It will leave the version as it is.
-    * When locking to an older version, that will be included like with the MSRV-aware resolver
-* When a lockfile is generated, as with `cargo generate-lockfile` or other commands such as `cargo build` that can do so, then versions will be
-  selected that comply with the `min-publish-age` policy, if possible.
-* If the only version of a crate that satisfies the `min-publish-age` constraint is a yanked version, it will behave as if no versions satisfied the
-  `min-publish-age` constraint. In other words, yanked versions has higher priority than the `min-publish-age` configuration.
+    * Yanked status has higher precedence than `resolver.incompatible-publish-age`
+    * Precedence with `resolver.incompatible-rust-version` is unspecified (but `resolver.incompatible-rust-version` will likely have higher precedence)
+    * A status message will be printed when selecting a non-latest version as well for incompatible versions.
+* `cargo update` specifically:
+    * If `--precise` is used, that version will be used, even if it
+      newer than the policy would otherwise allow
 
 ## Drawbacks
 [drawbacks]: #drawbacks
