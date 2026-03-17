@@ -24,7 +24,8 @@ global-min-publish-age = "14 days"
 
 There are a couple of reasons why one may wish not to use the most recent version of a package.
 
-One such reason is to mitigate the risk of [supply chain attacks](https://en.wikipedia.org/wiki/Supply_chain_attack). Often, supply chain
+This reduces the risk of [supply chain attacks](https://en.wikipedia.org/wiki/Supply_chain_attack),
+particularly those found by automated scanners on newly published package versions.
 attacks are found fairly quickly after they are deployed. Thus, if the dependency isn't updated
 immediately after a release, you can have some protection against a new release of a dependency
 containing malicious code. In light of recent supply chain attacks on the NPM ecosystem,
