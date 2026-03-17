@@ -22,17 +22,15 @@ global-min-publish-age = "14 days"
 ## Motivation
 [motivation]: #motivation
 
-There are a couple of reasons why one may wish not to use the most recent version of a package.
+There are a couple of reasons why one may wish not to use the most recent version of a package:
 
-This reduces the risk of [supply chain attacks](https://en.wikipedia.org/wiki/Supply_chain_attack),
-particularly those found by automated scanners on newly published package versions.
-attacks are found fairly quickly after they are deployed. Thus, if the dependency isn't updated
-immediately after a release, you can have some protection against a new release of a dependency
-containing malicious code. In light of recent supply chain attacks on the NPM ecosystem,
-there has been an increased interest in using automated tools to ensure that packages used
-are older than some age. This creates a window of time between when a dependency is compromised
-and when that release is used by your project. See for example the blog post
-"[We should all be using dependency cooldowns](https://blog.yossarian.net/2025/11/21/We-should-all-be-using-dependency-cooldowns)".
+Some [supply chain attacks](https://en.wikipedia.org/wiki/Supply_chain_attack)
+are found by automated scanners on newly published package versions.
+Recent supply chain attacks on the NPM ecosystem have drawn attention to the value of waiting on these
+automated scanners.
+For more background on version maturity requirements as a risk mitigation, see
+[We should all be using dependency cooldowns](https://blog.yossarian.net/2025/11/21/We-should-all-be-using-dependency-cooldowns) and
+[Dependency cooldowns, redux](https://blog.yossarian.net/2025/12/13/cooldowns-redux).
 
 Another reason to wish to delay using a new release, is because new versions can introduce regressions. Different projects have different risks tolerances for regressions and by giving projects control over how mature their dependencies are, they can choose the level of risk they will accept.  This has the effect on the ecosystem of creating a gradual roll out for package versions where early adopters help to mature the package by the time it makes it to the more risk averse projects.  Granted, the fixes will have the same minimum age requirement but projects can choose to use newer versions to get the fixes relevant to them.
 
