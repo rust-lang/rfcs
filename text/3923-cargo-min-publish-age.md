@@ -267,20 +267,6 @@ time to realize their credentials have been compromised and yank the version bef
 ## Rationale and Alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-### Why not leave this to third party tools?
-
-There are already some third party tools that fulfill this functionality to some degree. For example, dependabot and renovate can
-be used for updating Cargo.toml and Cargo.lock, and both support some form of minimum publish age. And the cargo-cooldown project provides
-an alternative to `cargo update` that respects a minimum publish age.
-
-However, these tools only work for updating and adding dependencies outside of cargo itself, they do not
-have any impact on explicitly run built-in cargo commands such as `cargo update` and `cargo add`.
-Having built-in support makes it easier to enforce a minimum publish age policy.
-
-Furthermore, these tools depend on the existence of a `Cargo.lock` file to lock the versions. Or having
-strict version constraints in `Cargo.toml`. If a `Cargo.lock` file does not yet exist, commands such as `cargo build` won't
-be protected.
-
 ### Configuration Locations and Names
 
 The locations and names of the configuration options in this proposal were chosen to be
@@ -321,6 +307,15 @@ You can pin versions in your `Cargo.toml` but that is a manual process and doesn
 dependencies.
 
 Users can manage all of their direct and transitive dependencies in a `Cargo.lock` file but that is tedious and it is easy to overlook new entries on implicit lockfile changes.
+
+### Why not leave this to third party tools?
+
+There are already some third party tools that fulfill this functionality to some degree. For example, dependabot and renovate can
+be used for updating Cargo.toml and Cargo.lock, and both support some form of minimum publish age. And the cargo-cooldown project provides
+an alternative to `cargo update` that respects a minimum publish age.
+
+However, these tools only work for updating and adding dependencies outside of cargo itself, they do not
+have any impact on local changes, like directly editing `Cargo.toml` causing an implicit `Cargo.lock` update, `cargo update`, or `cargo add`.
 
 ## Prior Art
 [prior-art]: #prior-art
