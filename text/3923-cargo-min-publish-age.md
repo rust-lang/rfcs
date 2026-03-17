@@ -281,16 +281,6 @@ Furthermore, these tools depend on the existence of a `Cargo.lock` file to lock 
 strict version constraints in `Cargo.toml`. If a `Cargo.lock` file does not yet exist, commands such as `cargo build` won't
 be protected.
 
-### Using Cargo.toml and Cargo.lock
-
-You can pin versions in your `Cargo.toml` but that is a manual process and doesn't cover transitive
-dependencies.
-
-`Cargo.lock` records versions but those are at the time of last change.
-Adding a new dependency can cause you to pull in transitive dependencies that are outside
-your desired minimum age. There isn't a manageable way to run `cargo update` and intentionally
-get versions that are inside of your desired minimum age.
-
 ### Configuration Locations and Names
 
 The locations and names of the configuration options in this proposal were chosen to be
@@ -325,6 +315,12 @@ This makes it less necessary to have more complicated configuration for rules fo
 and excluding sets of packages from the age policy, or setting different age policies
 for different packages.
 
+### Using Cargo.toml and Cargo.lock (i.e. "do nothing")
+
+You can pin versions in your `Cargo.toml` but that is a manual process and doesn't cover transitive
+dependencies.
+
+Users can manage all of their direct and transitive dependencies in a `Cargo.lock` file but that is tedious and it is easy to overlook new entries on implicit lockfile changes.
 
 ## Prior Art
 [prior-art]: #prior-art
