@@ -237,21 +237,21 @@ In addition to what is specified above
 * If a specific version is explicitly specified in Cargo.toml, or on the command line, that has higher precedence than the publish time check,
   and will be assumed to be valid.
 * `cargo add`
-    * If a version is not explicitly specified by the user and the package is fetched from a registry (not a path or git), the version requirement will default to one that includes a version compatible with `min-publish-age`
+  * If a version is not explicitly specified by the user and the package is fetched from a registry (not a path or git), the version requirement will default to one that includes a version compatible with `min-publish-age`
 * `cargo install`
-    * If a specific version is not specified by the user, respect `registries.min-publish-age` for the version of the crate itself,
-      as well as transitive dependencies when possible.
+  * If a specific version is not specified by the user, respect `registries.min-publish-age` for the version of the crate itself,
+    as well as transitive dependencies when possible.
 * When resolving dependencies:
-    * Any crates updated from the registry will only consider versions published
-      before the time specified by the appropriate `min-publish-age` option.
-    * If the version of a crate in the lockfile is already newer than `min-publish-age`, then `cargo update` will not update that crate, nor will
-      it downgrade to an older version. It will leave the version as it is.
-    * Yanked status has higher precedence than `resolver.incompatible-publish-age`
-    * Precedence with `resolver.incompatible-rust-version` is unspecified (but `resolver.incompatible-rust-version` will likely have higher precedence)
-    * A status message will be printed when selecting a non-latest version as well for incompatible versions.
+  * Any crates updated from the registry will only consider versions published
+    before the time specified by the appropriate `min-publish-age` option.
+  * If the version of a crate in the lockfile is already newer than `min-publish-age`, then `cargo update` will not update that crate, nor will
+    it downgrade to an older version. It will leave the version as it is.
+  * Yanked status has higher precedence than `resolver.incompatible-publish-age`
+  * Precedence with `resolver.incompatible-rust-version` is unspecified (but `resolver.incompatible-rust-version` will likely have higher precedence)
+  * A status message will be printed when selecting a non-latest version as well for incompatible versions.
 * `cargo update` specifically:
-    * If `--precise` is used, that version will be used, even if it
-      newer than the policy would otherwise allow
+  * If `--precise` is used, that version will be used, even if it
+    newer than the policy would otherwise allow
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -409,49 +409,42 @@ There is an existing experimental third-party crate that provides a plugin for e
 ### Related Options in Cargo
 [related-options]: #related-options-in-cargo
 
- Some precedents in Cargo
+Some precedents in Cargo
 
- [`cache.auto-clean-frequency`](https://doc.rust-lang.org/cargo/reference/config.html#cacheauto-clean-frequency)
+[`cache.auto-clean-frequency`](https://doc.rust-lang.org/cargo/reference/config.html#cacheauto-clean-frequency)
 
-     * "never" — Never deletes old files.
-
-     * "always" — Checks to delete old files every time Cargo runs.
-
-     * An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”
+> * "never" — Never deletes old files.
+> * "always" — Checks to delete old files every time Cargo runs.
+> * An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”
 
 
- [`resolver.incompatible-rust-versions`](https://doc.rust-lang.org/cargo/reference/config.html#resolverincompatible-rust-versions)
+[`resolver.incompatible-rust-versions`](https://doc.rust-lang.org/cargo/reference/config.html#resolverincompatible-rust-versions)
 
-     * Controls behavior in relation to your [`package.rust-version`](https://doc.rust-lang.org/cargo/reference/rust-version.html) and those set by potential dependencies
-
-     * Values:
-
-       * allow: treat rust-version-incompatible versions like any other version
-       * fallback: only consider rust-version-incompatible versions if no other version matched
-
-
- [`package.resolver`](https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions) is only a version number. When adding `incompatible-rust-version`, we intentionally deferred anything being done in manifests.
-
- [`[registry]`](https://doc.rust-lang.org/cargo/reference/config.html#registry)
-
-     * Set default registry
-
-     * Sets credential providers for all registries
-
-     * Sets crates.io values
+> * Controls behavior in relation to your [`package.rust-version`](https://doc.rust-lang.org/cargo/reference/rust-version.html) and those set by potential dependencies
+>
+> * Values:
+>
+> * allow: treat rust-version-incompatible versions like any other version
+> * fallback: only consider rust-version-incompatible versions if no other version matched
 
 
- [`[registries]`](https://doc.rust-lang.org/cargo/reference/config.html#registries)
+[`package.resolver`](https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions) is only a version number. When adding `incompatible-rust-version`, we intentionally deferred anything being done in manifests.
 
-     * Sets registry specific values
+[`[registry]`](https://doc.rust-lang.org/cargo/reference/config.html#registry)
 
+> * Set default registry
+> * Sets credential providers for all registries
+> * Sets crates.io values
 
- `yanked`: can't do new resolves to it but left in if already there. Unstable support to force it with `--precise` but that doesn't apply recursively.
+[`[registries]`](https://doc.rust-lang.org/cargo/reference/config.html#registries)
 
- pre-release: requires opt-in through version requirement. Unstable support to force it with `--precise` but that doesn't apply recursively.
+> * Sets registry specific values
+
+`yanked`: can't do new resolves to it but left in if already there. Unstable support to force it with `--precise` but that doesn't apply recursively.
+
+pre-release: requires opt-in through version requirement. Unstable support to force it with `--precise` but that doesn't apply recursively.
 
  We use the term `publish` and not `release`
-
 
 ## Unresolved Questions
 [unresolved-questions]: #unresolved-questions
@@ -459,27 +452,27 @@ There is an existing experimental third-party crate that provides a plugin for e
 * Would it be better to have `registry.min-publish-age` be the global setting, and `registries.crates-io.min-publish-age` be the setting for the crates.io registry?
   The current proposal is based on precedent of "credential-provider" and "global-credential-provider", but perhaps we shouldn't follow that precedent?
 * How do we make it clear when things are held back?
-    * The "locking" message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) lists one time but the time here is dependent on where any given package is from
-    * We list MSRVs for unselected packages, should we also list publish times? I'm assuming that should be in local time
-    * Locking message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) is in UTC time, see [Tracking Issue for _lockfile-publish-time_ #16271](https://github.com/rust-lang/cargo/issues/16271), when relative time differences likely make local time more relevant
+  * The "locking" message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) lists one time but the time here is dependent on where any given package is from
+  * We list MSRVs for unselected packages, should we also list publish times? I'm assuming that should be in local time
+  * Locking message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) is in UTC time, see [Tracking Issue for _lockfile-publish-time_ #16271](https://github.com/rust-lang/cargo/issues/16271), when relative time differences likely make local time more relevant
 * Implementation wise, will there be much complexity in getting per registry information into `VersionPreferences` and using it?
 * `fallback` precedence between this and `incompatible-rust-version`?
-    * Most likely, `incompatible-rust-version` should have higher precedence to increase the chance of builds succeeding.
+  * Most likely, `incompatible-rust-version` should have higher precedence to increase the chance of builds succeeding.
 * Can we, and should we make any guarantees about security when using this feature, such as "a release of a malicious version of a crate will not compromise the build
 
 ## Future Possibilities
 [future-possibilities]: #future-possibilities
 
 - Support "deny" for `resolver.incompatible-publish-age`.
-    - This is initially excluded, because it isn't clear how this should behave with respect to versions already in Cargo.lock, or use with the `--precise` flag.
-    - What would an error look like?
-    - How would you be able to override this for specific crates for important security updates, or for related crates that should be released at the same time?
+  - This is initially excluded, because it isn't clear how this should behave with respect to versions already in Cargo.lock, or use with the `--precise` flag.
+  - What would an error look like?
+  - How would you be able to override this for specific crates for important security updates, or for related crates that should be released at the same time?
 - Add a way to specify that the minimum age doesn't apply to certain packages. For example, by having an array of crates that should always use the newest version.
-    - The use case is solved through other means and we'll need to get runtime and gather use cases before deciding how to further evolve this
-    - The "I need a security fix now" use case is handled by  bumping versions in `Cargo.toml` and/or `Cargo.lock`
-    - The "I have a trusted package source" is handled by the making this configurable per-registry
-      - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
-    - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
+  - The use case is solved through other means and we'll need to get runtime and gather use cases before deciding how to further evolve this
+  - The "I need a security fix now" use case is handled by  bumping versions in `Cargo.toml` and/or `Cargo.lock`
+  - The "I have a trusted package source" is handled by the making this configurable per-registry
+    - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
+  - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
 - Provide a mechanism to compare the publish time against a time other than the current system time. For example, comparing to the time of some snapshot, or the timestamp
   of a local cache.
