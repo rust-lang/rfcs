@@ -109,7 +109,7 @@ So, we need some annotation that differentiates a `T: Default` bound from one th
 
 ## Nomenclature and new syntax concepts
 
-### Const trait methods
+### Const methods
 
 Traits can declare methods as `const`. Changing an existing non-`const` method to a `const` one is a breaking change, as all impls are now required to provide the method as `const`, which existing impls can't.
 
@@ -150,7 +150,7 @@ fn compile_time_default<T: const Default>() -> T {
 }
 ```
 
-### Conditionally const traits methods
+### Const traits and their methods
 
 Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `const` and all the methods will become const callable.
 
@@ -301,7 +301,7 @@ See [this playground](https://play.rust-lang.org/?version=nightly&mode=debug&edi
 Most of the time you don't want to write out your impls by hand, but instead derive them as the implementation is obvious from your data structure.
 
 ```rust
-#[const_derive(PartialEq, Eq)]
+#[derive_const(PartialEq, Eq)]
 struct MyStruct<T>(T);
 ```
 
