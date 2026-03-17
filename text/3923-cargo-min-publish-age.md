@@ -8,7 +8,7 @@
 
 This proposal adds a new configuration option to cargo that specifies a minimum age for package
 updates. When adding or updating a dependency, cargo won't use a version of that crate that
-is newer than the minimum age by default with a way to override to get urgent security fixes.
+is newer than the minimum age when specified, with a way to override to get urgent security fixes.
 
 An example configuration would be:
 
