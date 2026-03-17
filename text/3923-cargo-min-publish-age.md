@@ -279,19 +279,19 @@ clear that this only applies to crates that are published in a registry.
 
 `cooldown` was avoided due to term generally referring to throttling while we are looking for a certain maturity.
 
-### fallback and deny
+### `fallback` and `deny`
 
-We default `resolver.incompatible-publish-age` to "fallback" rather than deny
-and defer support for "deny" to future possibilities, because that allows user to allow
+We default `resolver.incompatible-publish-age` to `fallback` rather than `deny`
+and defer support for `deny` to future possibilities, because that allows
 users to easily override the minimum age for specific crates when necessary.
 
-Specifically, with "fallback" it is possible to override the minimum age behavior for
-specific crates by specifying a more specific version in Cargo.toml, or using `cargo update --precise`.
+Specifically, with `fallback` it is possible to override the minimum age behavior for
+specific crates by specifying a more specific version in `Cargo.toml`, or using `cargo update --precise`.
 
-Furthermore, with "fallback", and the ability to override versions as mentioned above,
+Furthermore, with `fallback`, and the ability to override versions as mentioned above,
 it isn't as critical to have a way to list crates to exclude from the rule in configuration.
 
-We anticipate that "fallback" will be sufficient for most use cases, but the possibility of a  "deny" option
+We anticipate that `fallback` will be sufficient for most use cases, but the possibility of a `deny` option
 can be revisited if necessary.
 
 ### Per-registry configuration
