@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3641](https://github.com/rust-lang/rfcs/pull/3641)
 - Rust Issue: [rust-lang/rust#154022](https://github.com/rust-lang/rust/issues/154022)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Adding an unsafe attribute, `#[unsafe(export_ordinal(n))]`, that marks the ordinal position of an exported function in a cdylib on windows targets without creating a `lib.def` file.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Sometimes when creating DLLs, the ordinal position of an exported function is very important. For example, when creating a DLL for use in [Microsoft Detours](https://github.com/microsoft/Detours/), the [`DetourFinishHelperProcess`](https://github.com/microsoft/Detours/wiki/DetourFinishHelperProcess) function must be Ordinal 1.
@@ -36,14 +36,14 @@ The biggest downside of the current method is that once you specify a `.def` fil
 
 By creating an attribute for specifying function ordinals, we can choose the ordinal position for the functions where it matters, and let Rust choose the ordinal for any other functions where ordinal position is not important.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Ordinals
+### Ordinals
 
 Function Ordinals refer to the position of an exported function in a Dynamically Linked Library (DLL). When accessing functions by name, this is not important. However some applications access functions based on their position (ordinal), rather than their name. The Microsoft documentation for this concept is available [here.](https://learn.microsoft.com/en-us/cpp/build/exporting-functions-from-a-dll-by-ordinal-rather-than-by-name)
 
-## Usage
+### Usage
 
 You can specify the ordinality of an exported function using the `export_ordinal` attribute on it. The attribute must be marked as unsafe.
 
@@ -56,13 +56,13 @@ pub extern "C" fn hello() {
 
 This example will export `hello` as ordinal 1, and when a program tries to call ordinal 1 in your DLL, it will be executed.
 
-## Behaviour
+### Behaviour
 
 If other software expects your function to be a specific ordinal, you should be very careful when changing the ordinal or removing the `export_ordinal` attribute, as it could lead to the wrong function being called (or not found at all).
 
 If `export_ordinal` isn't provided, an unused ordinal will be assigned during compilation.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `export_ordinal` is a new attribute for functions which has a signature similar to the following:
@@ -95,12 +95,12 @@ pub fn hello() {}
 pub unsafe extern "C" fn world() {}
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 1. Specifying ordinals in code could add a lot of additional complexity with linking.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This design is consistent with the [`link_ordinal`](https://doc.rust-lang.org/reference/items/external-blocks.html#the-link_ordinal-attribute) attribute already in use.
@@ -118,12 +118,12 @@ Some considered alternatives are:
 
 This proposal should make the workflow of specifying ordinals much easier, while staying consistent with the syntax of the existing `link_ordinal`.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 I am not currently aware of any programming languages that currently implement an equivalent feature.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Some unresolved questions are:
@@ -131,7 +131,7 @@ Some unresolved questions are:
 2. If ordinals `1, 3` are specified, and you have another exported function, should it use `2` (the next unused ordinal) or `4` (the next in the sequence)?
 3. Instead of implementing this proposal, Could the usage of the `.def` file be changed to allow other functions to stay exported, even if they aren't included in the `.def` file?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 I cannot currently think of any future possibilities.
