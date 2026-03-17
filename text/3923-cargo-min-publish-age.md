@@ -444,8 +444,6 @@ Some precedents in Cargo
 
 pre-release: requires opt-in through version requirement. Unstable support to force it with `--precise` but that doesn't apply recursively.
 
- We use the term `publish` and not `release`
-
 ## Unresolved Questions
 [unresolved-questions]: #unresolved-questions
 
