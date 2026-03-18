@@ -1667,26 +1667,25 @@ types in pointer metadata, which can be accessed without locking a mutex.
 ## Alternatives to this RFC
 [alternatives-to-this-rfc]: #alternatives-to-this-rfc
 
-There are not many alternatives to this RFC to unblock extern types and
-scalable vectors:
+Extern types from [rfcs#1861][rfc_extern_types] would remain blocked if no
+action was taken and this RFC was not accepted, unless:
 
-- Without this RFC, scalable vectors from [rfcs#3838][rfc_scalable_vectors]
-  would remain blocked unless special-cased by the compiler in the type
-  system
-    - It is not possible to add these without const traits: relaxing the
-      supertrait of `Clone` is backwards-incompatible and const traits
-      are the only way to avoid that
+- The language team decided that having `size_of_val` and `align_of_val`
+  panic was acceptable
+- The language team decided that having `size_of_val` and `align_of_val`
+  return `0` and `1` respectively was acceptable
+- The language team decided that extern types could not be instantiated
+  into generics and that this was acceptable
+- The language team decided that having `size_of_val` and `align_of_val`
+  produce post-monomorphisation errors for extern types was acceptable
 
-- Extern types from [rfcs#1861][rfc_extern_types] would remain blocked if no
-  action was taken, unless:
-    - The language team decided that having `size_of_val` and `align_of_val`
-      panic was acceptable
-    - The language team decided that having `size_of_val` and `align_of_val`
-      return `0` and `1` respectively was acceptable
-    - The language team decided that extern types could not be instantiated
-      into generics and that this was acceptable
-    - The language team decided that having `size_of_val` and `align_of_val`
-      produce post-monomorphisation errors for extern types was acceptable
+Many of the future possibilities depend on the specifics of this RFC to unblock
+the features they enable:
+
+- Scalable vectors from [rfcs#3838][rfc_scalable_vectors] without this RFC would
+  remain blocked unless special-cased in the type system
+    - It is not possible to add these without the [`const Sized` future
+      possibility][const-sized]
 
 ## Bikeshedding
 [bikeshedding]: #bikeshedding
