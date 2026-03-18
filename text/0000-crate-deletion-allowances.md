@@ -35,7 +35,7 @@ The additions from this RFC are directly inspired by these two examples, althoug
 
 The crate deletion criteria receives the following change, specifically regarding reverse dependencies which are considered by the deletion criteria:
 
-* Yanked versions which are over a year old are not considered as valid reverse dependencies. If the depended crate passes the deletion criteria and gets deleted, these yanked versions may also get deleted.
+* Yanked versions which are over a year old are not considered as valid reverse dependencies. If the depended crate passes the deletion criteria and gets deleted, this still won't delete those yanked versions; they'll just have an invalid dependency.
 * If a version of a crate has been failing to compile on the latest stable for over 4 years (~1 edition cycle), it may be yanked without the approval of the crate author. Since these versions are necessarily at least four years old, they also satisfy the requirements for the above criteria.
 
 The full deletion criteria becomes:
