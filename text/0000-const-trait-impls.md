@@ -19,13 +19,13 @@ const trait Default {
     fn default() -> Self;
 }
 
-impl const Default for () {
+const impl Default for () {
     fn default() {}
 }
 
 struct Thing<T>(T);
 
-impl<T: [const] Default> const Default for Thing<T> {
+impl<T: [const] Default> Default for Thing<T> {
     fn default() -> Self { Self(T::default()) }
 }
 
@@ -167,7 +167,7 @@ Free functions are unaffected and will stay as `const fn`.
 
 ### `const` methods and non-`const` methods on the same trait
 
-If the trait is marked as `const trait Trait`, then all methods under an `impl const Foo for Trait` are assumed
+If the trait is marked as `const trait Trait`, then all methods under an `const impl Foo for Trait` are assumed
 to be callable in const contexts. Thus the only way to implement a `const trait` using non-const operations
 would be to use a non-const `impl`: `impl Foo for Trait`. There is no opt-out from const per-method because it's a
 niche use case that can be trivially worked around.
@@ -183,7 +183,7 @@ const trait Default {
     fn default() -> Self;
 }
 
-impl const Default for () {
+const impl Default for () {
     fn default() {}
 }
 
@@ -261,7 +261,7 @@ which we definitely do not support and have historically rejected over and over 
 ### Impls with const methods for conditionally const trait methods
 
 `const trait` impls for generic types work similarly to generic `const fn`.
-Any `impl const Trait for Type` is allowed to have `[const]` trait bounds:
+Any `const impl Trait for Type` is allowed to have `[const]` trait bounds:
 
 ```rust
 use std::ops::Add;
@@ -301,13 +301,13 @@ struct MyStruct<T>(T);
 generates
 
 ```rust
-impl<T: [const] PartialEq> const PartialEq for MyStruct<T> {
+const impl<T: [const] PartialEq> PartialEq for MyStruct<T> {
     fn eq(&self, other: &Rhs) -> bool {
         self.0 == other.0
     }
 }
 
-impl<T: [const] Eq> const Eq for MyStruct<T> {}
+const impl<T: [const] Eq> Eq for MyStruct<T> {}
 ```
 
 For this RFC, we stick with `derive_const`, because it interacts with other ongoing bits of design work (e.g., RFC 3715)
@@ -467,7 +467,7 @@ Everywhere where non-const trait bounds can be written.
 ### Sites where `[const] Trait` bounds can be used
 
 * `const fn`
-* `impl const Trait` blocks
+* `const impl Trait` blocks
 * NOT in inherent impls, the individual `const fn` need to be annotated instead
 * `const trait` declarations
     * super trait bounds
@@ -554,7 +554,7 @@ The following never drops `T`, because it's the job of `<T as Add>` to handle dr
 ```rust
 struct NewType<T>(T);
 
-impl<T: [const] Add<Output = T>> const Add for NewType<T> {
+const impl<T: [const] Add<Output = T>> Add for NewType<T> {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
         NewType(self.0 + other.0)
@@ -569,7 +569,7 @@ struct NewType<T>(T, bool);
 
 struct Error;
 
-impl<T: [const] Add<Output = T>> const Add for NewType<T> {
+const impl<T: [const] Add<Output = T>> Add for NewType<T> {
     type Output = Result<Self, Error>;
     fn add(self, other: Self) -> Self::Output {
         if self.1 {
@@ -620,7 +620,7 @@ const trait Bar {
 
 struct Foo<T: Bar>(T);
 
-impl<T: [const] Bar> const Drop for Foo<T> {
+const impl<T: [const] Bar> Drop for Foo<T> {
     fn drop(&mut self) {
         self.0.thing();
     }
@@ -639,7 +639,7 @@ a type can be declared, but not dropped, because bounds are unfulfilled, this is
 Extraneous `[const] Trait` bounds where `Trait` isn't a bound on the type at all are still rejected:
 
 ```rust
-impl<T: [const] Bar + [const] Baz> const Drop for Foo<T> {
+const impl<T: [const] Bar + [const] Baz> Drop for Foo<T> {
     fn drop(&mut self) {
         self.0.thing();
     }
@@ -650,15 +650,15 @@ errors with
 
 ```
 error[E0367]: `Drop` impl requires `T: Baz` but the struct it is implemented for does not
-  --> src/lib.rs:13:22
+  --> src/lib.rs:11:29
    |
-13 | impl<T: [const] Bar + [const] Baz> const Drop for Foo<T> {
-   |                       ^^^^^^^^^^^
+11 | const impl<T: [const] Bar + [const] Baz> Drop for Foo<T> {
+   |                             ^^^^^^^^^^^
    |
 note: the implementor must specify the same requirement
-  --> src/lib.rs:8:1
+  --> src/lib.rs:3:1
    |
-8  | struct Foo<T: Bar>(T);
+ 3 | struct Foo<T: Bar>(T);
    | ^^^^^^^^^^^^^^^^^^
 ```
 
@@ -816,7 +816,7 @@ trait Foo: [const] Bar + Baz {
     fn baz();
 }
 
-impl const Foo for () {
+const impl Foo for () {
     fn baz() {}
 }
 
@@ -835,7 +835,7 @@ trait Foo: Bar + ?const Baz {
     fn baz();
 }
 
-impl const Foo for () {
+const impl Foo for () {
     fn baz() {}
 }
 
@@ -950,7 +950,7 @@ so that the ecosystem slowly migrates, maybe with an actual deprecation warning 
 `const fn` can also be called at runtime just fine, while the others are always const
 contexts and need to be evaluated by the const evaluator.
 
-Additionally `const Trait` bounds have a third meaning (the same as `const Trait` in `impl const Trait for Type`):
+Additionally `const Trait` bounds have a third meaning (the same as `const Trait` in `const impl Trait for Type`):
 
 They can be invoked at compile time, but also in `const fn`.
 
