@@ -206,6 +206,8 @@ Maintainers in Residence are also expected to:
 
 The Funding team may request that MiR collect data on their activity so that they can prepare impact reports and other material for sponsors. Whenever possible, however, the Funding team should work with other teams (e.g., the Goals or Content teams) to handle the creation of that material, so that the MiR can focus primarily on maintenance.
 
+The expectation is that a typical MiR could satisfy these requirements by registering project goals for their major initiatives, posting regular updates, and periodic meetings with their manager. Other teams would supplement this work. For example, the Content team may opt to interview a MiR and prepare a blog post covering their work, and the Funding team might gather Github activity automatically to quantify things like PR reviews or issue triage.
+
 ## The Funding team collects feedback (positive or negative) on MiR performance
 
 Feedback on MiR performance (positive or negative) can be directed privately to the Funding team. The Funding team will also periodically seek feedback from the project proactively. The Funding team and the manager at the Foundation will convey feedback to the MiR at regular intervals. Feedback, particularly negative feeback, is private and should not be shared publicly without permission from the MiR.
