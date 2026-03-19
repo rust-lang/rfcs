@@ -169,7 +169,7 @@ The Funding team works with the Foundation to select from the applicant pool and
 
 The precise terms of the working arrangement are not defined by this RFC. Whether achieved through contracts, employment, or other means, the goal is to create a stable environment that allows maintainers to focus on their work in a sustained, year-over-year fashion. The important points are that the arrangement is substantial and stable:
 
-* By *substantial*, we mean that the compensated time is either full-time or significant part-time. Some areas may not require a full person's time; it is fine to have one person cover two areas, or two people each contribute part-time to a single area, so long as there is enough concentrated time to build and maintain deep context.
+* By *substantial*, we mean that the compensated time is either full-time or significant part-time. Some areas may not require a full person's time; it is fine to have one person cover two areas, or two people each contribute part-time to a single area, so long as there is enough concentrated time to build and maintain deep context. This latitude also allows us to accommodate maintainers who are not interested in a full-time role.
 * By *stable*, we mean that it is expected to continue (or be renewed) as long as both sides are satisfied and funding is available.
 
 ## We recommend a flat pay structure to start
