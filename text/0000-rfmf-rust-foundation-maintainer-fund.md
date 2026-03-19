@@ -239,6 +239,10 @@ However, teams should also bear in mind that MiR do not have infinite capacity. 
 # Frequently asked questions
 [faq]: #faq
 
+## What's the relationship between the Rust Project and the Rust Foundation?
+
+The Rust programming language is developed by the Rust Project, a community of volunteers organized into teams and governed by the Leadership Council. The Rust Foundation is a separate nonprofit organization that supports the Project — it holds funds, employs staff, and handles legal and operational matters, but does not govern the language or its development. This RFC defines how these two entities collaborate to fund maintenance.
+
 ## What does it look like to have a Maintainer in Residence on my team?
 
 In one sense, the same as having any other team member. They show up in reviews, participate in design discussions, mentor newcomers, and work on what the team needs. The PSF's experience after nearly five years is that the Developer in Residence does roughly 50/50 maintenance and proactive work, and the role feels like "just another team member" rather than an outside presence (see [Prior Art][prior-art]).
