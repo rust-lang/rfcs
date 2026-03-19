@@ -220,7 +220,7 @@ If the program grows to large number of MiRs, however, we recommend that the Lea
 
 ## Moderation concerns about a MiR
 
-Code of Conduct violations that result in removal from the Project immediately terminate the working arrangement. Team membership is a hard requirement for the role; a maintainer who is no longer a project member cannot continue as a Maintainer in Residence.
+Code of Conduct violations that result in removal from the Project will make a Maintainer in Residence no longer eligible to continue in their role. Team membership is a hard requirement for the role; a maintainer who is no longer a project member cannot continue as a Maintainer in Residence. The role ends immediately; the exact details of how and how quickly the legal and financial obligations are resolved are up to the Foundation and may depend on local law. Where possible, working arrangements should include a termination period or severance payment to ease the transition.
 
 The Moderation team is encouraged to inform the Funding team and/or Foundation about any reported issues relevant to a MiR's conduct.
 
