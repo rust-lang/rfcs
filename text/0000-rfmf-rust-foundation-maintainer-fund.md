@@ -7,7 +7,7 @@
 
 This RFC defines the relationship between the Rust Foundation Maintainer Fund (RFMF) and the open-source Rust project. The RFMF is a dedicated fund used to support Rust maintenance: open-ended, multiplicative work that improves Rust and its codebase and makes it more accessible.
 
-The Leadership Council has a Project Priorities budget, which is used to fund various initiatives, such as travel grants or program management. RFMF funds will be directed to this budget, but they will be earmarked for activities that direct funding to individual maintainers. This includes the existing program management program and would include the proposed Project Grants Program ([RFC 3919]), which provides modest stipends to recognize and support existing contributors. It will also include a third program, the *Maintainer in Residence program*, proposed by this RFC.
+The Leadership Council has a Project Priorities budget, which is used to fund various initiatives, such as travel grants or program management. RFMF funds will be directed to this budget, but they will be dedicated to activities that direct funding to individual maintainers. This includes the existing program management program and would include the proposed Project Grants Program ([RFC 3919]), which provides modest stipends to recognize and support existing contributors. It will also include a third program, the *Maintainer in Residence program*, proposed by this RFC.
 
 The Maintainer in Residence program is dedicated to hiring long-term maintainers and funding their maintenance work in full. Maintainers' in Residence time is split between priorities guided by the teams they are supporting and priorities of their own choosing within the project.
 
@@ -22,9 +22,9 @@ This RFC was jointly written by the [RFMF Design Committee](https://github.com/r
 # Motivation
 [motivation]: #motivation
 
-The Rust Foundation is establishing a Maintainer Fund to collect sponsorships and provide long-term funding for Rust maintenance. Funds raised through the RFMF are earmarked to fund Rust maintainers under the supervision of the Leadership Council. The Leadership Council commissioned this RFC to recommend how those funds should be used.
+The Rust Foundation is establishing a Maintainer Fund to collect sponsorships and provide long-term funding for Rust maintenance. Funds raised through the RFMF are dedicated to funding Rust maintainers under the supervision of the Leadership Council. The Leadership Council commissioned this RFC to recommend how those funds should be used.
 
-We recommend that the funds be directed into the Project Priorities budget with an earmark that they should be used only for programs that directly fund individual Rust maintainers (which includes project management). Earmarking the funds helps ensure that the "sales pitch" is clear: donations given to the RFMF will go directly into a maintainer's pocket.
+We recommend that the funds be directed into the Project Priorities budget with the restriction that they be used only for programs that directly fund individual Rust maintainers (which includes project management). Dedicating the funds helps ensure that the "sales pitch" is clear: donations given to the RFMF will go directly into a maintainer's pocket.
 
 We further recommend that the Leadership Council create a "Maintainer in Residence" program to augment the existing project management program and the grants program proposed in [RFC 3919]. Maintainers in Residence are maintainers who are paid to work on a full-time or substantial part-time basis to maintain some part of the project.
 
@@ -266,11 +266,11 @@ Maintainers in Residence can work substantial part-time — the key requirement 
 
 That's outside the scope of the RFMF, which is undirected funding — sponsors contribute to a general fund and the Leadership Council decides how to deploy it. A companion effort, the proposed Project Goals Funding program (see [Future possibilities][]), is designed for exactly this: sponsors direct funding at specific Project Goals, and the Foundation issues grants to advance that work. Sponsors seeking that level of direction should look there rather than the RFMF.
 
-## Why are RFMF funds earmarked for maintainers?
+## Why are RFMF funds dedicated to maintainers?
 
-Sponsors contributing to the RFMF want to know their money is going directly to fund maintainers. Earmarking gives the fund a clear value proposition: every dollar goes to paying people who maintain Rust. Without earmarking, the Leadership Council could use RFMF funds for any purpose — travel grants, event sponsorship, infrastructure — all valuable, but harder to explain to a company evaluating its return on investment. Since money is fungible, earmarking RFMF funds for maintainers frees up budget for other purposes.
+Sponsors contributing to the RFMF want to know their money is going directly to fund maintainers. Dedicating the funds gives the fund a clear value proposition: every dollar goes to paying people who maintain Rust. Without this restriction, the Leadership Council could use RFMF funds for any purpose — travel grants, event sponsorship, infrastructure — all valuable, but harder to explain to a company evaluating its return on investment. Since money is fungible, dedicating RFMF funds to maintainers frees up budget for other purposes.
 
-The earmark is broad: Maintainers in Residence, project grants, and the program management overhead needed to support them. The Leadership Council determines the specific form. This gives the Council real flexibility while keeping the fund's purpose legible to sponsors.
+The restriction is broad: Maintainers in Residence, project grants, and the program management overhead needed to support them. The Leadership Council determines the specific form. This gives the Council real flexibility while keeping the fund's purpose legible to sponsors.
 
 ## What does this RFC deliberately not specify?
 
@@ -339,4 +339,4 @@ If the Rust Project establishes a mechanism for recording affiliations of team m
 
 ## Project Goals Funding program
 
-The RFMF provides undirected funding — sponsors contribute to a general fund earmarked to fund Rust maintainers, with the Leadership Council deciding the specific form. There are ongoing plans to propose a Project Goals Funding program that would allow sponsors to direct funding at specific Project Goals. Sponsors would choose goals, roadmaps, or application areas to fund, and the Foundation would issue grants to contributors working on that work. A percentage of directed funding would flow to the Leadership Council's Project Priorities budget, where it can be used to fund maintenance, project management, or other activities. Together, the two programs cover the full spectrum of sponsor needs: undirected funding for those who want to support Rust's overall health, and directed funding for those who want to accelerate specific work.
+The RFMF provides undirected funding — sponsors contribute to a general fund dedicated to funding Rust maintainers, with the Leadership Council deciding the specific form. There are ongoing plans to propose a Project Goals Funding program that would allow sponsors to direct funding at specific Project Goals. Sponsors would choose goals, roadmaps, or application areas to fund, and the Foundation would issue grants to contributors working on that work. A percentage of directed funding would flow to the Leadership Council's Project Priorities budget, where it can be used to fund maintenance, project management, or other activities. Together, the two programs cover the full spectrum of sponsor needs: undirected funding for those who want to support Rust's overall health, and directed funding for those who want to accelerate specific work.
