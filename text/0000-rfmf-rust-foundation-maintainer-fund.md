@@ -53,7 +53,7 @@ The third category is companies that employ developers or contributors working f
 
 Sponsoring the maintainer fund is a way for companies to ensure the maintenance layer their contributors depend on stays healthy. An alternative is for the company to hire internal staff to do that role, but beyond being more expensive, experience has shown that "in house" maintainer roles at companies are difficult to sustain. Maintenance activities don't advance any single company's goals, so they're hard to justify in a performance review and vulnerable to restructuring when priorities shift. 
 
-For the fund to be sustainable, sponsors also need to be able to report the impact of their contributions. This means the project needs to treat demonstrating impact as a whole-project responsibility, not something that falls on Maintainers in Residence alone. See [Sponsor benefits][] for concrete details on what we envision.
+For the fund to be sustainable, sponsors also need to be able to report the impact of their contributions. This means the project needs to treat demonstrating impact as a whole-project responsibility, not something that falls on Maintainers in Residence alone. See [the sponsor benefits section](#sponsor-benefits) for concrete details on what we envision.
 
 ## Why the Project should drive the selection of maintainers
 
