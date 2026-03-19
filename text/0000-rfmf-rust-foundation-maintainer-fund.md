@@ -24,7 +24,7 @@ This RFC was jointly written by the [RFMF Design Committee](https://github.com/r
 
 The Rust Foundation is establishing a Maintainer Fund to collect sponsorships and provide long-term funding for Rust maintenance. Funds raised through the RFMF are dedicated to funding Rust maintainers under the supervision of the Leadership Council. The Leadership Council commissioned this RFC to recommend how those funds should be used.
 
-We recommend that the funds be directed into the Project Priorities budget with the restriction that they be used only for programs that directly fund individual Rust maintainers (which includes project management). Dedicating the funds helps ensure that the "sales pitch" is clear: donations given to the RFMF will go directly into a maintainer's pocket.
+We recommend that the funds be directed into the Project Priorities budget with the restriction that they be used only for programs that fund Rust maintainers to do maintenance work (which includes project management). Dedicating the funds helps ensure that the "sales pitch" is clear: donations given to the RFMF will go directly into a maintainer's pocket.
 
 We further recommend that the Leadership Council create a "Maintainer in Residence" program to augment the existing project management program and the grants program proposed in [RFC 3919]. Maintainers in Residence are maintainers who are paid to work on a full-time or substantial part-time basis to maintain some part of the project.
 
@@ -72,7 +72,7 @@ The RFMF collects sponsorships from companies and individuals. Funds support pro
 
 ### Not one size fits all
 
-Maintainers have a wide variety of needs and no one program will work for everyone. We allow RFMF funds to be used for any kind of program that directly benefits maintainers.
+Maintainers have a wide variety of needs and no one program will work for everyone. We allow RFMF funds to be used for any kind of program that directly pays maintainers for maintenance work (e.g., project grants from [RFC 3919], the MiR program defined in this RFC, the LC's project management program, or other future programs that may be added).
 
 ### The MiR is a collaboration between the Project and the Foundation
 
@@ -295,6 +295,10 @@ The restriction is broad: Maintainers in Residence, project grants, and the prog
 ## What does this RFC deliberately not specify?
 
 This RFC does not define how the RFMF collects sponsorships, the precise tiers or benefits sponsors receive, the precise pay structure, or other fine-grained details. The Funding team and Foundation can work these out.
+
+## What is an example of something that RFMF funds could *not* be used for?
+
+This RFC proposes that RFMF funds are limited to funds that compensate Rust maintainers for time they spend doing maintenance. They could not be used for other Project Priorities budget items such as organizing the Rust All Hands or running a travel grant program.
 
 # Prior art
 [prior-art]: #prior-art
