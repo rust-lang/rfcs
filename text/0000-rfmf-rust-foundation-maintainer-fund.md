@@ -287,7 +287,7 @@ This RFC does not define how the RFMF collects sponsorships, the precise tiers o
 
 ## Python Software Foundation: lessons from a mature program
 
-The PSF started its Developer in Residence program in 2021. After nearly five years, it now funds three maintainers, each sponsored by a specific company (Meta, Bloomberg, and Vercel). Contracts are for 12 months, renewable based on continued sponsor funding. Maintainers are employees or contractors of the PSF, reporting to both the Executive Director and the Steering Council.
+The [PSF Developer in Residence program](https://www.python.org/psf/developersinresidence/) started in 2021. After nearly five years, it now funds three maintainers, each sponsored by a specific company (Meta, Bloomberg, and Vercel). Contracts are for 12 months, renewable based on continued sponsor funding. Maintainers are employees or contractors of the PSF, reporting to both the Executive Director and the Steering Council.
 
 One important lesson that we took from our discussions with the Python Developers in Residence and the Steering Council is the importance of self-directed time. The first Developer in Residence started doing only reviews, backports, and CI, and found that after a year or two, "there's not much joy in that." Allowing feature work alongside maintenance "made all the difference." We've reflected this in the RFMF design: Maintainers in Residence split their time roughly 50/50 between team priorities and individual priorities of their choosing, rather than being assigned purely to maintenance.
 
@@ -295,17 +295,17 @@ One area where we have deviated from Python precedent is in attempting to create
 
 ## Django Fellowship: weekly reports and community-focused maintenance
 
-The Django Fellowship program has been running since 2014, predating the PSF program and providing the longest track record of any comparable effort. Fellows are contractors (not employees) who post weekly reports. The work is focused on "housekeeping and community support": monitoring security email, fixing release blockers, reviewing pull requests, and mentoring new contributors.
+The [Django Fellowship program](https://github.com/django/dsf-working-groups/blob/main/active/fellowship.md) has been running since 2014, predating the PSF program and providing the longest track record of any comparable effort. Fellows are contractors (not employees) who post weekly reports. The work is focused on "housekeeping and community support": monitoring security email, fixing release blockers, reviewing pull requests, and mentoring new contributors.
 
 ## Zig Software Foundation: lean and independent
 
-The ZSF takes a simpler approach: core team members bill hours directly to the foundation. As a 501(c)(3) non-profit founded in 2020, 92% of its spending goes directly to paying contributors, with minimal administrative overhead. It has no big tech companies on its board, an explicit design choice to maintain independence.
+The [ZSF](https://ziglang.org/zsf/) takes a simpler approach: core team members bill hours directly to the foundation. As a 501(c)(3) non-profit founded in 2020, 92% of its spending goes directly to paying contributors, with minimal administrative overhead. It has no big tech companies on its board, an explicit design choice to maintain independence.
 
 The ZSF model is leaner and more informal than PSF or Django, but also smaller in scale and more dependent on individual large donations. It demonstrates that low-overhead models are possible, but the approach may not scale to the number of maintainers Rust needs.
 
 ## Scala Center: pool-funded with sponsor engagement
 
-The Scala Center, housed at EPFL, takes a pool-funded approach that contrasts with the PSF's per-sponsor-per-position model. Corporate sponsors contribute to a general fund at tiered levels and send representatives to quarterly Advisory Board meetings. The Advisory Board makes non-binding recommendations on priorities; the Center's leadership decides on execution and hiring. Sponsors influence direction through discussion but don't direct specific positions or hires.
+The [Scala Center](https://scala.epfl.ch/), housed at EPFL, takes a pool-funded approach that contrasts with the PSF's per-sponsor-per-position model. Corporate sponsors contribute to a general fund at tiered levels and send representatives to quarterly Advisory Board meetings. The Advisory Board makes non-binding recommendations on priorities; the Center's leadership decides on execution and hiring. Sponsors influence direction through discussion but don't direct specific positions or hires.
 
 Two aspects of the Scala Center model have been particularly influential on this RFC. First, the sponsor meeting structure: sponsors meet regularly with maintainers and with each other, and these meetings have been described as a "big win" for selling the program internally. Having sponsor representatives commit to attend regular meetings makes the program legible to upper management. Second, sponsors often value hearing from their peers — other organizations using the language — as much as from the project itself. We encourage the Funding team to recreate this by creating a community of mid-level sponsors.
 
