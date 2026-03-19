@@ -32,7 +32,7 @@ We further recommend that the Leadership Council create a "Maintainer in Residen
 
 In preparing this recommendation, we interviewed team leads across the Project. The message was clear: *"what's needed is people with the focus to drive longer-scale projects."* Volunteer maintenance can keep the lights on, but larger-scale work stalls because nobody has the sustained focus to push it through. As one (volunteer) team lead said, *"All the time that reviewers have goes into reviewing, triaging, and so on, and then the interesting longer-term projects just fall under the table."*
 
-The rust-analyzer experience shows what full-time presence makes possible, and what happens when it disappears:
+The rust-analyzer and Clippy experiences show what funded presence makes possible, and what happens when it disappears:
 
 * When a funded reviewer was working on r-a, the PR backlog stayed around 10. After that person changed jobs, it climbed to over 110: *"solving the review problem definitely requires money I think, there's no big question there."*
 * Short-term grants help but aren't enough. The Clippy team received Foundation grants that let *"one person work almost full time on Clippy, but it was only for 6 months — it was hard to make long-term plans."*
@@ -99,10 +99,10 @@ To encourage larger contributions or year-over-year commitment, the Funding team
 
 This RFC does not specify the precise tiers or benefits associated with those tiers. Instead, we give examples of the *kinds* of benefits we anticipate. The Funding team is free to choose these or other benefits that are similar in kind. A good rule of thumb is *"could the company simply hire a person to do this, presuming they could find someone with the requisite team membership?"* -- if so, it's a reasonable benefit to offer.
 
-* **Sponsor meetings.** The Foundation builds a community of sponsoring organizations that meets with project leadership (Leadership Council, team leads) and Maintainers in Residence a few times a year to discuss project direction, sponsor experiences, and pain points. Project leadership gains insight into the needs of major Rust users; sponsors get visibility into the roadmap and the opportunity to hear from other Rust-adopting companies.
+* **Sponsor meetings.** The Foundation builds a community of sponsoring organizations that meets with project leadership (Leadership Council, team leads) and Maintainers in Residence a few times a year to discuss project direction, sponsor experiences, and pain points. Project leadership gains insight into the needs of major Rust users; sponsors get visibility into the roadmap and the opportunity to hear from other Rust-adopting companies. The frequency of such meetings may depend on the level of sponsorship.
 * **Impact reporting.** Regular reports on what funded maintainers are working on, progress on Project Goals, and how the program is contributing to Rust's health. These reports are prepared with help from the program management team and made publicly available.
-* **Prioritized review and bug fixes.** Sponsors can reach out to the Foundation or project contacts about PRs or bugs that need attention, up to a certain frequency that is dependent on funding tier. This provides the sponsor with a form of "insurance" that they will get help resolving priority issues they encounter with Rust; however, this prioritization should be limited to small-scope fixes or reviews, not to larger feature development, and is in no way a promise that a PR will be *merged* (simply reviewed).
-* **Prioritization for goal championing.** Sponsors who have proposed project goals might be able to request that teams use an affiliated MiR to champion their goals. If teams have concerns about the goals, they are not obligated to oblige these requests.
+* **Prioritized review and bug fixes.** Sponsors can reach out to the Foundation or project contacts about PRs or bugs that need attention, up to a certain frequency that is dependent on funding tier. This provides the sponsor with a form of "insurance" that they will get help resolving priority issues they encounter with Rust; however, this prioritization should be limited to bug fixes or PR reviews, not to larger feature *development*, and is in no way a promise that a PR will be *merged* (simply reviewed).
+* **Prioritization for goal championing.** Sponsors may suggest that teams use a MiR on that team as a champion for project goals important to them. Teams and their members are encouraged to consider these suggestions but they are not obligated to take them.
 * **Area preferences.** If a sponsor or group of sponsors is willing to fund the entire cost of a MiR but only in a specific area, the Funding team could work with them to find a candidate for that particular area.
     * For example, if a sponsor would specifically like to fund a cargo or rustfmt maintainer, the Funding team could work with them to make that happen. The role would still be a MiR like any other, following the same processes.
 
@@ -112,7 +112,7 @@ This RFC does not specify the precise tiers or benefits associated with those ti
 
 ## Selection process is driven by a team within the project, supported by Foundation staff
 
-When funding is available, the Funding team and Foundation put out an open call for applications. The Funding team and Foundation staff review applications, consider the project's needs, and then the Foundation makes offers to the strongest candidates.
+When funding is available, the Funding team and Foundation put out an open call for applications. Where appropriate, the Funding team may also proactively reach out to potential applicants to encourage them to apply, if they may be a good fit for areas the project needs. The Funding team and Foundation staff review applications, consider the project's needs, and then the Foundation makes offers to the strongest candidates.
 
 ## The Funding team owns the project's long-term success
 
@@ -269,7 +269,7 @@ That's outside the scope of the RFMF, which is undirected funding — sponsors c
 
 ## Why are RFMF funds earmarked for maintainers?
 
-Sponsors contributing to the RFMF want to know their money is going directly to fund maintainers. Earmarking gives the fund a clear value proposition: every dollar goes to paying people who maintain Rust. Without earmarking, the Leadership Council could use RFMF funds for any purpose — travel grants, event sponsorship, infrastructure — all valuable, but harder to explain to a company evaluating its return on investment. Since money is fungible, earmarking RFMF funds for maintainers also frees up other budget for those other purposes.
+Sponsors contributing to the RFMF want to know their money is going directly to fund maintainers. Earmarking gives the fund a clear value proposition: every dollar goes to paying people who maintain Rust. Without earmarking, the Leadership Council could use RFMF funds for any purpose — travel grants, event sponsorship, infrastructure — all valuable, but harder to explain to a company evaluating its return on investment. Since money is fungible, earmarking RFMF funds for maintainers frees up budget for other purposes.
 
 The earmark is broad: Maintainers in Residence, project grants, and the program management overhead needed to support them. The Leadership Council determines the specific form. This gives the Council real flexibility while keeping the fund's purpose legible to sponsors.
 
@@ -341,4 +341,3 @@ If the Rust Project establishes a mechanism for recording affiliations of team m
 ## Project Goals Funding program
 
 The RFMF provides undirected funding — sponsors contribute to a general fund earmarked to fund Rust maintainers, with the Leadership Council deciding the specific form. There are ongoing plans to propose a Project Goals Funding program that would allow sponsors to direct funding at specific Project Goals. Sponsors would choose goals, roadmaps, or application areas to fund, and the Foundation would issue grants to contributors working on that work. A percentage of directed funding would flow to the Leadership Council's Project Priorities budget, where it can be used to fund maintenance, project management, or other activities. Together, the two programs cover the full spectrum of sponsor needs: undirected funding for those who want to support Rust's overall health, and directed funding for those who want to accelerate specific work.
-
