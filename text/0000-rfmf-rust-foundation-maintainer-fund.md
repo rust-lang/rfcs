@@ -170,14 +170,6 @@ The precise terms of the working arrangement are not defined by this RFC. Whethe
 * By *substantial*, we mean that the compensated time is either full-time or significant part-time. Some areas may not require a full person's time; it is fine to have one person cover two areas, or two people each contribute part-time to a single area, so long as there is enough concentrated time to build and maintain deep context.
 * By *stable*, we mean that it is expected to continue (or be renewed) as long as both sides are satisfied and funding is available.
 
-As would be typical in any employment or contracting relationship, a working arrangement might end if:
-
-* there is not adequate funding available to continue the position;
-* the maintainer is not performing adequately (see performance management below); or
-* there is an urgent need in another area and funds must be redirected.
-
-Redirecting a well-performing maintainer's position to a different area should not be done lightly. Sustained presence is the core value proposition of the program — startup overhead is real, context takes time to build, and the problems this program targets require continuity. Before redirecting a position, the Funding team should consider whether the existing MiR could help in the new area as well, if the relevant team agrees. The Funding team should strive to grow the program to meet new needs rather than redirecting existing positions.
-
 ## We recommend a flat pay structure to start
 
 We recommend starting with a single flat rate rather than individually negotiated compensation. A flat rate keeps the program simple, avoids the perception that some maintainers are valued more than others for equivalent work, and removes the disadvantage that negotiation creates for people who tend to undersell themselves. The rate should be publicly advertised as part of the call for applications.
@@ -226,9 +218,23 @@ If the program grows to large number of MiRs, however, we recommend that the Lea
 
 ## Moderation concerns about a MiR
 
-Code of Conduct violations that result in removal from the Project will make a Maintainer in Residence no longer eligible to continue in their role. Team membership is a hard requirement for the role; a maintainer who is no longer a project member cannot continue as a Maintainer in Residence. The role ends immediately; the exact details of how and how quickly the legal and financial obligations are resolved are up to the Foundation and may depend on local law. Where possible, working arrangements should include a termination period or severance payment to ease the transition.
-
 The Moderation team is encouraged to inform the Funding team and/or Foundation about any reported issues relevant to a MiR's conduct.
+
+Code of Conduct violations that result in removal from the Project will make a Maintainer in Residence no longer eligible to continue in their role. Team membership is a hard requirement for the role; a maintainer who is no longer a project member cannot continue as a Maintainer in Residence. From the project's perspective, the role ends immediately; the legal working arrangement however will end later, as described in the next section.
+
+## Terminating a working arrangement
+
+As would be typical in any employment or contracting relationship, a working arrangement might end if:
+
+* there is not adequate funding available to continue the position;
+* the maintainer is not performing adequately or has been removed from their role due to Code of Conduct violations; or
+* there is an urgent need in another area and funds must be redirected.
+
+Redirecting a well-performing maintainer's position to a different area should not be done lightly. Sustained presence is the core value proposition of the program — startup overhead is real, context takes time to build, and the problems this program targets require continuity. Before redirecting a position, the Funding team should consider whether the existing MiR could help in the new area as well, if the relevant team agrees. The Funding team should strive to grow the program to meet new needs rather than redirecting existing positions.
+
+## Termination period is required
+
+Whatever their structure or the legal limits, working arrangements must include a termination period or severance payment to ease the transition. This is needed to ensure that the moderation team can make decisions without having to account for the impact of someone suddenly losing their funding in a preciptious fashion.
 
 ## Team requests on a MiR
 
