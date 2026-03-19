@@ -122,7 +122,7 @@ The Leadership Council as well as the teams benefitting from the work of Maintai
 
 ## What Maintainers in Residence do
 
-Maintainers in Residence split their time between team priorities and individual priorities of their own choosing within their area of focus. The exact balance varies depending on the individual, their experience, and the needs of the team — the important thing is that both team-directed and self-directed work are expected. This is about "team-directed vs. self-directed," not "maintenance vs. features." The PSF's experience after nearly five years confirms that focusing purely on team-directed needs and multiplicative maintenance can be very draining; giving time for self-directed projects "made all the difference" in satisfaction.
+Maintainers in Residence split their time between team priorities and individual priorities of their own choosing within their area of focus. The exact balance varies depending on the individual, their experience, and the needs of the team — the important thing is that both team-directed and self-directed work are expected. This is about "team-directed vs. self-directed," not "maintenance vs. features." The PSF's experience after nearly five years confirms that focusing purely on team-directed needs and multiplicative maintenance can be very draining; giving time for self-directed projects "made all the difference" in satisfaction (see [Prior Art][prior-art]).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -235,7 +235,7 @@ However, teams should also bear in mind that MiR do not have infinite capacity. 
 
 ## What does it look like to have a Maintainer in Residence on my team?
 
-In one sense, the same as having any other team member. They show up in reviews, participate in design discussions, mentor newcomers, and work on what the team needs. The PSF's experience after nearly five years is that the Developer in Residence does roughly 50/50 maintenance and proactive work, and the role feels like "just another team member" rather than an outside presence.
+In one sense, the same as having any other team member. They show up in reviews, participate in design discussions, mentor newcomers, and work on what the team needs. The PSF's experience after nearly five years is that the Developer in Residence does roughly 50/50 maintenance and proactive work, and the role feels like "just another team member" rather than an outside presence (see [Prior Art][prior-art]).
 
 Unlike a volunteer, however, MiR are expected to put some portion of their time towards team priorities. Whereas before, if there was an urgent task, a team had to hope that somebody had the capacity to pick it up, they can now direct sustained effort where it's needed most. This is a new capability.
 
