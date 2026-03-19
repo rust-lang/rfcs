@@ -146,7 +146,7 @@ The Funding team has ownership of the RFMF's long-term health. They need to be r
 
 ## Application and vetting process
 
-The process of contracting a new Maintainer in Residence begins with an open call for applications. Putting out a broad call for applications helps to surface needs and candidates the Funding team might not have identified on its own.
+The process of hiring a new Maintainer in Residence begins with an open call for applications. Putting out a broad call for applications helps to surface needs and candidates the Funding team might not have identified on its own.
 
 Applicants do not have to be a member of a Rust team. However, to be accepted, the team must be willing to grant the person membership. Therefore, applicants should be people who are experienced contributors to the project and, ideally, either a member of the teams they expect to help as MiR or members of some other Rust team.
 
@@ -163,25 +163,24 @@ The Funding team prioritizes applications based on:
 
 The Funding team works with the Foundation to select from the applicant pool and to extend offers. The Funding team is looking for maintainers that have technical depth in the relevant area, community standing and trust within the Project, and sustained work orientation (a track record that suggests they'll thrive in a role focused on reviews, mentorship, unblocking, and the kind of long-term technical work that requires deep context).
 
-## Contract terms
+## Working arrangements should be substantial and stable
 
-The precise terms of the working arrangement are not defined by this RFC. The important points are: it is a **substantial commitment** (full-time or significant part-time), and it is expected to **continue (or be renewed) as long as both sides are satisfied and funding is available**. Some areas may not require a full person's time; it is fine to have one person cover two areas, or two people each contribute part-time to a single area, so long as there is enough concentrated time to build and maintain deep context.
+The precise terms of the working arrangement are not defined by this RFC. Whether achieved through contracts, employment, or other means, the goal is to create a stable environment that allows maintainers to focus on their work in a sustained, year-over-year fashion. The important points are that the arrangement is substantial and stable:
+
+* By *substantial*, we mean that the compensated time is either full-time or significant part-time. Some areas may not require a full person's time; it is fine to have one person cover two areas, or two people each contribute part-time to a single area, so long as there is enough concentrated time to build and maintain deep context.
+* By *stable*, we mean that it is expected to continue (or be renewed) as long as both sides are satisfied and funding is available.
+
+As would be typical in any employment or contracting relationship, a working arrangement might end if:
+
+* there is not adequate funding available to continue the position;
+* the maintainer is not performing adequately (see performance management below); or
+* there is an urgent need in another area and funds must be redirected.
+
+Redirecting a well-performing maintainer's position to a different area should not be done lightly. Sustained presence is the core value proposition of the program — startup overhead is real, context takes time to build, and the problems this program targets require continuity. Before redirecting a position, the Funding team should consider whether the existing MiR could help in the new area as well, if the relevant team agrees. The Funding team should strive to grow the program to meet new needs rather than redirecting existing positions.
 
 ## Flat pay structure
 
 Compensation should be a flat rate within a small number of bands (e.g., junior and senior), rather than individually negotiated. Flat rates keep the program simple and avoid the perception that some maintainers are valued more than others for equivalent work. The compensation structure is publicly advertised as part of the call for applications. The Foundation determines the specific rates and may adjust them over time as the program learns what works and what's needed to attract strong candidates.
-
-## Renewing a MiR contract
-
-Contract renewal is expected but not guaranteed:
-
-* There may not be adequate funds available to continue the existing maintainer contracts.
-* The Funding team may feel that there are urgent unmet needs within the project that prompt a change in maintainer (but this is in tension with the primary goal of this RFC of providing long-term, funded maintenance; see below).
-* The maintainer may not be doing an adequate job (though this scenario is typically managed separately; see performance management below).
-
-Deciding not to renew a well-performing maintainer in order to fund a different area should not be done lightly. Sustained presence is the core value proposition of the program — startup overhead is real, context takes time to build, and the problems this program targets require continuity. The Funding team should strive to maintain existing maintainers and grow the program to meet new needs rather than redirecting existing positions. Given limited funding, the Funding team can also encourage existing maintainers to pick up work in new areas rather than replacing them.
-
-In advance of contract renewal, the Foundation will consult with the Funding team. The Funding team will assess the needs of the project and decide whether a change should be made. If they do decide to change things, they will issue a new call for applications. If desired, the current maintainer may re-apply.
 
 ## Expectations placed on Maintainers in Residence
 
@@ -211,7 +210,7 @@ The Funding team may request that MiR collect data on their activity so that the
 
 Feedback on MiR performance (positive or negative) can be directed to the Funding team. The Funding team will also periodically seek feedback from the project proactively. The Funding team and the manager at the Foundation will convey feedback to the MiR at regular intervals. 
 
-When negative feedback is received, the Funding team will gather context and work with the MiR manager (see next section) to resolve the concern. Typically this means a conversation that brings about a change in behavior. In extreme cases, this might include performance management options like terminating a contract or opting not to renew.
+When negative feedback is received, the Funding team will gather context and work with the MiR manager (see next section) to resolve the concern. Typically this means a conversation that brings about a change in behavior. In extreme cases, this might include performance management options like terminating the arrangement or opting not to renew.
 
 ## The Manager works with the Funding team to communicate feedback
 
@@ -221,7 +220,7 @@ If the program grows to large number of MiRs, however, we recommend that the Lea
 
 ## Moderation concerns about a MiR
 
-Code of Conduct violations that result in removal from the Project immediately terminate the contract. Team membership is a hard requirement for the role; a maintainer who is no longer a project member cannot continue as a Maintainer in Residence.
+Code of Conduct violations that result in removal from the Project immediately terminate the working arrangement. Team membership is a hard requirement for the role; a maintainer who is no longer a project member cannot continue as a Maintainer in Residence.
 
 The Moderation team is encouraged to inform the Funding team and/or Foundation about any reported issues relevant to a MiR's conduct.
 
