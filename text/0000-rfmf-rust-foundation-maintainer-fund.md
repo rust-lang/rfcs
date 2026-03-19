@@ -28,7 +28,7 @@ We recommend that the funds be directed into the Project Priorities budget with 
 
 We further recommend that the Leadership Council create a "Maintainer in Residence" program to augment the existing project management program and the grants program proposed in [RFC 3919]. Maintainers in Residence are maintainers who are paid to work on a full-time or substantial part-time basis to maintain some part of the project.
 
-## Why focus on long-term maintenance?
+## Long-term maintenance is the biggest gap we found
 
 In preparing this recommendation, we interviewed team leads across the Project. The message was clear: *"what's needed is people with the focus to drive longer-scale projects."* Volunteer maintenance can keep the lights on, but larger-scale work stalls because nobody has the sustained focus to push it through. As one (volunteer) team lead said, *"All the time that reviewers have goes into reviewing, triaging, and so on, and then the interesting longer-term projects just fall under the table."*
 
@@ -39,7 +39,7 @@ The rust-analyzer and Clippy experiences show what funded presence makes possibl
 
 The problems teams describe require sustained, long-term presence.
 
-## What kind of sponsors do we expect
+## Sponsors come in many shapes and sizes
 
 We expect three kinds of support.
 
@@ -49,15 +49,17 @@ Second, when the Foundation takes in directed funding towards a particular goal,
 
 The third category is companies that employ developers or contributors working full-time to improve Rust. These companies are invested in Rust development, but their contributors' work still needs to be reviewed and landed by experienced maintainers. These companies may also need help resolving upstream bugs or limitations that are being hit internally.
 
-## Why would companies sponsor the fund
+## Larger sponsors want predictability; all sponsors need to show impact
 
 Sponsoring the maintainer fund is a way for companies to ensure the maintenance layer their contributors depend on stays healthy. An alternative is for the company to hire internal staff to do that role, but beyond being more expensive, experience has shown that "in house" maintainer roles at companies are difficult to sustain. Maintenance activities don't advance any single company's goals, so they're hard to justify in a performance review and vulnerable to restructuring when priorities shift. 
 
 For the fund to be sustainable, sponsors also need to be able to report the impact of their contributions. This means the project needs to treat demonstrating impact as a whole-project responsibility, not something that falls on Maintainers in Residence alone. See [the sponsor benefits section](#sponsor-benefits) for concrete details on what we envision.
 
-## Why the Project should drive the selection of maintainers
+## The Project has visibility into needs that aren't always apparent from the outside
 
 The fund is structured so that, by default, the Rust project, rather than the sponsors themselves, selects which maintainers to hire and which areas they should focus on. This allows us to aggregate smaller donations and put them to good use. It also means that less visible areas of the project, such as moderation or infrastructure, will be easier to support, as project members are aware of those needs.
+
+## But some sponsors will want to fund maintenance in particular areas, and that's ok too
 
 Although the default is for the project to pick the area of focus for a MiR, we do allow the Funding team the latitude to offer involvement in area selection as a sponsor benefit at higher tiers. The intention is to permit a company that has a strong need on a particular area to fund a maintainer in that area, if they are willing.
 
