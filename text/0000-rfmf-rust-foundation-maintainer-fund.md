@@ -159,7 +159,7 @@ The Funding team prioritizes applications based on:
 3. any specific work that was proposed in the application;
 4. the applicant's availability and whether it suffices for the tasks they expect to perform;
 5. the results of interviews or conversations with the applicant; and
-6. any history of interpersonal or Code-of-Conduct issues known to the moderation team.
+6. any information the moderation team chooses to share regarding the applicant's conduct.
 
 The Funding team works with the Foundation to select from the applicant pool and to extend offers. The Funding team is looking for maintainers that have technical depth in the relevant area, community standing and trust within the Project, and sustained work orientation (a track record that suggests they'll thrive in a role focused on reviews, mentorship, unblocking, and the kind of long-term technical work that requires deep context).
 
