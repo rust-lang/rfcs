@@ -692,6 +692,21 @@ impl Residual for CResultResidual {
 ```
 just can't work because there's nowhere to put an arbitrary `V` in `CResult`.
 
+## Could we evolve this in future?
+
+Because this is an early desugaring to existing features, this is the easiest kind of thing to change over editions.
+There's no global system changes involved, just a careful arrangement of trait calls.
+
+That means that if it turns out that we ship it and find out over time that it's not quite what we want,
+we could use an edition change to adjust it to work differently.  It could use the edition of the `try` token
+to decide which behaviour should apply, for example.  And any maintenance cost of *this* approach on previous editions
+would remain low, since it didn't need any complex support in the first place.
+
+For example, maybe in the future we could get new type system features that would allow some kind of "fallback hinting"
+so that `try` blocks wouldn't need the homogeneity restriction to compile in the common cases, and we could thus over
+an edition change the desugaring to use that instead.  But we don't need to wait for an unknown to ship something now;
+we can switch how it works later easily enough.
+
 
 # Prior art
 [prior-art]: #prior-art
