@@ -87,7 +87,7 @@ that occurs *between* the two `?`s.  We'd be happy for it to just be the same
 To the compiler, we might want some completely different error type that happens
 to support conversion to and from `io::Error`.
 
-The easiest fix here is the annotate the return type of the closure, as follows:
+The easiest fix here is to annotate the return type of the closure, as follows:
 
 ```rust
 use std::io::{self, BufRead};
@@ -111,7 +111,7 @@ in nightly at the time of writing of this RFC.  The desugaring of `?` in a `try{
 block was essentially the same as in a function or closure, differing only in that
 it "returns" the value from the block instead of from the enclosing function.
 
-For example, this works great as it the type context available from the return type:
+For example, this works great if the type context is available from the return type:
 
 ```rust
 pub fn adding_a(x: Option<i32>, y: Option<i32>, z: Option<i32>) -> Option<i32> {
@@ -189,7 +189,7 @@ in the book, which introduces `Result` and `?` for error handling.*
 So far all the places we've used `?` it's been fine to just return from the function on an error.  Sometimes, however,
 it's nice to do a bunch of fallible operations, but still handle the errors from all of them before leaving the function.
 
-One way to do that is to make a closure an immediately call it (an *IIFE*,
+One way to do that is to make a closure and immediately call it (an *IIFE*,
 immediately-invoked function expression, to borrow a name from JavaScript):
 
 ```rust,edition2021,compile_fail
@@ -215,9 +215,9 @@ error[E0282]: type annotations needed for `Result<(String, String), E>`
 
 Why haven't we had this problem before?  Well, when we're writing *functions*
 we have to write the return type of the function down explicitly.  The `?` operator
-in a function uses that to know to which error type it should convert any error is gets.
+in a function uses that to know to which error type it should convert any error it gets.
 But in the closure, the return type is left to be inferred, and there are many possible answers,
-so it errors because of the ambiguity.
+so compilation fails because of the ambiguity.
 
 This can be fixed by using a *try block* instead:
 
@@ -396,7 +396,7 @@ rather than depending on having sufficient context to infer it.
 
 ## The `Residual` trait
 
-This trait [already exists as unstable](https://doc.rust-lang.org/1.82.0/std/ops/trait.Residual.html),
+This trait [already exists as unstable](https://doc.rust-lang.org/1.94.0/std/ops/trait.Residual.html),
 so feel free to read its rustdoc instead of here, if you prefer.  It was added to support APIs like
 [`Iterator::try_find`](https://doc.rust-lang.org/1.82.0/std/iter/trait.Iterator.html#method.try_find)
 which also need this "I want a `Try` type from the same 'family', but with a different `Output` type" behaviour.
