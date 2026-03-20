@@ -84,7 +84,7 @@ fn compile_time_default<T: Default>() -> T {
 ```
 
 Neither of the above should (or do) compile.
-The first, because you could pass any type T whose default impl could
+This is because you could pass any type `T` whose `impl` could
 
 * mutate a global static,
 * read from a file, or
@@ -111,7 +111,7 @@ So, we need some annotation that differentiates a `T: Default` bound from one th
 
 ### Const methods
 
-Traits can declare methods as `const`. Changing an existing non-`const` method to a `const` one is a breaking change, as all impls are now required to provide the method as `const`, which existing impls can't.
+Traits can declare methods as `const`. Changing an existing non-`const` method to a `const` one is a breaking change, as all impls are now required to provide the method as `const`, which existing impls can't. However, adding a new `const` method with a default body is not a breaking change.
 
 ```rust
 trait Trait {
@@ -141,7 +141,7 @@ Examples:
 * `trait Foo: const Bar {}`, requiring every type that has an impl for `Foo` (even a non-const one), to also have a trait impl with `const` methods for `Bar`.
 * `trait Foo { type Bar: const Trait; }`, requiring all the impls to provide a type for `Bar` that has a trait impl with `const` methods for `Trait`
 
-Such an impl allows you to use the type that is bound within a const block or any other const context, because we know that the type has a trait impl with `const` methods and thus
+Such an bound allows you to use the trait methods of those types within a const block or any other const context, because we know that the type has a trait impl with `const` methods and thus
 must be executable at compile time. The following function will invoke the `Default` impl of a type at compile time and store the result in a constant. Then it returns that constant instead of computing the value every time.
 
 ```rust
@@ -160,10 +160,10 @@ const trait Trait {
 }
 ```
 
+A trait needs to be `const` to use `const Trait` bounds and have `const impl`s on them.
+
 A method's (optional) default body must satisfy everything a `const fn` body must, making them callable in const contexts.
 Impls can now rely on the default methods being const, too, and don't need to override them with a const body.
-
-Free functions are unaffected and will stay as `const fn`.
 
 ### `const` methods and non-`const` methods on the same trait
 
@@ -199,10 +199,11 @@ const fn default<T: const Default>() -> T {
 }
 
 const _: () = default();
+// Ok! Since `(): const Default`
 
 fn main() {
-    let _: Box<u32> = default();
-    //~^ ERROR: <Box<u32> as Default>::default cannot be called at compile-time
+    let _: Box<()> = default();
+    //~^ ERROR: the trait bound `Box<()>: const Default` is not satisfied
 }
 ```
 
@@ -289,32 +290,6 @@ where
 
 See [this playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=11f9dd9ebcb2e618910a3e295da9f889) for an example that works on nightly today.
 
-### Derives
-
-Most of the time you don't want to write out your impls by hand, but instead derive them as the implementation is obvious from your data structure.
-
-```rust
-#[derive_const(PartialEq, Eq)]
-struct MyStruct<T>(T);
-```
-
-generates
-
-```rust
-const impl<T: [const] PartialEq> PartialEq for MyStruct<T> {
-    fn eq(&self, other: &Rhs) -> bool {
-        self.0 == other.0
-    }
-}
-
-const impl<T: [const] Eq> Eq for MyStruct<T> {}
-```
-
-For this RFC, we stick with `derive_const`, because it interacts with other ongoing bits of design work (e.g., RFC 3715)
-and we don't want to have to resolve all design questions at once to do anything.
-We encourage another RFC to integrate const/unsafe and potentially other modifiers into the derive syntax in a better way.
-If this lands prior to stabilization, we should implement the const portion of it, otherwise we'll deprecate `derive_const`.
-
 ### `[const] Destruct` trait
 
 The `Destruct` trait enables dropping types within a const context.
@@ -332,8 +307,8 @@ const fn bar<T: [const] Destruct>(t: T) {
 ```
 
 When a value of a generic type goes out of scope, it is dropped and (if it has one) its `Drop` impl gets invoked.
-This situation seems no different from other trait bounds, except that types can be dropped without implementing `Drop`
-(as they can contain types that implement `Drop`). In that case the type's drop glue is invoked.
+This situation seems no different from other trait bounds, except that types can have non-trivial destructors without implementing `Drop`
+(as they can contain types that implement `Drop`). In that case the type's drop glue needs to be invoked.
 
 The `Destruct` trait is a bound for whether a type has drop glue. This is trivally true for all types.
 
@@ -937,11 +912,35 @@ as they need to actually call the generic `FnOnce` argument or nested `PartialEq
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Better derive syntax than `#[derive_const(Trait)]`
 
-Once `unsafe` derives have been finalized, we can separately design const derives and
-deprecate `derive_const` at that time (mostly by just removing it from any documents explaining it,
-so that the ecosystem slowly migrates, maybe with an actual deprecation warning later).
+### Derives
+
+Most of the time you don't want to write out your impls by hand, but instead derive them as the implementation is obvious from your data structure.
+
+Therefore, it would be nice to have something like the following:
+
+```rust
+#[derive_const(PartialEq, Eq)]
+struct MyStruct<T>(T);
+```
+
+Which should generate
+
+```rust
+const impl<T: [const] PartialEq> PartialEq for MyStruct<T> {
+    fn eq(&self, other: &Rhs) -> bool {
+        self.0 == other.0
+    }
+}
+
+const impl<T: [const] Eq> Eq for MyStruct<T> {}
+```
+
+However, while this is easy to implement for built-in derive macros, it is unclear how to integrate this with custom derives. This interacts with other
+ongoing bits of design work (e.g., RFC 3715) and we don't want to have to resolve all design questions at once to do anything.
+
+Having derives for `const trait`s would be very useful, but this RFC intentionally avoids dealing with its complexities. The design question of how
+derives interact with `const trait`s can be answered in a different RFC, at the same time as e.g. perfect derives and `unsafe` derives.
 
 ## Migrate to `[const] fn`
 
