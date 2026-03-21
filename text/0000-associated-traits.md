@@ -1,0 +1,489 @@
+- Feature Name: `associated_traits`
+- Start Date: 2026-03-21
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rfcs#2190](https://github.com/rust-lang/rfcs/issues/2190)
+
+## Summary
+[summary]: #summary
+
+Allow traits to declare **associated traits** — named trait constraints that are defined abstractly in a trait and given concrete values in implementations. Just as associated types let a trait abstract over *which type* is used, associated traits let a trait abstract over *which constraints* are imposed. This is the trait-level analog of associated types and the Rust equivalent of Haskell's `ConstraintKinds`.
+
+```rust
+trait Container {
+    trait Elem;
+    fn process<T: Self::Elem>(&self, item: T);
+}
+
+impl Container for MyContainer {
+    trait Elem = Send + Clone;
+    fn process<T: Self::Elem>(&self, item: T) { /* ... */ }
+}
+```
+
+## Motivation
+[motivation]: #motivation
+
+### The problem
+
+Rust programmers frequently need to write traits that are *generic over constraints*. Today, the only way to parameterize a trait over which bounds should apply to some type is to fix them at the trait definition site, or to duplicate the entire trait hierarchy for each set of constraints.
+
+Consider a plugin framework:
+
+```rust
+// Without associated traits — constraints are baked in.
+trait Plugin {
+    fn run<T: Send + 'static>(&self, task: T);
+}
+```
+
+Every implementor must accept `Send + 'static`, even if some plugin systems (e.g., single-threaded ones) don't need `Send`. The only workaround today is to duplicate the trait:
+
+```rust
+trait SendPlugin {
+    fn run<T: Send + 'static>(&self, task: T);
+}
+
+trait LocalPlugin {
+    fn run<T: 'static>(&self, task: T);
+}
+```
+
+This duplication cascades through every consumer of the trait, every generic function, and every downstream crate.
+
+### Use cases from the community
+
+[rust-lang/rfcs#2190](https://github.com/rust-lang/rfcs/issues/2190) (76 👍, 12 👀) has collected real-world use cases since 2017. The most prominent:
+
+**Async runtime agnosticism.** A runtime trait can abstract over whether futures must be `Send`:
+
+```rust
+trait Runtime {
+    trait FutureConstraint;
+    fn spawn<F: Future<Output = ()> + Self::FutureConstraint>(f: F);
+}
+
+impl Runtime for TokioRuntime {
+    trait FutureConstraint = Send + 'static;
+    // ...
+}
+
+impl Runtime for LocalRuntime {
+    trait FutureConstraint = 'static;
+    // ...
+}
+```
+
+Today, the async ecosystem is split between `Send` and `!Send` runtimes, requiring parallel trait hierarchies and duplicated generic code.
+
+**Type constructor families (higher-kinded types lite).** `PointerFamily` abstracts over `Arc` vs. `Rc` by parameterizing the element constraints:
+
+```rust
+trait PointerFamily {
+    trait Bounds;
+    type Pointer<T>;
+}
+
+impl PointerFamily for ArcFamily {
+    trait Bounds = Send + Sync;
+    type Pointer<T> = Arc<T>;
+}
+
+impl PointerFamily for RcFamily {
+    trait Bounds = Clone;
+    type Pointer<T> = Rc<T>;
+}
+```
+
+**UI component frameworks.** An `Events` associated trait lets different component types declare which event traits are valid:
+
+```rust
+trait Component {
+    type Props: Clone + 'static;
+    trait Events;
+    fn new(props: Self::Props) -> Self;
+}
+```
+
+**Monitor/capability patterns.** A data structure constrains which kinds of monitors it accepts:
+
+```rust
+trait DataStructure {
+    trait Mon: Monitor;
+}
+```
+
+### Summary of benefits
+
+- Eliminates trait duplication when constraints vary per implementation.
+- Composes naturally with existing features: associated types, GATs, trait inheritance, `impl Trait`, UFCS.
+- Provides Rust's answer to Haskell's `ConstraintKinds` in an idiomatic, Rust-native way.
+- Directly addresses a long-standing community request (2017–present, 76+ upvotes).
+
+## Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+### Declaring an associated trait
+
+Inside a trait body, you can declare an associated trait using the `trait` keyword, mirroring how `type` declares an associated type:
+
+```rust
+trait Container {
+    trait Elem;
+}
+```
+
+This says: "every implementation of `Container` must specify what `Elem` means as a trait bound."
+
+### Providing a value in an impl
+
+In an `impl` block, you provide the associated trait's value using `trait Name = TraitBound;`:
+
+```rust
+impl Container for MyVec {
+    trait Elem = Send + Clone;
+}
+```
+
+The value can be any valid trait bound: a single trait, a compound bound (`Send + Clone`), a trait with associated type constraints (`IntoIterator<Item = i32>`), a lifetime bound (`'static`), or `?Sized`.
+
+### Using an associated trait as a bound
+
+Once declared, an associated trait can be used anywhere a regular trait bound is expected:
+
+```rust
+fn process<C: Container, T: C::Elem>(container: &C, item: T) {
+    // T satisfies whatever Elem resolves to for this C.
+}
+```
+
+This is the *primary use*: the caller sees `T: C::Elem`, and the trait solver resolves `C::Elem` to the concrete bounds from the impl (e.g., `Send + Clone` for `MyVec`).
+
+### Declaration bounds (supertraits)
+
+You can require that every implementation's value satisfies certain minimum bounds:
+
+```rust
+trait Processor {
+    trait Constraint: Clone;  // Every impl's value must include Clone
+}
+
+impl Processor for MyProc {
+    trait Constraint = Clone + Send;  // OK: Clone is satisfied
+}
+
+impl Processor for BadProc {
+    trait Constraint = Send;  // ERROR: does not satisfy Clone
+}
+```
+
+### Defaults
+
+Associated traits can have defaults, just like associated types:
+
+```rust
+trait Serializable {
+    trait Format = serde::Serialize;  // Default; impls can override
+}
+```
+
+### Generic associated traits
+
+Associated traits can have their own generic parameters, analogous to GATs:
+
+```rust
+trait Transform {
+    trait Constraint<T: Clone>;
+}
+
+impl Transform for MyTransform {
+    trait Constraint<T: Clone> = PartialEq<T>;
+}
+```
+
+Where clauses are also supported:
+
+```rust
+trait Codec {
+    trait Decode<T> where T: Send;
+}
+```
+
+### UFCS disambiguation
+
+When a type parameter is bounded by multiple traits that each define an associated trait with the same name, you can use fully-qualified syntax to disambiguate:
+
+```rust
+trait Readable { trait Constraint; }
+trait Writable { trait Constraint; }
+
+fn transfer<T: Readable + Writable, R: <T as Readable>::Constraint>(data: R) {}
+```
+
+### `impl Trait` syntax
+
+Associated traits work with `impl Trait` in argument position:
+
+```rust
+trait Handler {
+    trait Arg;
+    fn handle(&self, arg: impl Self::Arg);
+}
+```
+
+### Where associated traits *cannot* appear
+
+- **Type position**: `let x: T::Elem = ...` is an error — associated traits are constraints, not types.
+- **`dyn` position**: `dyn T::Elem` is an error — there is no type to make into a trait object.
+- **Inherent impls**: `impl MyStruct { trait Foo = Send; }` is an error — associated traits only make sense in trait impls.
+
+### Error messages
+
+When the feature gate is absent:
+
+```
+error[E0658]: associated traits are experimental
+  --> src/lib.rs:3:5
+   |
+3  |     trait Elem;
+   |     ^^^^^^^^^^
+   |
+   = note: see issue #99999 for more information
+   = help: add `#![feature(associated_traits)]` to the crate attributes
+```
+
+When an associated trait is used in type position:
+
+```
+error: expected type, found trait `Container::Elem`
+  --> src/lib.rs:10:14
+   |
+10 |     let _x: T::Elem = todo!();
+   |             ^^^^^^^ not a type; `Elem` is an associated trait
+```
+
+## Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+### Syntax
+
+**Declaration** (in trait body):
+
+```
+trait Ident ;
+trait Ident : Bounds ;
+trait Ident = DefaultBounds ;
+trait Ident : Bounds = DefaultBounds ;
+trait Ident < GenericParams > ;
+trait Ident < GenericParams > where WhereClauses ;
+```
+
+**Implementation** (in impl body):
+
+```
+trait Ident = Bounds ;
+trait Ident < GenericParams > = Bounds ;
+```
+
+**Usage** (in bound position):
+
+```
+T: Container::Elem
+T: <C as Container>::Elem
+T: C::Elem<i32>
+```
+
+### AST representation
+
+A new variant `AssocItemKind::Trait` is added to the AST, containing:
+- `ident`: the name
+- `generics`: generic parameters and where clauses
+- `bounds`: declaration bounds (supertraits)
+- `value`: the default or impl value (a list of `GenericBound`)
+- `has_value`: whether a `= ...` value is present
+
+### HIR representation
+
+Two new variants:
+- `TraitItemKind::Trait(GenericBounds)` — in trait definitions
+- `ImplItemKind::Trait(GenericBounds)` — in trait implementations
+
+A new HIR bound variant:
+- `GenericBound::AssocTraitBound(&Ty, &PathSegment, Span, Option<DefId>)` — represents `B: C::Elem` in bound position, where the optional `DefId` carries UFCS trait disambiguation.
+
+### DefKind and middle representation
+
+- `DefKind::AssocTrait` — a new `DefKind` variant, distinct from `AssocTy`.
+- `AssocKind::Trait { name: Symbol }` — a new `AssocKind` variant at the `ty` level.
+- `AssocTag::Trait` — used to probe for associated trait items specifically.
+
+### Predicate
+
+A new clause kind is added:
+
+```rust
+ClauseKind::AssocTraitBound(AssocTraitBoundPredicate {
+    self_ty: Ty,      // The bounded type (B)
+    projection: AliasTerm,  // The projection (<C as Container>::Elem)
+})
+```
+
+### Name resolution
+
+The resolver accepts partial resolutions (paths with unresolved trailing segments) in `PathSource::Trait(AliasPossibility::Maybe)` when the base is a type parameter, `Self` type param, or `Self` type alias. This allows `C::Elem` in bound position to resolve `C` as a type parameter and leave `Elem` as an unresolved associated item.
+
+For UFCS paths (`<T as Trait>::Elem`), the resolver handles fully-qualified paths through `PathSource::TraitItem`, now extended to accept `DefKind::AssocTrait`.
+
+### Type checking
+
+**Projection**: Associated traits do *not* participate in type projection. `project()` returns `NoProgress` for `AssocTrait` projections. `type_of()` is unreachable (`span_bug!`) for associated traits.
+
+**Bound enforcement**: When `B: C::Elem` appears as a bound, the HIR type lowering emits a `ClauseKind::AssocTraitBound` predicate. The trait solver resolves this by:
+
+1. Using `selcx.select()` to find the impl for the container trait bound.
+2. Using `assoc_def()` to locate the associated trait item in the impl.
+3. Reading `explicit_item_bounds()` to get the concrete trait values.
+4. Emitting `ClauseKind::Trait(B: ConcreteTraitValue)` obligations for each value trait.
+
+This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
+
+**Declaration bounds**: When a declaration has bounds (`trait Elem: Clone;`), `compare_impl_item` checks that the impl's value satisfies those supertraits.
+
+**UFCS disambiguation**: When the optional `constraint_trait` is present in `AssocTraitBound`, the bound resolution filters candidates to only the specified trait, correctly disambiguating `<T as Readable>::Constraint` from `<T as Writable>::Constraint`.
+
+### Interaction with other features
+
+**Associated types**: Associated traits and associated types coexist in the same trait body. They cannot share the same name (`E0325`). A trait can have both `type Item` and `trait Constraint`. An associated type can be bounded by an associated trait: `type Item: Self::Constraint;`.
+
+**GATs**: Associated traits can be declared alongside GATs and used to constrain GAT parameters at the use site, as in the `PointerFamily` pattern.
+
+**Trait inheritance**: Associated traits are inherited through supertraits. If `trait Base { trait Elem; }` and `trait Extended: Base { ... }`, then `Extended` inheritors can use `Self::Elem`.
+
+**`impl Trait`**: `impl C::Elem` in return position or argument position works through opaque type lowering, creating an opaque type bounded by the associated trait.
+
+**Cross-crate**: Associated trait declarations and values are available across crate boundaries. The metadata encodes `DefKind::AssocTrait` and `explicit_item_bounds` for associated trait items.
+
+**`dyn Trait`**: Associated traits are **not** object-safe. Using `dyn T::Elem` produces a specific error: "associated traits cannot be used with dyn".
+
+### Comparison with associated types
+
+| Aspect | Associated Type | Associated Trait |
+|--------|----------------|-----------------|
+| Declaration | `type Foo;` | `trait Foo;` |
+| Value | `type Foo = i32;` | `trait Foo = Send;` |
+| Position | Type position | Bound position |
+| `type_of` | Returns the type | Unreachable (`span_bug!`) |
+| Projection | Yes (`T::Foo` is a type) | No (`T::Foo` is a constraint) |
+| DefKind | `AssocTy` | `AssocTrait` |
+| Generics | Yes (GATs) | Yes (generic associated traits) |
+| Defaults | Yes | Yes |
+| UFCS | `<T as Trait>::Foo` | `<T as Trait>::Foo` |
+
+## Drawbacks
+[drawbacks]: #drawbacks
+
+- **Language complexity**: This adds a new kind of associated item. Rust already has associated types, associated constants, and associated functions. A fourth category increases the surface area that all users, tools, and documentation must understand.
+
+- **Partial overlap with where clauses**: Some simple cases that associated traits address can be handled today via additional trait parameters or where clauses, though less ergonomically and without the ability to vary per implementation.
+
+- **Solver complexity**: The `AssocTraitBound` predicate adds a new resolution pathway in both the old and new trait solvers, which must be maintained alongside existing projection and trait obligation machinery.
+
+- **Bound expansion in method bodies**: Within an impl's method body, `T: Self::Arg` does not currently expand to the concrete bounds for the purposes of using methods from those bounds. The caller-side resolution works correctly, but within the impl body, users must add explicit bounds to use the expanded capabilities. This is a limitation that may be addressed in future work.
+
+## Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+### Why not reuse associated types?
+
+One might consider representing associated traits as associated types that happen to be traits (e.g., `type Elem: ?Sized = dyn Send;`). This was rejected for several reasons:
+
+1. **Semantic distinction**: Types and constraints are fundamentally different concepts. An associated type has a `type_of`, participates in type projection, and can appear in type position. An associated trait does none of these. Conflating them would require special-casing at every level.
+
+2. **Projection confusion**: `T::Elem` for an associated type returns a *type*. For an associated trait, it returns a *constraint*. Reusing the same mechanism would create ambiguity in the type system.
+
+3. **Proper infrastructure**: By giving associated traits their own `DefKind::AssocTrait`, `TraitItemKind::Trait`, and `ClauseKind::AssocTraitBound`, each compiler pass can handle them explicitly rather than routing through type machinery and failing at runtime.
+
+### Why not trait aliases?
+
+[Trait aliases](https://github.com/rust-lang/rfcs/pull/1733) (e.g., `trait SendClone = Send + Clone;`) are fixed at definition time. They cannot vary per implementation of an enclosing trait. Associated traits are the "associated" analog — they provide the same expressiveness that associated types provide over type aliases.
+
+### Why not additional generic parameters?
+
+Instead of `trait Container { trait Elem; }`, one could write `trait Container<Elem: ?Sized> { ... }`. This makes `Elem` a *generic parameter*, not an *associated item*. The tradeoffs mirror those of generic parameters vs. associated types:
+
+- Generic parameters allow multiple implementations for the same type (e.g., `impl Container<Send> for Vec` and `impl Container<Clone> for Vec`), which is usually not desired.
+- Associated items enforce that each impl provides exactly one value, which is the common case.
+- Associated items don't appear in the type signature at every use site.
+
+### Impact of not doing this
+
+Without associated traits, the Rust ecosystem will continue to duplicate trait hierarchies when constraints need to vary (as seen with async runtimes, serialization frameworks, and plugin systems). This duplication is a persistent source of boilerplate and a barrier to writing truly generic code.
+
+## Prior art
+[prior-art]: #prior-art
+
+### Haskell: ConstraintKinds
+
+GHC's [`ConstraintKinds`](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/constraint_kind.html) extension allows constraints to be used as first-class kinds. A type family can return a constraint:
+
+```haskell
+type family ElemConstraint (c :: * -> *) :: Constraint
+type instance ElemConstraint MyVec = (Send, Clone)
+```
+
+This is more general than associated traits (constraints can appear in more positions), but Rust's associated traits achieve the most commonly needed subset — parameterizing traits over constraints — in a way that fits Rust's existing associated item pattern.
+
+### Haskell: RMonad
+
+The [`rmonad`](https://hackage.haskell.org/package/rmonad) library uses `ConstraintKinds` to define restricted monads, enabling data structures like `Set` (which requires `Ord`) to be monads. Associated traits in Rust would enable similar patterns: a `Family` trait with `trait Bounds` can restrict what types a type constructor accepts.
+
+### Scala: Abstract type members
+
+Scala's abstract type members serve a similar role to Rust's associated types, and Scala's type bounds can express constraint parameterization. However, Scala does not have a direct analog to "associated trait constraints" as a named, implementor-chosen bound.
+
+### Swift: Associated type constraints
+
+Swift's protocol associated types can have constraints (`associatedtype Element: Sendable`), but these are fixed at the protocol level — implementors cannot choose different constraints. Rust's associated traits go further by making the constraint itself the associated item.
+
+## Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+### Before merging this RFC
+
+- **Bound expansion in method bodies**: Currently, within an impl method body, `T: Self::Arg` does not expand to allow calling methods from the concrete associated trait value. For example, if `trait Arg = IntoIterator<Item = i32>`, a method body with `T: Self::Arg` cannot call `for x in arg` without an additional explicit `T: IntoIterator` bound. The bounds are correctly enforced at the *caller* side, but the impl body does not see the expanded constraints. Should this be considered a blocker, or is it acceptable as a known limitation for the initial feature?
+
+- **`impl Self::AssocTrait` in method arguments**: The OP's example includes `fn handle(&self, arg: impl Self::Arg)`. This works syntactically, but the impl body's view of `arg`'s capabilities is limited (see above). What user expectations should we set?
+
+- **Trait generic parameters**: The OP also proposes `fn foo<Impl, trait Trait> where Impl: Trait { … }` — allowing trait-level generic parameters (not associated traits, but standalone trait parameters). This is a separate, more general feature. Should it be explicitly deferred, or should this RFC leave room for it?
+
+- **`where T::AssocTrait: OtherTrait` form**: Currently, `where T::Elem: Clone` is syntactically valid but semantically vacuous for associated traits (there is no type to bind `Clone` to). Should this be an error, a warning, or silently accepted?
+
+### Before stabilization
+
+- **Error codes**: Several associated-trait-specific error messages currently use ad-hoc `span_err` rather than dedicated error codes. Proper `EXXXX` codes should be assigned.
+
+- **Diagnostic quality**: Suggestions for common mistakes (e.g., using an associated trait in type position, forgetting to provide a value in an impl) should be polished.
+
+- **Incremental compilation**: Dedicated testing of incremental compilation scenarios with associated traits.
+
+- **New trait solver**: The implementation includes support in both the old and new trait solvers. The new solver support should be validated under `-Znext-solver`.
+
+### Out of scope for this RFC
+
+- **Negative associated trait bounds**: e.g., `trait Elem = !Send;`. This intersects with negative impls and is deferred.
+- **`dyn`-compatible associated traits**: Making traits with associated traits object-safe. This requires significant design work around dynamic dispatch and is deferred.
+- **Trait-level generic parameters**: `fn foo<trait T>()` is a distinct and more general feature.
+
+## Future possibilities
+[future-possibilities]: #future-possibilities
+
+- **Bound expansion in impl bodies**: A future enhancement could allow the compiler to automatically expand associated trait bounds within impl method bodies, so that `T: Self::Arg` where `Arg = IntoIterator` allows calling `IntoIterator` methods on `T` without an additional explicit bound.
+
+- **`where T::AssocTrait: OtherTrait`**: If the trait solver were extended to support "projection-level constraints on associated trait values," one could write `where T::Elem: Debug` to require that whatever `T::Elem` resolves to must include `Debug`.
+
+- **Trait-level generic parameters**: As proposed in the original issue, allowing `fn foo<trait Trait>()` where `Trait` is a first-class trait parameter. This is the natural dual: associated traits are to trait aliases as associated types are to type aliases; trait parameters would be to generic type parameters as associated traits are to associated types.
+
+- **Higher-kinded types interaction**: As noted by several commenters on the original issue, associated traits compose well with HKT-like patterns. A `Family` trait with `trait Bounds` and `type Of<T: Self::Bounds>` is a step toward restricted monads / restricted functors, similar to Haskell's `rmonad`.
+
+- **Non-lifetime HRTBs**: Combined with [non-lifetime higher-ranked trait bounds](https://github.com/rust-lang/rust/issues/108185) (`for<T: Foo> Bar<T>: Baz<T>`), associated traits would enable significantly more expressive generic constraint patterns.
+
+- **Const associated traits**: By analogy with const generics, one could imagine associated traits that are const-evaluable, though the motivation for this is unclear.
