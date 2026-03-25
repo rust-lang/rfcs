@@ -10,7 +10,6 @@ Allow traits to declare **associated traits** — named trait constraints that a
 
 ```rust
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Container {
     trait Elem;
@@ -340,7 +339,7 @@ For UFCS paths (`<T as Trait>::Elem`), the resolver handles fully-qualified path
 
 **Projection**: Associated traits do *not* participate in type projection. `project()` returns `NoProgress` for `AssocTrait` projections. `type_of()` is unreachable (`span_bug!`) for associated traits.
 
-**Solver support**: Associated traits are supported by both the old and new trait solvers. The old solver resolves `AssocTraitBound` predicates through its fulfillment engine (selecting the impl, extracting value bounds, emitting concrete trait obligations) and its evaluation path (mirroring the fulfillment logic for speculative queries). The new solver handles them via a dedicated `compute_assoc_trait_bound_goal` function. The feature is gated as `incomplete`, requiring both `#![feature(associated_traits)]` and `#![allow(incomplete_features)]`.
+**Solver support**: Associated traits are supported by both the old and new trait solvers. The old solver resolves `AssocTraitBound` predicates through its fulfillment engine (selecting the impl, extracting value bounds, emitting concrete trait obligations) and its evaluation path (mirroring the fulfillment logic for speculative queries). The new solver handles them via a dedicated `compute_assoc_trait_bound_goal` function. The feature is gated as `unstable`, requiring `#![feature(associated_traits)]`.
 
 **Bound enforcement**: When `B: C::Elem` appears as a bound, the HIR type lowering emits a `ClauseKind::AssocTraitBound` predicate. Both solver resolve this as follows:
 
@@ -394,8 +393,6 @@ This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
 - **Partial overlap with where clauses**: Some simple cases that associated traits address can be handled today via additional trait parameters or where clauses, though less ergonomically and without the ability to vary per implementation.
 
 - **Solver complexity**: The `AssocTraitBound` predicate adds a new resolution pathway in both the old and new trait solvers — the old solver through its fulfillment engine and evaluation path, the new solver via a dedicated `compute_assoc_trait_bound_goal` function. Both pathways must be maintained alongside existing projection and trait obligation machinery.
-
-- **Incomplete feature status**: The feature is gated as `incomplete` rather than merely `unstable`, meaning the compiler emits a warning even when the feature is enabled. Users must also write `#![allow(incomplete_features)]` to suppress this warning.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
