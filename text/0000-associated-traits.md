@@ -454,10 +454,6 @@ Swift's protocol associated types can have constraints (`associatedtype Element:
 
 ### Before merging this RFC
 
-- **Bound expansion in method bodies**: ~~Currently, within an impl method body, `T: Self::Arg` does not expand to allow calling methods from the concrete associated trait value.~~ This has been implemented. When an impl provides `trait Arg = IntoIterator<Item = i32>`, a method body with `T: Self::Arg` can now call `for x in arg` directly. The compiler expands `AssocTraitBound` predicates into concrete trait predicates in the method's parameter environment.
-
-- **`impl Self::AssocTrait` in method arguments**: `fn handle(&self, arg: impl Self::Arg)` works correctly — the impl body can use the expanded capabilities of the associated trait value.
-
 - **Trait generic parameters**: The OP also proposes `fn foo<Impl, trait Trait> where Impl: Trait { … }` — allowing trait-level generic parameters (not associated traits, but standalone trait parameters). This is a separate, more general feature. Should it be explicitly deferred, or should this RFC leave room for it?
 
 - **`where T::AssocTrait: OtherTrait` form**: Currently, `where T::Elem: Clone` is syntactically valid but semantically vacuous for associated traits (there is no type to bind `Clone` to). Should this be an error, a warning, or silently accepted?
