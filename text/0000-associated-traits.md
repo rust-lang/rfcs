@@ -9,6 +9,9 @@
 Allow traits to declare **associated traits** — named trait constraints that are defined abstractly in a trait and given concrete values in implementations. Just as associated types let a trait abstract over *which type* is used, associated traits let a trait abstract over *which constraints* are imposed. This is the trait-level analog of associated types and the Rust equivalent of Haskell's `ConstraintKinds`.
 
 ```rust
+#![feature(associated_traits)]
+#![allow(incomplete_features)]
+
 trait Container {
     trait Elem;
     fn process<T: Self::Elem>(&self, item: T);
@@ -233,7 +236,7 @@ trait Handler {
 ### Where associated traits *cannot* appear
 
 - **Type position**: `let x: T::Elem = ...` is an error — associated traits are constraints, not types.
-- **`dyn` position**: `dyn T::Elem` is an error — there is no type to make into a trait object.
+- **`dyn` position**: `dyn T::Elem` is an error. Rust type-checks generic function bodies once, before monomorphization, so the set of traits behind `T::Elem` is not yet known. Since `dyn` types require a compile-time-known vtable layout, `dyn` with an associated trait that depends on a type parameter is fundamentally incompatible with Rust's generics model. This is the same reason `dyn T` where `T` is a type parameter is rejected.
 - **Inherent impls**: `impl MyStruct { trait Foo = Send; }` is an error — associated traits only make sense in trait impls.
 
 ### Error messages
@@ -337,12 +340,17 @@ For UFCS paths (`<T as Trait>::Elem`), the resolver handles fully-qualified path
 
 **Projection**: Associated traits do *not* participate in type projection. `project()` returns `NoProgress` for `AssocTrait` projections. `type_of()` is unreachable (`span_bug!`) for associated traits.
 
-**Bound enforcement**: When `B: C::Elem` appears as a bound, the HIR type lowering emits a `ClauseKind::AssocTraitBound` predicate. The trait solver resolves this by:
+**Solver support**: Associated traits are supported by both the old and new trait solvers. The old solver resolves `AssocTraitBound` predicates through its fulfillment engine (selecting the impl, extracting value bounds, emitting concrete trait obligations) and its evaluation path (mirroring the fulfillment logic for speculative queries). The new solver handles them via a dedicated `compute_assoc_trait_bound_goal` function. The feature is gated as `incomplete`, requiring both `#![feature(associated_traits)]` and `#![allow(incomplete_features)]`.
 
-1. Using `selcx.select()` to find the impl for the container trait bound.
-2. Using `assoc_def()` to locate the associated trait item in the impl.
-3. Reading `explicit_item_bounds()` to get the concrete trait values.
-4. Emitting `ClauseKind::Trait(B: ConcreteTraitValue)` obligations for each value trait.
+**Bound enforcement**: When `B: C::Elem` appears as a bound, the HIR type lowering emits a `ClauseKind::AssocTraitBound` predicate. Both solver resolve this as follows:
+
+1. **Structurally normalize** the self-type of the projection's trait reference to determine whether the concrete impl is known.
+2. **For abstract types** (type parameters, aliases, placeholders): add only the parent trait obligation (e.g., `C: Container`) and return success. The concrete value bounds cannot be resolved yet because the impl is unknown; declaration bounds are separately validated by `compare_impl_assoc_trait` at the impl site.
+3. **For concrete types**: iterate over relevant impls matching the trait reference. For each candidate impl:
+   a. Probe the impl and unify the goal trait reference with the impl's trait reference.
+   b. Fetch the eligible associated trait item from the impl via `fetch_eligible_assoc_item`.
+   c. Read `item_bounds()` on the impl item to extract the concrete value traits.
+   d. For each value trait, emit a new `TraitPredicate` goal with the original self-type (e.g., `B: Send` if `Elem = Send`).
 
 This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
 
@@ -362,7 +370,7 @@ This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
 
 **Cross-crate**: Associated trait declarations and values are available across crate boundaries. The metadata encodes `DefKind::AssocTrait` and `explicit_item_bounds` for associated trait items.
 
-**`dyn Trait`**: Associated traits are **not** object-safe. Using `dyn T::Elem` produces a specific error: "associated traits cannot be used with dyn".
+**`dyn Trait`**: Using an associated trait as a dyn bound (`dyn T::Elem`) is rejected because Rust type-checks generic bodies before monomorphization — the concrete trait set behind `T::Elem` is not yet known, and `dyn` requires a compile-time-known vtable layout. This is the same fundamental constraint that prevents `dyn T` where `T` is a type parameter. A trait that merely *has* associated traits can still be used as `dyn Trait` — the associated trait is simply unused in the dyn context.
 
 ### Comparison with associated types
 
@@ -385,9 +393,9 @@ This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
 
 - **Partial overlap with where clauses**: Some simple cases that associated traits address can be handled today via additional trait parameters or where clauses, though less ergonomically and without the ability to vary per implementation.
 
-- **Solver complexity**: The `AssocTraitBound` predicate adds a new resolution pathway in both the old and new trait solvers, which must be maintained alongside existing projection and trait obligation machinery.
+- **Solver complexity**: The `AssocTraitBound` predicate adds a new resolution pathway in both the old and new trait solvers — the old solver through its fulfillment engine and evaluation path, the new solver via a dedicated `compute_assoc_trait_bound_goal` function. Both pathways must be maintained alongside existing projection and trait obligation machinery.
 
-- **Bound expansion in method bodies**: Within an impl's method body, `T: Self::Arg` does not currently expand to the concrete bounds for the purposes of using methods from those bounds. The caller-side resolution works correctly, but within the impl body, users must add explicit bounds to use the expanded capabilities. This is a limitation that may be addressed in future work.
+- **Incomplete feature status**: The feature is gated as `incomplete` rather than merely `unstable`, meaning the compiler emits a warning even when the feature is enabled. Users must also write `#![allow(incomplete_features)]` to suppress this warning.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -449,9 +457,9 @@ Swift's protocol associated types can have constraints (`associatedtype Element:
 
 ### Before merging this RFC
 
-- **Bound expansion in method bodies**: Currently, within an impl method body, `T: Self::Arg` does not expand to allow calling methods from the concrete associated trait value. For example, if `trait Arg = IntoIterator<Item = i32>`, a method body with `T: Self::Arg` cannot call `for x in arg` without an additional explicit `T: IntoIterator` bound. The bounds are correctly enforced at the *caller* side, but the impl body does not see the expanded constraints. Should this be considered a blocker, or is it acceptable as a known limitation for the initial feature?
+- **Bound expansion in method bodies**: ~~Currently, within an impl method body, `T: Self::Arg` does not expand to allow calling methods from the concrete associated trait value.~~ This has been implemented. When an impl provides `trait Arg = IntoIterator<Item = i32>`, a method body with `T: Self::Arg` can now call `for x in arg` directly. The compiler expands `AssocTraitBound` predicates into concrete trait predicates in the method's parameter environment.
 
-- **`impl Self::AssocTrait` in method arguments**: The OP's example includes `fn handle(&self, arg: impl Self::Arg)`. This works syntactically, but the impl body's view of `arg`'s capabilities is limited (see above). What user expectations should we set?
+- **`impl Self::AssocTrait` in method arguments**: `fn handle(&self, arg: impl Self::Arg)` works correctly — the impl body can use the expanded capabilities of the associated trait value.
 
 - **Trait generic parameters**: The OP also proposes `fn foo<Impl, trait Trait> where Impl: Trait { … }` — allowing trait-level generic parameters (not associated traits, but standalone trait parameters). This is a separate, more general feature. Should it be explicitly deferred, or should this RFC leave room for it?
 
@@ -465,18 +473,16 @@ Swift's protocol associated types can have constraints (`associatedtype Element:
 
 - **Incremental compilation**: Dedicated testing of incremental compilation scenarios with associated traits.
 
-- **New trait solver**: The implementation includes support in both the old and new trait solvers. The new solver support should be validated under `-Znext-solver`.
+- **Solver validation**: Both the old and new solver implementations should be validated across a broad range of patterns, including cross-crate scenarios, before stabilization.
 
 ### Out of scope for this RFC
 
 - **Negative associated trait bounds**: e.g., `trait Elem = !Send;`. This intersects with negative impls and is deferred.
-- **`dyn`-compatible associated traits**: Making traits with associated traits object-safe. This requires significant design work around dynamic dispatch and is deferred.
+- **`dyn` with associated traits**: `dyn T::Elem` is not supported because Rust's type system requires dyn vtable layouts to be known at type-checking time, before monomorphization resolves `T`. This is the same constraint that prevents `dyn T` for type parameters. A trait with associated traits can still be used as `dyn Trait`; only the associated trait itself cannot appear as a dyn bound.
 - **Trait-level generic parameters**: `fn foo<trait T>()` is a distinct and more general feature.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
-
-- **Bound expansion in impl bodies**: A future enhancement could allow the compiler to automatically expand associated trait bounds within impl method bodies, so that `T: Self::Arg` where `Arg = IntoIterator` allows calling `IntoIterator` methods on `T` without an additional explicit bound.
 
 - **`where T::AssocTrait: OtherTrait`**: If the trait solver were extended to support "projection-level constraints on associated trait values," one could write `where T::Elem: Debug` to require that whatever `T::Elem` resolves to must include `Debug`.
 
