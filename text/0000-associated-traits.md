@@ -232,6 +232,21 @@ trait Handler {
 }
 ```
 
+### Call-site value constraints
+
+You can constrain an associated trait's value at the call site using `where` clause syntax:
+
+```rust
+fn print_element<C: Container, T: C::Elem>(x: T)
+where
+    C::Elem: Debug,  // The impl's value for Elem must include Debug
+{
+    println!("{:?}", x);
+}
+```
+
+This is different from `T: C::Elem + Debug` (which constrains `T` independently). The value constraint `C::Elem: Debug` constrains the *Container's impl* — if the impl provides `trait Elem = Send` (no Debug), the call is rejected even if `T` happens to implement Debug.
+
 ### Where associated traits *cannot* appear
 
 - **Type position**: `let x: T::Elem = ...` is an error — associated traits are constraints, not types.
@@ -456,8 +471,6 @@ Swift's protocol associated types can have constraints (`associatedtype Element:
 
 - **Trait generic parameters**: The OP also proposes `fn foo<Impl, trait Trait> where Impl: Trait { … }` — allowing trait-level generic parameters (not associated traits, but standalone trait parameters). This is a separate, more general feature. Should it be explicitly deferred, or should this RFC leave room for it?
 
-- **`where T::AssocTrait: OtherTrait` form**: Currently, `where T::Elem: Clone` is syntactically valid but semantically vacuous for associated traits (there is no type to bind `Clone` to). Should this be an error, a warning, or silently accepted?
-
 ### Before stabilization
 
 - **Error codes**: Several associated-trait-specific error messages currently use ad-hoc `span_err` rather than dedicated error codes. Proper `EXXXX` codes should be assigned.
@@ -476,8 +489,6 @@ Swift's protocol associated types can have constraints (`associatedtype Element:
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
-
-- **`where T::AssocTrait: OtherTrait`**: If the trait solver were extended to support "projection-level constraints on associated trait values," one could write `where T::Elem: Debug` to require that whatever `T::Elem` resolves to must include `Debug`.
 
 - **Trait-level generic parameters**: As proposed in the original issue, allowing `fn foo<trait Trait>()` where `Trait` is a first-class trait parameter. This is the natural dual: associated traits are to trait aliases as associated types are to type aliases; trait parameters would be to generic type parameters as associated traits are to associated types.
 
