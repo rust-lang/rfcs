@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3721](https://github.com/rust-lang/rfcs/pull/3721)
 - Rust Issue: [rust-lang/rust#154391](https://github.com/rust-lang/rust/issues/154391)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Tweak the behaviour of `?` inside `try{}` blocks to not depend on context,
@@ -12,7 +12,7 @@ in order to work better with methods and need type annotations less often.
 The stable behaviour of `?` when *not* in a `try{}` block is untouched.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 > I do have some mild other concerns about try block -- in particular it is
@@ -178,7 +178,7 @@ pub fn concat_lines(reader: impl BufRead) -> io::Result<String> {
 [#70941](https://github.com/rust-lang/rust/issues/70941).)
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 *Assuming this would go some time after [9.2](https://doc.rust-lang.org/stable/book/ch09-02-recoverable-errors-with-result.html)
@@ -341,7 +341,7 @@ try { (x?, y?, z?) }
 ```
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 > ⚠️ This section describes a possible implementation that works with today's type system. ⚠️
@@ -351,13 +351,13 @@ try { (x?, y?, z?) }
 > If it ended up happening with custom typing rules instead, or something, that would be fine.
 > But it's worth emphasizing that it's doable entirely via a desugaring, no new solver features.
 
-## Grammar
+### Grammar
 
 No change to the grammar; it stays just
 
 *TryBlockExpression*: `try` *BlockExpression*
 
-## Desugaring
+### Desugaring
 
 Today on nightly, `x?` *inside a `try` block* desugars as follows, after [RFC 3058]:
 
@@ -394,7 +394,7 @@ This still uses `FromResidual::from_residual` to actually create the value,
 but determines the type to return from the argument via the `Residual` trait
 rather than depending on having sufficient context to infer it.
 
-## The `Residual` trait
+### The `Residual` trait
 
 This trait [already exists as unstable](https://doc.rust-lang.org/1.94.0/std/ops/trait.Residual.html),
 so feel free to read its rustdoc instead of here, if you prefer.  It was added to support APIs like
@@ -415,7 +415,7 @@ pub trait Residual<V> {
 }
 ```
 
-### Implementations
+#### Implementations
 
 ```rust
 impl<T, E> ops::Residual<T> for Result<convert::Infallible, E> {
@@ -432,17 +432,17 @@ impl<B, C> ops::Residual<C> for ControlFlow<B, convert::Infallible> {
 ```
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This adds extra nuance to the `?` operator, so one might argue that the extra convenience of homogeneity
 is not worth the complexity and that adding type annotations instead is fine.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Supporting methods
+### Supporting methods
 
 Today on nightly, with potentially-heterogeneous `try` blocks, this code doesn't work
 
@@ -465,7 +465,7 @@ error[E0282]: type annotations needed
 With the homogeneous `try` blocks in this RFC, however, that works because the type flows "out" from the try block,
 rather than "in" from how the block is used.
 
-## Supporting generics
+### Supporting generics
 
 Essentially the same as the previous section, but this doesn't work on nightly either:
 
@@ -495,7 +495,7 @@ help: consider giving `x` an explicit type
 
 Homogeneous `try` fixes this as well.
 
-## The simple case deserves the simple syntax
+### The simple case deserves the simple syntax
 
 We could add a new `try homogeneous { ... }` block with this behaviour, and leave `try { ... }` as heterogeneous.
 
@@ -507,7 +507,7 @@ Maybe we want an `anyhow::Result<_>`, maybe we want our own `Result<_, crate::Cu
 Thus if they commonly need a type annotation anyway, we can consider in the future (see below for more)
 an annotated version of `try` blocks that allow heterogeneity, while leaving the short thing for the simple case.
 
-## Manual error conversion is always possible
+### Manual error conversion is always possible
 
 Even inside a homogeneous `try` block, you could always *manually* add a call to convert an error.
 
@@ -527,7 +527,7 @@ Spelling it as `.map_err(into)` might be pretty good already, which would be pos
 
 [RFC#3591]: https://github.com/rust-lang/rfcs/pull/3591
 
-## Other merging approaches
+### Other merging approaches
 
 There's a variety of other things we could do if the `?`s don't all match.
 
@@ -541,7 +541,7 @@ A nice property of the homogeneous `try` block is that you don't have to think a
 When you see `try {`, you know that they're all the same.  You can thus reorder them without worrying.
 So long as you know what family one of them is from, you know the rest are the same.
 
-## This case really is common
+### This case really is common
 
 The rust compiler uses `try` blocks in a bunch of places already.  Last I checked, they were *all* homogeneous.
 (Though of course it's possible that some have been added since then.)
@@ -635,7 +635,7 @@ if tcx.sess.opts.unstable_opts.dump_mir_graphviz {
 }
 ```
 
-## Why `Residual::TryType` isn't a GAT
+### Why `Residual::TryType` isn't a GAT
 
 One might expect that, rather than having a generic parameter on the trait, `Residual` would look like
 
@@ -692,7 +692,7 @@ impl Residual for CResultResidual {
 ```
 just can't work because there's nowhere to put an arbitrary `V` in `CResult`.
 
-## Could we evolve this in future?
+### Could we evolve this in future?
 
 Because this is an early desugaring to existing features, this is the easiest kind of thing to change over editions.
 There's no global system changes involved, just a careful arrangement of trait calls.
@@ -708,13 +708,13 @@ an edition change the desugaring to use that instead.  But we don't need to wait
 we can switch how it works later easily enough.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Languages with traditional exceptions don't return a value from `try` blocks, so don't have this problem.
 Even checked exceptions are still always the `Exception` type.
 
-## Scoping of nullability checks
+### Scoping of nullability checks
 
 In C#, the `?.` operator is scoped without a visible lexical block.
 We could try to special-case `?.`, maybe over an edition change, to do something similar instead of needing the `try { ... }` at all.
@@ -759,17 +759,17 @@ try { program.foo?.val }.should().not_be_null();
 where having the lexical scope visible emphasizes what happens if the `?` does short-circuit.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Questions to be resolved in nightly:
 - [ ] How exactly should the trait for this be named and structured?
 
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Annotated heterogeneous `try` blocks
+### Annotated heterogeneous `try` blocks
 
 We could have `try ☃️ anyhow::Result<_> { ... }` blocks that use the old `?` desugaring.
 (Insert your favourite token in place of ☃️, but please don't discuss that in *this* RFC.)
@@ -786,7 +786,7 @@ say, where that isn't a type but is instead a 1-parameter type *constructor*.
 
 [flavour]: https://github.com/rust-lang/rfcs/pull/3710
 
-## Integration with `yeet`
+### Integration with `yeet`
 
 This RFC has no conflict with [`yeet`], though it does open up some new questions.
 
