@@ -47,13 +47,13 @@ There are multiple ways that lint levels can be toggled in modern Rust. For the 
      - This **can** be easily tweaked at runtime
      - This **is always** shared between crates
      - Changing this invalidates the entire build
- - In the CLI, by means of `RUSTFLAGS=-Dwarnings` or `CARGO_BUILD_WARNINGS=deny`
+ - In the CLI, by means of `RUSTFLAGS=-Dwarnings`, `build.warnings`, or `CARGO_BUILD_WARNINGS=deny`
      - This **does not** support use with `cfg`
      - This **does not** allow fine grained control over code sections
      - This **does not** allow fine grained control over individual lints
      - This **can** be easily tweaked at runtime
      - This **is always** shared between crates
-     - Changing RUSTFLAGS invalidates the entire build, but `CARGO_BUILD_WARNINGS` does not invalidate anything.
+     - Changing RUSTFLAGS invalidates the entire build, but `CARGO_BUILD_WARNINGS` and `build.warnings` do not invalidate anything.
   - In the CLI, by choosing to call `cargo clippy`
       - (This is technically a modality too)
       - This usually rebuilds the workspace.
@@ -83,9 +83,12 @@ In essence, lints can have different effects in different contexts.
 ## Lint modalities and their use cases
 
 Overall, it's quite common in codebases to want to have different "modes" for lints for the different contexts a linter might be run in.
+
 ### Deny in CI
 
 The most common use case is wanting to have the codebase be lint-free but not hinder development while hacking on something, but have the lints gate landing on `main`. Workflows around this typically involve running CI with `-Dwarnings` (or the new `CARGO_BUILD_WARNINGS=deny`), with contributors often running `cargo check` / `cargo clippy` locally and ensuring they are warnings-clean before opening a PR.
+
+Note that while this is very common, a downside of this approach is that it's not always clear what the "severity" of a check is: warnings showing errors may make a newer contributor think they *have* to do the steps mentioned in the warning, rather than potentially silencing the lint or choosing another approach.
 
 ### Noisier PR-integrated linters or IDEs
 
@@ -245,6 +248,8 @@ clippy.some-other-noisy-lint = "warn"
 ```
 
 This creates a profile that inherits from the default profile, but with all warnings replaced with hard errors, and further tweaks to some other lints.
+
+Note that profiles cannot inherit from profiles defined in the workspace without first inheriting the to-be-inherited profile from the workspace with `lints.profile.foo.workspace = true`.
 
 This has no impact on lint levels specified in the source code, or warnings that come from places other than the warning system (in other words, this does not apply `-Dwarnings`)
 
@@ -507,6 +512,7 @@ Should using this feature require an MSRV bump? Technically crates consuming you
 # Future work
 
 
+
 ## Custom lint groups
 
 
@@ -518,6 +524,12 @@ A thing this feature does *not* let one do is toggle multiple lints at once in c
 
 It's not yet clear to me how feasible this is, or if we should have such a feature, but it's worth listing.
 
+
+## Better diagnostics for warn-to-deny lints
+
+The inheritance model proposed here, when inheriting a profile as warn-to-deny, does not retain memory of the lint originally being "warn".
+
+In theory, rustc could choose to display `deny` and `warn`-but-`-Dwarnings` lints differently. If it wishes to do that, `inherits = {profile = "default", warn = "deny"}` may also need a way to retain memory of the original lint level. This is an interesting avenue to investigate but somewhat out of scope for this RFC.
 
 ## Teaching lints
 
@@ -544,4 +556,4 @@ warn: found 5 instances of the `needless_borrow` lint:
 This works well with lint groups since you may then upgrade nits to warnings when you decide to try and fix these. PR-integrated linters can also choose to have different behavior with these if desired.
 
 
- [RFC 3730](https://github.com/rust-lang/rfcs/pull/3730)
+[RFC 3730]: https://github.com/rust-lang/rfcs/pull/3730
