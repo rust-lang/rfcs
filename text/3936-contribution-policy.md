@@ -24,7 +24,7 @@ Maintainers and moderators are **not** required to put effort into explaining re
 
 - Fully AI-generated and not carefully self-reviewed contributions are *low-effort*.
   - These are informally known as "slop" or as "vibecoding".
-  - These include those produced by [OpenClaw](https://openclaw.ai/) or similar tools.
+  - These include those produced by [OpenClaw](https://en.wikipedia.org/wiki/OpenClaw) or similar tools.
   - Code, PR descriptions, bug reports, proposals, and comments are all low-effort if fully-generated and not carefully self-reviewed.
 - Feeding maintainer questions into AI tools and then proxying the output directly back to the reviewer is *low-effort* and lacks *compassion*.
 
