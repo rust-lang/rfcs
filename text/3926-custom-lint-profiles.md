@@ -302,7 +302,7 @@ Open question: Should we go with Option 1 or 2 for tests?
 
 ### Option 1: A `test` subprofile
 
-Each lint profile contains a "test" sub-profile, which behaves like a normal profile, but is applied when you build `cfg(test)` binaries with that profile in test mode. These are integration tests, unit tests, doctests, and benchmarks.
+Each lint profile contains a "test" sub-profile, which is specified similar to a normal profile, but is applied as an override to the normal profile when you build `cfg(test)` binaries with that profile in test mode. These are integration tests, unit tests, doctests, and benchmarks.
 
 
 
@@ -453,7 +453,7 @@ Each profile's `test` subprofile is resolved by taking the "parent" profile and 
 
 When inheriting a profile, the resolved `test` subprofile is also inherited, and further overrides can be applied on top.
 
-It's not clear if `test` profiles need to support inheritance, but if we decide to support that, then an `inherits = ` key in a test subprofile will *switch* the base profile used for inheritance to being the specified profile, rather than the parent profile.
+It's not clear if `test` profiles need to support explicit inheritance from profiles other than their parent, but if we decide to support that, then an `inherits = ` key in a test subprofile will *switch* the base profile used for inheritance to being the specified profile, rather than the parent profile.
 
 ## Testing: CFG'd lints (option 2)
 
