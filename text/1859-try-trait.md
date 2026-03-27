@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1859](https://github.com/rust-lang/rfcs/pull/1859)
 - Rust Issue: [rust-lang/rust#31436](https://github.com/rust-lang/rust/issues/31436)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a trait `Try` for customizing the behavior of the `?`
 operator when applied to types other than `Result`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 ### Using `?` with types other than `Result`
@@ -75,7 +75,7 @@ and hence could be changed back to be more in line with this RFC.)
 
 The existing `try!` macro and `?` operator already allow a limit
 amount of type conversion, specifically in the error case. That is, if
-you apply `?` to a value of type `Result<T, E>`, the surrouding
+you apply `?` to a value of type `Result<T, E>`, the surrounding
 function can have some other return type `Result<U, F>`, so long as
 the error types are related by the `From` trait (`F: From<E>`). The
 idea is that if an error occurs, we will wind up returning
@@ -113,13 +113,13 @@ is a risk that users accidentally overlook error cases. To mitigate
 this risk, we adopt certain conventions (see below) in that case to
 help ensure that "accidental" interconversion does not occur.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 ### Playground
 
 Note: if you wish to experiment,
-[this Rust playgroud link](https://play.rust-lang.org/?gist=9ef8effa0c1c81bc8bb8dccb07505c54&version=stable&backtrace=0)
+[this Rust playground link](https://play.rust-lang.org/?gist=9ef8effa0c1c81bc8bb8dccb07505c54&version=stable&backtrace=0)
 contains the traits and impls defined herein.
 
 ### Desugaring and the `Try` trait
@@ -274,7 +274,7 @@ point (`err`) and the final type are constrained. The inner type is
 not.  It's unclear how to address this problem without introducing
 some form of inference fallback, which seems orthogonal from this RFC.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 ### Where and how to document it
@@ -395,7 +395,7 @@ message if `?` were not desugared when lowering from AST to HIR but
 rather when lowering from HIR to MIR; however, the use of source
 annotations may suffice.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 One drawback of supporting more types is that type inference becomes
@@ -407,7 +407,7 @@ accidentally converted into other types. This is mitigated by the use
 of newtypes like `option::Missing` (rather than, say, a generic type
 like `()`).
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 ### The "essentialist" approach
@@ -485,7 +485,7 @@ Rust operator overloading traits tend to be named after the
 the trait `Try`, which seems to be the best name for the operation in
 question.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

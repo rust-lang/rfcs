@@ -3,14 +3,14 @@
 - RFC PR: [#1647](https://github.com/rust-lang/rfcs/pull/1647)
 - Rust Issue: [#38864](https://github.com/rust-lang/rust/issues/38864)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes allowing the `Self` type to be used in every position in trait
 implementations, including where clauses and other parameters to the trait being
 implemented.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 `Self` is a useful tool to have to reduce churn when the type changes for
@@ -43,7 +43,7 @@ impl<T, U, V> MyTrait for SomeStruct<T, U, V> where
 the only reason the associated type is repeated at all is to restate the bound
 on the associated type. It would be nice to reduce some of that duplication.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Instead of blocking `Self` from being used in the "header" of a trait impl,
@@ -70,18 +70,18 @@ is recursive is thrown, rather than not recognizing self.
 impl SomeTrait for Vec<Self> { }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 `Self` is always less explicit than the alternative.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Not implementing this is an alternative, as is accepting Self only in where clauses
 and not other positions in the impl header.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None

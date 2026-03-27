@@ -4,15 +4,15 @@
   - [20563](https://github.com/rust-lang/rust/pull/20563)
   - [31135](https://github.com/rust-lang/rust/issues/31135)
 
-# Summary
+## Summary
 
 Future-proof the allowed forms that input to an MBE can take by requiring
 certain delimiters following NTs in a matcher. In the future, it will be
 possible to lift these restrictions backwards compatibly if desired.
 
-# Key Terminology
+## Key Terminology
 
-- `macro`: anything invokable as `foo!(...)` in source code.
+- `macro`: anything invocable as `foo!(...)` in source code.
 - `MBE`: macro-by-example, a macro defined by `macro_rules`.
 - `matcher`: the left-hand-side of a rule in a `macro_rules` invocation, or a subportion thereof.
 - `macro parser`: the bit of code in the Rust parser that will parse the input using a grammar derived from all of the matchers.
@@ -45,7 +45,7 @@ and `$foo` and `$i` are simple NT's with `expr` and `ident` as their
 respective fragment specifiers.
 
 `$(i:ident),*` is *also* an NT; it is a complex NT that matches a
-comma-seprated repetition of identifiers. The `,` is the separator
+comma-separated repetition of identifiers. The `,` is the separator
 token for the complex NT; it occurs in between each pair of elements
 (if any) of the matched fragment.
 
@@ -58,7 +58,7 @@ have a dedicated separator token.
 with proper nesting of token tree structure and correct matching of open-
 and close-delimiters.)
 
-# Motivation
+## Motivation
 
 In current Rust (version 0.12; i.e. pre 1.0), the `macro_rules` parser is very liberal in what it accepts
 in a matcher. This can cause problems, because it is possible to write an
@@ -127,7 +127,7 @@ an optional input expression: `break <expr>`.
 
 [Postponed 961]: https://github.com/rust-lang/rfcs/issues/961
 
-# Detailed design
+## Detailed design
 
 We will tend to use the variable "M" to stand for a matcher,
 variables "t" and "u" for arbitrary individual tokens,
@@ -165,7 +165,7 @@ the empty fragment, and likewise no token matches
 the empty fragment of Rust syntax. (Thus, the *only* NT that can match
 the empty fragment is a complex NT.)
 
-## The Matcher Invariant
+### The Matcher Invariant
 
 This RFC establishes the following two-part invariant for valid matchers
 
@@ -183,7 +183,7 @@ ensures that a legal macro definition will continue to assign the same
 determination as to where `... tt` ends and `uu ...` begins, even as
 new syntactic forms are added to the language.
 
-The second part says that a separated complex NT must use a seperator
+The second part says that a separated complex NT must use a separator
 token that is part of the predetermined follow set for the internal
 contents of the NT. This ensures that a legal macro definition will
 continue to parse an input fragment into the same delimited sequence
@@ -195,7 +195,7 @@ by the definition of FOLLOW below, of course.)
 The above invariant is only formally meaningful if one knows what
 FIRST and FOLLOW denote. We address this in the following sections.
 
-## FIRST and FOLLOW, informally
+### FIRST and FOLLOW, informally
 
 FIRST and FOLLOW are defined as follows.
 
@@ -229,7 +229,7 @@ reader at this point may want to jump ahead to the
 [examples of FIRST/LAST][examples-of-first-and-last] before reading
 their formal definitions.)
 
-## FIRST, LAST
+### FIRST, LAST
 
 Below are formal inductive definitions for FIRST and LAST.
 
@@ -318,18 +318,18 @@ NT could be empty (i.e. ε ∈ FIRST(interior)). (I overlooked this fact
 in my first round of prototyping.)
 
 NOTE: The above definition for LAST assumes that we keep our
-pre-existing rule that the seperator token in a complex NT is *solely* for
+pre-existing rule that the separator token in a complex NT is *solely* for
 separating elements; i.e. that such NT's do not match fragments that
-*end with* the seperator token. If we choose to lift this restriction
+*end with* the separator token. If we choose to lift this restriction
 in the future, the above definition will need to be revised
 accordingly.
 
-## Examples of FIRST and LAST
+### Examples of FIRST and LAST
 [examples-of-first-and-last]: #examples-of-first-and-last
 
 Below are some examples of FIRST and LAST.
 (Note in particular how the special ε element is introduced and
-eliminated based on the interation between the pieces of the input.)
+eliminated based on the interaction between the pieces of the input.)
 
 Our first example is presented in a tree structure to elaborate on how
 the analysis of the matcher composes. (Some of the simpler subtrees
@@ -377,7 +377,7 @@ Here are similar examples but now for LAST.
  
  * LAST(`$( $d:ident $e:expr );* $(h)* $($( f ;)+ g)*`) = { `$e:expr`, ε, `h`, `g` }
 
-## FOLLOW(M)
+### FOLLOW(M)
 
 Finally, the definition for `FOLLOW(M)` is built up incrementally atop
 more primitive functions.
@@ -404,7 +404,7 @@ incorporating details of FOLLOW(NT) in these examples):
  * FOLLOW(`$( $d:ident $e:expr )* $(;)*`) = FOLLOW(`$e:expr`) ∩ ANYTOKEN = FOLLOW(`$e:expr`)
  * FOLLOW(`$( $d:ident $e:expr )* $(;)* $( f |)+`) = ANYTOKEN
 
-## FOLLOW(NT)
+### FOLLOW(NT)
 [follow-nt]: #follownt
 
 Here is the definition for FOLLOW(NT), which maps every simple NT to
@@ -427,7 +427,7 @@ The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
 
 (Note that close delimiters are valid following any NT.)
 
-## Examples of valid and invalid matchers
+### Examples of valid and invalid matchers
 
 With the above specification in hand, we can present arguments for
 why particular matchers are legal and others are not.
@@ -440,19 +440,19 @@ why particular matchers are legal and others are not.
 
  * `( $($a:tt $b:tt)* ; )` : legal, because FIRST(`$b:tt`) = { `$b:tt` } is ⊆ FOLLOW(`tt`) = ANYTOKEN, as is FIRST(`;`) = { `;` }.
 
- * `( $($t:tt),* , $(t:tt),* )` : legal (though any attempt to actually use this macro will signal a local ambguity error during expansion).
+ * `( $($t:tt),* , $(t:tt),* )` : legal (though any attempt to actually use this macro will signal a local ambiguity error during expansion).
 
  * `($ty:ty $(; not sep)* -)` : illegal, because FIRST(`$(; not sep)* -`) = { `;`, `-` } is not in FOLLOW(`ty`).
 
  * `($($ty:ty)-+)` : illegal, because separator `-` is not in FOLLOW(`ty`).
 
 
-# Drawbacks
+## Drawbacks
 
 It does restrict the input to a MBE, but the choice of delimiters provides
 reasonable freedom and can be extended in the future.
 
-# Alternatives
+## Alternatives
 
 1. Fix the syntax that a fragment can parse. This would create a situation
    where a future MBE might not be able to accept certain inputs because the
@@ -470,7 +470,7 @@ reasonable freedom and can be extended in the future.
 3. Do nothing. This is very dangerous, and has the potential to essentially
    freeze Rust's syntax for fear of accidentally breaking a macro.
 
-# Edit History
+## Edit History
 
 - Updated by https://github.com/rust-lang/rfcs/pull/1209, which added
   semicolons into the follow set for types.
@@ -479,7 +479,7 @@ reasonable freedom and can be extended in the future.
   * replaced detailed design with a specification-oriented presentation rather than an implementation-oriented algorithm.
   * fixed some oversights in the specification that led to matchers like `$e:expr { stuff }` being accepted (which match fragments like `break { stuff }`, significantly limiting future language extensions),
   * expanded the follows sets for `ty` to include `OpenDelim(Brace), Ident(where), Or` (since Rust's grammar already requires all of `|foo:TY| {}`, `fn foo() -> TY {}` and `fn foo() -> TY where {}` to work).
-  * expanded the follow set for `pat` to include `Or` (since Rust's grammar already requires `match (true,false) { PAT | PAT => {} }` and `|PAT| {}` to work); see also [RFC issue 1336][]. Also added `If` and `In` to follow set for `pat` (to make the specifiation match the old implementation).
+  * expanded the follow set for `pat` to include `Or` (since Rust's grammar already requires `match (true,false) { PAT | PAT => {} }` and `|PAT| {}` to work); see also [RFC issue 1336][]. Also added `If` and `In` to follow set for `pat` (to make the specification match the old implementation).
 
 [RFC issue 1336]: https://github.com/rust-lang/rfcs/issues/1336
 
@@ -489,9 +489,9 @@ reasonable freedom and can be extended in the future.
 - Updated by https://github.com/rust-lang/rfcs/pull/1494, which adjusted
   the follow set for types to include block nonterminals.
 
-# Appendices
+## Appendices
 
-## Appendix A: Algorithm for recognizing valid matchers.
+### Appendix A: Algorithm for recognizing valid matchers.
 
 The detailed design above only sought to provide a *specification* for
 what a correct matcher is (by defining FIRST, LAST, and FOLLOW, and
@@ -522,7 +522,7 @@ The algorithm for recognizing valid matchers `M` is named ValidMatcher.
 To define it, we will need a mapping from submatchers of M to the
 FIRST set for that submatcher; that is handled by `FirstSet`.
 
-### Procedure FirstSet(M)
+#### Procedure FirstSet(M)
 
 *input*: a token tree `M` representing a matcher
 
@@ -555,7 +555,7 @@ return curr_first
 (Note: If we were precomputing a full table in this procedure, we would need
 a recursive invocation on (uu ...) in step 2 of the for-loop.)
 
-### Predicate ValidMatcher(M)
+#### Predicate ValidMatcher(M)
 
 To simplify the specification, we assume in this presentation that all
 simple NT's have a valid fragment specifier (i.e., one that has an

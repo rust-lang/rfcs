@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#240](https://github.com/rust-lang/rfcs/pull/240)
 - Rust Issue: [rust-lang/rust#17863](https://github.com/rust-lang/rust/issues/17863)
 
-# Summary
+## Summary
 
 This is a *conventions RFC* for settling the location of `unsafe` APIs relative
 to the types they work with, as well as the use of `raw` submodules.
@@ -15,7 +15,7 @@ The brief summary is:
 * `raw` submodules should be used only to *define* explicit low-level
   representations.
 
-# Motivation
+## Motivation
 
 Many data structures provide unsafe APIs either for avoiding checks or working
 directly with their (otherwise private) representation. For example, `string`
@@ -36,7 +36,7 @@ which of these APIs should live as methods/static functions associated with a
 type, and which should live in a `raw` submodule. Both forms appear throughout
 the standard library.
 
-# Detailed design
+## Detailed design
 
 The proposed convention is:
 
@@ -88,10 +88,10 @@ and methods:
 
 The unsafe methods and static functions for a given type should be placed in
 their own `impl` block, at the end of the module defining the type; this will
-ensure that they are grouped together in rustdoc. (Thanks @kballard for the
+ensure that they are grouped together in rustdoc. (Thanks @lilyball for the
 suggestion.)
 
-# Drawbacks
+## Drawbacks
 
 One potential drawback of these conventions is that the documentation for a
 module will be cluttered with rarely-used `unsafe` APIs, whereas the `raw`
@@ -111,7 +111,7 @@ are marked `unsafe`, so users still have to opt-in to using them. *Ed note: from
 my perspective, low-level/unsafe programming is important to support, and there
 is no reason to penalize its ergonomics given that it's opt-in anyway.*
 
-# Alternatives
+## Alternatives
 
 There are a few alternatives:
 
@@ -125,7 +125,7 @@ There are a few alternatives:
   them `unsafe`), and given that rustdoc could easily provide API grouping, it's
   unclear exactly what the benefit is.
 
-* ([Suggested by @kballard](https://github.com/rust-lang/rfcs/pull/240#issuecomment-55635468)):
+* ([Suggested by @lilyball](https://github.com/rust-lang/rfcs/pull/240#issuecomment-55635468)):
 
   > Use `raw` for functions that construct a value of the type without checking
   > for one or more invariants.
@@ -140,7 +140,7 @@ There are a few alternatives:
   some_string.slice_unchecked(start, end)
   ```
 
-* Another suggestion by @kballard is to keep the basic structure of `raw`
+* Another suggestion by @lilyball is to keep the basic structure of `raw`
   submodules, but use associated types to improve the ergonomics. Details (and
   discussions of pros/cons) are in
   [this comment](https://github.com/rust-lang/rfcs/pull/240/files#r17572875).
@@ -151,7 +151,7 @@ There are a few alternatives:
   driving principle. The ergonomics of moving *everything* into free functions
   in a `raw` submodule are quite poor.
 
-# Unresolved questions
+## Unresolved questions
 
 The `core::raw` module provides structs with public representations equivalent
 to several built-in and library types (boxes, closures, slices, etc.). It's not

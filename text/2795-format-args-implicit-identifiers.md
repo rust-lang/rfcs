@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#67984](https://github.com/rust-lang/rust/issues/67984)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add implicit named arguments to `std::format_args!`, inferred from the format string literal.
@@ -28,7 +28,7 @@ Implicit named argument capture only occurs when a corresponding named argument 
 (Downstream macros based on `format_args!` include but are not limited to `format!`, `print!`, `write!`, `panic!`, and macros in the `log` crate.)
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The macros for formatting text are a core piece of the Rust standard library. They're often one of the first things users new to the language will be exposed to. Making small changes to improve the ergonomics of these macros will improve the language for all - whether new users writing their first lines of Rust, or seasoned developers scattering logging calls throughout their program.
@@ -36,7 +36,7 @@ The macros for formatting text are a core piece of the Rust standard library. Th
 This proposal to introduce implicit named arguments aims to improve ergonomics by reducing the amount of typing needed in typical invocations of these macros, as well as (subjectively) improving readability.
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 If this proposal were captured, the following (currently invalid) macro invocation:
@@ -70,7 +70,7 @@ As a result of this change, downstream macros based on `format_args!` would also
 
 (This is not an exhaustive list of the many macros this would affect. In discussion of this RFC if any further commonly-used macros are noted, they may be added to this list.)
 
-## Precedence
+### Precedence
 
 Implicit arguments would have lower precedence than the existing named arguments `format_args!` already accepts. For example, in the example below, the `person` named argument is explicit, and so the `person` variable in the same scope would not be captured:
 
@@ -80,7 +80,7 @@ Implicit arguments would have lower precedence than the existing named arguments
     // expands to "hello Snoopy".
     println!("hello {person}", person="Snoopy");
 
-Indeed, in this example above the `person` variable would be unused, and so in this case the unused varible warning will apply, like the below:
+Indeed, in this example above the `person` variable would be unused, and so in this case the unused variable warning will apply, like the below:
 
     warning: unused variable: `person`
      --> src/foo.rs:X:Y
@@ -92,14 +92,14 @@ Indeed, in this example above the `person` variable would be unused, and so in t
 
 Because implicit named arguments would have lower precedence than explicit named arguments, it is anticipated that no breaking changes would occur to existing code by implementing this RFC.
 
-## Generated Format Strings
+### Generated Format Strings
 
 `format_args!` can accept an expression instead of a string literal as its first argument. `format_args!` will attempt to expand any such expression to a string literal. If successful then the `format_args!` expansion will continue as if the user had passed that string literal verbatim.
 
 No implicit named argument capture will be performed if the format string is generated from an expansion. See the [macro hygiene](#macro-hygiene) discussion for the motivation behind this decision.
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The implementation pathway is directly motivated by the guide level explanation given above:
@@ -116,9 +116,9 @@ The implementation pathway is directly motivated by the guide level explanation 
 
    If this RFC were implemented, instead of this resulting in an error, this named argument would be treated as an **implicit named argument** and the final result of the expansion of the `format_args!` macro would be the same as if a named argument, with name equivalent to the identifier, had been provided to the macro invocation.
 
-   Because `person` is only treated as an implicit named argument if no exisiting named argument can be found, this ensures that implicit named arguments have lower precedence than explicit named arguments.
+   Because `person` is only treated as an implicit named argument if no existing named argument can be found, this ensures that implicit named arguments have lower precedence than explicit named arguments.
 
-## Macro Hygiene
+### Macro Hygiene
 [macro-hygiene]: #macro-hygiene
 
 
@@ -146,14 +146,14 @@ The following are motivations why this RFC argues this case:
       4 |     println!(concat!("hello {person}"));
         |              ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
 
-* The expression may expand to a format string which contains new identifiers not written by the users, bypassing macro hygiene in suprising ways. For example, if the `concat!` macro did not have the hygiene issue described above, it could be to "splice together" an implicit named argument like so:
+* The expression may expand to a format string which contains new identifiers not written by the users, bypassing macro hygiene in surprising ways. For example, if the `concat!` macro did not have the hygiene issue described above, it could be to "splice together" an implicit named argument like so:
 
        let person = "Charlie";
        println!(concat!("hello {p", "er", "son", "}"));
 
    The RFC author argues that it appears highly undesirable that implicit capture of the `person` identifier should occur in this example given above.
 
-* Using the hygienic context of the format string for implicit named arguments can have potentially suprising results even just with `macro_rules!` macros.
+* Using the hygienic context of the format string for implicit named arguments can have potentially surprising results even just with `macro_rules!` macros.
 
   For example, the RFC author found that with a proof-of-concept implementation of implicit named arguments the invocation below would print `"Snoopy"`:
 
@@ -184,7 +184,7 @@ The following are motivations why this RFC argues this case:
 
 These appear to give strong motivation to disable implicit argument capture when `format_args!` expands an expression instead of a verbatim string literal.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 As the syntax proposed does not currently compile, the author of this RFC does not foresee concerns about this addition creating breaking changes to Rust code already in production.
@@ -207,7 +207,7 @@ This is not world-ending, as users who only know about implicit named arguments 
 While two lines rather than one, it is still perfectly readable code.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The core macro resonsible for all Rust's string formatting mechanism is `std::format_args!`. It requires a format string, as well as a corresponding number of additional arguments which will be substituted into appropriate locations in the format string.
@@ -218,7 +218,7 @@ There are two types of arguments `format_args!` can accept:
 
        format_args!("The {}'s name is {}.", species, name)
 
-2. Named arguments, which require more typing but (in the RFC author's experience) have the upside that the the format string itself is easier to read:
+2. Named arguments, which require more typing but (in the RFC author's experience) have the upside that the format string itself is easier to read:
 
        format_args!(
            "The {species}'s name is {name}",
@@ -237,7 +237,7 @@ Implicit named arguments seek to combine the brevity of positional arguments wit
 
     format_args!("The {species}'s name is {name}")
 
-## Alternative Implementations and Syntax
+### Alternative Implementations and Syntax
 
 Users who wish to use implicit named arguments could make use of a third-party crate, for example the existing [fstrings crate](https://crates.io/crates/fstrings), which was built during early discussion about this proposal. This RFC accepts that deferring to a third-party crate is a reasonable option. It would however miss out on the opportunity to provide a small and straightforward ergnomic boost to many macros which are core to the rust language as well as the ecosytem which is derived from these standard library macros.
 
@@ -245,7 +245,7 @@ For similar reasons this RFC would argue that introducing a new alternative macr
 
 An alternative syntax for implicit named arguments is welcomed by this RFC if it can be argued why it is preferable to the RFC's proposed form. The RFC author argues the chosen syntax is the most suitable, because it matches the existing syntax for named arguments.
 
-## Alternative Solution - Interpolation
+### Alternative Solution - Interpolation
 [interpolation]: #interpolation
 
 Some may argue that if it becomes possible to write identifiers into format strings and have them passed as implicit named arguments to the macro, why not make it possible to do similar with expressions. For example, these macro invocations seem innocent enough, reasonably readable, and are supported in Python 3 and Javascript's string formatting mechanisms:
@@ -261,7 +261,7 @@ If any expressions beyond identifiers become accepted in format strings, then th
 
 This no longer seems easily readable to the RFC author.
 
-### Proposed Interpolation Syntax
+#### Proposed Interpolation Syntax
 
 Early review of this RFC raised an observation that the endpoint of such feature creep would be that eventually Rust would embrace interpolation of any expressions inside these macros.
 
@@ -274,9 +274,9 @@ Indeed the RFC's perverse example reads slightly easier with this syntax:
 
     println!("hello {( if self.foo { &self.person } else { &self.other_person } )}");
 
-Because the interpolation syntax `{(expr)}` is orthogonal to positional `{}` and named `{ident}` argument syntax, and is a superset of the functionality which would be offered by implict named arguments, the argument was made that we should make the leap directly to interpolation without introducing implicit named arguments so as to avoid complicating the existing cases.
+Because the interpolation syntax `{(expr)}` is orthogonal to positional `{}` and named `{ident}` argument syntax, and is a superset of the functionality which would be offered by implicit named arguments, the argument was made that we should make the leap directly to interpolation without introducing implicit named arguments so as to avoid complicating the existing cases.
 
-### Argument Against Interpolation
+#### Argument Against Interpolation
 
 It should first be noted that the interpolation in other languages is often a language feature; if they have string formatting functions they typically do not enjoy syntax-level support. Instead other language formatting functions often behave similarly to Rust's positional and/or named arguments to formatting macros.
 
@@ -308,17 +308,17 @@ The RFC author would argue that if named arguments (implicit or regular) become 
 
 Similar to how implicit named arguments can be offered by third-party crates, interpolation macros already exist in the [ifmt crate](https://crates.io/crates/ifmt).
 
-### Interpolation Summary
+#### Interpolation Summary
 
 The overall argument is not to deny that the standard library macros in question would not become more expressive if they were to gain fully interpolation.
 
-However, the RFC author argues that adding interpolation to these macros is less neccessary to improve ergonomics when comparing against other languages which chose to introduce language-level interpolation support. Introduction of implicit named arguments will cater for many of the common instances where interpolation would have been desired. The existing positional and named arguments can accept arbitrary expressions, and are not so unergonomic that they feel overly cumbersome when the expression in question is also nontrivial.
+However, the RFC author argues that adding interpolation to these macros is less necessary to improve ergonomics when comparing against other languages which chose to introduce language-level interpolation support. Introduction of implicit named arguments will cater for many of the common instances where interpolation would have been desired. The existing positional and named arguments can accept arbitrary expressions, and are not so unergonomic that they feel overly cumbersome when the expression in question is also nontrivial.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## Field Init Shorthand
+### Field Init Shorthand
 
 Rust already has another case in the language where the single identifier case is special-cased:
 
@@ -330,9 +330,9 @@ Rust already has another case in the language where the single identifier case i
 
 This syntax is widely used and clear to read. It's [introduced in the Rust Book as one of the first topics in the section on structs](https://doc.rust-lang.org/book/ch05-01-defining-structs.html#using-the-field-init-shorthand-when-variables-and-fields-have-the-same-name). This sets a precedent that the Rust language is prepared to accept special treatment for single identifiers when it keeps syntax concise and clear.
 
-## Other languages
+### Other languages
 
-A number of languages support string-interpolation functionality with similar syntax to what Rust's formatting macros. The RFC author's influence comes primarily from Python 3's "f-strings" and Javscript's backticks.
+A number of languages support string-interpolation functionality with similar syntax to what Rust's formatting macros. The RFC author's influence comes primarily from Python 3's "f-strings" and JavaScript's backticks.
 
 The following code would be the equivalent way to produce a new string combining a `greeting` and a `person` in a variety of languages:
 
@@ -363,7 +363,7 @@ The following code would be the equivalent way to produce a new string combining
 
 It is the RFC author's experience that these interpolating mechanisms read easily from left-to-right and it is clear where each variable is being substituted into the format string.
 
-In the Rust formatting macros as illustrated above, the positional form suffers the drawback of not reading strictly from left to right; the reader of the code must refer back-and-forth between the format string and the argument list to determine where each variable will be subsituted. The named form avoids this drawback at the cost of much longer code.
+In the Rust formatting macros as illustrated above, the positional form suffers the drawback of not reading strictly from left to right; the reader of the code must refer back-and-forth between the format string and the argument list to determine where each variable will be substituted. The named form avoids this drawback at the cost of much longer code.
 
 Implementing implicit named arguments in the fashion suggested in this RFC would eliminate the drawbacks of each of the Rust forms and permit new syntax much closer to the other languages:
 
@@ -374,10 +374,10 @@ It should be noted, however, that other languages' string interpolation mechanis
 
 Please see the discussion on [interpolation](#interpolation) as an alternative to this RFC.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Interaction with `panic!`
+### Interaction with `panic!`
 
 The `panic!` macro forwards to `format_args!` for string formatting. For example, the below code compiles on stable Rust today:
 
@@ -396,7 +396,7 @@ However, in current stable Rust the `panic!` macro does not forward to `format_a
 
 This semantic of `panic!` has previously been acknowledged as a "papercut", for example in [this Rust issue](https://github.com/rust-lang/rust/issues/22932). However, it has so far been left as-is because changing the design was low priority, and changing it may break existing code.
 
-If this RFC were to be implemented, users will very likely expect invoking `panic!` with only a string literal will capture any implicit named arguments. This semantic would quickly become percieved as a major bug rather than a papercut.
+If this RFC were to be implemented, users will very likely expect invoking `panic!` with only a string literal will capture any implicit named arguments. This semantic would quickly become perceived as a major bug rather than a papercut.
 
 Implementing this RFC therefore would bring strong motivation for making a small breaking change to `panic!`: when a single argument passed to panic is a string literal, instead of the final panic message being that literal (the current behavior), the final panic message will be the formatted literal, substituting any implicit named arguments denoted in the literal.
 
@@ -420,7 +420,7 @@ The details of this pathway to change panic are open to discussion. Some possibl
 
 Whichever route is chosen, it is agreed that this RFC should not be stabilised unless `format!("{foo}")` and `panic!("{foo}")` can be made consistent with respect to implicit named arguments.
 
-## Should implicit named arguments be captured for formatting parameters?
+### Should implicit named arguments be captured for formatting parameters?
 
 Some of the formatting traits can accept additional formatting parameters to control how the argument is displayed. For example, the precision with which to display a floating-point number:
 
@@ -439,7 +439,7 @@ The RFC author believes Rust users familiar with implicit named arguments may ex
 
 All such formatting parameters can refer to arguments using dollar syntax, and so this question also applies to them.
 
-## Should we improve the error for invalid expressions in format strings?
+### Should we improve the error for invalid expressions in format strings?
 
 Users familiar with implicit named arguments may attempt to write expressions inside format strings, for example a function call:
 
@@ -471,7 +471,7 @@ An new message which informs the users of alternative possibilities may be helpf
 
 It is not clear how significant a change this might require to `format_args!`'s parsing machinery, or how this error message might scale with the complexity of the format string in question.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The main alternative raised by this RFC is interpolation, which is a superset of the functionality offered by implicit named arguments. However, for reasons discussed above, interpolation is not the objective of this RFC.

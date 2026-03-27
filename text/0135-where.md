@@ -2,7 +2,7 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/135
 - Rust Issue #: https://github.com/rust-lang/rust/issues/17657
 
-# Summary
+## Summary
 
 Add `where` clauses, which provide a more expressive means of
 specifying trait parameter bounds. A `where` clause comes after a
@@ -28,7 +28,7 @@ to the following:
 
 The full grammar can be found in the detailed design.
 
-# Motivation
+## Motivation
 
 The high-level bit is that the current bounds syntax does not scale to
 complex cases. Introducing `where` clauses is a simple extension that
@@ -66,7 +66,7 @@ parameter itself but rather a type that includes the type parameter.
 
 #### Partially generic types
 
-One situation where this is occurs is when you want to write functions
+One situation where this occurs is when you want to write functions
 where types are partially known and have those interact with other
 functions that are fully generic. To explain the situation, let's
 examine some code adapted from rustc.
@@ -83,7 +83,7 @@ value:
 Now, imagine I want to write some code that operates over all keys
 whose value is an `Option<T>` for some `T`:
 
-    fn example<T,K:Key<Option<T>>(table: &Table<Option<T>, K>) { ... }
+    fn example<T,K:Key<Option<T>>>(table: &Table<Option<T>, K>) { ... }
     
 This seems reasonable, but this code will not compile. The problem is
 that the compiler needs to know that the value type implements
@@ -98,7 +98,7 @@ There are workarounds. I might write a new trait `OptionalValue`:
 
 and then I could write my example as:
 
-    fn example<T,O:OptionalValue<T>,K:Key<O>(table: &Table<O, K>) { ... }
+    fn example<T,O:OptionalValue<T>,K:Key<O>>(table: &Table<O, K>) { ... }
 
 But this is making my example function, already a bit complicated,
 become quite obscure.
@@ -296,7 +296,7 @@ The usual solution to this problem is to employ a where clause:
 We can also employ where clauses with object types via a syntax like
 `&Iterator<where E=int>` (admittedly somewhat wordy)
 
-## Readability
+### Readability
 
 When writing very generic code, it is common to have a large number of
 parameters with a large number of bounds. Here is some example
@@ -340,7 +340,7 @@ to focus on the types and signatures, and come to the bounds
 later. Where clauses help to separate these distinctions. Naturally,
 your mileage may vary. - nmatsakis
 
-# Detailed design
+## Detailed design
 
 ### Where can where clauses appear?
 
@@ -413,11 +413,11 @@ particular meaning, since the callee knows all types involved. This is
 a conservative choice: if we find that we do desire a particular
 interpretation for them, we can always make them legal later.
 
-# Drawbacks
+## Drawbacks
 
 This RFC introduces two ways to declare a bound.
 
-# Alternatives
+## Alternatives
 
 **Remove the existing trait bounds.** I decided against this both to
 avoid breaking lots of existing code and because the existing syntax
@@ -444,7 +444,7 @@ This is unfortunately somewhat ambiguous, since a bound like `T:Eq`
 could either be declared a type parameter `T` or as a condition that
 the (existing) type `T` implement `Eq`.
 
-**Use a colon intead of the keyword.** There is some precedent for
+**Use a colon instead of the keyword.** There is some precedent for
 this from the type state days. Unfortunately, it doesn't work with
 traits due to the supertrait list, and it also doesn't look good with
 the use of `:` as a trait-bound separator:

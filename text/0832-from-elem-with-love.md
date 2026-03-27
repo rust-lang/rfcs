@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#832](https://github.com/rust-lang/rfcs/pull/832)
 - Rust Issue: [rust-lang/rust#22414](https://github.com/rust-lang/rust/issues/22414)
 
-# Summary
+## Summary
 
 Add back the functionality of `Vec::from_elem` by improving the `vec![x; n]` sugar to work with Clone `x` and runtime `n`.
 
-# Motivation
+## Motivation
 
 High demand, mostly. There are currently a few ways to achieve the behaviour of `Vec::from_elem(elem, n)`:
 
@@ -52,7 +52,7 @@ let vec = Vec::from_elem(elem, n)
 * `#4` and `#5` are considered verbose and noisy. They also need to clone one more
 time than other methods *strictly* need to.
 
-However the issues for `#2` are *entirely* artifical. It's simply a side-effect of
+However the issues for `#2` are *entirely* artificial. It's simply a side-effect of
 forwarding the impl to the identical array syntax. We can just make the code in the
 `vec!` macro better. This naturally extends the compile-timey `[x; n]` array sugar
 to the more runtimey semantics of Vec, without introducing "another way to do it".
@@ -64,7 +64,7 @@ familiar with, while `from_elem` is just a function with arbitrary argument orde
 `vec![x; n]` is also known to be 47% more sick-rad than `from_elem`, which was
 of course deprecated to due its lack of sick-radness.
 
-# Detailed design
+## Detailed design
 
 Upgrade the current `vec!` macro to have the following definition:
 
@@ -115,14 +115,14 @@ fn main() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 Less discoverable than from_elem. All the problems that macros have relative to static methods.
 
-# Alternatives
+## Alternatives
 
 Just un-delete from_elem as it was.
 
-# Unresolved questions
+## Unresolved questions
 
 No.

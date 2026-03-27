@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#873](https://github.com/rust-lang/rfcs/pull/873)
 - Rust Issue: [rust-lang/rust#27245](https://github.com/rust-lang/rust/issues/27245)
 
-# Summary
+## Summary
 
 Allow macros in type positions
 
-# Motivation
+## Motivation
 
 Macros are currently allowed in syntax fragments for expressions,
 items, and patterns, but not for types. This RFC proposes to lift that
@@ -27,9 +27,9 @@ restriction.
   types but the resulting code can be cumbersome to read and write.
 
 
-# Detailed design
+## Detailed design
 
-## Implementation
+### Implementation
 
 The proposed feature has been prototyped at
 [this branch](https://github.com/freebroccolo/rust/commits/feature/type_macros). The
@@ -43,7 +43,7 @@ case for the `Ty_` enum so that the parser can indicate a macro
 invocation in a type position. In other words, `TyMac` is added to the
 ast and handled analogously to `ExprMac`, `ItemMac`, and `PatMac`.
 
-## Example: Heterogeneous Lists
+### Example: Heterogeneous Lists
 
 Heterogeneous lists are one example where the ability to express
 recursion via type macros is very useful. They can be used as an
@@ -189,7 +189,7 @@ fn test_append() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 There seem to be few drawbacks to implementing this feature as an
 extension of the existing macro machinery. The change adds a small
@@ -204,7 +204,7 @@ extensions to the macro system or type system might interfere with
 this functionality but it seems unlikely unless they are significant,
 breaking changes.
 
-# Alternatives
+## Alternatives
 
 There are no _direct_ alternatives. Extensions to the type system like
 data kinds, singletons, and other forms of staged programming
@@ -218,9 +218,9 @@ easier. One potential consequence of this might be more pressure to
 significantly extend the type system and other aspects of the language
 to compensate.
 
-# Unresolved questions
+## Unresolved questions
 
-## Alternative syntax for macro invocations in types
+### Alternative syntax for macro invocations in types
 
 There is a question as to whether type macros should allow `<` and `>`
 as delimiters for invocations, e.g. `Foo!<A>`. This would raise a
@@ -228,7 +228,7 @@ number of additional complications and is probably not necessary to
 consider for this RFC. If deemed desirable by the community, this
 functionality should be proposed separately.
 
-## Hygiene and type macros
+### Hygiene and type macros
 
 This RFC also does not address the topic of hygiene regarding macros
 in types. It is not clear whether there are issues here or not but it

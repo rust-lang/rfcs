@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1857](https://github.com/rust-lang/rfcs/pull/1857)
 - Rust Issue: [rust-lang/rust#43034](https://github.com/rust-lang/rust/issues/43034)
 
-# Summary
+## Summary
 [summary]: #summary
 
 I propose we specify and stabilize drop order in Rust, instead of treating
@@ -11,7 +11,7 @@ it as an implementation detail. The stable drop order should be based on the
 current implementation. This results in avoiding breakage and still allows
 alternative, opt-in, drop orders to be introduced in the future.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 After lots of discussion on [issue 744](https://github.com/rust-lang/rfcs/issues/744),
@@ -44,13 +44,13 @@ code (which could rely on the new drop order).
 
 Both requirements seem quite difficult, if not impossible, to meet. Even in case
 we figured out how to meet those requirements, the complexity of the approach would
-probably outweight the current complexity of having a non-intuitive drop order.
+probably outweigh the current complexity of having a non-intuitive drop order.
 
 Finally, in case people really dislike the current drop order, it may still
 be possible to introduce alternative, opt-in, drop orders in a backwards
 compatible way. However, that is not covered in this RFC.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The design is the same as currently implemented in rustc and is described
@@ -128,7 +128,7 @@ in the future.
 
 Closure captures are also dropped in unspecified order. At this moment, it seems
 like the drop order is similar to the order in which the captures are consumed within
-the closure (see [this blog post](https://aochagavia.github.io/blog/exploring-rusts-unspecified-drop-order/)
+the closure (see [this blog post](https://ochagavia.nl/blog/exploring-rusts-unspecified-drop-order/)
 for more details). Again, this order is closely tied to an implementation that
 we may want to change in the future, and the benefits of stabilizing it seem small.
 Furthermore, enforcing invariants through closure captures seems like a terrible footgun
@@ -138,7 +138,7 @@ a struct as an argument).
 Note: we ignore slices initialized with `[expr; n]` syntax, since they may only
 contain `Copy` types, which in turn cannot implement `Drop`.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 When mentioning destructors in the Rust book, Reference and other documentation,
@@ -153,12 +153,12 @@ it invokes `ptr::read()` or something similar).
 
 It is also important to mention that `union` types never drop their contents.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * The counter-intuitive drop order is here to stay.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Figure out how to let rustc know the language version targeted by a given program.
@@ -166,7 +166,7 @@ This way we could introduce a new drop order without breaking code.
 * Introduce a new drop order anyway, try to minimize breakage by running crater
 and hope for the best.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Where do we draw the line between the constructs where drop order should be stabilized

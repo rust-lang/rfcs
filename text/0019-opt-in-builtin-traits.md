@@ -2,7 +2,10 @@
 - RFC PR #: [rust-lang/rfcs#19](https://github.com/rust-lang/rfcs/pull/19), [rust-lang/rfcs#127](https://github.com/rust-lang/rfcs/pull/127)
 - Rust Issue #: [rust-lang/rust#13231](https://github.com/rust-lang/rust/issues/13231)
 
-# Summary
+**Note:** The `Share` trait described in this RFC was later
+[renamed to `Sync`](0123-share-to-threadsafe.md).
+
+## Summary
 
 The high-level idea is to add language features that simultaneously
 achieve three goals:
@@ -54,7 +57,7 @@ default) to a single thread. Safe wrappers around those types, like
 `Arc`, `Atomic`, or `Mutex`, can then opt back in by explicitly
 implementing `Send` (these impls would have to be designed as unsafe).
 
-# Motivation
+## Motivation
 
 Since proposing opt-in builtin traits, I have become increasingly
 concerned about the notion of having `Send` and `Share` be strictly
@@ -71,8 +74,8 @@ opt-in. There are two main reasons for my concern:
 
 To elaborate on those two points: With respect to parallelization: for
 the most part, Rust types are threadsafe "by default". To make
-something non-threadsafe, you must employ unsychronized interior
-mutability (e.g., `Cell`, `RefCell`) or unsychronized shared ownership
+something non-threadsafe, you must employ unsynchronized interior
+mutability (e.g., `Cell`, `RefCell`) or unsynchronized shared ownership
 (`Rc`). In both cases, there are also synchronized variants available
 (`Mutex`, `Arc`, etc). This implies that we can make APIs to enable
 intra-task parallelism and they will work ubiquitously, so long as
@@ -80,7 +83,7 @@ people avoid `Cell` and `Rc` when not needed. Explicit opt-in
 threatens that future, however, because fewer types will implement
 `Share`, even if they are in fact threadsafe.
    
-With respect to extensibility, it is partiularly worrisome that if a
+With respect to extensibility, it is particularly worrisome that if a
 library forgets to implement `Send` or `Share`, downstream clients are
 stuck. They cannot, for example, use a newtype wrapper, because it
 would be illegal to implement `Send` on the newtype. This implies that
@@ -116,20 +119,20 @@ All three of these (`Snapshot`, `NoManaged`, `NoDrop`) can be easily
 defined using traits with default impls.
 
 A final, somewhat weaker, motivator is aesthetics. Ownership has allowed
-us to move threading almost entirely into libaries. The one exception
+us to move threading almost entirely into libraries. The one exception
 is that the `Send` and `Share` types remain built-in. Opt-in traits
 makes them *less* built-in, but still requires custom logic in the
 "impl matching" code as well as special safety checks when
 `Safe` or `Share` are implemented.
 
 After the changes I propose, the only traits which would be
-specicially understood by the compiler are `Copy` and `Sized`. I
+specifically understood by the compiler are `Copy` and `Sized`. I
 consider this acceptable, since those two traits are intimately tied
 to the core Rust type system, unlike `Send` and `Share`.
 
-# Detailed design
+## Detailed design
 
-## Unsafe traits
+### Unsafe traits
 
 Certain traits like `Send` and `Share` are critical to memory safety.
 Nonetheless, it is not feasible to check the thread-safety of all
@@ -159,7 +162,7 @@ safe:
 It is also safe to *opt out* of an unsafe trait (as discussed in the
 next section).
     
-## Default and negative impls
+### Default and negative impls
 
 We add a notion of a *default impl*, written:
 
@@ -198,7 +201,7 @@ that `T` implements `Foo`. This allows recursive types like
     struct List<T> { data: T, next: Option<List<T>> }
 
 to be checked successfully. Otherwise, we would recursive infinitely.
-(This procedure is directly analagous to what the existing
+(This procedure is directly analogous to what the existing
 `TypeContents` code does.)
 
 Note that there exist types that expand to an infinite tree of types.
@@ -216,7 +219,7 @@ The difference between `Foo` and `List` above is that `Foo<A>`
 references `Foo<Vec<A>>`, which will then in turn reference
 `Foo<Vec<Vec<A>>>` and so on.
 
-## Modeling Send and Share using default traits
+### Modeling Send and Share using default traits
 
 The `Send` and `Share` traits will be modeled entirely in the library
 as follows. First, we declare the two traits as follows:
@@ -253,13 +256,13 @@ converts a type `T` from being `Sendable` to something `Sharable`:
     unsafe impl<T:Send> Send for Mutex<T> { }
     unsafe impl<T:Send> Share for Mutex<T> { }
 
-## The `Copy` and `Sized` traits
+### The `Copy` and `Sized` traits
 
 The final two builtin traits are `Copy` and `Share`. This RFC does not
 propose any changes to those two traits but rather relies on the
 specification from [the original opt-in RFC](0003-opt-in-builtin-traits.md).
 
-### Controlling copy vs move with the `Copy` trait
+#### Controlling copy vs move with the `Copy` trait
 
 The `Copy` trait is "opt-in" for user-declared structs and enums. A
 struct or enum type is considered to implement the `Copy` trait only
@@ -298,14 +301,14 @@ Effectively, there is a three step ladder for types:
 What is nice about this change is that when a type is defined, the
 user makes an *explicit choice* between these three options.
 
-### Determining whether a type is `Sized`
+#### Determining whether a type is `Sized`
 
 Per the DST specification, the array types `[T]` and object types like
 `Trait` are unsized, as are any structs that embed one of those
 types. The `Sized` trait can never be explicitly implemented and
 membership in the trait is always automatically determined.
 
-### Matching and coherence for the builtin types `Copy` and `Sized`
+#### Matching and coherence for the builtin types `Copy` and `Sized`
 
 In general, determining whether a type implements a builtin trait can
 follow the existing trait matching algorithm, but it will have to be
@@ -335,9 +338,9 @@ permitted to write are impls for struct and enum types that they
 define themselves. Although this rule is in the general spirit of the
 coherence checks, it will have to be written specially.
 
-# Design discussion
+## Design discussion
 
-#### Why unsafe traits
+### Why unsafe traits
 
 Without unsafe traits, it would be possible to
 create data races without using the `unsafe` keyword:
@@ -345,7 +348,7 @@ create data races without using the `unsafe` keyword:
     struct MyStruct { foo: Cell<int> }
     impl Share for MyStruct { }
 
-#### Balancing abstraction, safety, and convenience.
+### Balancing abstraction, safety, and convenience.
 
 In general, the existence of default traits is *anti-abstraction*, in
 the sense that it exposes implementation details a library might
@@ -367,20 +370,20 @@ traits. In effect, opt-in is anti-modular in its own way.
 To be more specific, imagine that library A wishes to define a
 `Untainted` trait, and it specifically opts out of `Untainted` for
 some base set of types. It then wishes to have routines that only
-operate on `Untained` data. Now imagine that there is some other
+operate on `Untainted` data. Now imagine that there is some other
 library B that defines a nifty replacement for `Vector`,
 `NiftyVector`. Finally, some library C wishes to use a
 `NiftyVector<uint>`, which should not be considered tainted, because
 it doesn't reference any tainted strings. However, `NiftyVector<uint>`
 does not implement `Untainted` (nor can it, without either library A
-or libary B knowing about one another). Similar problems arise for any
+or library B knowing about one another). Similar problems arise for any
 trait, of course, due to our coherence rules, but often they can be
 overcome with new types. Not so with `Send` and `Share`.
 
-#### Other use cases
+### Other use cases
 
 Part of the design involves making space for other use cases. I'd like
-to skech out how some of those use cases can be implemented briefly.
+to sketch out how some of those use cases can be implemented briefly.
 This is not included in the *Detailed design* section of the RFC
 because these traits generally concern other features and would be
 added under RFCs of their own.
@@ -441,7 +444,7 @@ managed data. We can summarize this in a trait `GcSafe` as follows:
     // But guardians are, even if `T` has drop.
     impl<T> GcSafe for Guardian<T> { }
 
-#### Why are `Copy` and `Sized` different?
+### Why are `Copy` and `Sized` different?
 
 The `Copy` and `Sized` traits remain builtin to the compiler. This
 makes sense because they are intimately tied to analyses the compiler
@@ -466,7 +469,7 @@ In addition, opting in to `Copy` makes sense for several reasons:
   markers but it is awkward. It becomes much more natural under this
   proposal.
 
-# Drawbacks
+## Drawbacks
 
 **API stability.** The main drawback of this approach over the
 existing opt-in approach seems to be that a type may be "accidentally"
@@ -477,7 +480,7 @@ that a library may, if they choose, opt out of `Send` and `Share`
 pre-emptively, in order to "reserve the right" to add non-sendable
 things in the future.
 
-# Alternatives
+## Alternatives
 
 - The existing opt-in design is of course an alternative.
 
@@ -492,7 +495,7 @@ things in the future.
   assumptions could be invalidated, but no compilation errors will
   result (the impl was already declared as unsafe, after all).
 
-# Phasing
+## Phasing
 
 Many of the mechanisms described in this RFC are not needed
 immediately.  Therefore, we would like to implement a minimal
@@ -512,7 +515,7 @@ What this means in practice is that using `*const T`, `*mut T`, and
 `UnsafeCell` will make a type `T` non-sendable and non-sharable, and
 `T` must then explicitly implement `Send` or `Share`.
 
-# Unresolved questions
+## Unresolved questions
 
 - The terminology of "unsafe trait" seems somewhat misleading, since
   it seems to suggest that "using" the trait is unsafe, rather than

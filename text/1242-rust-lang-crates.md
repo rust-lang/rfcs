@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1242](https://github.com/rust-lang/rfcs/pull/1242)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 This RFC proposes a policy around the crates under the rust-lang github
 organization that are not part of the Rust distribution (compiler or standard
@@ -13,7 +13,7 @@ library). At a high level, it proposes that these crates be:
 - Maintained at a similar level to the standard library, including platform support;
 - Carefully curated for quality.
 
-# Motivation
+## Motivation
 
 There are three main motivations behind this RFC.
 
@@ -61,9 +61,9 @@ eventual migration path into `std`.
    organization. The quality and future prospects of these crates varies widely,
    and we would like to begin to organize and clean them up.
 
-# Detailed design
+## Detailed design
 
-## The lifecycle of a rust-lang crate
+### The lifecycle of a rust-lang crate
 
 First, two additional github organizations are proposed:
 
@@ -118,7 +118,7 @@ is responsible for major decisions about the library after 1.0, its original
 author(s) will of course wield a great deal of influence, and their objections
 will be given due weight in the consensus process.
 
-### Relation to `std`
+#### Relation to `std`
 
 In many cases, the above description of the crate lifecycle is complete. But
 some rust-lang crates are destined for std. Usually this will be clear up front.
@@ -138,7 +138,7 @@ compatibility between users of the library externally and in `std`. In
 particular, traits and types defined in the crate are compatible across either
 way of importing them.
 
-### Deprecation
+#### Deprecation
 
 At some point a library may become stale -- either because it failed to make it
 out of the nursery, or else because it was supplanted by a superior library.
@@ -149,7 +149,7 @@ Deprecated crates move to rust-lang-deprecated and are subsequently minimally
 maintained. Alternatively, if someone volunteers to maintain the crate,
 ownership can be transferred externally.
 
-## Advertising
+### Advertising
 
 Part of the reason for having rust-lang crates is to have a clear, short list of
 libraries that are broadly useful, vetted and maintained. But where should this
@@ -165,12 +165,12 @@ This RFC doesn't specify the complete details, but proposes a basic direction:
 *badged*. But the design of a badging/curation system for crates.io is out of
 scope for this RFC.
 
-## Plan for existing crates
+### Plan for existing crates
 
 There are already a number of non-`std` crates in rust-lang. Below, we give the
 full list along with recommended actions:
 
-### Transfer ownership
+#### Transfer ownership
 
 Please volunteer if you're interested in taking one of these on!
 
@@ -178,7 +178,7 @@ Please volunteer if you're interested in taking one of these on!
 - semver
 - threadpool
 
-### Move to rust-lang-nursery
+#### Move to rust-lang-nursery
 
 - bitflags
 - getopts
@@ -191,7 +191,7 @@ Please volunteer if you're interested in taking one of these on!
 - tempdir (destined for `std` after reworking)
 - uuid
 
-### Move to rust-lang-deprecated
+#### Move to rust-lang-deprecated
 
 - fourcc: highly niche
 - hexfloat: niche
@@ -200,7 +200,7 @@ Please volunteer if you're interested in taking one of these on!
 - time: needs total overhaul destined for std
 - url: replaced by https://github.com/servo/rust-url
 
-# Drawbacks
+## Drawbacks
 
 The drawbacks of this RFC are largely social:
 
@@ -214,7 +214,7 @@ The drawbacks of this RFC are largely social:
   policy design, and the vastly increased visibility of libraries is likely a
   strong enough incentive to overcome this downside.
 
-# Alternatives
+## Alternatives
 
 The main alternative would be to not maintain other crates under the rust-lang
 umbrella, and to offer some other means of curation (the latter of which is
@@ -225,7 +225,7 @@ model has been very successful so far, and given our minimalistic plans for the
 standard library, it is very appealing to have *some* other way to apply the
 full Rust community in taking care of additional crates.
 
-# Unresolved questions
+## Unresolved questions
 
 Part of the maintenance standard for Rust is the CI infrastructure, including
 bors/homu. What level of CI should we provide for these crates, and how do we do it?

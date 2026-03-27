@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2175](https://github.com/rust-lang/rfcs/pull/2175)
 - Rust Issue: [rust-lang/rust#48215](https://github.com/rust-lang/rust/issues/48215)
 
-# Summary
+## Summary
 [summary]: #summary
 
 [`if let`]: https://github.com/rust-lang/rfcs/pull/160
@@ -37,7 +37,7 @@ let Ty(x) | Lifetime(x) = kind;
 for Ty(x) | Lifetime(x) in ::std::iter::once(kind);
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 While nothing in this RFC is currently impossible in Rust, the changes the RFC
@@ -155,7 +155,7 @@ let Ok(index) | Err(index) = slice.binary_search(&x);
 
 and we will get back the `index` in any case and continue on from there.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 [RFC 2005]: https://github.com/rust-lang/rfcs/blob/master/text/2005-match-ergonomics.md#examples
@@ -173,15 +173,15 @@ to `if let` and `while let` expressions as well as `let` and `for` statements.
 
 For examples, see [motivation].
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Grammar
+### Grammar
 
 [§ 7.2.24]: https://doc.rust-lang.org/grammar.html#if-let-expressions
 [§ 7.2.25]: https://doc.rust-lang.org/grammar.html#while-let-loops
 
-### `if let`
+#### `if let`
 
 The grammar in [§ 7.2.24] is changed from:
 
@@ -197,7 +197,7 @@ if_let_expr : "if" "let" '|'? pat [ '|' pat ] * '=' expr '{' block '}'
                else_tail ? ;
 ```
 
-### `while let`
+#### `while let`
 
 The grammar in [§ 7.2.25] is changed from:
 
@@ -211,7 +211,7 @@ to:
 while_let_expr : [ lifetime ':' ] ? "while" "let" '|'? pat [ '|' pat ] * '=' expr '{' block '}' ;
 ```
 
-### `for`
+#### `for`
 
 [for_grammar]: https://github.com/rust-lang/rust/blob/master/src/grammar/parser-lalr.y
 
@@ -227,7 +227,7 @@ to:
 expr_for : maybe_label FOR '|'? pat ('|' pat)* IN expr_nostruct block ;
 ```
 
-### `let` statements
+#### `let` statements
 
 The statement `stmt` grammar is replaced with a language equivalent to:
 
@@ -241,7 +241,7 @@ let_stmt_many ::= "let" pat_two_plus "=" expr ";"
 pat_two_plus ::= '|'? pat [ '|' pat ] + ;
 ```
 
-## Syntax lowering
+### Syntax lowering
 
 The changes proposed in this RFC with respect to `if let`, `while let`, and `for`
 can be implemented by transforming the `if/while let` constructs with a
@@ -250,7 +250,7 @@ syntax-lowering pass into `match` and `loop` + `match` expressions.
 Meanwhile, `let` statements can be transformed into a continuation with
 `match` as described below.
 
-### Examples, `if let`
+#### Examples, `if let`
 
 [`if let` RFC]: https://github.com/rust-lang/rfcs/pull/160
 
@@ -323,7 +323,7 @@ match EXPR {
 }
 ```
 
-### Examples, `while let`
+#### Examples, `while let`
 
 [`while let` RFC]: https://github.com/rust-lang/rfcs/pull/214
 
@@ -345,7 +345,7 @@ Result:
 }
 ```
 
-### Examples, `for`
+#### Examples, `for`
 
 Assuming that the semantics of `for` is defined by a desugaring from:
 
@@ -373,7 +373,7 @@ match IntoIterator::into_iter(EXPR_ITER) {
 then the only thing that changes is that `PAT` may include `|` at the top level
 in the `for` loop and the desugaring as per the section on grammar.
 
-## Desugaring `let` statements with `|` in the top-level pattern
+### Desugaring `let` statements with `|` in the top-level pattern
 
 There continues to be an exhaustivity check in `let` statements,
 however this check will now be able to support multiple patterns.
@@ -449,12 +449,12 @@ It can also be desugared to:
 ```
 
 (Both are equivalent)
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This adds more additions to the grammar and makes the compiler more complex.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 This could simply not be done.
@@ -466,7 +466,7 @@ this RFC does answer that question and instead simply mandates it now.
 Another alternative is to only deal with `if/while let` expressions but not
 `let` and `for` statements.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 The exact syntax transformations should be deferred to the implementation.

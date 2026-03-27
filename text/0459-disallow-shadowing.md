@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#459](https://github.com/rust-lang/rfcs/pull/459)
 - Rust Issue: [rust-lang/rust#19390](https://github.com/rust-lang/rust/issues/19390)
 
-# Summary
+## Summary
 
 Disallow type/lifetime parameter shadowing.
 
-# Motivation
+## Motivation
 
 Today we allow type and lifetime parameters to be shadowed. This is a
 common source of bugs as well as confusing errors. An example of such a confusing case is:
@@ -63,17 +63,17 @@ example.
 [dt]: http://discuss.rust-lang.org/t/confused-by-lifetime-error-messages-tell-me-about-it/358/41?u=nikomatsakis
 [pr]: https://github.com/rust-lang/rust/pull/18264
 
-# Detailed design
+## Detailed design
 
 Disallow shadowed type/lifetime parameter declarations. An error would
 be reported by the resolve/resolve-lifetime passes in the compiler and
 hence fairly early in the pipeline.
 
-# Drawbacks
+## Drawbacks
 
 We otherwise allow shadowing, so it is inconsistent.
 
-# Alternatives
+## Alternatives
 
 We could use a lint instead. However, we'd want to ensure that the
 lint error messages were printed *before* type-checking begins. We
@@ -86,6 +86,6 @@ lifetimes is definitely important in any case, but also somewhat
 tricky due to the extensive inference. It is usually easier and more
 reliable to help avoid the error in the first place.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

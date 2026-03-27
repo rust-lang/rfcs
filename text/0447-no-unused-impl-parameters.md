@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#447](https://github.com/rust-lang/rfcs/pull/447)
 - Rust Issue: [rust-lang/rust#20598](https://github.com/rust-lang/rust/issues/20598)
 
-# Summary
+## Summary
 
 Disallow unconstrained type parameters from impls. In practice this
 means that every type parameter must either:
@@ -13,7 +13,7 @@ means that every type parameter must either:
 
 This is an informal description, see below for full details.
 
-# Motivation
+## Motivation
 
 Today it is legal to have impls with type parameters that are
 effectively unconstrainted. This RFC proses to make these illegal by
@@ -96,7 +96,7 @@ impl<T,U> Foo for T
 }
 ```
 
-# Detailed design
+## Detailed design
 
 Type parameters are legal if they are "constrained" according to the
 following inference rules:
@@ -144,7 +144,7 @@ This last case isn't that important because impls like this, when
 used, tend to result in overflow in the compiler, but it's more
 user-friendly to report an error earlier.
 
-# Drawbacks
+## Drawbacks
 
 This pattern requires a non-local rewrite to reproduce:
 
@@ -155,7 +155,7 @@ impl<A> Foo for Bar {
 }
 ```
 
-# Alternatives
+## Alternatives
 
 To make these type parameters well-defined, we could also create a
 syntax for specifying impl type parameter instantiations and/or have
@@ -163,6 +163,6 @@ the compiler track the full tree of impl type parameter instantiations
 at type-checking time and supply this to the translation phase. This
 approach rules out the possibility of impl specialization.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

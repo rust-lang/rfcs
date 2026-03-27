@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1618](https://github.com/rust-lang/rfcs/pull/1618)
 - Rust Issue: [rust-lang/rust#33642](https://github.com/rust-lang/rust/pull/33642)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Removes the one-type-only restriction on `format_args!` arguments.
@@ -11,7 +11,7 @@ Expressions like `format_args!("{0:x} {0:o}", foo)` now work as intended,
 where each argument is still evaluated only once, in order of appearance
 (i.e. left-to-right).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The `format_args!` macro and its friends historically only allowed a single
@@ -29,7 +29,7 @@ per argument. Also the formatting logic has not received significant attention
 since after its conception, but the uses have greatly expanded over the years,
 so the mechanism as a whole certainly needs more love.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Formatting is done during both compile-time (expansion-time to be pedantic)
@@ -53,7 +53,7 @@ To implement the proposed design, the following changes in behavior are made:
 As most of the details is best described in the code itself, we only
 illustrate some of the high-level changes below.
 
-## Implicit reference resolution
+### Implicit reference resolution
 
 Currently two forms of implicit references exist: `ArgumentNext` and
 `CountIsNextParam`. Both take a positional *macro argument* and advance the
@@ -67,7 +67,7 @@ inside the parser after a *placeholder* is successfully parsed. As a natural
 consequence, both forms can be removed from the rest of the compiler,
 simplifying work later.
 
-## Named argument resolution
+### Named argument resolution
 
 Not seen elsewhere in Rust, named arguments in format macros are best seen as
 syntactic sugar, and we'd better actually treat them as such. Just after
@@ -75,14 +75,14 @@ successfully parsing the *macro arguments*, we immediately rewrite every name
 to its respective position in the argument list, which again simplifies the
 process.
 
-## Processing and expansion
+### Processing and expansion
 
 We only have absolute positional references to *macro arguments* at this point,
 and it's straightforward to remember all unique *placeholders* encountered for
 each. The unique *placeholders* are emitted into *argument objects* in order,
 to preserve evaluation order, but no difference in behavior otherwise.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Due to the added data structures and processing, time and memory costs of
@@ -90,10 +90,10 @@ compilations may slightly increase. However this is mere speculation without
 actual profiling and benchmarks. Also the ergonomical benefits alone justifies
 the additional costs.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Do nothing
+### Do nothing
 
 One can always write a little more code to simulate the proposed behavior,
 and this is what people have most likely been doing under today's constraints.
@@ -140,7 +140,7 @@ fn main() {
 While the effects are the same and nothing requires modification, the
 ergonomics is simply bad and the code becomes unnecessarily convoluted.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

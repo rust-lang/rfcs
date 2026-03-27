@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1054](https://github.com/rust-lang/rfcs/pull/1054)
 - Rust Issue: [rust-lang/rust#24543](https://github.com/rust-lang/rust/issues/24543)
 
-# Summary
+## Summary
 
 Rename or replace `str::words` to side-step the ambiguity of “a word”.
 
 
-# Motivation
+## Motivation
 
 The [`str::words`](http://doc.rust-lang.org/std/primitive.str.html#method.words) method
 is currently marked `#[unstable(reason = "the precise algorithm to use is unclear")]`.
@@ -36,7 +36,7 @@ While a Rust implementation of UAX#29 would be useful, it belong on crates.io mo
 Therefore, `std` would be better off avoiding the question of defining word boundaries entirely.
 
 
-# Detailed design
+## Detailed design
 
 Rename the `words` method to `split_whitespace`, and keep the current behavior unchanged.
 (That is, return an iterator equivalent to `s.split(char::is_whitespace).filter(|s| !s.is_empty())`.)
@@ -47,13 +47,13 @@ Optionally, keep a `words` wrapper method for a while, both `#[deprecated]` and 
 with an error message that suggests `split_whitespace` or the chosen alternative.
 
 
-# Drawbacks
+## Drawbacks
 
 `split_whitespace` is very similar to the existing `str::split<P: Pattern>(&self, P)` method,
 and having a separate method seems like weak API design. (But see below.)
 
 
-# Alternatives
+## Alternatives
 
 * Replace `str::words` with `struct Whitespace;` with a custom `Pattern` implementation,
   which can be used in `str::split`.
@@ -62,6 +62,6 @@ and having a separate method seems like weak API design. (But see below.)
   `s.split(char::is_whitespace).filter(|s| !s.is_empty())` instead.
 
 
-# Unresolved questions
+## Unresolved questions
 
 Is there a better alternative?

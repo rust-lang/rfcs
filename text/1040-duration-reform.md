@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1040](https://github.com/rust-lang/rfcs/pull/1040)
 - Rust Issue: [rust-lang/rust#24874](https://github.com/rust-lang/rust/issues/24874)
 
-# Summary
+## Summary
 
 This RFC suggests stabilizing a reduced-scope `Duration` type that is appropriate for interoperating with various system calls that require timeouts. It does not stabilize a large number of conversion methods in `Duration` that have subtle caveats, with the intent of revisiting those conversions more holistically in the future.
 
-# Motivation
+## Motivation
 
 There are a number of different notions of "time", each of which has a different set of caveats, and each of which can be designed for optimal ergonomics for its domain. This proposal focuses on one particular one: an amount of time in high-precision units.
 
@@ -61,7 +61,7 @@ Future APIs to support a broader set of [Durations][joda-duration] APIs, a [Peri
 [joda-period]: http://www.joda.org/joda-time/key_period.html
 [joda-instant]: http://www.joda.org/joda-time/key_instant.html
 
-# Detailed design
+## Detailed design
 
 A `Duration` represents a period of time represented in terms of nanosecond granularity. It has `u64` seconds and an additional `u32` nanoseconds. There is no concept of a negative `Duration`.
 
@@ -135,11 +135,11 @@ An approach like this could work for Rust, but this RFC is intentionally limited
 
 This proposal does not include a method to get a number of milliseconds from a `Duration`, because the number of milliseconds could exceed `u64`, and we would have to decide whether to return an `Option`, panic, or wait for a standard bignum. In the interest of limiting this proposal to APIs with a straight-forward design, this proposal defers such a method.
 
-# Drawbacks
+## Drawbacks
 
 The main drawback to this proposal is that it is significantly more minimal than the existing `Duration` API. However, this API is quite sufficient for timeouts, and without the caveats in the existing `Duration` API.
 
-# Alternatives
+## Alternatives
 
 We could stabilize the existing `Duration` API. However, it has a number of serious caveats:
 
@@ -164,6 +164,6 @@ First, it does not allow us to represent higher-precision timeouts on systems th
 
 Second, while this proposal does not yet include conveniences, it assumes that some conveniences should be added in the future once the design space is more fully explored. Starting with a simple type gives us space to grow into.
 
-# Unresolved questions
+## Unresolved questions
 
 * Should we implement all of the listed traits? Others?

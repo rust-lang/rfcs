@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2837](https://github.com/rust-lang/rfcs/pull/2837)
 - Rust Issue: [rust-lang/rust#67724](https://github.com/rust-lang/rust/issues/67724)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes to demote the `i686-apple-darwin` rustc target from Tier 1 to
 Tier 3, and to demote the `armv7-apple-ios`, `armv7s-apple-ios` and
 `i386-apple-ios` rustc targets from Tier 2 to Tier 3.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Apple [publicly announced][macos-announcement] that macOS 10.14 Mojave is the
@@ -35,7 +35,7 @@ effort from us infrastructure-wise.
 [macos-announcement]: https://support.apple.com/en-us/HT208436
 [ios-announcement]: https://developer.apple.com/documentation/uikit/app_and_environment/updating_your_app_from_32-bit_to_64-bit_architecture
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The first release after this RFC is merged will be the last one with Tier 1
@@ -60,7 +60,7 @@ they remove that target. Users using an Apple 32bit compiler as their host
 platforms will instead be prevented from updating at all, as no new binary
 artifact will be available.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `i686-apple-darwin`, `armv7-apple-ios`, `armv7s-apple-ios` and
@@ -76,14 +76,14 @@ The following CI builders will be removed:
 In addition, the `armv7-apple-ios`, `armv7s-apple-ios` and `i386-apple-ios`
 targets will be removed from the `dist-x86_64-apple` builder.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Users might depend on the target, and approving this RFC means they'll be stuck
 on an old compiler version forever, unless they build their own compiler and
 fix the regressions introduced in newer releases themselves.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Support for building 32bit binaries for Apple targets is shrinking as time goes
@@ -102,7 +102,7 @@ on Apple 32bit.
 
 [travis-ci-xcode-deprecation]: https://blog.travis-ci.com/2018-07-19-xcode9-4-default-announce
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 There is no precedent inside the project for the deprecation of Tier 1 targets
@@ -114,12 +114,12 @@ support for the target being dropped in Go 1.15.
 
 [go-34749]: https://github.com/golang/go/issues/34749
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 *Nothing here.*
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 *Nothing here.*

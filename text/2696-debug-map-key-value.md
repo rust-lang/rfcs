@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2696](https://github.com/rust-lang/rfcs/pull/2696)
 - Rust Issue: [rust-lang/rust#62482](https://github.com/rust-lang/rust/issues/62482)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add two new methods to `std::fmt::DebugMap` for writing the key and value part of a map entry separately:
@@ -15,7 +15,7 @@ impl<'a, 'b: 'a> DebugMap<'a, 'b> {
 }
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The format builders available to `std::fmt::Debug` implementations through the `std::fmt::Formatter` help keep the textual debug representation of Rust structures consistent. They're also convenient to use and make sure the various formatting flags are retained when formatting entries. The standard formatting API in `std::fmt` is similar to `serde::ser`:
@@ -31,7 +31,7 @@ There's one notable inconsistency though: an implementation of `SerializeMap` mu
 
 Adding separate `key` and `value` methods to `DebugMap` will align it more closely with `SerializeMap`, and make it possible to build a `Serializer` based on the standard format builders.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 In `DebugMap`, an entry is the pair of a key and a value. That means the following `Debug` implementation:
@@ -117,7 +117,7 @@ impl fmt::Debug for Map {
 
 Any incorrect calls to `key` and `value` will panic.
 
-## When to use `key` and `value`
+### When to use `key` and `value`
 
 Why would you want to use `key` and `value` directly if they're less convenient than `entry`? The reason is when the driver of the `DebugMap` is a framework like `serde` rather than a data structure directly:
 
@@ -165,7 +165,7 @@ impl<'a, 'b: 'a> SerializeMap for DebugMap<'a, 'b> {
 
 Consumers should prefer calling `entry` over `key` and `value`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `key` and `value` methods can be implemented on `DebugMap` by tracking the state of the current entry in a `bool`, and splitting the existing `entry` method into two:
@@ -228,14 +228,14 @@ impl<'a, 'b: 'a> DebugMap<'a, 'b> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The proposed `key` and `value` methods are't immediately useful for `Debug` implementors that are able to call `entry` instead. This creates a decision point where there wasn't one before. The proposed implementation is also going to be less efficient than the one that exists now because it introduces a few conditionals.
 
 On balance, the additional `key` and `value` methods are a small and unsurprising addition that enables a set of use-cases that weren't possible before, and aligns more closely with `serde`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The universal alternative of simply _not doing this_ leaves consumers that do need to format map keys independently of values with a few options:
@@ -245,15 +245,15 @@ The universal alternative of simply _not doing this_ leaves consumers that do ne
 
 Another alternative is to avoid panicking if the sequence of entries doesn't follow the expected pattern of `key` then `value`. Instead, `DebugMap` could make a best-effort attempt to represent keys without values and values without keys. However, this approach has the drawback of masking incorrect `Debug` implementations, may produce a surprising output and doesn't reduce the complexity of the implementation (we'd still need to tell whether a key should be followed by a `: ` separator or a `, `).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The `serde::ser::SerializeMap` API (and `libserialize::Encoder` for what it's worth) requires map keys and values can be serialized independently. `SerializeMap` provides a `serialize_entry` method, which is similar to the existing `DebugMap::entry`, but is only supposed to be used as an optimization.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The internal implementation could optimize the `entry` method to avoid a few redundant checks.

@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1361](https://github.com/rust-lang/rfcs/pull/1361)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Improve the target-specific dependency experience in Cargo by leveraging the
 same `#[cfg]` syntax that Rust has.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently in Cargo it's [relatively painful][issue] to list target-specific
@@ -30,7 +30,7 @@ platform specific dependency.
 This RFC proposes leveraging the same familiar syntax used in Rust itself to
 define these dependencies.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The target-specific dependency syntax in Cargo will be expanded to include
@@ -89,7 +89,7 @@ the compiler once (or twice if an explicit target is requested) when resolution
 starts, and it will use these key/value pairs to execute the `cfg` queries in
 the dependency graph being constructed.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is not a forwards-compatible extension to Cargo, so this will break
@@ -119,7 +119,7 @@ For ease of implementation this RFC would recommend strategy (1) to help ease
 this into the ecosystem without too much pain in terms of compatibility or
 implementation.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Instead of using Rust's `#[cfg]` syntax, Cargo could support other options such
@@ -147,7 +147,7 @@ such as `windows` and `unix` as well as the above pattern matching, but this
 eventually just moves into the territory of what `#[cfg]` already provides but
 may not always quite get there.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * This is not the only change that's known to Cargo which is known to not be

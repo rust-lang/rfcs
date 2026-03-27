@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1152](https://github.com/rust-lang/rfcs/pull/1152)
 - Rust Issue: [rust-lang/rust#26697](https://github.com/rust-lang/rust/issues/26697)
 
-# Summary
+## Summary
 
 Add some methods that already exist on slices to strings. Specifically, the
 following methods should be added:
@@ -11,7 +11,7 @@ following methods should be added:
 - `str::into_string`
 - `String::into_boxed_str`
 
-# Motivation
+## Motivation
 
 Conceptually, strings and slices are similar types. Many methods are already
 shared between the two types due to their similarity. However, not all methods
@@ -24,7 +24,7 @@ Specifically, it is currently very difficult to construct a `Box<str>`, while it
 is fairly simple to make a `Box<[T]>` by using `Vec::into_boxed_slice`. This RFC
 proposes a means of creating a `Box<str>` by converting a `String`.
 
-# Detailed design
+## Detailed design
 
 Add the following method to `str`, presumably as an inherent method:
 
@@ -39,11 +39,11 @@ Add the following method to `String` as an inherent method:
   `into_boxed_slice`.
 
 
-# Drawbacks
+## Drawbacks
 
 None, yet.
 
-# Alternatives
+## Alternatives
 
 - The original version of this RFC had a few extra methods:
   - `str::chunks(&self, n: usize) -> Chunks`: Returns an iterator that yields
@@ -64,6 +64,6 @@ None, yet.
     this method was removed from the RFC.
 
 
-# Unresolved questions
+## Unresolved questions
 
 None.

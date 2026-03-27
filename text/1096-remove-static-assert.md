@@ -3,26 +3,26 @@
 - RFC PR: [rust-lang/rfcs#1096](https://github.com/rust-lang/rfcs/pull/1096)
 - Rust Issue: https://github.com/rust-lang/rust/pull/24910
 
-# Summary
+## Summary
 
 Remove the `static_assert` feature.
 
-# Motivation
+## Motivation
 
 To recap, `static_assert` looks like this:
 
 ```rust
 #![feature(static_assert)]
 #[static_assert]
-static asssertion: bool = true;
+static assertion: bool = true;
 ```
 
 If `assertion` is `false` instead, this fails to compile:
 
 ```text
 error: static assertion failed
-static asssertion: bool = false;
-                          ^~~~~
+static assertion: bool = false;
+                         ^~~~~
 ```
 
 If you don’t have the `feature` flag, you get another interesting error:
@@ -33,7 +33,7 @@ error: `#[static_assert]` is an experimental feature, and has a poor API
 
 Throughout its life, `static_assert` has been... weird. Graydon suggested it
 [in May of 2013][suggest], and it was
-[implemented][https://github.com/rust-lang/rust/pull/6670] shortly after.
+[implemented](https://github.com/rust-lang/rust/pull/6670) shortly after.
 [Another issue][issue] was created to give it a ‘better interface’. Here’s why:
 
 > The biggest problem with it is you need a static variable with a name, that
@@ -53,21 +53,21 @@ we’ve said we want in Rust. In light of it being eventually added,
 
 `static_assert` isn’t used by the compiler at all.
 
-# Detailed design
+## Detailed design
 
 Remove `static_assert`. [Implementation submitted here][here].
 
 [here]: https://github.com/rust-lang/rust/pull/24910
 
-# Drawbacks
+## Drawbacks
 
 Why should we *not* do this?
 
-# Alternatives
+## Alternatives
 
 This feature is pretty binary: we either remove it, or we don’t. We could keep the feature,
 but build out some sort of alternate version that’s not as weird.
 
-# Unresolved questions
+## Unresolved questions
 
 None with the design, only “should we do this?”

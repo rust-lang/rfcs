@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1977](https://github.com/rust-lang/rfcs/pull/1977)
 - Rust Issue: [rust-lang/rust#44663](https://github.com/rust-lang/rust/issues/44663)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a public/private distinction to crate dependencies.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The crates ecosystem has greatly expanded since Rust 1.0. With that, a few patterns for
@@ -77,7 +77,7 @@ for your own library because your API contract to the outside world changes. Thi
 however, makes it possible to only have this requirement for public dependencies and would
 permit Cargo to prevent new crate releases with semver violations.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 There are a few areas that need to be changed for this RFC:
@@ -97,7 +97,7 @@ There are a few areas that need to be changed for this RFC:
   check that the minimal version specified in `Cargo.toml` is correct.
 * Crates.io should show public dependencies more prominently than private ones.
 
-## Compiler Changes
+### Compiler Changes
 
 The main change to the compiler will be to accept a new parameter that Cargo
 supplies which is a list of public dependencies. The flag will be called
@@ -115,7 +115,7 @@ paired with `#[doc(hidden)]` and other already existing hacks.
 This most likely will also be necessary for the more complex relationship of
 `libcore` and `libstd` in Rust itself.
 
-## Changes to `Cargo.toml`
+### Changes to `Cargo.toml`
 
 The `Cargo.toml` file will be amended to support the new `public` parameter on
 dependencies. Old Cargo versions will emit a warning when this key is encountered
@@ -135,7 +135,7 @@ Example dependency:
 url = { version = "1.4.0", public = true }
 ```
 
-## Changes to the Cargo Index
+### Changes to the Cargo Index
 
 The [Cargo index](https://github.com/rust-lang/crates.io-index) used by Cargo when
 resolving versions will contain the `public` attribute on dependencies as specified
@@ -161,7 +161,7 @@ publicly depends on the `url` crate would look like (JSON prettified for legibil
 }
 ```
 
-## Changes to Cargo Version Resolution
+### Changes to Cargo Version Resolution
 
 Cargo will specifically reject graphs that contain two different versions of the
 same crate being publicly depended upon and reachable from each other. This will
@@ -193,7 +193,7 @@ How this will work:
   same crate, we consider that an error. This basically means that if you privately
   depend on Hyper 0.3 and Hyper 0.4, that's an error.
 
-## Changes to Cargo Publish: Warnings
+### Changes to Cargo Publish: Warnings
 
 When a new crate version is published, Cargo will warn about types and traits that
 the compiler determined to be public but did not come from a public dependency. For
@@ -201,7 +201,7 @@ now, it should be possible to publish anyways but in some period in the future i
 will be necessary to explicitly mark all public dependencies as such or explicitly
 mark them with `#[allow(external_private_dependency)]`.
 
-## Changes to Cargo Publish: Lowest Version Resolution
+### Changes to Cargo Publish: Lowest Version Resolution
 
 A very common situation today is that people write the initial version of a
 dependency in their Cargo.toml, but never bother to update it as they take advantage
@@ -240,7 +240,7 @@ To attempt to surface this problem earlier, `cargo publish` will attempt to reso
 the graph while picking the smallest versions compatible with constraints. If the
 crate fails to build with this resolution graph, the publish will fail.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 From the user's perspective, the initial scope of the RFC will be quite transparent,
@@ -276,10 +276,10 @@ how far away we are from making them errors.
 
 Crates.io should be updated to render public and private dependencies separately.
 
-# End user experience
+## End user experience
 [end-user-experience]: #end-user-experience
 
-## Author of a crate with one dependency
+### Author of a crate with one dependency
 
 Assume today that an author of a library crate `onedep` has a
 dependency on the `url` crate and the `url::Url` type is exposed in
@@ -360,7 +360,7 @@ their dependencies in `Cargo.toml` to see if they should be updated. This comman
 should change the Cargo.lock so that running `cargo build` will reproduce the error
 for the author to fix.
 
-## Author of a crate with multiple dependencies
+### Author of a crate with multiple dependencies
 
 `twodep`'s `Cargo.toml`:
 
@@ -419,13 +419,13 @@ Cargo will generate will be with url 1.5.1 or greater, which is also compatible 
 the url 1.0.0 direct dependency. Publish will work without any errors or further
 changes.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 I believe that there are no drawbacks if implemented well (this assumes good
 linters and error messages).
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 For me, the biggest alternative to this RFC would be a variation of it where type
@@ -437,7 +437,7 @@ out is to introduce a public dependency for now. The assumption is that if trait
 and type aliasing is available, the `external_public_dependency` would not need to
 exist.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are a few open questions about how to best hook into the compiler and Cargo

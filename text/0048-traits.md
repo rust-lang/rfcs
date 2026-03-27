@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#48](https://github.com/rust-lang/rfcs/pull/48)
 - Rust Issue: [rust-lang/rust#5527](https://github.com/rust-lang/rust/issues/5527)
 
-# Summary
+## Summary
 
 Cleanup the trait, method, and operator semantics so that they are
 well-defined and cover more use cases. A high-level summary of the
@@ -18,15 +18,15 @@ changes is as follows:
 This RFC excludes discussion of associated types and multidimensional
 type classes, which will be the subject of a follow-up RFC.
 
-# Motivation
+## Motivation
 
 The current trait system is ill-specified and inadequate. Its
 implementation dates from a rather different language. It should be
 put onto a surer footing.
 
-## Use cases
+### Use cases
 
-### Poor interaction with overloadable deref and index <a name=overload>
+#### Poor interaction with overloadable deref and index { #overload }
 
 *Addressed by:* New method resolution algorithm.
 
@@ -66,7 +66,7 @@ manually specified by making the receiver type fully explicit: `(&mut
 address this problem, as well as the question of how to handle copies
 and moves of the referent (use #3 in my list above).
 
-### Lack of backtracking <a name=backtrack>
+#### Lack of backtracking { #backtrack }
 
 *Addressed by:* New method resolution algorithm.
 
@@ -98,7 +98,7 @@ an `impl` is applicable. So it will decide, in this case, that the
 type `T` could implement `Foo` and then record for later that `T` must
 implement `Base`.  This will lead to weird errors.
 
-### Overly conservative coherence
+#### Overly conservative coherence
 
 *Addressed by:* Expanded coherence rules.
 
@@ -190,7 +190,7 @@ property.  And the popularity and usefulness of blanket impls cannot
 be denied.  Therefore, I think this property ("always being able to
 add impls") is not especially useful or important.
 
-### Hokey implementation <a name=hokey>
+#### Hokey implementation { #hokey }
 
 *Addressed by:* Gradual vtable resolution algorithm
 
@@ -219,22 +219,22 @@ wait till the end then we will have more type information available.
 
 In my proposed solution, we eliminate the phase distinction. Instead,
 we simply track *pending constraints*. We are free to attempt to
-resolve pending constraints whenever desired. In paricular, whenever
+resolve pending constraints whenever desired. In particular, whenever
 we find we need more type information to proceed with some
 type-overloaded operation, rather than reporting an error we can try
 and resolve pending constraints. If that helps give more information,
 we can carry on. Once we reach the end of the function, we must then
-resolve all pending constriants that have not yet been resolved for
+resolve all pending constraints that have not yet been resolved for
 some other reason.
 
 Note that there is some interaction with the distinction between input
 and output type parameters discussed in the previous
 example. Specifically, we must never *infer* the value of the `Self`
 type parameter based on the impls in scope. This is because it would
-cause *crate concatentation* to potentially lead to compilation errors
+cause *crate concatenation* to potentially lead to compilation errors
 in the form of inference failure.
 
-## Properties
+### Properties
 
 There are important properties I would like to guarantee:
 
@@ -242,7 +242,7 @@ There are important properties I would like to guarantee:
   values for all of its type parameters, there should always be at
   most one applicable impl. This should remain true even when unknown,
   additional crates are loaded.
-- **Crate concatentation:** It should always be possible to take two
+- **Crate concatenation:** It should always be possible to take two
   creates and combine them without causing compilation errors. This
   property
 
@@ -262,7 +262,7 @@ Here are some properties I *do not intend* to guarantee:
   crate-by-crate basis if some bizarre impl pattern happens to require
   a deeper depth to be resolved.
 
-# Detailed design
+## Detailed design
 
 In general, I won't give a complete algorithmic specification.
 Instead, I refer readers to the [prototype implementation][prototype]. I would
@@ -270,7 +270,7 @@ like to write out a declarative and non-algorithmic specification for
 the rules too, but that is work in progress and beyond the scope of
 this RFC. Instead, I'll try to explain in "plain English".
 
-## Method self-type syntax
+### Method self-type syntax
 
 Currently methods must be declared using the explicit-self shorthands:
 
@@ -293,12 +293,12 @@ though it seems like it would be useful to permit it. It's also
 possible we can simply make `self` not be a keyword (that would be my
 personal preference, if we can achieve it).
 
-## Coherence
+### Coherence
 
 The coherence rules fall into two categories: the *orphan* restriction
 and the *overlapping implementations* restriction.
 
-<a name=orphan>
+<span id="orphan"></span>
 
 *Orphan check*: Every implementation must meet one of
 the following conditions:
@@ -380,7 +380,7 @@ In such cases, the recursion bound is exceeded and an error is
 conservatively reported. (Note that recursion is not always so easily
 detected.)
 
-## Method resolution
+### Method resolution
 
 Let us assume the method call is `r.m(...)` and the type of the
 receiver `r` is `R`. We will resolve the call in two phases. The first
@@ -415,7 +415,7 @@ autodereferences. (There exists the possibility of a cycle in the
 `Deref` chain, so we will only autoderef so many times before
 reporting an error.)
 
-### Receiver reconciliation
+#### Receiver reconciliation
 
 Once we find a trait that is implemented for the (adjusted) receiver
 type `R` and which offers the method `m`, we must *reconcile* the
@@ -527,7 +527,7 @@ slightly modified example:
 As before, we'll start out with a type of `Monster`, but this type the
 method `move_to_room()` has a receiver type of `Gc<Monster>`. This
 doesn't match cases 1, 2, or 3, so we proceed to case 4 and *unwind*
-by one adustment. Since the most recent adjustment was to deref from
+by one adjustment. Since the most recent adjustment was to deref from
 `Gc<Monster>` to `Monster`, we are left with a type of
 `Gc<Monster>`. We now search again. This time, we match case 1. So the
 final result is `Mob::move_to_room(victim, room)`. This last case is
@@ -555,14 +555,14 @@ more adjustments to unwind and we never found a type
 `move_to_room()` expects a `Gc<Monster>` but was invoked with an
 `&Monster`".
 
-### Inherent methods
+#### Inherent methods
 
 Inherent methods can be "desugared" into traits by assuming a trait
 per struct or enum. Each impl like `impl Foo` is effectively an
 implementation of that trait, and all those traits are assumed to be
 imported and in scope.
 
-### Differences from today
+#### Differences from today
 
 Today's algorithm isn't really formally defined, but it works very
 differently from this one. For one thing, it is based purely on
@@ -571,7 +571,7 @@ matching. This is a crucial limitation that prevents cases like those
 described in [lack of backtracking](#backtrack) from working. It also
 results in a lot of code duplication and a general mess.
 
-## Interaction with vtables and type inference
+### Interaction with vtables and type inference
 
 One of the goals of this proposal is to remove the
 [hokey distinction between early and late resolution](#hokey). The way
@@ -596,7 +596,7 @@ resolution. If, after type checking the function in its entirety,
 there are *still* obligations that cannot be definitely resolved,
 that's an error.
 
-## Ensuring crate concatenation
+### Ensuring crate concatenation
 
 To ensure *crate concentanability*, we must only consider the `Self`
 type parameter when deciding when a trait has been implemented (more
@@ -655,12 +655,12 @@ it's even plausible that the type `Real` would have been valid in some
 sense. So the inferencer is influencing program execution to some
 extent.
 
-# Implementation details
+## Implementation details
 
-## The "resolve" algorithm
+### The "resolve" algorithm
 
 The basis for the coherence check, method lookup, and vtable lookup
-algoritms is the same function, called *RESOLVE*. The basic idea is
+algorithms is the same function, called *RESOLVE*. The basic idea is
 that it takes a set of obligations and tries to resolve them. The result
 is four sets:
 
@@ -679,9 +679,9 @@ probably an error. DEFERRED obligations are ok until we reach the end
 of the function. For details, please refer to the
 [prototype][prototype].
 
-# Alternatives and downsides <a name=alternatives>
+## Alternatives and downsides { #alternatives }
 
-## Autoderef and ambiguity <a name=ambig>
+### Autoderef and ambiguity { #ambig }
 
 The addition of a `Deref` trait makes autoderef complicated, because
 we may encounter situations where the smart pointer *and* its
@@ -705,22 +705,22 @@ that are not smart pointers.
 This idea appeals to me but I think belongs in a separate RFC. It
 needs to be evaluated.
 
-# Footnotes
+## Footnotes
 
-<a name=1>
+<span id="1"></span>
 
 **Note 1:** when combining with DST, the `in` keyword goes
 first, and then any other qualifiers. For example, `in unsized RHS` or
 `in type RHS` etc. (The precise qualifier in use will depend on the
 DST proposal.)
 
-<a name=2>
+<span id="2"></span>
 
 **Note 2:** Note that the `DerefMut<T>` trait extends
 `Deref<T>`, so if a type supports mutable derefs, it must also support
 immutable derefs.
 
-<a name=3>
+<span id="3"></span>
 
 **Note 3:** The restriction that inputs must precede outputs
 is not strictly necessary. I added it to keep options open concerning
@@ -728,25 +728,25 @@ associated types and so forth. See the
 [Alternatives section](#alternatives), specifically the section on
 [associated types](#assoc).
 
-<a name=4>
+<span id="4"></span>
 
 **Note 4:** The prioritization of inherent methods could be
 reconsidered after DST has been implemented. It is currently needed to
 make impls like `impl Trait for ~Trait` work.
 
-<a name=5>
+<span id="5"></span>
 
 **Note 5:** The set of in-scope traits is currently defined
 as those that are imported by name. PR #37 proposes possible changes
 to this rule.
 
-<a name=6>
+<span id="6"></span>
 
 **Note 6:** In the section on [autoderef and ambiguity](#ambig), I
 discuss alternate rules that might allow us to lift the requirement
 that the receiver be named `self`.
 
-<a name=7>
+<span id="7"></span>
 
 **Note 7:** I am considering introducing mechanisms in a subsequent
 RFC that could be used to express mutual exclusion of traits.

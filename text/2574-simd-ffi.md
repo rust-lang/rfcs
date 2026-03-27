@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2574](https://github.com/rust-lang/rfcs/pull/2574)
 - Rust Issue: [rust-lang/rust#63068](https://github.com/rust-lang/rust/issues/63068)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC allows using SIMD types in C FFI.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The architecture-specific SIMD types provided in [`core::arch`] cannot currently
@@ -27,7 +27,7 @@ performance.
 [`SVML`]: https://software.intel.com/en-us/node/524289
 [`packed_simd`]: https://github.com/rust-lang-nursery/packed_simd
 
-## Why is using SIMD vectors in C FFI currently disallowed?
+### Why is using SIMD vectors in C FFI currently disallowed?
 
 Consider the following example
 ([playground](https://play.rust-lang.org/?gist=b8cfb63bb4e7fb00bb293f6e27061c52&version=nightly&mode=debug&edition=2015)):
@@ -152,7 +152,7 @@ binary. Note that:
 * if the Rust calling convention differs from the calling convention of the
   `extern` function, Rust has to adapt these. 
 
-# Guide-level and reference-level explanation
+## Guide-level and reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Architecture-specific vector types require `#[target_feature]`s to be FFI safe.
@@ -173,17 +173,17 @@ must be enabled:
 Future stabilizations of architecture-specific vector types must specify the
 target features required to use them in `extern` functions.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This is an adhoc solution to the problem, but sufficient for FFI purposes.
 
-## Future architecture-specific vector types
+### Future architecture-specific vector types
 
 In the future, we might want to stabilize some of the following vector types.
 This section explores which target features would they require:
@@ -196,7 +196,7 @@ This section explores which target features would they require:
 * `ppc64`: `altivec` / `vsx`
 * `wasm32`: `simd128`
 
-## Require the feature to be enabled globally for the binary
+### Require the feature to be enabled globally for the binary
 
 Instead of using `#[target_feature]` we could allow vector types on C FFI only
 behind `#[cfg(target_feature)]`, e.g., via something like the portability check. 
@@ -204,13 +204,13 @@ behind `#[cfg(target_feature)]`, e.g., via something like the portability check.
 This would not allow calling C FFI functions with vector types conditionally on,
 e.g., run-time feature detection.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 In C, the architecture specific vector types are only available if the required
 target features are enabled at compile-time.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * Should it be possible to use, e.g., `__m128` on C FFI when the `avx` feature

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1946](https://github.com/rust-lang/rfcs/pull/1946)
 - Rust Issue: [rust-lang/rust#43466](https://github.com/rust-lang/rust/issues/43466)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a notation how to create relative links in documentation comments
@@ -11,7 +11,7 @@ Add a notation how to create relative links in documentation comments
 and extend Rustdoc to automatically turn this into working links.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 It is good practice in the Rust community to
@@ -57,7 +57,7 @@ we propose extending Rustdoc
 to be able to generate relative links that work in all contexts.
 
 
-# Detailed Design
+## Detailed Design
 [design]: #detailed-design
 
 [Markdown][md]/[CommonMark] allow writing links in several forms
@@ -93,7 +93,7 @@ to allow easy linking to obvious targets.
 
 [ref-paths]: https://github.com/rust-lang-nursery/reference/blob/2d23ea601f017c106a2303094ee1c57ba856d246/src/paths.md
 
-## Additions To The Documentation Syntax
+### Additions To The Documentation Syntax
 
 Rust paths as URLs in inline and reference links:
 
@@ -103,7 +103,7 @@ Rust paths as URLs in inline and reference links:
 3. `[Iterator]`,
   and somewhere else in the document: `[Iterator]: std::iter::Iterator`
 
-## Implied Shortcut Reference Links
+### Implied Shortcut Reference Links
 [isrl]: #implied-shortcut-reference-links
 
 The third syntax example above shows a
@@ -144,7 +144,7 @@ as well as by [Guillaume Gomez].)
 [CommonMark forum]: https://talk.commonmark.org/t/what-should-the-rust-community-do-for-linkage/2141
 [Guillaume Gomez]: https://github.com/GuillaumeGomez
 
-## Standard-conforming Markdown
+### Standard-conforming Markdown
 
 These additions are valid Markdown,
 as defined by the original [Markdown syntax definition][md]
@@ -154,7 +154,7 @@ even with the suffixes described [below][path-ambiguities].
 
 [link destinations]: http://spec.commonmark.org/0.27/#link-destination
 
-## How Links Will Be Rendered
+### How Links Will Be Rendered
 
 The following:
 
@@ -176,7 +176,7 @@ when on the page for the `foos` module (`foos/index.html`):
 The offers several ways to fooify <a href="../bars/struct.Bar.html">Bars</a>.
 ```
 
-## No Autolinks Style
+### No Autolinks Style
 
 When using the autolink syntax (`<URL>`),
 the URL has to be an [absolute URI],
@@ -215,7 +215,7 @@ which will be rendered as
 Does work: <a href="../bars/struct.Bar.html"><code>bars::Bar</code></a> :)
 ```
 
-## Resolving Paths
+### Resolving Paths
 
 The Rust paths used in links are resolved
 relative to the item in whose documentation they appear.
@@ -260,7 +260,35 @@ fn foo2() {
 }
 ```
 
-## Path Ambiguities
+#### Cross-crate re-exports
+
+If an item is re-exported from an inner crate to an outer crate,
+its documentation will be resolved the same in both crates, as if it were in
+the original scope. For example, this function will link to `f` in both crates,
+even though `f` is not in scope in the outer crate:
+
+```rust
+// inner-crate
+
+pub fn f() {}
+/// This links to [f].
+pub fn g() {}
+```
+
+```rust
+// outer-crate
+pub use inner_crate::g;
+```
+
+#### Links to private items
+
+If a public item links to a private one, and `--document-private-items` is not passed,
+rustdoc should give a warning. If a private item links to another private
+item, no warning should be emitted. If a public item links to another private
+item and `--document-private-items` is passed, rustdoc should emit the link,
+but it is up to the implementation whether to give a warning.
+
+### Path Ambiguities
 [path-ambiguities]: #path-ambiguities
 
 Rust has three different namespaces that items can be in,
@@ -287,7 +315,7 @@ Our proposal is this:
 - In unambiguous cases paths can be written as described earlier,
   with no pre- or suffix, e.g., `Look at the [FOO] trait`. This also
   applies to modules and tuple structs which exist in both namespaces.
-  Rustdoc will throw an error if you use a non-disambiguated path in
+  Rustdoc will throw a warning if you use a non-disambiguated path in
   the case of there being a value in both the type and value namespace.
 - Links to types can be disambiguated by prefixing them with the concrete
   item type:
@@ -326,20 +354,11 @@ Our proposal is this:
   - It is possible that disambiguators for one kind of type-namespace object
     will work for the other (i.e. you can use `static@` to refer to a const),
 
-For disambiguation markers using an `@`, in implied shortcut links
-you can use a space instead of the `@`. In other words, `[struct Foo]`
-is fine (and preferred).
+If a disambiguator for a type does not match, rustdoc should issue a warning.
+For example, given `struct@Foo`, attempting to link to it using `[enum@Foo]`
+should not be allowed.
 
-It should be noted that in the RFC discussion it was determined
-that exact knowledge of the item type
-should not be necessary; only knowing the namespace should suffice.
-It is acceptable that the tool resolving the links
-allows (and successfully resolves) a link
-with the wrong prefix that is in the same namespace.
-E.g., given an `struct Foo`, it may be possible to link to it using `[enum Foo]`,
-or, given a `mod bar`, it may be possible to link to that using `[struct bar]`.
-
-## Errors
+### Errors
 [errors]: #errors
 
 Ideally, Rustdoc would be able to recognize Rust path syntax,
@@ -349,7 +368,7 @@ These diagnostic messages should highlight the specific link
 that Rustdoc was not able to resolve,
 using the original Markdown source from the comment and correct line numbers.
 
-## Complex Example
+### Complex Example
 [complex-example]: #complex-example
 
 (Excerpt from Diesel's [`expression`][diesel-expression] module.)
@@ -395,7 +414,7 @@ Please note:
   (An assumption is that most readers will recognize these names and know they are part of `diesel::types`.)
 
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 - Extend the documentation chapter of the book with a subchapter on How to Link to Items.
@@ -403,7 +422,7 @@ Please note:
 - Maybe present an example use case of a module whose documentation links to several related items.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Rustdoc gets more complex.
@@ -412,10 +431,10 @@ Please note:
   though we could not think of any.
 
 
-# Possible Extensions
+## Possible Extensions
 [possible-extensions]: #possible-extensions
 
-## Linking to Fields
+### Linking to Fields
 
 To link to the fields of a `struct`
 we propose to write the path to the struct,
@@ -427,7 +446,7 @@ For example:
 This is stored in the [`size`](storage::Filesystem.size) field.
 ```
 
-## Linking to Enum Variants
+### Linking to Enum Variants
 
 To link to the variants of an `enum`,
 we propose to write the path to the enum,
@@ -440,7 +459,7 @@ For example:
 For custom settings, supply the [`Custom`](storage::Engine::Other) field.
 ```
 
-## Linking to associated Items
+### Linking to associated Items
 
 To link to associated items,
 i.e., the associated functions, types, and constants of a trait,
@@ -452,9 +471,32 @@ like `See the [<Foo as Bar>::bar()] method`.
 We have yet to analyze in which cases this is necessary,
 and what syntax should be used.
 
+#### Traits in scope
+
+If linking to an associated item that comes from a trait,
+the link should only be resolved in the trait is in scope.
+This prevents ambiguities if multiple traits are available with the associated item.
+For example, this should issue a warning:
+
+```rust
+#[derive(Debug)]
+/// Link to [S::fmt]
+struct S;
+```
+
+but this should link to the implementation of `Debug::fmt` for `S`:
+
+```rust
+use std::fmt::Debug;
+
+#[derive(Debug)]
+/// Link to [S::fmt]
+struct S;
+```
+
 [ref-ufcs]: https://github.com/rust-lang-nursery/reference/blob/96e976d32a0a6927dd26c2ee805aaf44ef3bef2d/src/expressions.md#disambiguating-function-calls
 
-## Linking to External Documentation
+### Linking to External Documentation
 
 Currently, Rustdoc is able to link to external crates,
 and renders documentation for all dependencies by default.
@@ -493,7 +535,7 @@ for all crates that are from the crates.io repository
 
 [docs.rs]: https://docs.rs/
 
-### Known Issues
+#### Known Issues
 
 Automatically linking to external docs has the following known tradeoffs:
 
@@ -511,7 +553,7 @@ Automatically linking to external docs has the following known tradeoffs:
     differ
     (note that docs.rs renders docs for multiple platforms, though).
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Prefix Rust paths with a URI scheme, e.g. `rust:`
@@ -530,7 +572,7 @@ Automatically linking to external docs has the following known tradeoffs:
   [here](https://github.com/rust-lang/rfcs/pull/1946#issuecomment-284718018).
 
 
-# Unresolved Questions
+## Unresolved Questions
 [unresolved]: #unresolved-questions
 
 - Is it possible for Rustdoc to resolve paths?

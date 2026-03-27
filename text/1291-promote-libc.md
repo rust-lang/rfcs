@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1291](https://github.com/rust-lang/rfcs/pull/1291)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 Promote the `libc` crate from the nursery into the `rust-lang` organization
 after applying changes such as:
@@ -15,7 +15,7 @@ after applying changes such as:
 * Define the scope of libc in terms of bindings it will provide for each
   platform.
 
-# Motivation
+## Motivation
 
 The current `libc` crate is a bit of a mess unfortunately, having long since
 departed from its original organization and scope of definition. As more
@@ -52,7 +52,7 @@ organization, CI automation, how new additions are accepted, etc. These changes
 should all help push `libc` to a more more robust position where it can be well
 trusted across all platforms both now and into the future!
 
-# Detailed design
+## Detailed design
 
 All design can be previewed as part of an [in progress fork][libc] available on
 GitHub. Additionally, all mentions of the `libc` crate in this RFC refer to the
@@ -248,7 +248,7 @@ following targets, however, through Travis and AppVeyor:
 * `arm-linux-androideabi`
 * `{i686,x86_64}-apple-{darwin,ios}`
 
-# Drawbacks
+## Drawbacks
 
 ### Loss of module organization
 
@@ -264,7 +264,7 @@ value, so even if you were restricted to a particular subset it's not clear that
 a program would automatically be more portable.
 
 That being said, it would still be useful to have these abstractions to *some
-degree*, but the filp side is that it's easy to build this sort of layer on top
+degree*, but the flip side is that it's easy to build this sort of layer on top
 of `libc` as designed here externally on crates.io. For example `extern crate
 posix` could just depend on `libc` and reexport all the contents for the
 POSIX standard, perhaps with tweaked signatures here and there to work better
@@ -280,7 +280,7 @@ This is also a bit of a maintenance burden on the standard library itself as it
 means that all the bindings it uses must move to `src/libstd/sys/windows/c.rs`
 in the immedidate future.
 
-# Alternatives
+## Alternatives
 
 * Instead of *only* exporting a flat namespace the `libc` crate could optionally
   also do what it does today with respect to reexporting modules corresponding
@@ -288,11 +288,11 @@ in the immedidate future.
   unclear how much portability using these standards actually buys you.
 
 * The crate could be split up into multiple crates which represent an exact
-  correspondance to system libraries, but this has the downside of using common
+  correspondence to system libraries, but this has the downside of using common
   functions available on both OSX and Linux would require at least two `extern
   crate` directives and dependencies.
 
-# Unresolved questions
+## Unresolved questions
 
 * The only platforms without automation currently are the BSD-like platforms
   (e.g. FreeBSD, OpenBSD, Bitrig, DragonFly, etc), but if it were possible to

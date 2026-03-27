@@ -3,14 +3,23 @@
 - RFC PR: [rust-lang/rfcs#2203](https://github.com/rust-lang/rfcs/pull/2203)
 - Rust Issue: [rust-lang/rust#49147](https://github.com/rust-lang/rust/issues/49147)
 
-# Summary
+> ⚠ This RFC has mostly been superseded ⚠
+>
+> This turned out to be more complicated than expected to detect while being intuitive to the programmer.  As such, it's expected that this problem space will be addressed with the *inline consts* from [RFC 2920] instead, which have syntax to opt-in to the behaviour.
+>
+> However, the simpler case of `[SOME_CONST_ITEM; N]` was kept (stabilized in [rust-lang/rust#49147]).
+
+[RFC 2920]: https://github.com/rust-lang/rfcs/blob/master/text/2920-inline-const.md
+[rust-lang/rust#49147]: https://github.com/rust-lang/rust/issues/49147
+
+## Summary
 [summary]: #summary
 
 Relaxes the rules for repeat expressions, `[x; N]` such that `x` may also be
 `const` *(strictly speaking rvalue promotable)*, in addition to `typeof(x): Copy`.
 The result of `[x; N]` where `x` is `const` is itself also `const`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 2000, `const_generics`]: https://github.com/rust-lang/rfcs/blob/master/text/2000-const-generics.md
@@ -48,7 +57,7 @@ println!("{:?}", &data[0]);
 this removes one common reason to use `uninitialized()` which **"is incredibly
 dangerous"**.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 You have a variable or expression `X` which is const, for example:
@@ -76,7 +85,7 @@ let mut arr = [X; 100];
 arr[0] = Some(Box::new(1));
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Values which are `const` are freely duplicatable as seen in the following
@@ -153,20 +162,20 @@ moves outside of the repeat expression). These semantics are intentionally
 conservative and intended to be forward-compatible with a more expansive
 `is_const(expr)` check.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It might make the semantics of array initializers more fuzzy. The RFC, however,
 argues that the change is quite intuitive.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 [`ptr::write(..)`]: https://doc.rust-lang.org/nightly/std/ptr/fn.write.html
 
 The alternative, in addition to simply not doing this, is to modify a host of
 other constructs such as [`mem::uninitialized()`], for loops over iterators,
-[`ptr::write`] to be `const`, which is is a larger change. The design offered by
+[`ptr::write`] to be `const`, which is a larger change. The design offered by
 this RFC is therefore the simplest and most non-intrusive design. It is also
 the most consistent.
 
@@ -181,7 +190,7 @@ compatible with such future changes.
 The impact of not doing this change is to not enable generically sized arrays to
 be `const` as well as encouraging the use of `mem::uninitialized`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are no unresolved questions.

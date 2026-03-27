@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1415](https://github.com/rust-lang/rfcs/pull/1415)
 - Rust Issue: [rust-lang/rust#31549](https://github.com/rust-lang/rust/issues/31549)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Deprecate type aliases and structs in `std::os::$platform::raw` in favor of
 trait-based accessors which return Rust types rather than the equivalent C type
 aliases.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 517][io-reform] set forth a vision for the `raw` modules in the standard
@@ -60,7 +60,7 @@ however! This RFC proposes tweaking the design of the extensions in
 today but also cut some of the tie from libc to std to give us more freedom to
 change these implementation details and work around weird platforms.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 First, the types and type aliases in `std::os::*::raw` will all be
@@ -106,7 +106,7 @@ straddle versions of Rust.
 
 [api-evolution]: https://github.com/rust-lang/rfcs/blob/master/text/1105-api-evolution.md
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 As mentioned above, this RFC is strictly-speaking a breaking change. It is
@@ -120,7 +120,7 @@ being onerous, but accessing these raw fields in theory happens quite rarely as
 std should primarily be exporting cross-platform accessors for the various
 fields here and there.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * The documentation of the raw modules in std could be modified to indicate that
@@ -138,7 +138,7 @@ fields here and there.
   different `stat` structures, and the breakage in practice this will cause may
   be small enough to not warrant these great lengths.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Is the policy of almost always returning `u64` too strict? Should types like

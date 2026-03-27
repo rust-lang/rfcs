@@ -3,20 +3,20 @@
 - RFC PR: [rust-lang/rfcs#2342](https://github.com/rust-lang/rfcs/pull/2342)
 - Rust Issue: [rust-lang/rust#49146](https://github.com/rust-lang/rust/issues/49146)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Enable `if` and `match` during const evaluation and make them evaluate lazily.
 In short, this will allow `if x < y { y - x } else { x - y }` even though the
 else branch would emit an overflow error for unsigned types if `x < y`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Conditions in constants are important for making functions like `NonZero::new`
 const fn and interpreting assertions.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 If you write
@@ -82,7 +82,7 @@ const FOO: SomeType = if X > Y {
 };
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `match` on enums whose variants have no fields or `if` is translated during HIR
@@ -97,16 +97,16 @@ discriminant, but encodes `None` as all zeros and treats everything else as a
 essentially transmuted to the enum variant's type, allowing further code to
 access its fields.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This makes it easier to fail compilation on random "constant" values like
 `size_of::<T>()` or other platform specific constants.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
-## Require intermediate const fns to break the eager const evaluation
+### Require intermediate const fns to break the eager const evaluation
 
 Instead of writing
 
@@ -139,5 +139,5 @@ Since the const fn's `x` and `y` arguments are unknown, they cannot be const
 evaluated. When the const fn is evaluated with given arguments, only the taken
 branch is evaluated.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions

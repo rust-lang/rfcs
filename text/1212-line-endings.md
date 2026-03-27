@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1212](https://github.com/rust-lang/rfcs/pull/1212)
 - Rust Issue: [rust-lang/rust#28032](https://github.com/rust-lang/rust/issues/28032)
 
-# Summary
+## Summary
 
 Change all functions dealing with reading "lines" to treat both '\n' and '\r\n'
 as a valid line-ending.
 
-# Motivation
+## Motivation
 
 The current behavior of these functions is to treat only '\n' as line-ending.
 This is surprising for programmers experienced in other languages. Many
@@ -31,7 +31,7 @@ only when someone runs this crate on input that contains '\r\n' that the bug
 will be uncovered. The editor has personally run into this issue when reading
 line-by-line from stdin, with the program suddenly failing on Windows.
 
-# Detailed design
+## Detailed design
 
 The following functions will have to be changed: `BufRead::lines` and
 `str::lines`. They both should treat '\r\n' as marking the end of a line. This
@@ -42,7 +42,7 @@ Furthermore, `str::lines_any` (the only function currently dealing with both
 kinds of line-endings) is deprecated, as it is then functionally equivalent with
 `str::lines`.
 
-# Drawbacks
+## Drawbacks
 
 This is a semantics-breaking change, changing the behavior of released, stable
 API. However, as argued above, the new behavior is much less surprising than the
@@ -52,7 +52,7 @@ wants to split at '\n' only, namely `BufRead::split` and `str::split`. However,
 `BufRead:split` does not iterate over `String`, but rather over `Vec<u8>`, so
 users have to insert an additional explicit call to `String::from_utf8`.
 
-# Alternatives
+## Alternatives
 
 There's the obvious alternative of not doing anything. This leaves a gap in the
 features Rust provides to deal with text files, making it hard to treat both
@@ -65,6 +65,6 @@ one of the two functions - and potentially choosing the wrong one. In
 particular, the functions with the shorter, nicer name (the existing ones) will
 almost always *not* be the right choice.
 
-# Unresolved questions
+## Unresolved questions
 
 None I can think of.

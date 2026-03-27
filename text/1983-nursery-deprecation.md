@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1983](https://github.com/rust-lang/rfcs/pull/1983)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Amend [RFC 1242] to require an RFC for deprecation of crates from the 
@@ -11,7 +11,7 @@ rust-lang-nursery.
 
 [RFC 1242]: https://github.com/rust-lang/rfcs/blob/master/text/1242-rust-lang-crates.md
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There are currently very ubiquitous crates in the nursery that are being used 
@@ -46,18 +46,18 @@ community participation. Involving the Rust community at large in these
 decisions offers the benefits of the RFC process such as increased visibility, 
 differing viewpoints, and transparency.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The exact amendment is included as a change to the RFC in this PR.
 [View the amended text](1242-rust-lang-crates.md).
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 N/A
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Requiring an RFC for deprecation might impose an undue burden on the library 
@@ -65,18 +65,18 @@ subteam in terms of crate maintenance. However, as [RFC 1242] states, this is
 not a major commitment.
 
 Acceptance into the nursery could be hindered if it is believed it could be 
-hard to reverse course later due to the required RFC being percieved as an 
+hard to reverse course later due to the required RFC being perceived as an 
 obstacle. On the other hand, RFCs with broad consensus do not generally impose 
 a large procedural burden, and if there is no consensus it might be too early 
 to deprecate a nursery crate anyway.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Don't change the process and let the library subteam make deprecation decisions 
 for nursery crates.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None as of yet.

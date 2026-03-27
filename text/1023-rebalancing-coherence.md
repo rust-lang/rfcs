@@ -80,7 +80,7 @@ after the 1.0 release.
 When you first define a trait, you must also decide whether that trait
 should have (a) a blanket impls for all `T` and (b) any blanket impls
 over references. These blanket impls cannot be added later without a
-major vesion bump, for fear of breaking downstream clients.
+major version bump, for fear of breaking downstream clients.
 
 Here are some examples of the kinds of blanket impls that must be added
 right away:
@@ -184,7 +184,7 @@ operator, it seems reasonable to say that implementing a `Fn` trait is
 itself a breaking change. (This is not to suggest that there is
 something *fundamental* about the `Fn` traits that distinguish them
 from all other traits; just that if the goal is to have rules that
-users can easily remember, saying that implememting a core operator
+users can easily remember, saying that implementing a core operator
 trait is a breaking change may be a reasonable rule, and it enables
 useful patterns to boot -- patterns that are baked into the libstd
 APIs.)
@@ -259,14 +259,14 @@ As discussed above, it is a breaking change for to add a blanket impl
 for a `#[fundamental]` type. It is also a breaking change to add an
 impl of a `#[fundamental]` trait to an existing type.
 
-# Drawbacks
+## Drawbacks
 
 The primary drawback is that downstream crates cannot write an impl
 over types other than references, such as `Option<LocalType>`. This
 can be overcome by defining wrapper structs (new types), but that can
 be annoying.
 
-# Alternatives
+## Alternatives
 
 - **Status quo.** In the status quo, the balance of power is heavily
   tilted towards child crates. Parent crates basically cannot add any
@@ -286,7 +286,7 @@ be annoying.
   specialization, explicit negative impls, and explicit contracts
   between the trait definer and the trait consumer.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 

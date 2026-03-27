@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1892](https://github.com/rust-lang/rfcs/pull/1892)
 - Rust Issue: [rust-lang/rust#53491](https://github.com/rust-lang/rust/issues/53491)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Deprecate `mem::uninitialized::<T>` and `mem::zeroed::<T>` and replace them with
 a `MaybeUninit<T>` type for safer and more principled handling of uninitialized
 data.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The problems with `uninitialized` centre around its usage with uninhabited
@@ -65,7 +65,7 @@ behavior just like `mem::uninitialized::<!>()`. This also affects `mem::zeroed`
 when considering types where the all-`0` bit pattern is not valid, like
 references: `mem::zeroed::<&'static i32>()` is instantaneous undefined behavior.
 
-## Tracking uninitializedness in the type
+### Tracking uninitializedness in the type
 
 An alternative way of representing uninitialized data is through a union type:
 
@@ -146,14 +146,14 @@ actually unsafe - where we have to assert to the compiler that we have a valid
 value. And we only ever tell the compiler we have a value of type `T` where we
 know we actually do have a value of type `T`. As such, this is fine to use with
 any `T`, including `!`. If the callback diverges then it's not possible to get
-to the `unsafe` block and try to read the non-existant value.
+to the `unsafe` block and try to read the non-existent value.
 
-Given that it's so easy for code using `uninitialzed` to hide bugs like this,
+Given that it's so easy for code using `uninitialized` to hide bugs like this,
 and given that there's a better alternative, this RFC proposes deprecating
 `uninitialized` and introducing the `MaybeUninit` type into the standard
 library as a replacement.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Add the aforementioned `MaybeUninit` type to the standard library:
@@ -207,7 +207,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn into_inner(self) -> T {
         std::ptr::read(&*self.value)
@@ -217,7 +217,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_ref(&self) -> &T {
         &*self.value
@@ -227,7 +227,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_mut(&mut self) -> &mut T {
         &mut *self.value
@@ -251,7 +251,7 @@ Deprecate `uninitialized` with a deprecation messages that points people to the
 `MaybeUninit` type. Make calling `uninitialized` on an empty type trigger a
 runtime panic which also prints the deprecation message.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Correct handling of uninitialized data is an advanced topic and should probably
@@ -261,14 +261,14 @@ introducing the `MaybeUninit` type.
 The documentation for `uninitialized` should explain the motivation for these
 changes and direct people to the `MaybeUninit` type.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This will be a rather large breaking change as a lot of people are using
 `uninitialized`. However, much of this code already likely contains subtle
 bugs.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Not do this.
@@ -280,12 +280,12 @@ bugs.
   like `transmute` does today - by having restrictions on its type arguments
   which are enforced outside the trait system.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None known.
 
-# Future directions
+## Future directions
 
 Ideally, Rust's type system should have a way of talking about initializedness
 statically. In the past there have been proposals for new pointer types which

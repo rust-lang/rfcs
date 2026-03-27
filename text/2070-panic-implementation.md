@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2070](https://github.com/rust-lang/rfcs/pull/2070)
 - Rust Issue: [rust-lang/rust#44489](https://github.com/rust-lang/rust/issues/44489)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Provide a stable mechanism to specify the behavior of `panic!` in no-std
 applications.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The `#![no_std]` attribute was stabilized some time ago and it made possible to
@@ -26,10 +26,10 @@ no-std context. This would be a step towards enabling development of no-std
 applications like device firmware, kernels and operating systems on the stable
 channel.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Constraints
+### Constraints
 
 `panic!` in no-std environments must continue to be free of memory allocations
 and [its API] can only be changed in a backward compatible way.
@@ -42,7 +42,7 @@ much as possible.
 
 [custom panic hook]: https://doc.rust-lang.org/std/panic/fn.set_hook.html
 
-## `PanicInfo`
+### `PanicInfo`
 
 The types [`std::panic::PanicInfo`] and [`std::panic::Location`] will be moved
 into the `core` crate, and `PanicInfo` will gain a new method:
@@ -59,7 +59,7 @@ impl PanicInfo {
 This method returns `Some` if the `panic!` invocation needs to do any formatting
 like `panic!("{}: {}", key , value)` does.
 
-### `fmt::Display`
+#### `fmt::Display`
 
 For convenience, `PanicInfo` will gain an implementation of the `fmt::Display`
 trait that produces a message very similar to the one that the standard `panic!`
@@ -86,7 +86,7 @@ $ cargo run
 the application panicked at 'Hello, world!', src/main.rs:27:4
 ```
 
-## `#[panic_implementation]`
+### `#[panic_implementation]`
 
 A `#[panic_implementation]` attribute will be added to the language. This
 attribute can be used to specify the behavior of `panic!` in no-std context.
@@ -129,7 +129,7 @@ pub extern fn rust_begin_panic(msg: ::core::fmt::Arguments,
 }
 ```
 
-## Payload
+### Payload
 
 The `core` version of the `panic!` macro will gain support for *payloads*, as in
 `panic!(42)`. When invoked with a payload `PanicInfo.payload()` will return the
@@ -141,27 +141,27 @@ will be uninspectable: it won't be downcastable to any known type. This is where
 `core::panic!` diverges from `std::panic!`. The latter returns a `String`,
 behind the `&Any` trait object, from the `payload()` method in this situation.
 
-## Feature gate
+### Feature gate
 
 The initial implementation of the `#[panic_implementation]` mechanism as well as
 the `core::panic::Location` and `core::panic::PanicInfo` types will be feature
 gated. `std::panic::Location` and `std::panic::PanicInfo` will continue to be
 stable except for the new `PanicInfo.message` method.
 
-## Unwinding
+### Unwinding
 
 The `#[panic_implementation]` mechanism can only be used with no-std
 applications compiled with `-C panic=abort`. Applications compiled with `-C
 panic=unwind` additionally require the `eh_personality` language item which this
 proposal doesn't cover.
 
-## `std::panic!`
+### `std::panic!`
 
 This proposal doesn't affect how the selection of the panic runtime in `std`
 applications works (`panic_abort`, `panic_unwind`, etc.). Using
 `#[panic_implementation]` in `std` programs will cause a compiler error.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Currently, no-std applications are only possible on nightly so there's not much
@@ -173,10 +173,10 @@ book. In the meantime, this feature can be documented in [the unstable book].
 ["The Rust Programming Language"]: https://doc.rust-lang.org/book/second-edition/
 [the unstable book]: https://doc.rust-lang.org/unstable-book/
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## Slight deviation from std
+### Slight deviation from std
 
 Although both `#[panic_implementation]` (no-std) and custom panic hooks (std)
 use the same `PanicInfo` type. The behavior of the `PanicInfo.payload()` method
@@ -184,15 +184,15 @@ changes depending on which context it is used: given `panic!("{}", 42)`,
 `payload()` will return a `String`, behind an `Any` trait object, in std context
 but it will return an opaque `Any` trait object in no-std context.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Not doing this
+### Not doing this
 
 Not providing a stable alternative to the `panic_fmt` language item means that
 no-std applications will continue to be tied to the nightly channel.
 
-## Two `PanicInfo` types
+### Two `PanicInfo` types
 
 An alternative design is to have two different `PanicInfo` types, one in `core`
 and one in `std`. The difference between these two types would be in their APIs:
@@ -223,16 +223,16 @@ This design precludes supporting payloads in `core::panic!` but also eliminates
 the difference between `core::PanicInfo.payload()` in no-std vs std by
 eliminating the method in the former context.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
-## `fmt::Display`
+### `fmt::Display`
 
 Should the `Display` of `PanicInfo` format the panic information as `"panicked
 at 'reason', src/main.rs:27:4"`, as `"'reason', src/main.rs:27:4"`, or simply as
 `"reason"`.
 
-## Unwinding in no-std
+### Unwinding in no-std
 
 Is this design compatible, or can it be extended to work, with unwinding
 implementations for no-std environments?

@@ -2,23 +2,23 @@
 - RFC PR: [rust-lang/rfcs#430](https://github.com/rust-lang/rfcs/pull/430)
 - Rust Issue: [rust-lang/rust#19091](https://github.com/rust-lang/rust/issues/19091)
 
-# Summary
+## Summary
 
 This conventions RFC tweaks and finalizes a few long-running de facto
 conventions, including capitalization/underscores, and the role of the `unwrap` method.
 
 See [this RFC](https://github.com/rust-lang/rfcs/pull/328) for a competing proposal for `unwrap`.
 
-# Motivation
+## Motivation
 
 This is part of the ongoing conventions formalization process. The
 conventions described here have been loosely followed for a long time,
 but this RFC seeks to nail down a few final details and make them
 official.
 
-# Detailed design
+## Detailed design
 
-## General naming conventions
+### General naming conventions
 
 In general, Rust tends to use `UpperCamelCase` for "type-level" constructs
 (types and traits) and `snake_case` for "value-level" constructs. More
@@ -41,7 +41,7 @@ precisely, the proposed (and mostly followed) conventions are:
 | Type parameters | concise `UpperCamelCase`, usually single uppercase letter: `T` |
 | Lifetimes | short, lowercase: `'a` |
 
-### Fine points
+#### Fine points
 
 In `UpperCamelCase`, acronyms count as one word: use `Uuid` rather than
 `UUID`.  In `snake_case`, acronyms are lower-cased: `is_xid_start`.
@@ -53,7 +53,7 @@ In `snake_case` or `SCREAMING_SNAKE_CASE`, a "word" should never
 consist of a single letter unless it is the last "word". So, we have
 `btree_map` rather than `b_tree_map`, but `PI_2` rather than `PI2`.
 
-## `unwrap`, `into_foo` and `into_inner`
+### `unwrap`, `into_foo` and `into_inner`
 
 There has been a [long](https://github.com/mozilla/rust/issues/13159)
 [running](https://github.com/rust-lang/rust/pull/16436)
@@ -79,10 +79,10 @@ concrete `foo`, but for generic types like `RefCell` the name
 panic; and by (proposed) convention, `unwrap` should be reserved for
 an `into_inner` conversion that *can*.
 
-# Drawbacks
+## Drawbacks
 
 Not really applicable; we need to finalize these conventions.
 
-# Unresolved questions
+## Unresolved questions
 
 Are there remaining subtleties about the rules here that should be clarified?

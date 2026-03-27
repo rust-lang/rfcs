@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1102](https://github.com/rust-lang/rfcs/pull/1102)
 - Rust Issue: [rust-lang/rust#26900](https://github.com/rust-lang/rust/issues/26900)
 
-# Summary
+## Summary
 
 Rename `.connect()` to `.join()` in `SliceConcatExt`.
 
-# Motivation
+## Motivation
 
 Rust has a string concatenation method named `.connect()` in `SliceConcatExt`.
 However, this does not align with the precedents in other languages. Most
@@ -45,7 +45,7 @@ Another reason is that the term "join" already has similar usage in the standard
 library. There are `std::path::Path::join` and `std::env::join_paths` which are
 used to join the paths.
 
-# Detailed design
+## Detailed design
 
 While the `SliceConcatExt` trait is unstable, the `.connect()` method itself is
 marked as stable. So we need to:
@@ -59,19 +59,19 @@ may require even more consensus.
 
 [instability guarantee]: https://github.com/rust-lang/rust/issues/24928
 
-# Drawbacks
+## Drawbacks
 
 Having a deprecated method in a newborn language is not pretty.
 
 If we do remove the `.connect()` method, the language becomes pretty again, but
 it breaks the stability guarantee at the same time.
 
-# Alternatives
+## Alternatives
 
 Keep the status quo. Improving searchability in the docs will help newcomers
 find the appropriate method.
 
-# Unresolved questions
+## Unresolved questions
 
 Are there even more clever names for the method? How about `.homura()`, or
 `.madoka()`?

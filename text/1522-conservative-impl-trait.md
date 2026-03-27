@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1522](https://github.com/rust-lang/rfcs/pull/1522)
 - Rust Issue: [rust-lang/rust#34511](https://github.com/rust-lang/rust/issues/34511)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a conservative form of abstract return types, also known as `impl
@@ -32,7 +32,7 @@ for x in foo(10) {
 }
 ```
 
-# Background
+## Background
 
 There has been much discussion around the `impl Trait` feature already, with
 different proposals extending the core idea into different directions:
@@ -53,7 +53,7 @@ This RFC is closest in spirit to the
 [original RFC](https://github.com/rust-lang/rfcs/pull/105), and we'll repeat
 its motivation and some other parts of its text below.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 > Why are we doing this? What use cases does it support? What is the expected outcome?
@@ -128,7 +128,7 @@ In short, unboxed abstract types make it easy for a function signature to
 promise nothing more than a trait bound, and do not generally require the
 function's author to write down the concrete type implementing the bound.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 As explained at the start of the RFC, the focus here is a relatively narrow
@@ -138,7 +138,7 @@ about what an "abstract type" means even in these cases, we avoid some of the
 complexities that come along with allowing the feature in other locations or
 with other extensions.
 
-## Syntax
+### Syntax
 
 Let's start with the bikeshed: The proposed syntax is `impl Trait` in return type
 position, composing like trait objects to forms like `impl Foo + Send + 'a`.
@@ -156,7 +156,7 @@ good reasons for or against them, but since the concrete choice of syntax
 is not a blocker for the implementation of this RFC, it is intended for
 a possible follow-up RFC to address syntax changes if needed.
 
-## Semantics
+### Semantics
 
 The core semantics of the feature is described below.
 
@@ -250,9 +250,9 @@ and the *initial limitations* (which are likely to be lifted later).
 
   - It's unclear whether we'll want to lift this limitation, but it should be possible to do so.
 
-## Rationale
+### Rationale
 
-### Why these semantics for the return type?
+#### Why these semantics for the return type?
 
 There has been a lot of discussion about what the semantics of the return type
 should be, with the theoretical extremes being "full return type inference" and
@@ -267,7 +267,7 @@ being returned. That is, `impl Trait` does not attempt to be a "tightly sealed"
 abstraction boundary. The rationale for this design is a mixture of pragmatics
 and principles.
 
-#### Specialization transparency
+##### Specialization transparency
 
 **Principles for specialization transparency**:
 
@@ -299,7 +299,7 @@ returning `impl Iterator`. We are very likely to employ specialization for vario
 iterator types, and making the underlying return type invisible to
 specialization would lose out on those efficiency wins.
 
-#### OIBIT transparency
+##### OIBIT transparency
 
 OIBITs leak through an abstract return type. This might be considered controversial, since
 it effectively opens a channel where the result of function-local type inference affects
@@ -330,7 +330,7 @@ But since the number of used OIBITs is relatively small, deducing the return typ
 in a function body and reasoning about whether such a breakage will occur has
 been deemed as a manageable amount of work.
 
-#### Wherefore type abstraction?
+##### Wherefore type abstraction?
 
 In the [most recent RFC](https://github.com/rust-lang/rfcs/pull/1305) related to
 this feature, a more "tightly sealed" abstraction mechanism was
@@ -342,7 +342,7 @@ primary mechanism for hiding
 practice, that means that if you want opacity against specialization, you should
 use something like a newtype.
 
-### Anonymity
+#### Anonymity
 
 An abstract return type cannot be named in this proposal, which means that it
 cannot be placed into `structs` and so on. This is not a fundamental limitation
@@ -351,7 +351,7 @@ the precise way we might want to allow naming of such types is still a bit
 unclear. Some possibilities include a `typeof` operator, or explicit named
 abstract types.
 
-### Limitation to only return type position
+#### Limitation to only return type position
 
 There have been various proposed additional places where abstract types
 might be usable. For example, `fn x(y: impl Trait)` as shorthand for
@@ -361,7 +361,7 @@ Since the exact semantics and user experience for these locations are yet
 unclear (`impl Trait` would effectively behave completely different before and after
 the `->`), this has also been excluded from this proposal.
 
-### Type transparency in recursive functions
+#### Type transparency in recursive functions
 
 Functions with abstract return types can not see through their own return type,
 making code like this not compile:
@@ -402,13 +402,13 @@ fn sum_to(n: u32) -> impl Display {
 }
 ```
 
-### Not legal in function pointers/closure traits
+#### Not legal in function pointers/closure traits
 
 Because `impl Trait` defines a type tied to the concrete function body,
 it does not make much sense to talk about it separately in a function signature,
 so the syntax is forbidden there.
 
-### Compatibility with conditional trait bounds
+#### Compatibility with conditional trait bounds
 
 One valid critique for the existing `impl Trait` proposal is that it does not
 cover more complex scenarios where the return type would implement
@@ -429,7 +429,7 @@ Using just `-> impl Iterator`, this would not be possible to reproduce.
 Since there have been no proposals so far that would address this in a way
 that would conflict with the fixed-trait-set case, this RFC punts on that issue as well.
 
-### Limitation to free/inherent functions
+#### Limitation to free/inherent functions
 
 One important usecase of abstract return types is to use them in trait methods.
 
@@ -491,12 +491,12 @@ an abstract return type is its own thing or sugar for a associated type,
 how it interacts with other associated items and so on,
 so forbidding them in traits seems like the best initial course of action.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 > Why should we *not* do this?
 
-## Drawbacks due to the proposal's minimalism
+### Drawbacks due to the proposal's minimalism
 
 As has been elaborated on above, there are various way this feature could be
 extended and combined with the language, so implementing it might cause issues
@@ -512,7 +512,7 @@ way to talk about unknown-but-bounded types in function signatures. This could
 be particularly bewildering to newcomers, who must choose between `T: Trait`,
 `Box<Trait>`, and `impl Trait`, with the latter only usable in one place.
 
-## Drawbacks due to partial transparency
+### Drawbacks due to partial transparency
 
 The fact that specialization and OIBITs can "see through" `impl Trait` may be
 surprising, to the extent that one wants to see `impl Trait` as an abstraction
@@ -521,7 +521,7 @@ probably the most consistent with our existing post-specialization abstraction
 mechanisms, and lead to the relatively simple story that *privacy* is the way to
 achieve hiding in Rust.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 > What other designs have been considered? What is the impact of not doing this?
@@ -533,7 +533,7 @@ But basically, without this feature certain things remain hard or impossible to 
 in Rust, like returning a efficiently usable type parameterized by
 types private to a function body, for example an iterator adapter containing a closure.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 > What parts of the design are still to be determined?

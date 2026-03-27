@@ -1,6 +1,10 @@
-# Rust RFCs - [Active RFC List](https://rfcbot.rs/)
+# Rust RFCs - [RFC Book](https://rust-lang.github.io/rfcs/) - [Active RFC List](https://rfcbot.rs/)
 
 [Rust RFCs]: #rust-rfcs
+
+The "RFC" (request for comments) process is intended to provide a consistent
+and controlled path for changes to Rust (such as new features) so that all
+stakeholders can be confident about the direction of the project.
 
 Many changes, including bug fixes and documentation improvements can be
 implemented and reviewed via the normal GitHub pull request workflow.
@@ -9,18 +13,13 @@ Some changes though are "substantial", and we ask that these be put through a
 bit of a design process and produce a consensus among the Rust community and
 the [sub-team]s.
 
-The "RFC" (request for comments) process is intended to provide a consistent
-and controlled path for new features to enter the language and standard
-libraries, so that all stakeholders can be confident about the direction the
-language is evolving in.
-
-
 ## Table of Contents
 [Table of Contents]: #table-of-contents
 
   - [Opening](#rust-rfcs)
   - [Table of Contents]
   - [When you need to follow this process]
+  - [Sub-team specific guidelines]
   - [Before creating an RFC]
   - [What the process is]
   - [The RFC life-cycle]
@@ -29,6 +28,7 @@ language is evolving in.
   - [RFC Postponement]
   - [Help this is all too informal!]
   - [License]
+  - [Contributions]
 
 
 ## When you need to follow this process
@@ -42,9 +42,7 @@ following.
 
   - Any semantic or syntactic change to the language that is not a bugfix.
   - Removing language features, including those that are feature-gated.
-  - Changes to the interface between the compiler and libraries, including lang
-    items and intrinsics.
-  - Additions to `std`.
+  - Large additions to `std`.
 
 Some changes do not require an RFC:
 
@@ -55,6 +53,7 @@ Some changes do not require an RFC:
     more errors, etc.)
   - Additions only likely to be _noticed by_ other developers-of-rust,
     invisible to users-of-rust.
+  - Minor additions to `std`: these only require an [ACP](https://std-dev-guide.rust-lang.org/development/feature-lifecycle.html).
 
 If you submit a pull request to implement a new feature without going through
 the RFC process, it may be closed with a polite request to submit an RFC first.
@@ -86,7 +85,7 @@ beforehand, to ascertain that the RFC may be desirable; having a consistent
 impact on the project requires concerted effort toward consensus-building.
 
 The most common preparations for writing and submitting an RFC include talking
-the idea over on our [official Discord server], discussing the topic on our
+the idea over on our [official Zulip server], discussing the topic on our
 [developer discussion forum], and occasionally posting "pre-RFCs" on the
 developer forum. You may file issues on this repo for discussion, but these are
 not actively looked at by the teams.
@@ -105,7 +104,8 @@ merged into the RFC repository as a markdown file. At that point the RFC is
 
   - Fork the RFC repo [RFC repository]
   - Copy `0000-template.md` to `text/0000-my-feature.md` (where "my-feature" is
-    descriptive. don't assign an RFC number yet).
+    descriptive). Don't assign an RFC number yet; This is going to be the PR
+    number and we'll rename the file accordingly if the RFC is accepted.
   - Fill in the RFC. Put care into the details: RFCs that do not present
     convincing motivation, demonstrate lack of understanding of the design's
     impact, or are disingenuous about the drawbacks or alternatives tend to
@@ -113,6 +113,9 @@ merged into the RFC repository as a markdown file. At that point the RFC is
   - Submit a pull request. As a pull request the RFC will receive design
     feedback from the larger community, and the author should be prepared to
     revise it in response.
+  - Now that your RFC has an open pull request, use the issue number of the PR
+    to rename the file: update your `0000-` prefix to that number. Also
+    update the "RFC PR" link at the top of the file.
   - Each pull request will be labeled with the most relevant [sub-team], which
     will lead to its being triaged by that team in a future meeting and assigned
     to a member of the subteam.
@@ -127,26 +130,26 @@ merged into the RFC repository as a markdown file. At that point the RFC is
     and drawbacks are shown. You can make edits, big and small, to the RFC to
     clarify or change the design, but make changes as new commits to the pull
     request, and leave a comment on the pull request explaining your changes.
-    Specifically, do not squash or rebase commits after they are visible on the
-    pull request.
+    **Specifically, do not squash or rebase commits after they are visible on
+    the pull request.**
   - At some point, a member of the subteam will propose a "motion for final
     comment period" (FCP), along with a *disposition* for the RFC (merge, close,
     or postpone).
     - This step is taken when enough of the tradeoffs have been discussed that
-    the subteam is in a position to make a decision. That does not require
-    consensus amongst all participants in the RFC thread (which is usually
-    impossible). However, the argument supporting the disposition on the RFC
-    needs to have already been clearly articulated, and there should not be a
-    strong consensus *against* that position outside of the subteam. Subteam
-    members use their best judgment in taking this step, and the FCP itself
-    ensures there is ample time and notification for stakeholders to push back
-    if it is made prematurely.
+      the subteam is in a position to make a decision. That does not require
+      consensus amongst all participants in the RFC thread (which is usually
+      impossible). However, the argument supporting the disposition on the RFC
+      needs to have already been clearly articulated, and there should not be a
+      strong consensus *against* that position outside of the subteam. Subteam
+      members use their best judgment in taking this step, and the FCP itself
+      ensures there is ample time and notification for stakeholders to push
+      back if it is made prematurely.
     - For RFCs with lengthy discussion, the motion to FCP is usually preceded by
       a *summary comment* trying to lay out the current state of the discussion
       and major tradeoffs/points of disagreement.
     - Before actually entering FCP, *all* members of the subteam must sign off;
-    this is often the point at which many subteam members first review the RFC
-    in full depth.
+      this is often the point at which many subteam members first review the
+      RFC in full depth.
   - The FCP lasts ten calendar days, so that it is open for at least 5 business
     days. It is also advertised widely,
     e.g. in [This Week in Rust](https://this-week-in-rust.org/). This way all
@@ -248,21 +251,24 @@ circumstances. As usual, we are trying to let the process be driven by
 consensus and community norms, not impose more structure than necessary.
 
 
-[official Discord server]: https://discord.gg/rust-lang
-[developer discussion forum]: http://internals.rust-lang.org/
-[RFC repository]: http://github.com/rust-lang/rfcs
-[sub-team]: http://www.rust-lang.org/team.html
-
 ## License
 [License]: #license
 
 This repository is currently in the process of being licensed under either of:
 
-* Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-* MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+* Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
 
 at your option. Some parts of the repository are already licensed according to those terms. For more see [RFC 2044](https://github.com/rust-lang/rfcs/pull/2044) and its [tracking issue](https://github.com/rust-lang/rust/issues/43461).
 
+
 ### Contributions
+[Contributions]: #contributions
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+
+[official Zulip server]: https://rust-lang.zulipchat.com/
+[developer discussion forum]: https://internals.rust-lang.org/
+[RFC repository]: https://github.com/rust-lang/rfcs
+[sub-team]: https://www.rust-lang.org/team.html

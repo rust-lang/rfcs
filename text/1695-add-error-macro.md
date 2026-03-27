@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1695](https://github.com/rust-lang/rfcs/pull/1695)
 - Rust Issue: [rust-lang/rust#40872](https://github.com/rust-lang/rust/issues/40872)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes adding a new macro to `libcore`, `compile_error!` which will
 unconditionally cause compilation to fail with the given error message when
 encountered.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Crates which work with macros or annotations such as `cfg` have no tools to
@@ -48,7 +48,7 @@ compile_error!("At least one backend must be used with this crate. \
     Please specify `features = ["postgresql"]` or `features = ["sqlite"]`")
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The span given for the failure should be the invocation of the `compile_error!`
@@ -56,18 +56,18 @@ macro. The macro must take exactly one argument, which is a string literal. The
 macro will then call `span_err` with the provided message on the expansion
 context, and will not expand to any further code.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Wait for the stabilization of procedural macros, at which point a crate could
 provide this functionality.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None

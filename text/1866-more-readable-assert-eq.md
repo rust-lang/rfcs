@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#41615](https://github.com/rust-lang/rust/issues/41615)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 Improve the `assert_eq` failure message formatting to increase legibility.
@@ -12,7 +12,7 @@ Improve the `assert_eq` failure message formatting to increase legibility.
 [Previous RFC issue](https://github.com/rust-lang/rfcs/issues/1864).
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently when `assert_eq` fails the default panic text has all the
@@ -22,7 +22,7 @@ format of this text in order improve legibility, putting each piece of
 information on a different line.
 
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Here is an failing test with the current format:
@@ -74,7 +74,7 @@ note: Run with `RUST_BACKTRACE=1` for a backtrace.
 ```
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This could be a breaking change if people are parsing this text. I feel the
@@ -84,5 +84,5 @@ Colour diffing will require quite a bit more work to support terminals on all
 platforms.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions

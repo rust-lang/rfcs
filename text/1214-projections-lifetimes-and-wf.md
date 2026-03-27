@@ -1,9 +1,9 @@
 - Feature Name: N/A
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2015-07-17
 - RFC PR: [rust-lang/rfcs#1214](https://github.com/rust-lang/rfcs/pull/1214)
 - Rust Issue: [rust-lang/rust#27579](https://github.com/rust-lang/rust/issues/27579)
 
-# Summary
+## Summary
 
 Type system changes to address the outlives relation with respect to
 projections, and to better enforce that all types are well-formed
@@ -33,7 +33,7 @@ Note that although the changes do cause regressions, they also cause
 some code (like that in [#23442]) which currently gets errors to
 compile successfully.
 
-# Motivation
+## Motivation
 
 ### TL;DR
 
@@ -259,14 +259,14 @@ Here, the WF criteria for `DeltaMap<K,V>` are as follows:
 - `V: Sized`, because of the implicit `Sized` bound
 
 Let's look at those `K:'a` bounds a bit more closely. If you leave
-them out, you will find that the the structure definition above does
+them out, you will find that the structure definition above does
 not type-check. This is due to the requirement that the types of all
 fields in a structure definition must be well-formed.  In this case,
 the field `base_map` has the type `&'a mut HashMap<K,V>`, and this
 type is only valid if `K: 'a` and `V: 'a` hold. Since we don't know
 what `K` and `V` are, we have to surface this requirement in the form
 of a where-clause, so that users of the struct know that they must
-maintain this relationship in order for the struct to be interally
+maintain this relationship in order for the struct to be internally
 coherent.
 
 #### An aside: explicit WF requirements on types
@@ -381,7 +381,7 @@ of an impl will validate this requirement whenever they project out of
 a trait reference (e.g., to do a method call, or normalize an
 associated type).
 
-# Detailed design
+## Detailed design
 
 This section dives into detail on the proposed type rules.
 
@@ -551,7 +551,7 @@ Let's begin with a concrete example of an iterator type, like
 
     <Iter<'a,T> as Iterator>::Item
 
-or, in the more succint (but potentially ambiguous) form:
+or, in the more succinct (but potentially ambiguous) form:
 
     Iter<'a,T>::Item
 
@@ -680,7 +680,7 @@ sufficient.
 
 This complication is unfortunate, but to a large extent already exists
 with where-clauses and trait matching (see e.g. [#21974]). (Moreover,
-it seems to be inherent to the concept of assocated types, since they
+it seems to be inherent to the concept of associated types, since they
 take several inputs (the parameters to the trait) which may or may not
 be related to the actual type definition in question.)
 
@@ -775,7 +775,7 @@ Note that `fn` types do not require that `T0..Tn` be `Sized`.  This is
 intentional. The limitation that only sized values can be passed as
 argument (or returned) is enforced at the time when a fn is actually
 called, as well as in actual fn definitions, but is not considered
-fundamental to fn types thesmelves. There are several reasons for
+fundamental to fn types themselves. There are several reasons for
 this. For one thing, it's forwards compatible with passing DST by
 value. For another, it means that non-defaulted trait methods to do
 not have to show that their argument types are `Sized` (this will be
@@ -794,7 +794,7 @@ The object type rule is similar, though it includes an extra clause:
       R ⊢ O0..On+r WF
 
 The first two clauses here state that the explicit lifetime bound `r`
-must be an approximation for the the implicit bounds `rᵢ` derived from
+must be an approximation for the implicit bounds `rᵢ` derived from
 the trait definitions. That is, if you have a trait definition like
 
 ```rust
@@ -867,7 +867,7 @@ struct Foo<'a, T:Eq> { .. }
 
 and a function type like `for<'a> fn(f: Foo<'a, T>)`, I still must
 show that `T: Eq` holds for that function to be well-formed.  This is
-because the condition which is geneated will be `'a ⊢ T: Eq`, but `'a`
+because the condition which is generated will be `'a ⊢ T: Eq`, but `'a`
 is not referenced there.
 
 #### Implied bounds
@@ -968,15 +968,15 @@ to the rules given above.
 like `T::Foo` is normalized, we will require that the trait reference
 is WF.
 
-# Drawbacks
+## Drawbacks
 
 N/A
 
-# Alternatives
+## Alternatives
 
 I'm not aware of any appealing alternatives.
 
-# Unresolved questions
+## Unresolved questions
 
 **Best policy for type aliases.** The current policy is not to check
 type aliases, since they are transparent to type-checking, and hence
@@ -1017,7 +1017,7 @@ regions, so probably yes.
 [#21974]: https://github.com/rust-lang/rust/issues/21974
 [RFC 546]: 0546-Self-not-sized-by-default.md
 
-# Appendix
+## Appendix
 
 The informal explanation glossed over some details. This appendix
 tries to be a bit more thorough with how it is that we can conclude
@@ -1106,7 +1106,7 @@ then `R ⊢ P': 'a`. Proceed by induction and by cases over the form of `P`:
 in a type outlive `'a`, then the type outlives `'a`. Follows by
 inspection of the outlives rules.
 
-# Edit History
+## Edit History
 
 [RFC1592] - amend to require that tuple fields be sized
 

@@ -2,11 +2,11 @@
 - RFC PR #: [rust-lang/rfcs#544](https://github.com/rust-lang/rfcs/pull/544)
 - Rust Issue #: [rust-lang/rust#20639](https://github.com/rust-lang/rust/issues/20639)
 
-# Summary
+## Summary
 
 This RFC proposes that we rename the pointer-sized integer types `int/uint`, so as to avoid misconceptions and misuses. After extensive community discussions and several revisions of this RFC, the finally chosen names are `isize/usize`.
 
-# Motivation
+## Motivation
 
 Currently, Rust defines two [machine-dependent integer types](http://doc.rust-lang.org/reference.html#machine-dependent-integer-types) `int/uint` that have the same number of bits as the target platform's pointer type. These two types are used for many purposes: indices, counts, sizes, offsets, etc.
 
@@ -44,7 +44,7 @@ This RFC originally proposed a new pair of alternatives `intx/uintx`.
 
 However, given the discussions about the previous revisions of this RFC, and the discussions in [Restarting the `int/uint` Discussion]( http://discuss.rust-lang.org/t/restarting-the-int-uint-discussion/1131), this RFC author (@CloudiDust) now believes that `intx/uintx` are not ideal. Instead, one of the other pairs of alternatives should be chosen. The finally chosen names are `isize/usize`.
 
-# Detailed Design
+## Detailed Design
 
 - Rename `int/uint` to `isize/usize`, with them being their own literal suffixes.
 - Update code and documentation to use pointer-sized integers more narrowly for their intended purposes. Provide a deprecation period to carry out these updates.
@@ -57,37 +57,37 @@ fn slice_or_fail<'b>(&'b self, from: &usize, to: &usize) -> &'b [T]
 
 There are different opinions about which literal suffixes to use. The following section would discuss the alternatives.
 
-## Choosing literal suffixes:
+### Choosing literal suffixes:
 
-### `isize/usize`:
+#### `isize/usize`:
 
 * Pros: They are the same as the type names, very consistent with the rest of the integer primitives.
 * Cons: They are too long for some, and may stand out too much as suffixes. However, discouraging people from overusing `isize/usize` is the point of this RFC. And if they are not overused, then this will not be a problem in practice.
 
-### `is/us`:
+#### `is/us`:
 
 * Pros: They are succinct as suffixes.
 * Cons: They are actual English words, with `is` being a keyword in many programming languages and `us` being an abbreviation of "unsigned" (losing information) or "microsecond" (misleading). Also, `is/us` may be *too* short (shorter than `i64/u64`) and *too* pleasant to use, which can be a problem.
 
 Note: No matter which suffixes get chosen, it can be beneficial to reserve `is` as a keyword, but this is outside the scope of this RFC.
 
-### `iz/uz`:
+#### `iz/uz`:
 
 * Pros and cons: Similar to those of `is/us`, except that `iz/uz` are not actual words, which is an additional advantage. However it may not be immediately clear that `iz/uz` are abbreviations of `isize/usize`.
 
-### `i/u`:
+#### `i/u`:
 
 * Pros: They are very succinct.
 * Cons: They are *too* succinct and carry the "default integer types" connotation, which is undesirable. 
 
-### `isz/usz`:
+#### `isz/usz`:
 
 * Pros: They are the middle grounds between `isize/usize` and `is/us`, neither too long nor too short. They are not actual English words and it's clear that they are short for `isize/usize`.
 * Cons: Not everyone likes the appearances of `isz/usz`, but this can be said about all the candidates.
 
 After community discussions, it is deemed that using `isize/usize` directly as suffixes is a fine choice and there is no need to introduce other suffixes.
 
-## Advantages of `isize/usize`:
+### Advantages of `isize/usize`:
 
 - The names indicate their common use cases (container sizes/indices/offsets), so people will know where to use them, instead of overusing them everywhere.
 - The names follow the `i/u + {suffix}` pattern that is used by all the other primitive integer types like `i32/u32`.
@@ -96,13 +96,13 @@ After community discussions, it is deemed that using `isize/usize` directly as s
 
 See **Alternatives B to L** for the alternatives to `isize/usize` that have been rejected.
 
-# Drawbacks
+## Drawbacks
 
-## Drawbacks of the renaming in general:
+### Drawbacks of the renaming in general:
 
 - Renaming `int`/`uint` requires changing much existing code. On the other hand, this is an ideal opportunity to fix integer portability bugs.
 
-## Drawbacks of `isize/usize`:
+### Drawbacks of `isize/usize`:
 
 - The names fail to indicate the precise semantics of the types - *pointer-sized integers*. (And they don't follow the `i32/u32` pattern as faithfully as possible, as `32` indicates the exact size of the types, but `size` in `isize/usize` is vague in this aspect.)
 - The names favour some of the types' use cases over the others.
@@ -110,15 +110,15 @@ See **Alternatives B to L** for the alternatives to `isize/usize` that have been
 
 Familiarity is a double edged sword here. `isize/usize` are chosen not because they are perfect, but because they represent a good compromise between semantic accuracy, familiarity and code readability. Given good documentation, the drawbacks listed here may not matter much in practice, and the combined familiarity and readability advantage outweighs them all.
 
-# Alternatives
+## Alternatives
 
-## A. Keep the status quo:
+### A. Keep the status quo:
 
 Which may hurt in the long run, especially when there is at least one (would-be?) high-profile language (which is Rust-inspired) taking the opposite stance of Rust.
 
 The following alternatives make different trade-offs, and choosing one would be quite a subjective matter. But they are all better than the status quo.
 
-## B. `iptr/uptr`:
+### B. `iptr/uptr`:
 
 - Pros: "Pointer-sized integer", exactly what they are.
 - Cons: C/C++ have `intptr_t/uintptr_t`, which are typically *only* used for storing casted pointer values. We don't want people to confuse the Rust types with the C/C++ ones, as the Rust ones have more typical use cases. Also, people may wonder why all data structures have "pointers" in their method signatures. Besides the "funny-looking" aspect, the names may have an incorrect "pointer fiddling and unsafe staff" connotation there, as `ptr` isn't usually seen in safe Rust code.
@@ -131,7 +131,7 @@ fn slice_or_fail<'b>(&'b self, from: &uptr, to: &uptr) -> &'b [T]
 
 It feels like working with pointers, not integers.
 
-## C. `imem/umem`:
+### C. `imem/umem`:
 
 When originally proposed, `mem`/`m` are interpreted as "memory numbers" (See @1fish2's comment in [RFC PR 464](https://github.com/rust-lang/rfcs/pull/464)):
 
@@ -150,7 +150,7 @@ fn slice_or_fail<'b>(&'b self, from: &umem, to: &umem) -> &'b [T]
 
 `umem` still feels like a pointer-like construct here (from "some memory" to "some other memory"), even though it doesn't have `ptr` in its name.
 
-## D. `intp/uintp` and `intm/uintm`:
+### D. `intp/uintp` and `intm/uintm`:
 
 Variants of Alternatives B and C. Instead of stressing the `ptr` or `mem` part, they stress the `int` or `uint` part.
 
@@ -165,19 +165,19 @@ fn slice_or_fail<'b>(&'b self, from: &uintm, to: &uintm) -> &'b [T]
 fn slice_or_fail<'b>(&'b self, from: &uintp, to: &uintp) -> &'b [T]
 ```
 
-## E. `intx/uintx`:
+### E. `intx/uintx`:
 
 The original proposed names of this RFC, where `x` means "unknown/variable/platform-dependent".
 
 They share the same problems with `intp/uintp` and `intm/uintm`, while *in addition* failing to be specific enough. There are other kinds of platform-dependent integer types after all (like register-sized ones), so which ones are `intx/uintx`?
 
-## F. `idiff/usize`:
+### F. `idiff/usize`:
 
 There is a problem with `isize`: it most likely will remind people of C/C++ `ssize_t`. But `ssize_t` is in the POSIX standard, not the C/C++ ones, and is *not for index offsets* according to POSIX. The correct type for index offsets in C99 is `ptrdiff_t`, so for a type representing offsets, `idiff` may be a better name.
 
 However, `isize/usize` have the advantage of being symmetrical, and ultimately, even with a name like `idiff`, some semantic mismatch between `idiff` and `ptrdiff_t` would still exist. Also, for fitting a casted pointer value, a type named `isize` is better than one named `idiff`. (Though both would lose to `iptr`.)
 
-## G. `iptr/uptr` *and* `idiff/usize`:
+### G. `iptr/uptr` *and* `idiff/usize`:
 
 Rename `int/uint` to `iptr/uptr`, with `idiff/usize` being aliases and used in container method signatures.
 
@@ -193,7 +193,7 @@ However, this setup brings two sets of types that share the same underlying repr
 
 Thus, even introducing four names would not fix the "failing to express the precise semantics of the types" problem. Rust just doesn't need to, and *shouldn't* distinguish between `iptr/idiff` and `uptr/usize`, doing so would bring much confusion for very questionable gain.
 
-## H. `isiz/usiz`:
+### H. `isiz/usiz`:
 
 A pair of variants of `isize/usize`. This author believes that the missing `e` may be enough to warn people that these are not `ssize_t/size_t` with "Rustfied" names. But at the same time, `isiz/usiz` mostly retain the familiarity of `isize/usize`.
 
@@ -203,7 +203,7 @@ However, `isiz/usiz` still hide the actual semantics of the types, and omitting 
 fn slice_or_fail<'b>(&'b self, from: &usiz, to: &usiz) -> &'b [T]
 ```
 
-## I. `iptr_size/uptr_size`:
+### I. `iptr_size/uptr_size`:
 
 The names are very clear about the semantics, but are also irregular, too long and feel out of place.
 
@@ -211,7 +211,7 @@ The names are very clear about the semantics, but are also irregular, too long a
 fn slice_or_fail<'b>(&'b self, from: &uptr_size, to: &uptr_size) -> &'b [T]
 ```
 
-## J. `iptrsz/uptrsz`:
+### J. `iptrsz/uptrsz`:
 
 Clear semantics, but still a bit too long (though better than `iptr_size/uptr_size`), and the `ptr` parts are still a bit concerning (though to a much less extent than `iptr/uptr`). On the other hand, being "a bit too long" may not be a disadvantage here.
 
@@ -219,7 +219,7 @@ Clear semantics, but still a bit too long (though better than `iptr_size/uptr_si
 fn slice_or_fail<'b>(&'b self, from: &uptrsz, to: &uptrsz) -> &'b [T]
 ```
 
-## K. `ipsz/upsz`:
+### K. `ipsz/upsz`:
 
 Now (and only now, which is the problem) it is clear where this pair of alternatives comes from.
 
@@ -233,15 +233,15 @@ fn slice_or_fail<'b>(&'b self, from: &upsz, to: &upsz) -> &'b [T]
 
 `ipsz/upsz` have gone too far. They are completely incomprehensible without the documentation. Many rightfully do not like letter soup. The only advantage here is that, no one would be very likely to think he/she is dealing with pointers. `iptrsz/uptrsz` are better in the comprehensibility aspect.
 
-## L. Others:
+### L. Others:
 
 There are other alternatives not covered in this RFC. Please refer to this RFC's comments and [RFC PR 464](https://github.com/rust-lang/rfcs/pull/464) for more.
 
-# Unresolved questions
+## Unresolved questions
 
 None. Necessary decisions about Rust's general integer type policies have been made in [Restarting the `int/uint` Discussion](http://discuss.rust-lang.org/t/restarting-the-int-uint-discussion/1131).
 
-# History
+## History
 
 Amended by [RFC 573][573] to change the suffixes from `is` and `us` to
 `isize` and `usize`. Tracking issue for this amendment is

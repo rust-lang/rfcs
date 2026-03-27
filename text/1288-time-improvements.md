@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1288](https://github.com/rust-lang/rfcs/pull/1288)
 - Rust Issue: [rust-lang/rust#29866](https://github.com/rust-lang/rust/issues/29866)
 
-# Summary
+## Summary
 
 This RFC proposes several new types and associated APIs for working with times in Rust.
 The primary new types are `Instant`, for working with time that is guaranteed to be
 monotonic, and `SystemTime`, for working with times across processes on a single system
 (usually internally represented as a number of seconds since an epoch).
 
-# Motivations
+## Motivations
 
 The primary motivation of this RFC is to flesh out a larger set of APIs for
 representing instants in time and durations of time.
@@ -117,9 +117,9 @@ with the system clock has more methods that return `Result`s.
 This RFC does not attempt to define a type for calendared DateTimes, nor does it
 directly address time zones.
 
-# Proposal
+## Proposal
 
-## Types
+### Types
 
 ```rust
 pub struct Instant {
@@ -138,7 +138,7 @@ pub struct Duration {
 }
 ```
 
-### Instant
+#### Instant
 
 `Instant` is the simplest of the types representing moments in time. It
 represents an opaque (non-serializable!) timestamp that is guaranteed to
@@ -221,7 +221,7 @@ impl Duration {
 }
 ```
 
-### SystemTime
+#### SystemTime
 
 **This type should not be used for in-process timestamps, like those used in
 benchmarks.**
@@ -294,7 +294,7 @@ produced it happened in the past (in real time).
 
 ---
 
-##### Illustrative Example:
+###### Illustrative Example:
 
 If a program requests a `SystemTime` that represents the `mtime` of a given file,
 then writes a new file and requests its `SystemTime`, it may expect the second
@@ -305,7 +305,7 @@ possible, and make it easy to handle that case. As always, the programmer can
 use `.unwrap()` in the prototype stage to avoid having to handle the edge-case
 yet, while retaining a reminder that the edge-case is possible.
 
-# Drawbacks
+## Drawbacks
 
 This RFC defines two new types for describing times, and posits a third type
 to complete the picture. At first glance, having three different APIs for
@@ -320,7 +320,7 @@ As a result, this RFC chose to make these differences explicit, allowing
 ergonomic, uncaveated use of monotonic time, and a small speedbump when
 working with times that can move both forward and backward.
 
-# Alternatives
+## Alternatives
 
 One alternative design would be to attempt to have a single unified time
 type. The rationale for not doing so is explained under Drawbacks.
@@ -345,7 +345,7 @@ Because `Ord` is implemented on `SystemTime` and `Instant`, it is
 possible to compare two arbitrary times to each other first, and then
 use `duration_from_earlier` reliably to get a positive `Duration`.
 
-# Unresolved Questions
+## Unresolved Questions
 
 This RFC leaves types related to human representations of dates and times
 to a future proposal.

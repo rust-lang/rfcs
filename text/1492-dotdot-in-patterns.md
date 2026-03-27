@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1492](https://github.com/rust-lang/rfcs/pull/1492)
 - Rust Issue: [rust-lang/rust#33627](https://github.com/rust-lang/rust/issues/33627)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Permit the `..` pattern fragment in more contexts.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The pattern fragment `..` can be used in some patterns to denote several elements in list contexts.
@@ -20,7 +20,7 @@ very similar `V(..)`.
 This RFC is intended to "complete" the feature and make it work in all possible list contexts,
 making the language a bit more convenient and consistent.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Let's list all the patterns currently existing in the language, that contain lists of subpatterns:
@@ -109,17 +109,17 @@ struct patterns.
 This RFC is not critically important and can be rolled out in parts, for example, bare `..` first,
 `..` with a sublist binding eventually.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Do not permit sublist bindings in tuples and tuple structs at all.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Sublist binding syntax conflicts with possible exclusive range patterns

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#85](https://github.com/rust-lang/rfcs/pull/85)
 - Rust Issue: [rust-lang/rust#14473](https://github.com/rust-lang/rust/issues/14473)
 
-# Summary
+## Summary
 
 Allow macro expansion in patterns, i.e.
 
@@ -13,13 +13,13 @@ match x {
 }
 ~~~
 
-# Motivation
+## Motivation
 
 This is consistent with allowing macros in expressions etc.  It's also a year-old [open issue](https://github.com/mozilla/rust/issues/6830).
 
 I have [implemented](https://github.com/mozilla/rust/pull/14298) this feature already and I'm [using it](https://github.com/kmcallister/html5/blob/937684f107090741c8e87135efc6e5476489857b/src/tree_builder/mod.rs#L111-L117) to [condense](https://github.com/kmcallister/html5/blob/937684f107090741c8e87135efc6e5476489857b/src/tree_builder/mod.rs#L261-L269) some ubiquitous patterns in the [HTML parser](https://github.com/kmcallister/html5) I'm writing.  This makes the code more concise and easier to cross-reference with the spec.
 
-# Drawbacks / alternatives
+## Drawbacks / alternatives
 
 A macro invocation in this position:
 
@@ -51,6 +51,6 @@ The `my_match!` approach is also not very composable.
 
 Another small drawback: `rustdoc` [can't document](https://github.com/kmcallister/rust/blob/af65e3e9824087a472de3fea3c7cb1efcec4550b/src/librustdoc/clean.rs#L1287-L1291) the name of a function argument which is produced by a pattern macro.
 
-# Unresolved questions
+## Unresolved questions
 
 None, as far as I know.

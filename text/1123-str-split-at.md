@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1123](https://github.com/rust-lang/rfcs/pull/1123)
 - Rust Issue: [rust-lang/rust#25839](https://github.com/rust-lang/rust/pull/25839)
 
-# Summary
+## Summary
 
 Introduce the method `split_at(&self, mid: usize) -> (&str, &str)` on `str`,
 to divide a slice into two, just like we can with `[T]`.
 
-# Motivation
+## Motivation
 
 Adding `split_at` is a measure to provide a method from `[T]` in a version that
 makes sense for `str`.
@@ -27,7 +27,7 @@ This feature is requested in [rust-lang/rust#18063][freq]
 
 [freq]: https://github.com/rust-lang/rust/issues/18063
 
-# Detailed design
+## Detailed design
 
 Introduce the method `split_at(&self, mid: usize) -> (&str, &str)` on `str`, to
 divide a slice into two.
@@ -81,7 +81,7 @@ indicators that we use to support efficient operations on string slices.
 
 Implementing `split_at_mut` is not relevant for `str` at this time.
 
-# Drawbacks
+## Drawbacks
 
 * `split_at` panics on 1) index out of bounds 2) index not on character
   boundary.
@@ -92,11 +92,11 @@ Implementing `split_at_mut` is not relevant for `str` at this time.
 
 [pr1105]: https://github.com/rust-lang/rfcs/pull/1105
 
-# Alternatives
+## Alternatives
 
 * Recommend other splitting methods, like the split iterators.
 * Stick to writing `(&foo[..mid], &foo[mid..])`
 
-# Unresolved questions
+## Unresolved questions
 
 * *None*

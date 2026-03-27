@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2294](https://github.com/rust-lang/rfcs/pull/2294)
 - Rust Issue: [rust-lang/rust#51114](https://github.com/rust-lang/rust/issues/51114)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow `if let` guards in `match` expressions.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This feature would greatly simplify some logic where we must match a pattern iff some value computed from the `match`-bound values has a certain form, where said value may be costly or impossible (due to affine semantics) to recompute in the match arm.
@@ -75,7 +75,7 @@ fn csi_dispatch(&mut self, parms: &[i64], ims: &[u8], ignore: bool, x: char) {
 
 These examples are both clearer with `if let` guards as follows. Particularly in the latter example, in the author's opinion, the control flow is easier to follow.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 *(Adapted from Rust book)*
@@ -139,26 +139,26 @@ fn erasure(x: char, parms: &[i64]) -> Option<Erasure> {
 ```
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This proposal would introduce syntax for a match arm: `pat if let guard_pat = guard_expr => body_expr` with semantics so the arm is chosen iff the argument of `match` matches `pat` and `guard_expr` matches `guard_pat`. The variables of `pat` are bound in `guard_expr`, and the variables of `pat` and `guard_pat` are bound in `body_expr`. The syntax is otherwise the same as for `if` guards. (Indeed, `if` guards become effectively syntactic sugar for `if let` guards.)
 
 An arm may not have both an `if` and an `if let` guard.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * It further complicates the grammar.
 * It is ultimately syntactic sugar, but the transformation to present Rust is potentially non-obvious.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 * The chief alternatives are to rewrite the guard as an `if` guard and a bind in the match arm, or in some cases into the argument of `match`; or to write the `if let` in the match arm and copy the rest of the `match` into the `else` branch — what can be done with this syntax can already be done in Rust (to the author's knowledge); this proposal is purely ergonomic, but in the author's opinion, the ergonomic win is significant.
 * The proposed syntax feels natural by analogy to the `if` guard syntax we already have, as between `if` and `if let` expressions. No alternative syntaxes were considered.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Questions in scope of this proposal: none yet known

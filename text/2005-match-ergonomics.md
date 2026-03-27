@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2005](https://github.com/rust-lang/rfcs/pull/2005)
 - Rust Issue: [rust-lang/rust#42640](https://github.com/rust-lang/rust/issues/42640)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Better ergonomics for pattern-matching on references.
@@ -11,7 +11,7 @@ Better ergonomics for pattern-matching on references.
 Currently, matching on references requires a bit of a dance using
 `ref` and `&` patterns:
 
-```
+```rust
 let x: &Option<_> = &Some(0);
 
 match x {
@@ -29,7 +29,7 @@ match *x {
 
 After this RFC, the above form still works, but now we also allow a simpler form:
 
-```
+```rust
 let x: &Option<_> = &Some(0);
 
 match x {
@@ -41,7 +41,7 @@ match x {
 This is accomplished through automatic dereferencing and the introduction of
 default binding modes.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust is usually strict when distinguishing between value and reference types. In
@@ -62,7 +62,7 @@ instead of helping.
 
 For example, consider the following program:
 
-```
+```rust
 enum E { Foo(...), Bar }
 
 fn f(e: &E) {
@@ -74,7 +74,7 @@ fn f(e: &E) {
 It is clear what we want to do here - we want to check which variant `e` is a
 reference to. Annoyingly, we have two valid choices:
 
-```
+```rust
 match e {
     &E::Foo(...) => { ... }
     &E::Bar => { ... }
@@ -83,7 +83,7 @@ match e {
 
 and
 
-```
+```rust
 match *e {
     E::Foo(...) => { ... }
     E::Bar => { ... }
@@ -99,7 +99,7 @@ duration of the match. It also does not work with nested types, `match (*e,)
 In either case if we further bind variables, we must ensure that we do not
 attempt to move data, e.g.,
 
-```
+```rust
 match *e {
     E::Foo(x) => { ... }
     E::Bar => { ... }
@@ -125,7 +125,7 @@ Match ergonomics has been highlighted as an area for improvement in 2017:
 and [Rustconf keynote](https://www.youtube.com/watch?v=pTQxHIzGqFI&list=PLE7tQUdRKcybLShxegjn0xyTTDJeYwEkI&index=1).
 
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 This RFC is a refinement of
@@ -163,7 +163,7 @@ let Foo(x) = foo_ref;
 ```
 
 
-## Definitions
+### Definitions
 
 A reference pattern is any pattern which can match a reference without
 coercion. Reference patterns include bindings, wildcards (`_`),
@@ -179,7 +179,7 @@ Currently, the _default binding mode_ is always `move`.
 Under this RFC, matching a reference with a _non-reference pattern_, would shift
 the default binding mode to `ref` or `ref mut`.
 
-## Binding mode rules
+### Binding mode rules
 
 The _default binding mode_ starts out as `move`. When matching a pattern, the
 compiler starts from the outside of the pattern and works inwards.
@@ -226,7 +226,7 @@ reference with a non-reference pattern.
 The above rules and the examples that follow are drawn from @nikomatsakis's
 [comment proposing this design](https://github.com/rust-lang/rfcs/pull/1944#issuecomment-296133645).
 
-## Examples
+### Examples
 
 No new behavior:
 ```rust
@@ -276,7 +276,7 @@ match x {
 }
 
 // Desugared:
-let x = &Some(3);
+let x = &Some((3, 3));
 match x {
   &Some((ref x, 3)) | &Some((ref x, 5)) => { ... }
   None => { ... }
@@ -344,6 +344,7 @@ match y {
 
 Example of new mutable reference behavior:
 ```rust
+let mut x = Some(5);
 match &mut x {
     Some(y) => {
         // `y` is an `&mut` reference here, equivalent to `ref mut` before
@@ -374,7 +375,7 @@ let &Foo(ref x) = &Foo(3);
 ```
 
 
-## Backwards compatibility
+### Backwards compatibility
 
 In order to guarantee backwards-compatibility, this proposal only modifies
 pattern-matching when a reference is matched with a non-reference pattern,
@@ -411,7 +412,7 @@ match x[0] { // This will panic, but that doesn't matter for this example
 }
 ```
 
-# How We Teach This
+## How We Teach This
 [how_we_teach_this]: #how_we_teach_this
 
 This RFC makes matching on references easier and less error-prone. The
@@ -419,14 +420,14 @@ documentation for matching references should be updated to use the style
 outlined in this RFC. Eventually, documentation and error messages should be
 updated to phase-out `ref` and `ref mut` in favor of the new, simpler syntax.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The major downside of this proposal is that it complicates the pattern-matching
 logic. However, doing so allows common cases to "just work", making the beginner
 experience more straightforward and requiring fewer manual reference gymnastics.
 
-# Future Extensions
+## Future Extensions
 [future extensions]: #future_extensions
 In the future, this RFC could be extended to add support for autodereferencing
 custom smart-pointer types using the `Deref` and `DerefMut` traits.
@@ -446,7 +447,7 @@ future `DerefMove` trait or similar.
 Nevertheless, a followup RFC should be able to backwards-compatibly add support
 for custom autodereferencable types.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 1. We could only infer `ref`, leaving users to manually specify the `mut` in

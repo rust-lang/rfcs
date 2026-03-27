@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2360](https://github.com/rust-lang/rfcs/pull/2360)
 - Rust Issue: [rust-lang/rust#64102](https://github.com/rust-lang/rust/issues/64102)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC adds `core::hint::bench_black_box` (see [black box]), an identity function
@@ -12,7 +12,7 @@ about what `bench_black_box` could do.
 
 [black box]: https://en.wikipedia.org/wiki/black_box
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Due to the constrained nature of synthetic benchmarks, the compiler is often
@@ -25,10 +25,10 @@ stores, or calling unknown functions via C FFI. These operations incur overheads
 that often would not be present in the application the synthetic benchmark is
 trying to model.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## `hint::bench_black_box`
+### `hint::bench_black_box`
 
 The hint:
 
@@ -47,7 +47,7 @@ This property makes `bench_black_box` useful for writing code in which certain
 optimizations are not desired, but too unreliable when disabling these
 optimizations is required for correctness.
 
-### Example 1 - basics 
+#### Example 1 - basics 
 
 Example 1 ([`rust.godbolt.org`](https://godbolt.org/g/YP2GCJ)):
 
@@ -65,7 +65,7 @@ and materialized, for example, by storing it into memory, a register, etc.
 because the current Rust implementation assumes that `bench_black_box` could try to
 read it.
 
-### Example 2 - benchmarking `Vec::push`
+#### Example 2 - benchmarking `Vec::push`
 
 The `hint::bench_black_box` is useful for producing synthetic benchmarks that more
 accurately represent the behavior of a real application. In the following
@@ -126,7 +126,7 @@ Inspecting the machine code reveals that, for this particular Rust
 implementation, `bench_black_box` successfully prevents LLVM from performing the
 optimization that removes the `Vec::push` calls that we wanted to measure.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The 
@@ -150,18 +150,18 @@ do anything with the data it got, even though it actually does nothing.
 
 [identity_fn]: https://doc.rust-lang.org/nightly/std/convert/fn.identity.html
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Slightly increases the surface complexity of `libcore`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Further rationale influencing this design is available in
 https://github.com/nikomatsakis/rust-memory-model/issues/45
 
-## `clobber`
+### `clobber`
 
 A previous version of this RFC also provided a `clobber` function:
 
@@ -173,7 +173,7 @@ pub fn clobber() -> ();
 In https://github.com/nikomatsakis/rust-memory-model/issues/45 it was realized
 that such a function cannot work properly within Rust's memory model.
 
-## `value_fence` / `evaluate_and_drop`
+### `value_fence` / `evaluate_and_drop`
 
 An alternative design was proposed during the discussion on
 [rust-lang/rfcs/issues/1484](https://github.com/rust-lang/rfcs/issues/1484), in
@@ -205,7 +205,7 @@ This approach is not pursued in this RFC because these two functions:
 * are implementable on stable Rust: while we could add them to `std` they do not
   necessarily need to be there.
 
-## `bench_input` / `bench_outpu`
+### `bench_input` / `bench_outpu`
 
 @eddyb proposed
 [here](https://github.com/rust-lang/rfcs/pull/2360#issuecomment-463594450) (and
@@ -242,7 +242,7 @@ If we ever able to implement these correctly, we might want to consider
 deprecating `bench_black_box` at that point, but whether it will be worth
 deprecating is not clear either.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Similar functionality is provided in the [`Google
@@ -254,7 +254,7 @@ The `black_box` function with slightly different semantics is provided by the
 `test` crate:
 [`test::black_box`](https://github.com/rust-lang/rust/blob/master/src/libtest/lib.rs#L1551).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * `const fn`: it is unclear whether `bench_black_box` should be a `const fn`. If it

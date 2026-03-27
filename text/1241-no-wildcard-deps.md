@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1241](https://github.com/rust-lang/rfcs/pull/1241)
 - Rust Issue: [rust-lang/rust#28628](https://github.com/rust-lang/rust/issues/28628)
 
-# Summary
+## Summary
 
 A Cargo crate's dependencies are associated with constraints that specify the
 set of versions of the dependency with which the crate is compatible. These
@@ -13,7 +13,7 @@ accepting any version at all (`*`). This RFC proposes to update crates.io to
 reject publishes of crates that have compile or build dependencies with
 a wildcard version constraint.
 
-# Motivation
+## Motivation
 
 Version constraints are a delicate balancing act between stability and
 flexibility. On one extreme, one can lock dependencies to an exact version.
@@ -101,7 +101,7 @@ path of least resistance when writing a crate. Without wildcard constraints,
 crate authors will be forced to figure out what kind of constraints make the
 most sense in their use cases, which may very well be good enough.
 
-# Detailed design
+## Detailed design
 
 The prohibition on wildcard constraints will be rolled out in stages to make
 sure that crate authors have lead time to figure out their versioning stories.
@@ -115,14 +115,14 @@ check will happen on the crates.io side rather than on the Cargo side since
 Cargo can publish to locations other than crates.io which may not worry about
 these restrictions.
 
-# Drawbacks
+## Drawbacks
 
 The barrier to entry when publishing a crate will be mildly higher.
 
 Tightening constraints has the potential to cause resolution breakage when no
 breakage would occur otherwise.
 
-# Alternatives
+## Alternatives
 
 We could continue allowing these kinds of constraints, but complain in a
 "sufficiently annoying" manner during publishes to discourage their use.

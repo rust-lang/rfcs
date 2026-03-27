@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1721](https://github.com/rust-lang/rfcs/pull/1721)
 - Rust Issue: [rust-lang/rust#37406](https://github.com/rust-lang/rust/issues/37406)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Enable the compiler to select whether a target dynamically or statically links
@@ -23,7 +23,7 @@ combined with a [std-aware cargo].
 
 [std-aware cargo]: https://github.com/rust-lang/rfcs/pull/1133
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Today all targets of rustc hard-code how they link to the native C runtime. For
@@ -40,7 +40,7 @@ it. Because target specifications must be described by a target triple, and
 target triples have preexisting conventions into which such a scheme does not
 fit, we have resisted doing so.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 This RFC introduces three separate features to the compiler and Cargo. When
@@ -193,7 +193,7 @@ the MSVC target with `/MD`, indicating dynamic linkage. Otherwise if the value
 is `static` it will compile code with `/MT`, indicating static linkage. Because
 today the MSVC targets use dynamic linkage and gcc-rs compiles C code with `/MD`,
 gcc-rs will remain forward and backwards compatible with existing and future
-Rust MSVC toolchains until such time as the the decision is made to change the
+Rust MSVC toolchains until such time as the decision is made to change the
 MSVC toolchain to `+crt-static` by default.
 
 ### Lazy link attributes
@@ -259,7 +259,8 @@ Finally, an example of compiling for MSVC and linking statically to the C
 runtime would look like:
 
 ```
-RUSTFLAGS='-C target-feature=+crt-static' cargo build --target x86_64-pc-windows-msvc
+set RUSTFLAGS=-C target-feature=+crt-static
+cargo build --target x86_64-pc-windows-msvc
 ```
 
 and similarly, compiling for musl but linking dynamically to the C runtime would
@@ -311,7 +312,7 @@ solving this problem.
 - [Cargo's documentation on build-script environment variables]
   (https://github.com/rust-lang/libc/issues/290)
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Working with `RUSTFLAGS` can be cumbersome, but as explained above it's
@@ -330,7 +331,7 @@ solving this problem.
   the feature serves one implementation-specif purpose and isn't intended for
   stabilization.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * One alternative is to add entirely new targets, for example
@@ -359,7 +360,7 @@ solving this problem.
   features", we could instead add a new flag for the purpose, e.g. `-C
   custom-feature`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * What happens during the `cfg` to environment variable conversion for values

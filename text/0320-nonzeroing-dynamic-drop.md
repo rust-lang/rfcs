@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#320](https://github.com/rust-lang/rfcs/pull/320)
 - Rust Issue: [rust-lang/rust#5016](https://github.com/rust-lang/rust/issues/5016)
 
-# Summary
+## Summary
 
 Remove drop flags from values implementing `Drop`, and remove
 automatic memory zeroing associated with dropping values.
@@ -13,7 +13,7 @@ Keep dynamic drop semantics, by having each function maintain a
 obligations for the function that need to be tracked dynamically
 (which we will call "dynamic drop obligations").
 
-# Motivation
+## Motivation
 
 Currently, implementing `Drop` on a struct (or enum) injects a hidden
 bit, known as the "drop-flag", into the struct (and likewise, each of
@@ -92,10 +92,10 @@ The expected outcomes are as follows:
    change at all from today, apart from the caveat in the previous
    bullet.
  
-# Detailed design
+## Detailed design
 
 
-## Drop obligations
+### Drop obligations
 
 No struct or enum has an implicit drop-flag.  When a local variable is
 initialized, that establishes a set of "drop obligations": a set of
@@ -140,7 +140,7 @@ P_1, P_2, ..., P_k with drop obligation sets S_1, S_2, ... S_k, we
    But the overall code transformation is clearer if one keeps
    the dynamic drop obligations in the set of drop obligations.)
 
-## Stack-local drop flags
+### Stack-local drop flags
 
 For every dynamic drop obligation induced by a merge point, the compiler
 is responsible for ensure that its drop code is run at some point.
@@ -153,7 +153,7 @@ Some compiler analysis may be able to identify dynamic drop
 obligations that do not actually need to be tracked.  Therefore, we do
 not specify the precise set of boolean flags that are injected.
 
-## Example of code with dynamic drop obligations
+### Example of code with dynamic drop obligations
 
 
 The function `f2` below was copied from the static drop [RFC PR #210];
@@ -364,7 +364,7 @@ It may probably be more intellectually honest to write the transformation like:
 ```
 
 
-## Control-flow sensitivity
+### Control-flow sensitivity
 
 Note that the dynamic drop obligations are based on a control-flow
 analysis, *not* just the lexical nesting structure of the code.
@@ -469,7 +469,7 @@ or the end of a `loop` block.
 Likewise, a `return` statement represents another control flow jump,
 to the end of the function.
 
-## Remove implicit memory zeroing
+### Remove implicit memory zeroing
 
 With the above in place, the remainder is relatively trivial.
 The compiler can be revised to no longer inject a drop flag into
@@ -479,7 +479,7 @@ be removed.
 Beyond that, the libraries will obviously need to be audited for
 dependence on implicit memory zeroing.
 
-# Drawbacks
+## Drawbacks
 
 The only reasons not do this are:
 
@@ -490,7 +490,7 @@ The only reasons not do this are:
 At this point Felix thinks the Rust community has made a strong
 argument in favor of keeping dynamic drop semantics.
 
-# Alternatives
+## Alternatives
 
 * Static drop semantics [RFC PR #210] has been referenced frequently
   in this document.
@@ -499,9 +499,9 @@ argument in favor of keeping dynamic drop semantics.
   would drop values immediately after their final use.  This would
   probably invalidate a number of RAII style coding patterns.
 
-# Optional Extensions
+## Optional Extensions
 
-## A lint identifying dynamic drop obligations
+### A lint identifying dynamic drop obligations
 
 Add a lint (set by default to `allow`) that reports potential dynamic
 drop obligations, so that end-user code can opt-in to having them
@@ -513,9 +513,9 @@ reported.  The expected benefits of this are:
  2. developers may want to know about how many boolean dynamic drop
     flags are potentially being injected into their code.
 
-# Unresolved questions
+## Unresolved questions
 
-## How to handle moves out of `array[index_expr]`
+### How to handle moves out of `array[index_expr]`
 
 Niko pointed out to me today that my prototype was not addressing
 moves out of `array[index_expr]` properly.  I was assuming
@@ -576,7 +576,7 @@ not another, then we would either use an `Option<uint>`, or still use
 `uint` and just represent unmoved case via some value that is not
 valid index, such as the length of the array).
 
-## Should we keep `#[unsafe_no_drop_flag]` ?
+### Should we keep `#[unsafe_no_drop_flag]` ?
 
 Currently there is an `unsafe_no_drop_flag` attribute that is used to
 indicate that no drop flag should be associated with a struct/enum,
@@ -594,9 +594,9 @@ value.  Just run the drop code multiple times, just like today.
 In any case, since the semantics of this attribute are unstable, we
 will feature-gate it (with feature name `unsafe_no_drop_flag`).
 
-# Appendices
+## Appendices
 
-## How dynamic drop semantics works
+### How dynamic drop semantics works
 
 (This section is just presenting background information on the
 semantics of `drop` and the drop-flag as it works in Rust today; it
@@ -630,7 +630,7 @@ The above has a number of implications:
    must assume that it will be called more than once.  (However, every
    call to `drop` after the first will be given zeroed memory.)
 
-### Program illustrating semantic impact of hidden drop flag
+#### Program illustrating semantic impact of hidden drop flag
 
 ```rust
 #![feature(macro_rules)]

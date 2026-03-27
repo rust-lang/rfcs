@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2521](https://github.com/rust-lang/rfcs/pull/2521)
 - Rust Issue: [rust-lang/rust#53856](https://github.com/rust-lang/rust/issues/53856)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Unify `std::os::raw::c_void` and `libc::c_void` by making them both re-exports
 of a definition in libcore.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 `std::os::raw::c_void` and `libc::c_void` are different types:
@@ -60,7 +60,7 @@ This has been extensively discussed already:
 * [PR #52839: Move std::os::raw into core](https://github.com/rust-lang/rust/pull/52839)
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 With this RFC implemented in both the standard library and in the `libc` crate,
@@ -74,13 +74,13 @@ A pointer returned from one library can now be passed to the other library witho
 `#![no_std]` crates can now also access that same type at `core::ffi::c_void`.
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 In the standard library:
 
 * Create a new `core::ffi` module.
-* Move the `enum` definiton of `c_void` there.
+* Move the `enum` definition of `c_void` there.
 * In `c_void`’s former location (`std::os::raw`), replace it with a `pub use` reexport.
 * For consistency between `core` and `std`, also add a similar `pub use` reexport at `std::ffi::c_void`.
   (Note that the `std::ffi` module already exists.)
@@ -91,12 +91,12 @@ Once the above lands in Nightly, in the `libc` crate:
   (for example by executing `$RUSTC` with a temporary file like
   `#![crate_type = "lib"] #![no_std] pub use core::ffi::c_void;`)
   and conditionally set a compilation flag for the library.
-* In the library, based on the precence of that flag,
+* In the library, based on the presence of that flag,
   make `c_void` be either `pub use core::ffi::c_void;` or its current `enum` definition,
   to keep compatibility with older Rust versions.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This proposal is a breaking change for users who implement a trait of theirs like this:
@@ -120,7 +120,7 @@ Rarity could be evaluated with Crater by either:
   before landing them in Rust
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 `libc` cannot reexport `std::os::raw::c_void`
@@ -147,12 +147,12 @@ for example, `ptr::null::<c_void>()` and `<*mut c_void>::offset(n)` would not be
 
 We could deprecated `c_void` and replace it with a new differently-named extern type,
 but forcing the ecosystem through that transition seems too costly for this theoretical nicety.
-Plus, this woud still be a nominal type.
+Plus, this would still be a nominal type.
 If this new type is to be present if both `libc` and `std`,
  it would still have to be in `core` as well.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 What is the appropriate location for `c_void` in libcore?
@@ -176,5 +176,5 @@ This is left for a future RFC.
 This RFC does not propose any change such as moving to libcore for the C types other than `c_void`.
 
 Although some in previous discussions have expressed desire for using C-compatible types
-without linking to the C runtime libray (which the `libc` crate does) or depending on `std`.
+without linking to the C runtime library (which the `libc` crate does) or depending on `std`.
 This use case is also left for a future proposal or RFC.

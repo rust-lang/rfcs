@@ -4,7 +4,7 @@
 - Rust Issue #: [rust-lang/rust#31436](https://github.com/rust-lang/rust/issues/31436)
 
 
-# Summary
+## Summary
 
 Add syntactic sugar for working with the `Result` type which models common
 exception handling constructs.
@@ -22,7 +22,7 @@ The idea for the `?` operator originates from [RFC PR 204][204] by
 [204]: https://github.com/rust-lang/rfcs/pull/204
 
 
-# Motivation and overview
+## Motivation and overview
 
 Rust currently uses the `enum Result` type for error handling. This solution is
 simple, well-behaved, and easy to understand, but often gnarly and inconvenient
@@ -46,7 +46,7 @@ them. By an "exception", for now, we essentially just mean the `Err`
 variant of a `Result`, though the Unresolved Questions includes some
 discussion of extending to other types.
 
-## `?` operator
+### `?` operator
 
 The postfix `?` operator can be applied to `Result` values and is equivalent to
 the current `try!()` macro. It either returns the `Ok` value directly, or
@@ -55,7 +55,9 @@ performs an early exit and propagates the `Err` value further out. (So given
 used for e.g. conveniently chaining method calls which may each "throw an
 exception":
 
-    foo()?.bar()?.baz()
+```rust
+foo()?.bar()?.baz()
+```
 
 Naturally, in this case the types of the "exceptions thrown by" `foo()` and
 `bar()` must unify. Like the current `try!()` macro, the `?` operator will also
@@ -84,7 +86,7 @@ in the type system, and there is no silent propagation of exceptions, and all
 points where an exception may be thrown are readily apparent visually, this also
 means that we do not have to worry very much about "exception safety".
 
-### Exception type upcasting
+#### Exception type upcasting
 
 In a language with checked exceptions and subtyping, it is clear that if a
 function is declared as throwing a particular type, its body should also be able
@@ -95,14 +97,16 @@ those cases. This is essentially what is achieved by the common Rust practice of
 declaring a custom error `enum` with `From` `impl`s for each of the upstream
 error types which may be propagated:
 
-    enum MyError {
-        IoError(io::Error),
-        JsonError(json::Error),
-        OtherError(...)
-    }
+```rust
+enum MyError {
+    IoError(io::Error),
+    JsonError(json::Error),
+    OtherError(...)
+}
 
-    impl From<io::Error> for MyError { ... }
-    impl From<json::Error> for MyError { ... }
+impl From<io::Error> for MyError { ... }
+impl From<json::Error> for MyError { ... }
+```
 
 Here `io::Error` and `json::Error` can be thought of as subtypes of `MyError`,
 with a clear and direct embedding into the supertype.
@@ -114,7 +118,7 @@ forwarding from `From`). The precise requirements for a conversion to be "like"
 a subtyping coercion are an open question; see the "Unresolved questions"
 section.
 
-## `catch` expressions
+### `catch` expressions
 
 This RFC also introduces an expression form `catch {..}`, which serves
 to "scope" the `?` operator. The `catch` operator executes its
@@ -122,7 +126,7 @@ associated block. If no exception is thrown, then the result is
 `Ok(v)` where `v` is the value of the block. Otherwise, if an
 exception is thrown, then the result is `Err(e)`. Note that unlike
 other languages, a `catch` block always catches all errors, and they
-must all be coercable to a single type, as a `Result` only has a
+must all be coercible to a single type, as a `Result` only has a
 single `Err` type. This dramatically simplifies thinking about the
 behavior of exception-handling code.
 
@@ -133,14 +137,14 @@ exceptions -- `catch { foo()?.bar()?.baz()? }` -- into a single
 function, rather than analyze yourself. (The last example could also
 be expressed using a series of `and_then` calls.)
 
-# Detailed design
+## Detailed design
 
 The meaning of the constructs will be specified by a source-to-source
 translation. We make use of an "early exit from any block" feature
 which doesn't currently exist in the language, generalizes the current
 `break` and `return` constructs, and is independently useful.
 
-## Early exit from any block
+### Early exit from any block
 
 The capability can be exposed either by generalizing `break` to take an optional
 value argument and break out of any block (not just loops), or by generalizing
@@ -156,17 +160,21 @@ enclosing block specified by `'a`, which then evaluates to the value `EXPR` (of
 course, the type of `EXPR` must unify with the type of the last expression in
 that block). This works for any block, not only loops.
 
+\[Note: This was since added in [RFC 2046](https://github.com/rust-lang/rfcs/blob/master/text/2046-label-break-value.md)]
+
 A completely artificial example:
 
-    'a: {
-        let my_thing = if have_thing() {
-            get_thing()
-        } else {
-            break 'a None
-        };
-        println!("found thing: {}", my_thing);
-        Some(my_thing)
-    }
+```rust
+'a: {
+    let my_thing = if have_thing() {
+        get_thing()
+    } else {
+        break 'a None
+    };
+    println!("found thing: {}", my_thing);
+    Some(my_thing)
+}
+```
 
 Here if we don't have a thing, we escape from the block early with `None`.
 
@@ -180,7 +188,7 @@ it is only used as a way to explain the meaning of the constructs it does
 propose.
 
 
-## Definition of constructs
+### Definition of constructs
 
 Finally we have the definition of the new constructs in terms of a
 source-to-source translation.
@@ -198,10 +206,12 @@ are merely one way.
 
    Shallow:
 
-        match EXPR {
-            Ok(a)  => a,
-            Err(e) => break 'here Err(e.into())
-        }
+    ```rust
+    match EXPR {
+        Ok(a)  => a,
+        Err(e) => break 'here Err(e.into())
+    }
+    ```
 
    Where `'here` refers to the innermost enclosing `catch` block, or to `'fn` if
    there is none.
@@ -210,24 +220,30 @@ are merely one way.
 
  * Construct:
 
-        catch {
-            foo()?.bar()
-        }
+    ```rust
+    catch {
+        foo()?.bar()
+    }
+    ```
 
    Shallow:
-
-        'here: {
-            Ok(foo()?.bar())
-        }
+   
+    ```rust
+    'here: {
+        Ok(foo()?.bar())
+    }
+    ```
 
    Deep:
 
-        'here: {
-            Ok(match foo() {
-                Ok(a) => a,
-                Err(e) => break 'here Err(e.into())
-            }.bar())
-        }
+    ```rust
+    'here: {
+        Ok(match foo() {
+            Ok(a) => a,
+            Err(e) => break 'here Err(e.into())
+        }.bar())
+    }
+    ```
 
 The fully expanded translations get quite gnarly, but that is why it's good that
 you don't have to write them!
@@ -243,7 +259,7 @@ As a result of this RFC, both `Into` and `Result` would have to become lang
 items.
 
 
-## Laws
+### Laws
 
 Without any attempt at completeness, here are some things which should be true:
 
@@ -254,18 +270,18 @@ Without any attempt at completeness, here are some things which should be true:
 (In the above, `foo()` is a function returning any type, and `try_foo()` is a
 function returning a `Result`.)
 
-## Feature gates
+### Feature gates
 
 The two major features here, the `?` syntax and `catch` expressions,
 will be tracked by independent feature gates. Each of the features has
 a distinct motivation, and we should evaluate them independently.
 
-# Unresolved questions
+## Unresolved questions
 
-These questions should be satisfactorally resolved before stabilizing the
+These questions should be satisfactorily resolved before stabilizing the
 relevant features, at the latest.
 
-## Optional `match` sugar
+### Optional `match` sugar
 
 Originally, the RFC included the ability to `match` the errors caught
 by a `catch` by writing `catch { .. } match { .. }`, which could be translated
@@ -273,39 +289,45 @@ as follows:
 
  * Construct:
 
-        catch {
-            foo()?.bar()
-        } match {
+    ```rust
+    catch {
+        foo()?.bar()
+    } match {
+        A(a) => baz(a),
+        B(b) => quux(b)
+    }
+    ```
+
+   Shallow:
+
+    ```rust
+    match (catch {
+        foo()?.bar()
+    }) {
+        Ok(a) => a,
+        Err(e) => match e {
             A(a) => baz(a),
             B(b) => quux(b)
         }
-
-  Shallow:
-
-        match (catch {
-            foo()?.bar()
-        }) {
-            Ok(a) => a,
-            Err(e) => match e {
-                A(a) => baz(a),
-                B(b) => quux(b)
-            }
-        }
+    }
+    ```
 
    Deep:
 
-        match ('here: {
-            Ok(match foo() {
-                Ok(a) => a,
-                Err(e) => break 'here Err(e.into())
-            }.bar())
-        }) {
+    ```rust
+    match ('here: {
+        Ok(match foo() {
             Ok(a) => a,
-            Err(e) => match e {
-                A(a) => baz(a),
-                B(b) => quux(b)
-            }
+            Err(e) => break 'here Err(e.into())
+        }.bar())
+    }) {
+        Ok(a) => a,
+        Err(e) => match e {
+            A(a) => baz(a),
+            B(b) => quux(b)
         }
+    }
+    ```
 
 However, it was removed for the following reasons:
 
@@ -319,7 +341,7 @@ It may be worth adding such a sugar in the future, or perhaps a
 variant that binds irrefutably and does not immediately lead into a
 `match` block.
  
-## Choice of keywords
+### Choice of keywords
 
 The RFC to this point uses the keyword `catch`, but there are a number
 of other possibilities, each with different advantages and drawbacks:
@@ -352,7 +374,7 @@ Among the considerations:
  * Language-level backwards compatibility when adding new keywords. I'm not sure
    how this could or should be handled.
 
-## Semantics for "upcasting"
+### Semantics for "upcasting"
 
 What should the contract for a `From`/`Into` `impl` be? Are these even the right
 `trait`s to use for this feature?
@@ -394,12 +416,12 @@ Some further thoughts and possibilities on this matter, only as brainstorming:
    (This perhaps ties into the subtyping angle: `Ipv4Addr` is clearly not a
    supertype of `u32`.)
 
-## Forwards-compatibility
+### Forwards-compatibility
 
 If we later want to generalize this feature to other types such as `Option`, as
 described below, will we be able to do so while maintaining backwards-compatibility?
 
-## Monadic do notation
+### Monadic do notation
 
 There have been many comparisons drawn between this syntax and monadic
 do notation. Before stabilizing, we should determine whether we plan
@@ -409,7 +431,7 @@ notation (for example, by removing the implicit `Ok` at the end of a
 standard monadic bind to accommodate rich control flow like `break`,
 `continue`, and `return`.
 
-# Drawbacks
+## Drawbacks
 
  * Increases the syntactic surface area of the language.
 
@@ -428,7 +450,7 @@ standard monadic bind to accommodate rich control flow like `break`,
    does not do this, and it's not clear whether it can), and potentially others.
 
 
-# Alternatives
+## Alternatives
 
  * Don't.
 
@@ -459,13 +481,13 @@ standard monadic bind to accommodate rich control flow like `break`,
 [notes]: https://github.com/glaebhoerl/rust-notes/blob/268266e8fbbbfd91098d3bea784098e918b42322/my_rfcs/Exceptions.txt
 
 
-# Future possibilities
+## Future possibilities
 
-## Expose a generalized form of `break` or `return` as described
+### Expose a generalized form of `break` or `return` as described
 
 This RFC doesn't propose doing so at this time, but as it would be an independently useful feature, it could be added as well.
 
-## `throw` and `throws`
+### `throw` and `throws`
 
 It is possible to carry the exception handling analogy further and also add
 `throw` and `throws` constructs.
@@ -476,7 +498,9 @@ It is possible to carry the exception handling analogy further and also add
 
 A `throws` clause on a function:
 
-    fn foo(arg: Foo) -> Bar throws Baz { ... }
+```rust
+fn foo(arg: Foo) -> Bar throws Baz { ... }
+```
 
 would mean that instead of writing `return Ok(foo)` and `return Err(bar)` in the
 body of the function, one would write `return foo` and `throw bar`, and these
@@ -485,7 +509,7 @@ overhead from both "normal" and "throwing" code paths and (apart from `?` to
 propagate exceptions) matches what code might look like in a language with
 native exceptions.
 
-## Generalize over `Result`, `Option`, and other result-carrying types
+### Generalize over `Result`, `Option`, and other result-carrying types
 
 `Option<T>` is completely equivalent to `Result<T, ()>` modulo names, and many
 common APIs use the `Option` type, so it would be useful to extend all of the
@@ -500,14 +524,16 @@ and `Exception` such that `Self` is isomorphic to `Result<Normal, Exception>`.
 
 Here is one way:
 
-    #[lang(result_carrier)]
-    trait ResultCarrier {
-        type Normal;
-        type Exception;
-        fn embed_normal(from: Normal) -> Self;
-        fn embed_exception(from: Exception) -> Self;
-        fn translate<Other: ResultCarrier<Normal=Normal, Exception=Exception>>(from: Self) -> Other;
-    }
+```rust
+#[lang(result_carrier)]
+trait ResultCarrier {
+    type Normal;
+    type Exception;
+    fn embed_normal(from: Normal) -> Self;
+    fn embed_exception(from: Exception) -> Self;
+    fn translate<Other: ResultCarrier<Normal=Normal, Exception=Exception>>(from: Self) -> Other;
+}
+```
 
 For greater clarity on how these methods work, see the section on `impl`s below.
 (For a simpler formulation of the trait using `Result` directly, see further
@@ -536,51 +562,57 @@ The third law says that translating to a different result-carrying type and then
 translating back should be a no-op.
 
 
-## `impl`s of the trait
+### `impl`s of the trait
 
-    impl<T, E> ResultCarrier for Result<T, E> {
-        type Normal = T;
-        type Exception = E;
-        fn embed_normal(a: T) -> Result<T, E> { Ok(a) }
-        fn embed_exception(e: E) -> Result<T, E> { Err(e) }
-        fn translate<Other: ResultCarrier<Normal=T, Exception=E>>(result: Result<T, E>) -> Other {
-            match result {
-                Ok(a)  => Other::embed_normal(a),
-                Err(e) => Other::embed_exception(e)
-            }
+```rust
+impl<T, E> ResultCarrier for Result<T, E> {
+    type Normal = T;
+    type Exception = E;
+    fn embed_normal(a: T) -> Result<T, E> { Ok(a) }
+    fn embed_exception(e: E) -> Result<T, E> { Err(e) }
+    fn translate<Other: ResultCarrier<Normal=T, Exception=E>>(result: Result<T, E>) -> Other {
+        match result {
+            Ok(a)  => Other::embed_normal(a),
+            Err(e) => Other::embed_exception(e)
         }
     }
+}
+```
 
 As we can see, `translate` can be implemented by deconstructing ourself and then
 re-embedding the contained value into the other result-carrying type.
 
-    impl<T> ResultCarrier for Option<T> {
-        type Normal = T;
-        type Exception = ();
-        fn embed_normal(a: T) -> Option<T> { Some(a) }
-        fn embed_exception(e: ()) -> Option<T> { None }
-        fn translate<Other: ResultCarrier<Normal=T, Exception=()>>(option: Option<T>) -> Other {
-            match option {
-                Some(a) => Other::embed_normal(a),
-                None    => Other::embed_exception(())
-            }
+```rust
+impl<T> ResultCarrier for Option<T> {
+    type Normal = T;
+    type Exception = ();
+    fn embed_normal(a: T) -> Option<T> { Some(a) }
+    fn embed_exception(e: ()) -> Option<T> { None }
+    fn translate<Other: ResultCarrier<Normal=T, Exception=()>>(option: Option<T>) -> Other {
+        match option {
+            Some(a) => Other::embed_normal(a),
+            None    => Other::embed_exception(())
         }
     }
+}
+```
 
 Potentially also:
 
-    impl ResultCarrier for bool {
-        type Normal = ();
-        type Exception = ();
-        fn embed_normal(a: ()) -> bool { true }
-        fn embed_exception(e: ()) -> bool { false }
-        fn translate<Other: ResultCarrier<Normal=(), Exception=()>>(b: bool) -> Other {
-            match b {
-                true  => Other::embed_normal(()),
-                false => Other::embed_exception(())
-            }
+```rust
+impl ResultCarrier for bool {
+    type Normal = ();
+    type Exception = ();
+    fn embed_normal(a: ()) -> bool { true }
+    fn embed_exception(e: ()) -> bool { false }
+    fn translate<Other: ResultCarrier<Normal=(), Exception=()>>(b: bool) -> Other {
+        match b {
+            true  => Other::embed_normal(()),
+            false => Other::embed_exception(())
         }
     }
+}
+```
 
 The laws should be sufficient to rule out any "icky" impls. For example, an impl
 for `Vec` where an exception is represented as the empty vector, and a normal
@@ -592,7 +624,7 @@ information.
 The `bool` impl may be surprising, or not useful, but it *is* well-behaved:
 `bool` is, after all, isomorphic to `Result<(), ()>`.
 
-### Other miscellaneous notes about `ResultCarrier`
+#### Other miscellaneous notes about `ResultCarrier`
 
  * Our current lint for unused results could be replaced by one which warns for
    any unused result of a type which implements `ResultCarrier`.
@@ -618,22 +650,26 @@ The `bool` impl may be surprising, or not useful, but it *is* well-behaved:
    functors, but I'm not category theorist enough for it to be obvious.
 
 
-### Alternative formulations of the `ResultCarrier` trait
+#### Alternative formulations of the `ResultCarrier` trait
 
 All of these have the form:
 
-    trait ResultCarrier {
-        type Normal;
-        type Exception;
-        ...methods...
-    }
+```rust
+trait ResultCarrier {
+    type Normal;
+    type Exception;
+    ...methods...
+}
+```
 
 and differ only in the methods, which will be given.
 
-#### Explicit isomorphism with `Result`
+##### Explicit isomorphism with `Result`
 
-    fn from_result(Result<Normal, Exception>) -> Self;
-    fn to_result(Self) -> Result<Normal, Exception>;
+```rust
+fn from_result(Result<Normal, Exception>) -> Self;
+fn to_result(Self) -> Result<Normal, Exception>;
+```
 
 This is, of course, the simplest possible formulation.
 
@@ -651,45 +687,51 @@ Laws:
 Laws for the remaining formulations below are left as an exercise for the
 reader.
 
-#### Avoid privileging `Result`, most naive version
+##### Avoid privileging `Result`, most naive version
 
-    fn embed_normal(Normal) -> Self;
-    fn embed_exception(Exception) -> Self;
-    fn is_normal(&Self) -> bool;
-    fn is_exception(&Self) -> bool;
-    fn assert_normal(Self) -> Normal;
-    fn assert_exception(Self) -> Exception;
+```rust
+fn embed_normal(Normal) -> Self;
+fn embed_exception(Exception) -> Self;
+fn is_normal(&Self) -> bool;
+fn is_exception(&Self) -> bool;
+fn assert_normal(Self) -> Normal;
+fn assert_exception(Self) -> Exception;
+```
 
 Of course this is horrible.
 
-#### Destructuring with HOFs (a.k.a. Church/Scott-encoding)
+##### Destructuring with HOFs (a.k.a. Church/Scott-encoding)
 
-    fn embed_normal(Normal) -> Self;
-    fn embed_exception(Exception) -> Self;
-    fn match_carrier<T>(Self, FnOnce(Normal) -> T, FnOnce(Exception) -> T) -> T;
+```rust
+fn embed_normal(Normal) -> Self;
+fn embed_exception(Exception) -> Self;
+fn match_carrier<T>(Self, FnOnce(Normal) -> T, FnOnce(Exception) -> T) -> T;
+```
 
 This is probably the right approach for Haskell, but not for Rust.
 
 With this formulation, because they each take ownership of them, the two
 closures may not even close over the same variables!
 
-#### Destructuring with HOFs, round 2
+##### Destructuring with HOFs, round 2
 
-    trait BiOnceFn {
-        type ArgA;
-        type ArgB;
-        type Ret;
-        fn callA(Self, ArgA) -> Ret;
-        fn callB(Self, ArgB) -> Ret;
-    }
+```rust
+trait BiOnceFn {
+    type ArgA;
+    type ArgB;
+    type Ret;
+    fn callA(Self, ArgA) -> Ret;
+    fn callB(Self, ArgB) -> Ret;
+}
 
-    trait ResultCarrier {
-        type Normal;
-        type Exception;
-        fn normal(Normal) -> Self;
-        fn exception(Exception) -> Self;
-        fn match_carrier<T>(Self, BiOnceFn<ArgA=Normal, ArgB=Exception, Ret=T>) -> T;
-    }
+trait ResultCarrier {
+    type Normal;
+    type Exception;
+    fn normal(Normal) -> Self;
+    fn exception(Exception) -> Self;
+    fn match_carrier<T>(Self, BiOnceFn<ArgA=Normal, ArgB=Exception, Ret=T>) -> T;
+}
+```
 
 Here we solve the environment-sharing problem from above: instead of two objects
 with a single method each, we use a single object with two methods! I believe

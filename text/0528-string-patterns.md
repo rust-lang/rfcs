@@ -1,13 +1,14 @@
+- Feature Name: `pattern`
 - Start Date: 2015-02-17
 - RFC PR: [rust-lang/rfcs#528](https://github.com/rust-lang/rfcs/pull/528)
-- Rust Issue: [rust-lang/rust#22477](https://github.com/rust-lang/rust/issues/22477)
+- Rust Issue: [rust-lang/rust#27721](https://github.com/rust-lang/rust/issues/27721)
 
-# Summary
+## Summary
 
 Stabilize all string functions working with search patterns around a new
 generic API that provides a unified way to define and use those patterns.
 
-# Motivation
+## Motivation
 
 Right now, string slices define a couple of methods for string
 manipulation that work with user provided values that act as
@@ -71,9 +72,9 @@ As an additional design goal, the new abstractions should also not pose a proble
 for optimization - like for iterators, a concrete instance should produce similar
 machine code to a hardcoded optimized loop written in C.
 
-# Detailed design
+## Detailed design
 
-## New traits
+### New traits
 
 First, new traits will be added to the `str` module in the std library:
 
@@ -138,9 +139,9 @@ pub trait DoubleEndedSearcher<'a>: ReverseSearcher<'a> {}
 ```
 
 The basic idea of a `Searcher` is to expose a interface for
-iterating through all connected string fragments of the haystack while classifing them as either a match, or a reject.
+iterating through all connected string fragments of the haystack while classifying them as either a match, or a reject.
 
-This happens in form of the returned enum value. A `Match` needs to contain the start and end indices of a complete non-overlapping match, while a `Rejects` may be emitted for arbitary non-overlapping rejected parts of the string, as long as the start and end indices lie on valid utf8 boundaries.
+This happens in form of the returned enum value. A `Match` needs to contain the start and end indices of a complete non-overlapping match, while a `Rejects` may be emitted for arbitrary non-overlapping rejected parts of the string, as long as the start and end indices lie on valid utf8 boundaries.
 
 Similar to iterators, depending on the concrete implementation a searcher can have
 additional capabilities that build on each other, which is why they will be
@@ -182,7 +183,7 @@ Given that most implementations of these traits will likely
 live in the std library anyway, and are thoroughly tested, marking these traits `unsafe`
 doesn't seem like a huge burden to bear for good, optimizable performance.
 
-### The role of the additional default methods
+#### The role of the additional default methods
 
 `Pattern`, `Searcher` and `ReverseSearcher` each offer a few additional
 default methods that give better optimization opportunities.
@@ -191,7 +192,7 @@ Most consumers of the pattern API will use them to more narrowly constraint
 how they are looking for a pattern, which given an optimized implementantion,
 should lead to mostly optimal code being generated.
 
-### Example for the issue with double-ended searching
+#### Example for the issue with double-ended searching
 
 Let the haystack be the string `"fooaaaaabar"`, and let the pattern be the string `"aa"`.
 
@@ -208,7 +209,7 @@ This discrepancy can not be avoided without additional overhead or even
 allocations for caching in the reverse matcher, and thus "matching from the front" needs to
 be considered a different operation than "matching from the back".
 
-### Why `(uint, uint)` instead of `&str`
+#### Why `(uint, uint)` instead of `&str`
 
 > Note: This section is a bit outdated now
 
@@ -243,7 +244,7 @@ In order to resolve that issue, you'd have to do one of:
 In both cases, the API does not really improve significantly, so `uint` indices have been chosen
 as the "simple" default design.
 
-## New methods on `StrExt`
+### New methods on `StrExt`
 
 With the `Pattern` and `Searcher` traits defined and implemented, the actual `str`
 methods will be changed to make use of them:
@@ -301,7 +302,7 @@ changed to uniformly use the new pattern API. The main differences are:
 _However_, all iterators will still implement `DoubleEndedIterator` if the underlying
 matcher implements `DoubleEndedSearcher`, to keep the ability to do things like `foo.split('a').rev()`.
 
-## Transition and deprecation plans
+### Transition and deprecation plans
 
 Most changes in this RFC can be made in such a way that code using the old hardcoded or `CharEq`-using
 methods will still compile, or give deprecation warning.
@@ -314,7 +315,7 @@ without a lifetime parameter by making use of higher kinded types in order to si
 string APIs. Eg, instead of `fn starts_with<'a, P>(&'a self, pat: P) -> bool where P: Pattern<'a>;`
 you'd have `fn starts_with<P>(&self, pat: P) -> bool where P: Pattern;`.
 
-In order to not break backwards-compability, these can use the same generic-impl trick to
+In order to not break backwards-compatibility, these can use the same generic-impl trick to
 forward to the old traits, which would roughly look like this:
 
 ```rust
@@ -359,13 +360,13 @@ That is, they should be defined in their own submodule, like `str::pattern` that
 a sister module like `str::newpattern`, and not be exported in a global place like `str` or even
 the `prelude` (which would be unneeded anyway).
 
-# Drawbacks
+## Drawbacks
 
 - It complicates the whole machinery and API behind the implementation of matching on string patterns.
 - The no-HKT-lifetime-workaround wart might be to confusing for something as commonplace as the string API.
 - This add a few layers of generics, so compilation times and micro optimizations might suffer.
 
-# Alternatives
+## Alternatives
 
 > Note: This section is not updated to the new naming scheme
 
@@ -417,7 +418,7 @@ Lastly, there are alternatives that don't seem very favorable, but are listed fo
 - Allow to opt-in the `unsafe` traits by providing parallel safe and unsafe `Matcher` traits or methods,
   with the one per default implemented in terms of the other.
 
-# Unresolved questions
+## Unresolved questions
 
 - Concrete performance is untested compared to the current situation.
 - Should the API split in regard to forward-reverse matching be as symmetrical as possible,
@@ -427,7 +428,7 @@ Lastly, there are alternatives that don't seem very favorable, but are listed fo
   minimum to support reverse operation.
   A ruling in favor of symmetry would also speak for the `ReversePattern` alternative.
 
-# Additional extensions
+## Additional extensions
 
 A similar abstraction system could be implemented for `String` APIs, so that for example `string.push("foo")`,
 `string.push('f')`, `string.push('f'.to_ascii())` all work by using something like a `StringSource` trait.

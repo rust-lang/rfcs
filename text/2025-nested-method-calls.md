@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2025](https://github.com/rust-lang/rfcs/pull/2025)
 - Rust Issue: [rust-lang/rust#44100](https://github.com/rust-lang/rust/issues/44100)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Enable "nested method calls" where the outer call is an `&mut self`
@@ -22,7 +22,7 @@ desired, the scheme could be extended to other syntactic forms, or
 else subsumed as part of non-lexical lifetimes or some other
 generalization of the lifetime system.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The overriding goal here is that we want to accept nested method calls
@@ -47,10 +47,10 @@ directions. See the Alternatives section for more details.
 [1]: https://internals.rust-lang.org/t/accepting-nested-method-calls-with-an-mut-self-receiver/4588
 [2]: https://internals.rust-lang.org/t/blog-post-nested-method-calls-via-two-phase-borrowing/4886
 
-## Why do we get an error in the first place?
+### Why do we get an error in the first place?
 
 You may wonder why this code isn't accepted in the first place. To see
-why, consider what the (somewhat simplified) resulting MIR looks like:
+why, consider what the (somewhat simplified[^simp]) resulting MIR looks like:
 
 [^simp]: This MIR is mildly simplified; the real MIR has multiple basic blocks to account for the possibility of panics.
 
@@ -124,7 +124,7 @@ artificial, but keep in mind that most of the time when this occurs in
 practice, the argument is a method or fn call, and that could in
 principle have arbitrary side-effects.)
 
-### Introducing reservations
+#### Introducing reservations
 
 This RFC proposes extending MIR with the concept of a **two-phase
 borrow**. These borrows are a variant of mutable borrows where the
@@ -201,7 +201,7 @@ borrow of `v` is "activated" by the indexing, and hence `v` is
 considered mutably borrowed when `v.len()` is called, not reserved,
 which results in an error.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 ### New MIR form for two-phase borrows
@@ -324,7 +324,7 @@ later, but still within the scope of the shared borrow. (In today's
 borrow checker, this cannot happen, so we only check at the start of a
 borrow whether other borrows are in scope.)
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 For the most part, because this change is so targeted, it seems that
@@ -340,7 +340,7 @@ to cover at some point in works like this:
   complicated method calls that are not covered by this proposal, such
   as the `v[0].push_str(&format!("{}", v.len()));` example. In that
   case, a simple desugaring can be used to show why the compiler
-  rejects this code -- in particular, a comparison with the errorneous
+  rejects this code -- in particular, a comparison with the erroneous
   examples may be helpful. A keen observer may note the contrast with
   `vec.push(vec.len())`, but such an observer can be referred to the
   reference. =)
@@ -367,7 +367,7 @@ borrow checker work. At the moment, no such coverage exists, but this
 would be a logical part of it. In that context, explaining it in a
 similar fashion to how the RFC presents the change seems appropriate.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The obvious downside of this proposal is that it is narrowly targeted
@@ -394,7 +394,7 @@ language and the underlying "desugared" view that MIR takes, and in
 general that is to be avoided. The Alternatives section discuses some
 possible future extensions that could be used to remove that gap.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 As discussed earlier, a number of major alternative designs have been
@@ -604,7 +604,7 @@ whether a borrow is activated is affected by "no-ops" like `let x = y`
 
 Therefore, introducing two-phased borrows **outside** of method-call
 desugaring form doesn't feel like the right approach. (But, if they
-are limited to method-call desugaring, as ths RFC proposes, then they
+are limited to method-call desugaring, as this RFC proposes, then they
 are a simple and effective mechanism without broader impact.)
 
 ### Borrowing for the future
@@ -765,7 +765,7 @@ makes the Rust system qualitatively more complex to reason about.
 
 If all this talk of "steps in complexity" seems abstract, I think that
 the most immediate way it will surface is when we try to
-**teach**. Supporting discontinous borrows just makes it that much
+**teach**. Supporting discontinuous borrows just makes it that much
 harder to craft small examples that show how borrowing works. It will
 make the system feel more mysterious, since the underlying rules are
 indeed more complex and thus harder to "intuit" on your own. Getting
@@ -811,7 +811,7 @@ annotations are needed. Just as with discontinuous borrows, designing
 such a system is a significant design challenge outside the scope of
 this RFC.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None as yet..

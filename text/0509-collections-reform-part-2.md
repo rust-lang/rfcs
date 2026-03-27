@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#509](https://github.com/rust-lang/rfcs/pull/509)
 - Rust Issue: [rust-lang/rust#19986](https://github.com/rust-lang/rust/issues/19986)
 
-# Summary
+## Summary
 
 This RFC shores up the finer details of collections reform. In particular, where the
 [previous RFC][part1]
@@ -10,14 +10,14 @@ focused on general conventions and patterns, this RFC focuses on specific APIs. 
 up any errors that were found during implementation of [part 1][part1]. Some of these changes
 have already been implemented, and simply need to be ratified.
 
-# Motivation
+## Motivation
 
 Collections reform stabilizes "standard" interfaces, but there's a lot that still needs to be
 hashed out.
 
-# Detailed design
+## Detailed design
 
-## The fate of entire collections:
+### The fate of entire collections:
 
 * Stable: Vec, RingBuf, HashMap, HashSet, BTreeMap, BTreeSet, DList, BinaryHeap
 * Unstable: Bitv, BitvSet, VecMap
@@ -43,7 +43,7 @@ available for everyone through the cargo ecosystem. Putting them in `collect-rs`
 a chance to still benefit from a network effect and active experimentation. If they thrive there,
 they may still return to the standard library at a later time.
 
-## Add the following methods:
+### Add the following methods:
 
 * To all collections
 ```
@@ -135,7 +135,7 @@ deallocating the storage for the collection itself.
 There is a partial implementation of this at rust-lang/rust#19946.
 
 ==============
-## Deprecate
+### Deprecate
 
 * `Vec::from_fn(n, f)` use `(0..n).map(f).collect()`
 * `Vec::from_elem(n, v)` use `repeat(v).take(n).collect()`
@@ -145,7 +145,7 @@ There is a partial implementation of this at rust-lang/rust#19946.
 
 ==============
 
-## Misc Stabilization:
+### Misc Stabilization:
 
 * Rename `BinaryHeap::top` to `BinaryHeap::peek`. `peek` is a more clear name than `top`, and is
 already used elsewhere in our APIs.
@@ -167,7 +167,7 @@ in the future backwards-compatibly, but the reverse does not hold.
 
 ==============
 
-## Clarifications and Errata from Part 1
+### Clarifications and Errata from Part 1
 
 * Not every collection can implement every kind of iterator. This RFC simply wishes to clarify
 that iterator implementation should be a "best effort" for what makes sense for the collection.
@@ -206,7 +206,7 @@ capacity()` elements.
 
 ==============
 
-## Entry API V2.0
+### Entry API V2.0
 
 The old Entry API:
 ```
@@ -268,9 +268,9 @@ Permitting the following `map.entry(key).get().or_else(|vacant| vacant.insert(Ve
 
 This API should be stabilized for 1.0 with the exception of the impl on Entry itself.
 
-# Alternatives
+## Alternatives
 
-## Traits vs Inherent Impls on Entries
+### Traits vs Inherent Impls on Entries
 The Entry API as proposed would leave Entry and its two variants defined by each collection. We
 could instead make the actual concrete VacantEntry/OccupiedEntry implementors implement a trait.
 This would allow Entry to be hoisted up to root of collections, with utility functions implemented
@@ -281,7 +281,7 @@ These traits can of course be introduced later.
 
 ==============
 
-## Alternatives to ToOwned on Entries
+### Alternatives to ToOwned on Entries
 The Entry API currently is a bit wasteful in the by-value key case. If, for instance, a user of a
 `HashMap<String, _>` happens to have a String they don't mind losing, they can't pass the String by
 -value to the Map. They must pass it by-reference, and have it get cloned.
@@ -307,7 +307,7 @@ better view of the type-system landscape.
 
 ==============
 
-## Don't stabilize `Bitv::set`
+### Don't stabilize `Bitv::set`
 
 We could wait for IndexSet, Or make `set` return a result.
 `set` really is redundant with an IndexSet implementation, and we
@@ -315,7 +315,7 @@ don't like to provide redundant APIs. On the other hand, it's kind of weird to h
 
 ==============
 
-## `reserve_index` vs `reserve_len`
+### `reserve_index` vs `reserve_len`
 
 `reserve_len` is primarily motivated by BitvSet and VecMap, whose capacity semantics are largely
 based around the largest index they have set, and not the number of elements they contain. This
@@ -330,7 +330,7 @@ Alternatively `reserve_len` could just be called `reserve_capacity`.
 
 ==============
 
-## RingBuf `as_slice`
+### RingBuf `as_slice`
 
 Other designs for this usecase were considered:
 
@@ -355,7 +355,7 @@ The one settled on had the benefit of being the simplest. In particular, having 
 very helpful, because most code would just create an empty slice anyway in the contiguous case
 to avoid code-duplication.
 
-# Unresolved questions
+## Unresolved questions
 
 `reserve_index` vs `reserve_len` and `Ringbuf::as_slice` are the two major ones.
 

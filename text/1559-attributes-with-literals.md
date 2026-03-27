@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1559](https://github.com/rust-lang/rfcs/pull/1559)
 - Rust Issue: [rust-lang/rust#34981](https://github.com/rust-lang/rust/issues/34981)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes accepting literals in attributes by defining the grammar of attributes as:
@@ -32,7 +32,7 @@ attributes, among others, would be accepted by this grammar:
 #[repr(C, align(4))]
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 At present, literals are only accepted as the value of a key-value pair in attributes. What's more,
@@ -67,7 +67,7 @@ If `align` were to be added as an attribute, the following are now valid options
 As syntax extensions mature and become more widely used, being able to use literals in a variety of
 positions becomes more important.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 To clarify, _literals_ are:
@@ -103,13 +103,13 @@ Implementation of this RFC requires the following changes:
 
 3.  Crate metadata encoding/decoding would need to encode and decode literals in attributes.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC requires a change to the AST and is likely to break syntax extensions using attributes in
 the wild.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 ### Token trees
@@ -159,7 +159,7 @@ never revisited. Even [the reference] alludes to allowing all literals as values
   [scrapped due to release pressure]: https://github.com/rust-lang/rust/issues/623
   [the reference]: https://doc.rust-lang.org/reference.html#attributes
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None that I can think of.

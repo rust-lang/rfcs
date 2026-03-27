@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#529](https://github.com/rust-lang/rfcs/pull/529)
 - Rust Issue: [rust-lang/rust#23567](https://github.com/rust-lang/rust/issues/23567)
 
-# Summary
+## Summary
 
 This RFC proposes several new *generic conversion* traits. The
 motivation is to remove the need for ad hoc conversion traits (like
@@ -14,7 +14,7 @@ avoid incompatible ad hoc conversion traits defined downstream from
 the types they convert to or from. It also future-proofs against
 eventual language features for ergonomic conversion-based overloading.
 
-# Motivation
+## Motivation
 
 The idea of generic conversion traits has come up from
 [time](https://github.com/rust-lang/rust/issues/7080)
@@ -26,7 +26,7 @@ solve (given below), and considering *now* because they would obsolete
 several ad hoc conversion traits (and several more that are in the
 pipeline) for `std`.
 
-## Problem 1: overloading over conversions
+### Problem 1: overloading over conversions
 
 Rust does not currently support arbitrary, implicit conversions -- and
 for some good reasons. However, it is sometimes important
@@ -64,7 +64,7 @@ It's a shame to have to introduce new ad hoc traits every time such an
 overloading is desired. And because the traits are ad hoc, it's also
 not possible to program generically over conversions themselves.
 
-## Problem 2: duplicate, incompatible conversion traits
+### Problem 2: duplicate, incompatible conversion traits
 
 There's a somewhat more subtle problem compounding the above: if the
 author of the path API neglects to include traits like `AsPath` for
@@ -76,7 +76,7 @@ Having standard, generic conversion traits cuts down on the total
 number of traits, and also ensures that all Rust libraries have an
 agreed-upon way to talk about conversions.
 
-## Non-goals
+### Non-goals
 
 When considering the design of generic conversion traits, it's
 tempting to try to do away will *all* ad hoc conversion methods.  That
@@ -102,9 +102,9 @@ Unfortunately, this approach carries several ergonomic downsides:
 Nevertheless, this is a serious alternative that will be laid out in
 more detail below, and merits community discussion.
 
-# Detailed design
+## Detailed design
 
-## Basic design
+### Basic design
 
 The design is fairly simple, although perhaps not as simple as one
 might expect: we introduce a total of *four* traits:
@@ -192,7 +192,7 @@ Why have both `Into` and `From`? There are a few reasons:
 * To match with existing conventions around conversions and
   constructors (in particular, replacing many `from` constructors).
 
-## Blanket `impl`s
+### Blanket `impl`s
 
 Given the above trait design, there are a few straightforward blanket
 `impl`s as one would expect:
@@ -211,7 +211,7 @@ impl<T, U> From<T> for U where T: Into<U> {
 }
 ```
 
-## An example
+### An example
 
 Using all of the above, here are some example `impl`s and their use:
 
@@ -261,7 +261,7 @@ generic bound is used only for a conversion that can be done up front,
 there is no reason to monomorphize the entire function body for each
 input type.
 
-### An aside: codifying the generics pattern in the language
+#### An aside: codifying the generics pattern in the language
 
 This pattern is so common that we probably want to consider sugar for
 it, e.g. something like:
@@ -279,7 +279,7 @@ was restricted to `AsRef` conversions). Such a feature is out of scope
 for this RFC, but it's a natural and highly ergonomic extension of the
 traits being proposed here.
 
-## Preliminary conventions
+### Preliminary conventions
 
 Would *all* conversion traits be replaced by the proposed ones?
 Probably not, due to the combination of two factors (using the example
@@ -334,7 +334,7 @@ So a rough, preliminary convention would be the following:
 * Use the "inner function" pattern mentioned above to avoid code
   bloat.
 
-## Prelude changes
+### Prelude changes
 
 *All* of the conversion traits are added to the prelude. There are two
  reasons for doing so:
@@ -346,7 +346,7 @@ So a rough, preliminary convention would be the following:
 * For `From`, bounds are somewhat less common but the use of the
   `from` constructor is expected to be rather widespread.
 
-# Drawbacks
+## Drawbacks
 
 There are a few drawbacks to the design as proposed:
 
@@ -363,7 +363,7 @@ There are a few drawbacks to the design as proposed:
   than wholly implicit. If we do go in this direction, we can consider
   language extensions that make it ergonomic *and* avoid code bloat.
 
-# Alternatives
+## Alternatives
 
 The original form of this RFC used the names `As.convert_as`,
 `AsMut.convert_as_mut`, `To.convert_to` and `Into.convert_into` (though
@@ -519,7 +519,7 @@ fn main() {
 }
 ```
 
-## Possible further work
+### Possible further work
 
 We could add a `To` trait.
 
