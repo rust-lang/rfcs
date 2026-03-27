@@ -87,7 +87,7 @@ This feature makes good use of [one of the things we found when doing our resear
 | [Stabilize polonius alpha](https://rust-lang.github.io/rust-project-goals/2026/polonius.html#stabilize-polonius-alpha) | Fix remaining issues, validate on real-world code, and ship a stable improved borrow checker. |
 | [Extend formality for Polonius alpha](https://rust-lang.github.io/rust-project-goals/2026/polonius.html#extend-formality-for-polonius-alpha) | Build a formal model of borrow checking in a-mir-formality and upstream it into the Rust reference. |
 
-*People involved: [Jack Huey][], [Rémy Rakic][], [Niko Matsakis][], [tiif][]*
+*People involved: [Jack Huey][], [Rémy Rakic][], [Niko Matsakis][], [tiif][], [Amanda Stjerna][]*
 
 ---
 
@@ -1289,6 +1289,7 @@ These goals were not accepted either for want of resources or consensus. In some
 [Alejandra González]: https://github.com/blyxyas
 [Alice Ryhl]: https://github.com/Darksonn
 [Alona Enraght-Moony]: https://github.com/adotinthevoid
+[Amanda Stjerna]: https://github.com/amandasystems
 [Amanieu d'Antras]: https://github.com/Amanieu
 [Arlo Siemsen]: https://github.com/arlosi
 [Benno Lossin]: https://github.com/BennoLossin
