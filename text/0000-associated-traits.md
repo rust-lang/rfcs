@@ -306,110 +306,227 @@ error: expected type, found trait `Container::Elem`
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-### Syntax
+### Associated trait declarations
 
-**Declaration** (in trait body):
+A trait definition may contain **associated trait declarations**, introduced with the `trait` keyword. An associated trait declaration names a trait constraint whose concrete value is provided by each impl.
 
-```
-trait Ident ;
-trait Ident : Bounds ;
-trait Ident = DefaultBounds ;
-trait Ident : Bounds = DefaultBounds ;
-trait Ident < GenericParams > ;
-trait Ident < GenericParams > where WhereClauses ;
-```
-
-**Implementation** (in impl body):
+**Grammar** (in trait body):
 
 ```
-trait Ident = Bounds ;
-trait Ident < GenericParams > = Bounds ;
+AssocTraitDecl =
+    "trait" IDENT ";"
+  | "trait" IDENT ":" Bounds ";"
+  | "trait" IDENT "=" Bounds ";"
+  | "trait" IDENT ":" Bounds "=" Bounds ";"
+  | "trait" IDENT GenericParams ";"
+  | "trait" IDENT GenericParams WhereClause ";"
+  | "trait" IDENT GenericParams ":" Bounds ";"
+  | "trait" IDENT GenericParams WhereClause ":" Bounds "=" Bounds ";"
 ```
 
-**Usage** (in bound position):
-
-```
-T: Container::Elem
-T: <C as Container>::Elem
-T: C::Elem<i32>
-```
-
-### AST representation
-
-A new variant `AssocItemKind::Trait` is added to the AST, containing:
-- `ident`: the name
-- `generics`: generic parameters and where clauses
-- `bounds`: declaration bounds (supertraits)
-- `value`: the default or impl value (a list of `GenericBound`)
-- `has_value`: whether a `= ...` value is present
-
-### HIR representation
-
-Two new variants:
-- `TraitItemKind::Trait(GenericBounds)` — in trait definitions
-- `ImplItemKind::Trait(GenericBounds)` — in trait implementations
-
-A new HIR bound variant:
-- `GenericBound::AssocTraitBound(&Ty, &PathSegment, Span, Option<DefId>)` — represents `B: C::Elem` in bound position, where the optional `DefId` carries UFCS trait disambiguation.
-
-### DefKind and middle representation
-
-- `DefKind::AssocTrait` — a new `DefKind` variant, distinct from `AssocTy`.
-- `AssocKind::Trait { name: Symbol }` — a new `AssocKind` variant at the `ty` level.
-- `AssocTag::Trait` — used to probe for associated trait items specifically.
-
-### Predicate
-
-A new clause kind is added:
+Examples:
 
 ```rust
-ClauseKind::AssocTraitBound(AssocTraitBoundPredicate {
-    self_ty: Ty,      // The bounded type (B)
-    projection: AliasTerm,  // The projection (<C as Container>::Elem)
-})
+trait Container {
+    trait Elem;                         // bare declaration
+    trait Constraint: Clone;            // with supertrait bound
+    trait Format = Send;                // with default value
+    trait Handler<T>: Debug;            // generic
+    trait Codec<T> where T: Send;       // generic with where clause
+}
 ```
 
-### Name resolution
+**Declaration bounds** (the part after `:`) are *requirements* on every impl's value. If `trait Elem: Clone;`, then every impl must provide a value that implies `Clone`. These bounds are also available to callers: a function with `T: C::Elem` may assume `T: Clone` when the declaration includes `: Clone`.
 
-The resolver accepts partial resolutions (paths with unresolved trailing segments) in `PathSource::Trait(AliasPossibility::Maybe)` when the base is a type parameter, `Self` type param, or `Self` type alias. This allows `C::Elem` in bound position to resolve `C` as a type parameter and leave `Elem` as an unresolved associated item.
+**Defaults** (the part after `=`) provide a value that impls may omit, analogous to default associated types. If an impl omits the associated trait, the default is used.
 
-For UFCS paths (`<T as Trait>::Elem`), the resolver handles fully-qualified paths through `PathSource::TraitItem`, now extended to accept `DefKind::AssocTrait`.
+### Associated trait implementations
 
-### Type checking
+In a trait impl, the associated trait's value is provided with `trait Name = Bounds;`:
 
-**Projection**: Associated traits do *not* participate in type projection. `project()` returns `NoProgress` for `AssocTrait` projections. `type_of()` is unreachable (`span_bug!`) for associated traits.
+```rust
+impl Container for MyVec {
+    trait Elem = Send + Clone;
+}
+```
 
-**Solver support**: Associated traits are supported by both the old and new trait solvers. The old solver resolves `AssocTraitBound` predicates through its fulfillment engine (selecting the impl, extracting value bounds, emitting concrete trait obligations) and its evaluation path (mirroring the fulfillment logic for speculative queries). The new solver handles them via a dedicated `compute_assoc_trait_bound_goal` function. The feature is gated as `unstable`, requiring `#![feature(associated_traits)]`.
+The value may be:
+- One or more trait bounds: `Send`, `Clone + Debug`
+- Trait bounds with associated type constraints: `IntoIterator<Item = i32>`
+- Lifetime bounds: `'static`, `Send + 'static`
+- Relaxed bounds: `?Sized`, `Send + ?Sized`
+- Any combination of the above: `Debug + Send + 'static`
 
-**Bound enforcement**: When `B: C::Elem` appears as a bound, the HIR type lowering emits a `ClauseKind::AssocTraitBound` predicate. Both solver resolve this as follows:
+**Validation**: The compiler checks that the impl's value satisfies the declaration's supertrait bounds. If the declaration says `trait Elem: Clone;`, the impl value must include `Clone` (or a subtrait of `Clone`).
 
-1. **Structurally normalize** the self-type of the projection's trait reference to determine whether the concrete impl is known.
-2. **For abstract types** (type parameters, aliases, placeholders): add only the parent trait obligation (e.g., `C: Container`) and return success. The concrete value bounds cannot be resolved yet because the impl is unknown; declaration bounds are separately validated by `compare_impl_assoc_trait` at the impl site.
-3. **For concrete types**: iterate over relevant impls matching the trait reference. For each candidate impl:
-   a. Probe the impl and unify the goal trait reference with the impl's trait reference.
-   b. Fetch the eligible associated trait item from the impl via `fetch_eligible_assoc_item`.
-   c. Read `item_bounds()` on the impl item to extract the concrete value traits.
-   d. For each value trait, emit a new `TraitPredicate` goal with the original self-type (e.g., `B: Send` if `Elem = Send`).
+Associated traits are **not permitted in inherent impls** — only in trait impls:
 
-This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
+```rust
+impl MyStruct {
+    trait Foo = Send;  // ERROR: not allowed in inherent impls
+}
+```
 
-**Declaration bounds**: When a declaration has bounds (`trait Elem: Clone;`), `compare_impl_item` checks that the impl's value satisfies those supertraits.
+### Using associated traits as bounds
 
-**UFCS disambiguation**: When the optional `constraint_trait` is present in `AssocTraitBound`, the bound resolution filters candidates to only the specified trait, correctly disambiguating `<T as Readable>::Constraint` from `<T as Writable>::Constraint`.
+An associated trait may appear anywhere a trait bound is expected, using the path syntax `C::Elem`:
 
-### Interaction with other features
+```rust
+fn process<C: Container, T: C::Elem>(item: T) { ... }
+```
 
-**Associated types**: Associated traits and associated types coexist in the same trait body. They cannot share the same name (`E0325`). A trait can have both `type Item` and `trait Constraint`. An associated type can be bounded by an associated trait: `type Item: Self::Constraint;`.
+This means: "`T` must satisfy whatever constraint `C::Elem` resolves to." In a generic context, the concrete value is not yet known, but any declaration bounds (supertraits) are available:
 
-**Generic associated types**: Associated traits can be declared alongside generic associated types and used to constrain their parameters at the use site, as in the `PointerFamily` pattern.
+```rust
+trait Container {
+    trait Elem: Debug + 'static;
+}
 
-**Trait inheritance**: Associated traits are inherited through supertraits. If `trait Base { trait Elem; }` and `trait Extended: Base { ... }`, then `Extended` inheritors can use `Self::Elem`.
+// T: Debug and T: 'static are available here from the declaration
+fn to_debug<C: Container, T: C::Elem>(item: T) -> Box<dyn Debug> {
+    Box::new(item)  // OK: T: Debug + 'static from declaration bounds
+}
+```
 
-**`impl Trait`**: `impl C::Elem` in return position or argument position works through opaque type lowering, creating an opaque type bounded by the associated trait.
+At a concrete call site (e.g., `process::<MyVec, i32>(42)`), the solver resolves `MyVec`'s impl of `Container`, extracts `Elem = Send + Clone`, and verifies `i32: Send + Clone`.
 
-**Cross-crate**: Associated trait declarations and values are available across crate boundaries. The metadata encodes `DefKind::AssocTrait` and `explicit_item_bounds` for associated trait items.
+Associated traits may also appear in:
 
-**`dyn Trait`**: Using an associated trait as a dyn bound (`dyn T::Elem`) is rejected because Rust type-checks generic bodies before monomorphization — the concrete trait set behind `T::Elem` is not yet known, and `dyn` requires a compile-time-known vtable layout. This is the same fundamental constraint that prevents `dyn T` where `T` is a type parameter. A trait that merely *has* associated traits can still be used as `dyn Trait` — the associated trait is simply unused in the dyn context.
+- **Where clauses**: `where T: C::Elem`
+- **Inline bounds**: `fn foo<T: C::Elem>()`
+- **`impl Trait`**: `fn foo(arg: impl C::Elem)` and `fn foo() -> impl C::Elem`
+- **Combined with other bounds**: `T: C::Elem + PartialEq`
+
+### Fully-qualified (UFCS) syntax
+
+When a type parameter is bounded by multiple traits that each declare an associated trait with the same name, the shorthand `T::Elem` is ambiguous. Fully-qualified syntax resolves the ambiguity:
+
+```rust
+trait Readable { trait Constraint; }
+trait Writable { trait Constraint; }
+
+fn transfer<T: Readable + Writable,
+            R: <T as Readable>::Constraint,
+            W: <T as Writable>::Constraint>(r: R, w: W) { ... }
+```
+
+The syntax `<T as Trait>::AssocTrait` mirrors the existing UFCS syntax for associated types (`<T as Trait>::AssocType`).
+
+### Positions where associated traits are rejected
+
+Associated traits are constraints, not types. They are rejected in positions that expect a type:
+
+- **Type position**: `let x: T::Elem = ...;` → error: "expected type, found trait"
+- **Return type**: `fn foo() -> T::Elem` → error (unless `impl T::Elem`)
+- **Struct fields**: `struct S { field: T::Elem }` → error
+- **`dyn` position**: `dyn T::Elem` → error: "associated traits cannot be used with dyn"
+
+The `dyn` restriction exists because `dyn` requires a compile-time-known vtable layout, and in a generic context the set of traits behind `T::Elem` is not yet known. This is the same fundamental constraint that prevents `dyn T` where `T` is a type parameter.
+
+A trait that *has* associated traits can still be used as `dyn Trait` — the associated trait is simply inaccessible in the dyn context.
+
+### Generic associated traits
+
+Associated traits may have their own generic parameters, analogous to generic associated types (GATs):
+
+```rust
+trait Transform {
+    trait Constraint<T: Clone>;
+}
+
+impl Transform for MyTransform {
+    trait Constraint<T: Clone> = PartialEq<T> + Debug;
+}
+```
+
+Generic parameters may include types, lifetimes, and bounds. Where clauses are also supported:
+
+```rust
+trait Codec {
+    trait Decode<'a, T> where T: Send;
+}
+```
+
+Usage includes the generic arguments:
+
+```rust
+fn decode<C: Codec, T: C::Decode<'static, u8>>() { ... }
+```
+
+### Interaction with associated types
+
+Associated traits and associated types may coexist in the same trait. They occupy the same name namespace — a trait cannot have both `type Foo` and `trait Foo` with the same name.
+
+An associated type may be bounded by an associated trait from the same trait:
+
+```rust
+trait Container {
+    trait ElemConstraint;
+    type Elem: Self::ElemConstraint;
+}
+```
+
+### Interaction with generic associated types
+
+Associated traits compose with GATs. An associated trait can constrain the parameters of a GAT at the use site:
+
+```rust
+trait PointerFamily {
+    trait Bounds;
+    type Pointer<T>;
+}
+
+fn wrap<F: PointerFamily, T: F::Bounds>(val: T) -> F::Pointer<T> { ... }
+```
+
+GAT parameters may also be directly bounded by associated traits:
+
+```rust
+trait Universe {
+    trait BoundsIn;
+    trait BoundsOut;
+    type Ref<T: Self::BoundsOut>: RefLike<T>;
+    type Cell<T: Self::BoundsIn>: CellLike<T>;
+}
+```
+
+When a GAT parameter is bounded by `Self::Bounds` and used in an impl, the compiler substitutes the concrete associated trait value to check that the impl's GAT definition satisfies its requirements. No additional `where` clauses are required on downstream types that use the GAT — bounds on GAT parameters are checked at instantiation.
+
+### Interaction with trait inheritance
+
+Associated traits are inherited through supertraits:
+
+```rust
+trait Base { trait Elem; }
+trait Extended: Base { trait Extra; }
+
+fn use_both<T: Extended, E: T::Elem + T::Extra>() { ... }
+```
+
+UFCS can disambiguate inherited associated traits:
+
+```rust
+fn use_base<T: Extended, E: <T as Base>::Elem>() { ... }
+```
+
+### Interaction with `impl Trait`
+
+`impl C::Elem` works in both argument and return position, creating an opaque type bounded by the associated trait:
+
+```rust
+trait Handler {
+    trait Arg;
+    fn handle(&self, arg: impl Self::Arg);
+}
+```
+
+### Cross-crate usage
+
+Associated trait declarations and their values are visible across crate boundaries. A crate can define a trait with associated traits, and downstream crates can implement and use them.
+
+### Auto-trait interaction
+
+The concrete types used with associated traits participate in auto-trait inference normally. For example, if `Universe::Ref<T>` is `Arc<T>`, then a struct containing `U::Ref<U::Cell<State>>` is `Send + Sync` when `U` is `Shared` (with `Arc<Mutex<State>>`), and `!Send` when `U` is `Isolated` (with `Rc<RefCell<State>>`).
 
 ### Comparison with associated types
 
@@ -417,13 +534,11 @@ This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
 |--------|----------------|-----------------|
 | Declaration | `type Foo;` | `trait Foo;` |
 | Value | `type Foo = i32;` | `trait Foo = Send;` |
-| Position | Type position | Bound position |
-| `type_of` | Returns the type | Unreachable (`span_bug!`) |
-| Projection | Yes (`T::Foo` is a type) | No (`T::Foo` is a constraint) |
-| DefKind | `AssocTy` | `AssocTrait` |
-| Generics | Yes (generic associated types) | Yes (generic associated traits) |
+| Valid positions | Type position | Bound position |
+| Generics | Yes (GATs) | Yes (generic associated traits) |
 | Defaults | Yes | Yes |
 | UFCS | `<T as Trait>::Foo` | `<T as Trait>::Foo` |
+| `dyn` compatible | Yes (with limitations) | No |
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -432,7 +547,7 @@ This means `Rc<i32>: C::Elem` is correctly rejected when `Elem = Send`.
 
 - **Partial overlap with where clauses**: Some simple cases that associated traits address can be handled today via additional trait parameters or where clauses, though less ergonomically and without the ability to vary per implementation.
 
-- **Solver complexity**: The `AssocTraitBound` predicate adds a new resolution pathway in both the old and new trait solvers — the old solver through its fulfillment engine and evaluation path, the new solver via a dedicated `compute_assoc_trait_bound_goal` function. Both pathways must be maintained alongside existing projection and trait obligation machinery.
+- **Solver complexity**: Associated traits introduce a new kind of predicate that both the old and new trait solvers must handle, adding to the compiler's internal complexity. However, the resolution logic follows established patterns from associated type projection.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
