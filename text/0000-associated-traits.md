@@ -1,6 +1,6 @@
 - Feature Name: `associated_traits`
-- Start Date: 2026-03-21
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Start Date: 2026-03-28
+- RFC PR: [rust-lang/rfcs#3938](https://github.com/rust-lang/rfcs/pull/3938)
 - Rust Issue: [rust-lang/rfcs#2190](https://github.com/rust-lang/rfcs/issues/2190)
 
 ## Summary
