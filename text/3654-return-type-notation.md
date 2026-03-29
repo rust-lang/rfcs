@@ -821,7 +821,7 @@ We encountered a number of problems with this design.
 
 #### If the name is implicit, what name should we use?
 
-The most impmediate problem with this proposal was trying to decide what name to use.
+The most immediate problem with this proposal was trying to decide what name to use.
 
 Using `Widgets` (capitalized) feels arbitrary and there is no precedent within Rust for automatically creating names with different case conventions in this way.
 
@@ -898,7 +898,7 @@ where
 
 This approach has an appealing generality to it, and it opens up some interesting possibilities. For example, one might consider a trait `Const` that is implemented by all function types which are `const fn` (discussed in withoutboats's [const as an auto trait][caa] blog post). Users could then write `for<'a> F::widgets<'a>: Const` to declare that the method is a const method. However, it's rather unergonomic for the common case. It also doesn't compose well with the associated type bounds notation -- i.e., would we write something like `F: Factory<widgets::Output: Send>`?
 
-To resolve the ergonomic problems, our exporations of this future wound up proposing some form of sugar to reference the `Output` type -- for example, being able to write `F::widgets(..): Send`. But that is precisely what this RFC proposes! Indeed, in the [future possibilities][] section of the RFC, we discuss the possibility of giving users some way to name the type of the `widgets` method itself, and not just its return type.
+To resolve the ergonomic problems, our explorations of this future wound up proposing some form of sugar to reference the `Output` type -- for example, being able to write `F::widgets(..): Send`. But that is precisely what this RFC proposes! Indeed, in the [future possibilities][] section of the RFC, we discuss the possibility of giving users some way to name the type of the `widgets` method itself, and not just its return type.
 
 So why not just start with this more general approach, if we think it might be a useful extension? First, it's not clear if it would be useful. We don't have to solve the question of "const as an auto trait" in order to address the send bounds problem. Second, this approach suffers from some of the complications mentioned in the previous question, such as needing to specify the order of arguments for anonymous lifetime or impl trait parameters, and having to deal with existing traits that may shadow the desired name. Lacking a strong motivation to have this much generality, it's hard to tell how to resolve those questions, since we don't really know where/when this more general form would be used.
 
@@ -963,7 +963,7 @@ trait LocalService<R> {
 
 However, it carries the downside that users must implement `LocalService` and hence must be aware of the desugaring.
 It would be nicer if users could choose to implement `Service` and then (in so doing) effectively assert that all their async functions are *always* `Send`.
-This is not possible today due to the fact that `trait-variant` is emulating trait alias functioanlity with a blanket impl and supertraits; this is because true trait alias functionality is not yet stable.
+This is not possible today due to the fact that `trait-variant` is emulating trait alias functionality with a blanket impl and supertraits; this is because true trait alias functionality is not yet stable.
 [RFC 3437][] has proposed an extension to trait aliases that makes them implementable.
 The combination of accepting [RFC 3437][] and stabilizing trait aliases would make these aliases nicer for users as a result.
 
