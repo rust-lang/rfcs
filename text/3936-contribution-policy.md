@@ -37,10 +37,10 @@ Maintainers and moderators are **not** required to put effort into explaining re
 
 ### Examples of failing to be present
 
-- If the contribution is fully AI-generated and the contributor was not in-the-loop, did not carefully review the result, or does not understand it, then the contributor is *not present*.
-  - These contributions are informally known as "slop" and this behavior is informally known as "vibecoding".
-  - Use of tools such as [OpenClaw](https://en.wikipedia.org/wiki/OpenClaw) presents a high risk of producing these contributions and this behavior.
-- Contributors must be present not just when submitting code, but when writing PR descriptions, bug reports, proposals, and comments.
-- If one feeds maintainer questions into AI tools and then proxies the output directly back to the reviewer, one is not present, and this behavior lacks *compassion*.
+These illustrate how to apply the policy.  The list is not exhaustive.
 
-This list is nonexhaustive.
+- Submitting AI-generated work when you weren't in-the-loop, when you haven't checked it with care, when you don't understand it, or when you can't explain it to a reviewer fails *accountability*.  If you haven't engaged with the work and can't engage with review questions about it, you aren't being present as its contributor.
+- Feeding reviewer questions into an AI tool and proxying the output directly back fails *compassion*.  The reviewer is investing in you; that investment requires your presence.
+- Submitting work — whether AI-generated, written by others (and used with permission), or written by hand — without exercising care and attention proportional to what you're asking of reviewers fails *effort*.  Presence is incompatible with carelessness and inattention.
+
+Informally, contributions that fall short may be called "slop" and the behavior "vibecoding".  Use of tools such as [OpenClaw](https://en.wikipedia.org/wiki/OpenClaw) presents a high risk of producing these contributions and this behavior.  Extreme care is needed if using these tools.
