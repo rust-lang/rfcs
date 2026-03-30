@@ -6,26 +6,28 @@
 ## Summary
 [summary]: #summary
 
-We adopt a *no low-effort contributions* policy for the Rust Project.
+We adopt a *be present* contribution policy for the Rust Project.
 
 ## Contribution policy
 
-*Contributions* refer to pull requests, issues, proposals, and comments.
+Contributing to the Rust Project requires *being present* — present for the work and present when working with maintainers.
 
-- **Effort**: If you're not putting in the same level of effort a maintainer will have to put in to review it, then you're not adding value.  This level varies by the task and by the cost of review, but it's never less than being careful and thoughtful.
-- **Accountability**: We hold you responsible for everything you send to us.  We expect you to understand it and be able to explain it.  We expect you to check it carefully.  Respect our time.
-- **Compassion**: In taking the time to answer your questions and review what you've proposed, we're making an investment in you and in the open source community.  Keep that in mind when we're offering feedback.  Listen carefully.  Reflect on it.  Reply to us compassionately.  We're trying to help; making our maintainers feel bad about that leads to burnout.
+- **Effort**: Being present means pulling your weight — putting in the same level of effort a maintainer will have to put in to review it.  This level varies by the task and by the cost of review, but it's never less than being careful and thoughtful.
+- **Accountability**: Being present means being responsible for everything you send us.  We expect you to be involved with the work, to understand it, to be able to explain it, to check it carefully, and to respect our time.
+- **Compassion**: Being present means engaging respectfully with reviewers.  In taking the time to answer your questions and review what you've proposed, we're making an investment in you and in the open source community.  Keep that in mind when we're offering feedback — listen carefully, reflect on it, and reply to us compassionately.  We're trying to help; making our maintainers feel bad about that leads to burnout.
 
-Contributions that fail to satisfy these criteria are *low-effort contributions*.
+When these criteria are not satisfied, we say that the contributor is *not present*.
 
-Maintainers and moderators are **not** required to put effort into explaining rejection of low-effort contributions.
+Maintainers and moderators are **not** required to put effort into explaining rejection of contributions where the contributor is not present.
 
-## Examples of low-effort contributions
+*Contributions* include pull requests, issues, proposals, and comments.
 
-- Fully AI-generated and not carefully self-reviewed contributions are *low-effort*.
-  - These are informally known as "slop" or as "vibecoding".
-  - These include those produced by [OpenClaw](https://en.wikipedia.org/wiki/OpenClaw) and similar tools.
-  - Code, PR descriptions, bug reports, proposals, and comments are all low-effort if fully-generated and not carefully self-reviewed.
-- Feeding maintainer questions into AI tools and then proxying the output directly back to the reviewer is *low-effort* and lacks *compassion*.
+### Examples of failing to be present
+
+- If the contribution is fully AI-generated and the contributor was not in-the-loop, did not carefully review the result, or does not understand it, then the contributor is *not present*.
+  - These contributions are informally known as "slop" and this behavior is informally known as "vibecoding".
+  - Use of tools such as [OpenClaw](https://en.wikipedia.org/wiki/OpenClaw) presents a high risk of producing these contributions and this behavior.
+- Contributors must be present not just when submitting code, but when writing PR descriptions, bug reports, proposals, and comments.
+- If one feeds maintainer questions into AI tools and then proxies the output directly back to the reviewer, one is not present, and this behavior lacks *compassion*.
 
 This list is nonexhaustive.
