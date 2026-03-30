@@ -1,7 +1,7 @@
 - Feature Name: `mitigation_enforcement`
 - Start Date: 2025-09-13
 - RFC PR: [rust-lang/rfcs#3855](https://github.com/rust-lang/rfcs/pull/3855)
-- Rust Issue: None
+- Tracking Issue: [rust-lang/rust#154613](https://github.com/rust-lang/rust/issues/154613)
 
 # Summary
 [summary]: #summary
