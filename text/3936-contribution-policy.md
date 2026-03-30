@@ -43,4 +43,4 @@ These illustrate how to apply the policy.  The list is not exhaustive.
 - Feeding reviewer questions into an AI tool and proxying the output directly back fails *compassion*.  The reviewer is investing in you; that investment requires your presence.
 - Submitting work — whether AI-generated, written by others (and used with permission), or written by hand — without exercising care and attention proportional to what you're asking of reviewers fails *effort*.  Presence is incompatible with carelessness and inattention.
 
-Informally, contributions that fall short may be called "slop" and the behavior "vibecoding".  Use of tools such as [OpenClaw](https://en.wikipedia.org/wiki/OpenClaw) presents a high risk of producing these contributions and this behavior.  Extreme care is needed if using these tools.
+Informally, contributions that fall short may be called "slop" and the behavior "vibecoding".
