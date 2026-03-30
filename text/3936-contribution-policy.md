@@ -8,6 +8,19 @@
 
 We adopt a *be present* contribution policy for the Rust Project.
 
+## Design axioms
+
+The policy rests on four principles — four *beliefs* about how to approach drafting a successful policy.
+
+- **Let's start from common ground.**
+  - I.e., people have diverse views; let's start with those that we share.
+- **What matters is what's in front of us.**
+  - I.e., what comes over the wall is what defines our experience; we can tell when a PR is well reviewed and when a contributor understands it.
+- **Policy defines the unacceptable, not the disappointing.**
+  - I.e., policy needs to err on the side of avoiding false positives because we'll put moral weight behind these determinations.  Well-meaning people acting reasonably will still sometimes disappoint us, and that's not what we're trying to catch.
+- **Contributing requires being present.**
+  - I.e., we expect the person coming to us to be engaged in the work and with us.  This is true whether the person is using tools or whether the person is bringing to us the work of an internal team.
+
 ## Contribution policy
 
 Contributing to the Rust Project requires *being present* — present for the work and present when working with maintainers.
