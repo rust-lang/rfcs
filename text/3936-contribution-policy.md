@@ -27,7 +27,7 @@ Contributing to the Rust Project requires *being present* — present for the wo
 
 - **Effort**: Being present means pulling your weight — putting in the same level of effort a maintainer will have to put in to review it.  This level varies by the task and by the cost of review, but it's never less than being careful and thoughtful.
 - **Accountability**: Being present means being responsible for everything you send us.  We expect you to be involved with the work, to understand it, to be able to explain it, to check it carefully, and to respect our time.
-- **Compassion**: Being present means engaging respectfully with reviewers.  In taking the time to answer your questions and review what you've proposed, we're making an investment in you and in the open source community.  Keep that in mind when we're offering feedback — listen carefully, reflect on it, and reply to us compassionately.  We're trying to help; making our maintainers feel bad about that leads to burnout.
+- **Compassion**: Being present means engaging with reviewers as collaborators.  Reviewers take your work seriously and use care and kindness in interactions.  Help them help everyone by listening carefully, reflecting, and replying compassionately.
 
 When these criteria are not satisfied, we say that the contributor is *not present*.
 
