@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3855](https://github.com/rust-lang/rfcs/pull/3855)
 - Tracking Issue: [rust-lang/rust#154613](https://github.com/rust-lang/rust/issues/154613)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce the concept of "mitigation enforcement", so that when compiling
@@ -17,7 +17,7 @@ library only comes with a single set of enabled mitigations per target.
 Mitigation enforcement should be disableable by the end-user via a compiler
 flag.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Memory unsafety mitigations are important for reducing the chance that a vulnerability
@@ -78,11 +78,11 @@ to introduce the mitigations to the entire program.
 [`-Z stack-protector`]: https://github.com/rust-lang/rust/issues/114903
 [example by Alice Ryhl]: https://rust-lang.zulipchat.com/#narrow/channel/131828-t-compiler/topic/Target.20modifiers.20and.20-Cunsafe-allow-abi-mismatch/near/483871803
 
-## Supported mitigations
+### Supported mitigations
 
 The following mitigations could find this feature interesting
 
-### Already Stable
+#### Already Stable
 
 1. `-C control-flow-guard`
    This is a "CFI-type" mitigation on Windows, and therefore having it enabled
@@ -119,7 +119,7 @@ The following mitigations could find this feature interesting
    desired default there is not to enforce. This probably merits a separate
    RFC/FCP.
 
-### Currently Unstable (as of rustc 1.89)
+#### Currently Unstable (as of rustc 1.89)
 
 This RFC is not the place to make a decision of exactly which unstable mitigations
 should have enforcement enabled - that should take place as a part of their
@@ -164,7 +164,7 @@ However, it would be good to see that enforcement fits well with sanitizers.
 [`-Z stack-protector`]: https://github.com/rust-lang/rust/issues/114903
 [`-Z ub-checks`]: https://github.com/rust-lang/rust/issues/123499
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When you use a mitigation, such as `-C stack-protector=strong`, if one of your
@@ -186,7 +186,7 @@ your dependencies have the same mitigation setting as you by passing
 `-C deny-partial-mitigations=overflow-checks`. That flag can be
 overridden by `-C allow-partial-mitigations=overflow-checks`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 For every mitigation-like option, the compiler CLI flags determines whether that
@@ -246,15 +246,15 @@ as follows:
 | all                    |  OK  |      OK    |   OK   |             OK              |   OK  |               OK            |
 | all + allow partial    |  OK  |      OK    |   OK   |             OK              |   OK  |               OK            |
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Syntax alternatives
+### Syntax alternatives
 
-### `-C my-mitigation-noenforce`
+#### `-C my-mitigation-noenforce`
 
 Instead of `-C allow-partial-mitigations`, it is possible to split every flag value that enables
 a mitigation for which enforcement is desired is split into 2 separate values, "enforcing" and
@@ -266,13 +266,13 @@ If a program has multiple flags of the same kind, the last flag wins, so e.g.
 `-C stack-protector=strong-noenforce -C stack-protector=strong` is the same as
 `-C stack-protector=strong`.
 
-#### -C stack-protector=none-noenforce
+##### -C stack-protector=none-noenforce
 
 The option `-C stack-protector=none-noenforce` is the same as
 `-C stack-protector=none`. I am not sure whether we should have both, but
 it feels that orthogonality is in favor of having both.
 
-## Limiting the set of crates that are allowed to bypass enforcement
+### Limiting the set of crates that are allowed to bypass enforcement
 
 You could have a syntax like `-C allow-partial-mitigations=stack-protector=@stdlib+foo`,
 `-C stack-protector=strong-noenforce=@stdlib+foo`, or some other syntax (using `+` since
@@ -288,7 +288,7 @@ made by the application writer (dependent crate) rather than the library writer.
 
 This can be done in a later stabilization that the core of the feature.
 
-### Impacts to syntax choices
+#### Impacts to syntax choices
 
 The `-C stack-protector=strong-noenforce=std+alloc+core` syntax feels ugly.
 
@@ -297,7 +297,7 @@ certainly have both the `noenforce` syntax and the `allow-partial-mitigations` s
 with `noenforce` disabling enforcement for all crates while `allow-partial-mitigations`
 disables it only for specific crates.
 
-## Interaction with `-C unsafe-allow-abi-mismatch`
+### Interaction with `-C unsafe-allow-abi-mismatch`
 
 The proposed rules do not interact with `-C unsafe-allow-abi-mismatch` at all, so if
 you have a "sanitizer runtime" crate that is compiled with the following options:
@@ -315,7 +315,7 @@ act like `-C allow-unsafe-api-mismatch` and mark a crate as a
 `-C pretend-mitigation-enabled` as well for mitigations that are also
 target modifiers.
 
-## Defaults
+### Defaults
 
 We want that the most obvious way to enable mitigations (e.g.
 `-C stack-protector=strong` or `-C sanitizer=shadow-call-stack`) to turn on
@@ -341,7 +341,7 @@ Distributors and packagers can set defaults for mitigations by setting some sort
 
 [by Ubuntu with `-fstack-protector-strong`]: https://wiki.ubuntu.com/ToolChain/CompilerFlags
 
-## The standard library
+### The standard library
 
 One big place where it's very easy to end up with mixed mitigations is the
 standard library. The standard library comes compiled with just a single
@@ -361,21 +361,21 @@ to compile their own code with `-C stack-protector=none` using that
 [NX]: https://en.wikipedia.org/wiki/Executable-space_protection
 [`-z relro -z now`]: https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
 
-## Why not target modifiers?
+### Why not target modifiers?
 
 The [target modifier] feature provides a similar goal of preventing mismatches in compiler
 settings.
 
 There are several issues with using target modifiers for mitigations:
 
-### The name unsafe-allow-abi-mismatch
+#### The name unsafe-allow-abi-mismatch
 
 The name of the flag that allows mixing target modifiers, `-C unsafe-allow-abi-mismatch`,
 does not make sense for cases that are not "unsafe ABI mismatches". It also uses the
 word "unsafe", which we prefer not to use except in cases that can result in actual
 unsoundness.
 
-### The behavior of unsafe-allow-abi-mismatch
+#### The behavior of unsafe-allow-abi-mismatch
 
 The behavior of `-C unsafe-allow-abi-mismatch` is also not ideal for mitigations.
 
@@ -396,7 +396,7 @@ tradeoff they bring. In that case, we should allow the executable-writer to be a
 of the tradeoff being made, rather than letting libraries in the middle decide it
 for them.
 
-### Target modifier, enforced mitigation, neither, or both?
+#### Target modifier, enforced mitigation, neither, or both?
 
 For every single mitigation-like flag:
 
@@ -412,7 +412,7 @@ For every single mitigation-like flag:
    other cases, it should be both. I am not aware of a current flag that
    fits this pattern.
 
-## `-emit=component-info`
+### `-emit=component-info`
 
 One possible "big" alternative would be emitting a component info file, via
 `-emit=component-info`. For example:
@@ -455,7 +455,7 @@ feel like a good feature, though one that deserves a separate RFC. There does no
 seem to be a *conflict* between `-emit=component-info` and
 `-C allow-partial-mitigations`.
 
-## Why not an external tool?
+### Why not an external tool?
 
 This is somewhat hard to do with an external tool, since there is
 no way of looking at a binary and telling what mitigations its components
@@ -485,7 +485,7 @@ but they have limitations:
 [`annobin`]: https://sourceware.org/cgit/annobin
 [`checksec`]: https://www.trapkit.de/tools/checksec/
 
-## Mitigations that are manifestly visible from the program header
+### Mitigations that are manifestly visible from the program header
 
 For some mitigations, the mitigation is enabled for an entire program
 executable, by setting a flag in the program header.
@@ -515,7 +515,7 @@ is enabled.
 [`ET_DYN`]: https://stackoverflow.com/questions/34519521/why-does-gcc-create-a-shared-object-instead-of-an-executable-binary-according-to/34522357#34522357
 [progheader]: https://refspecs.linuxfoundation.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/progheader.html
 
-### .note.gnu.property
+#### .note.gnu.property
 
 The `.note.gnu.property` field contains a number of properties
 (for example, [`GNU_PROPERTY_AARCH64_FEATURE_1_BTI`]) that are used to indicate
@@ -542,7 +542,7 @@ cooperation from all platforms.
 
 [`GNU_PROPERTY_AARCH64_FEATURE_1_BTI`]: https://docs.rs/object/0.37/object/elf/constant.GNU_PROPERTY_AARCH64_FEATURE_1_BTI.html
 
-## Passing enforced mitigations to the linker
+### Passing enforced mitigations to the linker
 
 Currently, the mitigation enforcement RFC does not do anything for native dependencies,
 which can be compiled without mitigations within a program that supports mitigations.
@@ -558,7 +558,7 @@ compiler should pass these flags to the relevant linker.
 Since that is a breaking change as it breaks compilation with existing C code, it
 might need to be done over an edition or linker-change boundary.
 
-## Use of the lint mechanism
+### Use of the lint mechanism
 
 In theory, mitigation enforcement could be a collection of lints, accessible via our standard
 lint infrastructure, and as such e.g. exposed in Cargo via existing lint configuation.
@@ -580,7 +580,7 @@ pre-existing missing mitigations.
 Also, lints are generally controlled by developers, while mitigations are normally controlled
 by DevSecOps engineers, and it is reasonable to keep the separation functional.
 
-## .gnu.build.attributes
+### .gnu.build.attributes
 
 This is a [Fedora feature]. It actually behaves pretty similarly to how we expect
 mitigation enforcement to work - a compiler plugin written by Fedora makes
@@ -598,10 +598,10 @@ but since it only works on Linux platforms, probably better to not solely rely o
 
 [Fedora feature]: https://fedoraproject.org/wiki/Toolchain/Watermark
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## The panic strategy
+### The panic strategy
 
 The Rust compiler already *has* infrastructure to detect flag mismatches: the
 flags `-Cpanic` and `-Zpanic-in-drop`. The prebuilt stdlib comes with different
@@ -609,17 +609,17 @@ pieces depending on which strategy is used, although panic landing flags are
 not entirely removed when using `-Cpanic=abort`, as only part of the prebuilt
 stdlib is switched out.
 
-## Target modifiers
+### Target modifiers
 
-## .note.gnu.property
+### .note.gnu.property
 
 The `.note.gnu.property` section discussed previously is an example of C code
 detecting mismatches of a flag at link time.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 A possible future extension could be to provide a mechanism to enforce
