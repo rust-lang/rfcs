@@ -213,7 +213,7 @@ depend on whether [*Standard library dependencies*][rfcs#3875] are implemented:
 > Standard library crates are provided to the compiler using the `--extern` flag
 > with the `noprelude` modifier ([?][rationale-noprelude-with-extern]). Standard
 > library crates are also provided with the `nounused` modifier to avoid being
-> considered an unused crate dependency.
+> considered an unused crate dependency ([?][rationale-nounused-with-extern]).
 
 The host pre-built standard library will always be used for procedural macros
 and build scripts ([?][rationale-host-deps-cross],
@@ -1238,6 +1238,19 @@ implementations.
 ↩ [*Preventing implicit sysroot dependencies*][preventing-implicit-sysroot-dependencies]
 
 [wg-cargo-std-aware#40]: https://github.com/rust-lang/wg-cargo-std-aware/issues/40
+
+### Why use `nounused` with `--extern`?
+[rationale-nounused-with-extern]: #why-use-nounused-with---extern
+
+The `unused_crate_dependencies` lint triggers when Cargo tells rustc about a
+dependency with `--extern` and rustc determines that the dependency is never
+used. This lint can unintentionally trigger for build-std when standard library
+crates are passed with `--extern` instead of being loaded from the sysroot
+implicitly (a difference that should not be observable). The `nounused` extern
+modifier silences the `unused_crate_dependencies` lint for the standard library
+crates.
+
+↩ [*Preventing implicit sysroot dependencies*][preventing-implicit-sysroot-dependencies]
 
 ### Why not allow the source path for the standard library be customised?
 [rationale-custom-src-path]: #why-not-allow-the-source-path-for-the-standard-library-be-customised
