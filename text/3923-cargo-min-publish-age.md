@@ -61,7 +61,8 @@ global-min-publish-age = "7 days"
 running a command like `cargo update`, `cargo add`, `cargo build`, etc. will prefer to use versions of required crates that were published
 at least 7 days ago.
 
-The time can be indicated as an integer followed by a time unit such as minutes, hours, days, etc.
+The time can be indicated as an integer followed by a time unit such as minutes, hours, days, etc. Note that it
+is best not to use a time longer than a couple of weeks.
 
 Crates that use path or git, rather than a registry will never trigger this check, as there isn't a relevant publish time to use. Also,
 this check won't be preformed for crates published on registries that don't publish the `pubtime` information (note that crates.io does
