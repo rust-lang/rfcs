@@ -183,7 +183,7 @@ depend on whether [*Standard library dependencies*][rfcs#3875] are implemented:
 > - Lints in standard library crates will be built using `--cap-lints allow`
 >   matching other upstream dependencies.
 >
-> Cargo will resolves the dependencies of opaque dependencies, such as the
+> Cargo will resolve the dependencies of opaque dependencies, such as the
 > standard library, separately in their own workspaces. The root of such a
 > resolve will be the crates specified in `build-std.crates` or, if
 > [*Standard library dependencies*][rfcs#3875] is implemented, the unified set of
@@ -260,12 +260,12 @@ An optional `standard_library_support` field
 specification ([?][rationale-target-spec-purpose]), replacing the existing
 `metadata.std` field. `standard_library_support` has two fields:
 
-- `supported`, which can be set to either "core", "core and alloc", or
-  "core, alloc, and std"
-- `default`, which can be set to either "core", "core and alloc", or
-  "core, alloc, and std"
+- `supported`, which can be set to either "core", "core, alloc", or "core,
+  alloc, std"
+- `default`, which can be set to either "core", "core, alloc", or "core, alloc,
+  std"
   - `default` cannot be set to a value which is "less than" that of `supported`
-    (i.e. "core and alloc" when `supported` was only set to "core")
+    (i.e. "core, alloc" when `supported` was only set to "core")
 
 The `supported` field determines which standard library crates Cargo will permit
 to be built for this target on a stable toolchain. On a nightly toolchain, Cargo
@@ -285,10 +285,10 @@ any standard library crates to be built for the target on a stable toolchain. It
 will be required to use a nightly toolchain to use build-std with that target.
 
 Cargo's `build-std.crates` field will default to the value of the
-`standard_library_support.default` field (`std` for "core, alloc, and std",
-`alloc` for "core and alloc", and `core` for "core"). This does not prevent
-users from building more crates than the default, it is only intended to be a
-sensible default for the target that is probably what the user expects.
+`standard_library_support.default` field (`std` for "core, alloc, std", `alloc`
+for "core, alloc", and `core` for "core"). This does not prevent users from
+building more crates than the default, it is only intended to be a sensible
+default for the target that is probably what the user expects.
 
 The `target-standard-library-support` option will be supported by rustc's
 `--print` flag and will be used by Cargo to query this value for a given target:
@@ -1411,7 +1411,7 @@ pre-built standard library and caches the newly-built standard library.
 
 What should this configuration option be named? In particular, `crates` being
 plural is unintuitive: while it can enable building multiple crates, it is set
-with the name of only a single crate. `up-to` might be better.
+with the name of only a single crate. `up-to` or `which` might be better.
 
 ↩ [*Proposal*][proposal]
 
