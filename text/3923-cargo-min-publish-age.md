@@ -60,7 +60,7 @@ For example, in your `<repo>/.cargo/config.toml`, you may have:
 
 ```toml
 [registry]
-global-min-publish-age = "7 days"
+global-min-publish-age = "14 days"
 ```
 
 Running `cargo update` will look something like:
@@ -68,7 +68,7 @@ Running `cargo update` will look something like:
 $ cargo update
 Updating index
  Locking 1 package to recent Rust 1.60 compatible version
-  Adding example v1.2.3 (available: v1.6.0, published 2 days ago)
+  Adding some-package v1.2.3 (available: v1.6.0, published 2 days ago)
 ```
 
 While a CI job runs:
@@ -102,39 +102,34 @@ And `registry.min-publish-age` sets it for crates.io.
 
 For example:
 ```toml
-[registries.example]
-index = "https://crates.example.com"
-min-publish-age = "2 hours"
-
-[registry.local]
-index = "https://registry.local"
+[registry.my-org]
+index = "https://my.org"
 min-publish-age = 0 # this registry is fully trusted
 
 [registry]
 # Default for any registry without a specific value
-global-min-publish-age = "2 days"
+global-min-publish-age = "14 days"
 # Value to use for crates.io
 min-publish-age = "5 days"
 ```
 
 This will use a minimum publish age of
 - 5 days for crates.io
-- 2 hours for crates.example.com
-- no minimum for registry.local
-- 2 days for any other registry.
+- no minimum for `my-org`
+- 14 days for any other registry.
 
 ### Using newer version
 
 In some cases, it may be desirable to use a version that is newer than the minimum publish age.
 
-Say `example` from the [guide section](#guide-level-explanation) has a fix for a vulnerability in v1.3.0, you could do one of:
+Say `some-package` from [earlier](#guide-level-explanation) has a fix for a vulnerability in v1.3.0, you could do one of:
 ```console
-$ cargo update example --precise 1.3.0
+$ cargo update some-package --precise 1.3.0
 Updating index
  Locking 1 package to recent Rust 1.60 compatible version
-  Adding example v1.2.3 (published 10 days ago, available: v1.6.0, published 2 days ago)
+  Adding some-package v1.2.3 (published 10 days ago, available: v1.6.0, published 2 days ago)
 $ # or ...
-$ cargo add example@1.3.0
+$ cargo add some-package@1.3.0
 ```
 
 This is due to the `resolver.incompatible-publish-age = "fallback"` default which preserves your `Cargo.lock` and respects too-high of version requirements despite your minimum-release age.
