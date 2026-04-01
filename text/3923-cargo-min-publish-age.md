@@ -119,7 +119,7 @@ min-publish-age = "5 days"
 
 This will use a minimum publish age of
 - 5 days for crates.io
-- 2 hours for crates.exalmple.com
+- 2 hours for crates.example.com
 - no minimum for registry.local
 - 2 days for any other registry.
 
