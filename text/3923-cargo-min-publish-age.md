@@ -230,7 +230,7 @@ Generally, `0`, `"N days"`, and `"N weeks"` will be used.
 
 In addition to what is specified above
 
-* `min-publish-age` only apply to dependencies fetched from a registry that publishes `pubtime`, such as crates.io.
+* `min-publish-age` only applies to dependencies fetched from a registry that publishes `pubtime`, such as crates.io.
   * They do not apply to git or path dependencies, in
     part because there is not always an obvious publish time, or a way to find alternative versions.
   * They do not apply to registries that don't set `pubtime`, as there is no reliable way to know when the version was published.
