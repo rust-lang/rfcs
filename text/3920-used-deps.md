@@ -110,6 +110,15 @@ With any of the current options,
 if the dependency ever becomes truly unused,
 there is no way to report this to the user.
 
+This doesn't scale to other potential dependency lints, including
+- wildcard dependencies ([#4377](https://github.com/rust-lang/cargo/issues/4377))
+- non-semver version upper bound ([#5340](https://github.com/rust-lang/cargo/issues/5340))
+- Version req is lower than `Cargo.lock` ([#15583](https://github.com/rust-lang/cargo/issues/15583))
+- dependency isn't inherited ([#15578](https://github.com/rust-lang/cargo/issues/15578))
+- Version requirement without fully specified lower bound ([#15577](https://github.com/rust-lang/cargo/issues/15577))
+- unused `public = true`
+- implicit version requirement
+
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
