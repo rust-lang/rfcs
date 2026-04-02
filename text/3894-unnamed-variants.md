@@ -686,8 +686,8 @@ EnumVariant ->
 
 #### No field data
 
-This RFC only defines adding unnamed variants to field-less enums, leaving this
-as future work.
+This RFC only defines adding unnamed variants to field-less enums, leaving
+unnamed variants in enums with fields as future work.
 
 #### `non_exhaustive`
 
