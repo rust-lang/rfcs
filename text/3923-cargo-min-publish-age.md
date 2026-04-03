@@ -328,6 +328,11 @@ Exclude lists tend to be used either for:
 - Marking a source as always trusted: we have this covered through per-registry configuration
 
 One problem with an exclude list is that they tend to be a static solution (all versions) for a transient problem (a subset of versions).
+This can lead people open to an attack after a high-value upgrade.
+We could make the exclude list use the [Package ID Spec](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html) format and even require a full version to be specified.
+
+Users likely will need to exclude transitive dependencies as well.
+For instance, to use a too-new version of `clap`, you may also need to exclude `clap_builder`, `clap_derive`, and `clap_lex`.
 
 An exclude list can always be added in the future if a strong enough use case presents itself.
 By delaying, we can also take into account any future changes.
