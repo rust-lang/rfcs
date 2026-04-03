@@ -6,8 +6,8 @@
 ## Summary
 [summary]: #summary
 
-With specialization on the way, we need to talk about the semantics of
-`<T as Clone>::clone() where T: Copy`.
+Clarify semantics of `Clone` so that users are permitted to assume that
+`<T as Clone>::clone() where T: Copy` is implemented by `memcpy`.
 
 It's generally been an unspoken rule of Rust that a `clone` of a `Copy` type is
 equivalent to a `memcpy` of that type; however, that fact is not documented
@@ -34,15 +34,21 @@ compatible to upgrade to Clone in the future if demand is high enough."
 ## Detailed design
 [design]: #detailed-design
 
-Specify that `<T as Clone>::clone(t)` shall be equivalent to `ptr::read(t)`
-where `T: Copy, t: &T`. An implementation that does not uphold this *shall not*
-result in undefined behavior; `Clone` is not an `unsafe trait`.
+Specify that users may assume `<T as Clone>::clone(t)` to be equivalent to
+`ptr::read(t)` where `T: Copy, t: &T`. An implementation that does not uphold
+this *shall not* result in undefined behavior; `Clone` is not an `unsafe
+trait`.
 
-Also add something like the following sentence to the documentation for the
+Also add something like the following paragraph to the documentation for the
 `Clone` trait:
 
 "If `T: Copy`, `x: T`, and `y: &T`, then `let x = y.clone();` is equivalent to
-`let x = *y;`. Manual implementations must be careful to uphold this."
+`let x = *y;`.  Implementors *should* be careful to uphold this invariant, as
+consumers *may* assume that it holds (though `unsafe` code **must not** rely on
+it holding as a precondition for memory safety).  Note that the compiler itself
+*will not* assume that the invariant holds when compiling calls to
+`Clone::clone`, thereby guaranteeing that the relevant `clone` method will be
+invoked."
 
 ## Drawbacks
 [drawbacks]: #drawbacks
