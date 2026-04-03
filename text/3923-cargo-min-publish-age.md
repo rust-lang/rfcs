@@ -291,6 +291,22 @@ it isn't as critical to have a way to list crates to exclude from the rule in co
 We anticipate that `fallback` will be sufficient for most use cases, but the possibility of a `deny` option
 can be revisited if necessary.
 
+### Timestamp vs duration
+
+Some prior art
+- exclusively use a timestamp
+- allow either a timestamp or a relative time within the same field
+
+While a timestamp has its uses
+(see [`--publish-time`](https://doc.rust-lang.org/cargo/reference/unstable.html#lockfile-publish-time)),
+it wouldn't be as ergonomic for this use case.
+
+Designing the field to support both would create a trap for users trying to reproduce a problem from the past in that they are likely to set the timestamp but overlook that they need to take the existing duration into account.
+Even if they do remember to take the existing duration into account,
+it would be more convenient if they can be set separately.
+
+Setting the timestamp to resolve to is left as a future possibility
+
 ### Per-registry configuration
 
 Allowing the minimum age to be configurable per registry provides a simple mechanism
@@ -471,3 +487,4 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
     - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
   - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
+- A `resolver.now` field for setting the time for which `min-publish-age` should be compared against
