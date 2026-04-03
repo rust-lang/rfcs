@@ -281,18 +281,18 @@ This helps with the above disambiguation and for clarity in discussing this as a
 
 ### `fallback` and `deny`
 
-We default `resolver.incompatible-publish-age` to `fallback` rather than `deny`
-and defer support for `deny` to future possibilities, because that allows
-users to easily override the minimum age for specific crates when necessary.
+`resolver.incompatible-publish-age` is starting with just support for `allow` and `fallback`, leaving `deny` for future consideration,
+because that allows users to easily override the minimum age for specific crates when necessary.
 
 Specifically, with `fallback` it is possible to override the minimum age behavior for
 specific crates by specifying a more specific version in `Cargo.toml`, or using `cargo update --precise`.
 
 Furthermore, with `fallback`, and the ability to override versions as mentioned above,
-it isn't as critical to have a way to list crates to exclude from the rule in configuration.
+we can defer support for an exclusion list as well,
+simplifying the design work we need to do now and being able to gather more requirements in case it becomes worth addressing in the future.
 
-We anticipate that `fallback` will be sufficient for most use cases, but the possibility of a `deny` option
-can be revisited if necessary.
+The one danger of `fallback` is that a malicious actor with the right permissions can publish a malicious version and yank the safe versions,
+bypassing the `min-publish-age`.
 
 ### Timestamp vs duration
 
