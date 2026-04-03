@@ -132,6 +132,8 @@ $ # or ...
 $ cargo add some-package@1.3.0
 ```
 
+`cargo update` won't preserve the use of the new version after a `cargo generate-lockfile` while `cargo add` will.
+
 This is due to the `resolver.incompatible-publish-age = "fallback"` default which preserves your `Cargo.lock` and respects too-high of version requirements despite your minimum-release age.
 
 [1]: https://doc.rust-lang.org/cargo/reference/config.html
