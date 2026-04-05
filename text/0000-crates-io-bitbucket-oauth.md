@@ -1,6 +1,6 @@
 - Feature Name: `crates_io_bitbucket_oauth`
 - Start Date: 2026-04-05
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3944](https://github.com/rust-lang/rfcs/pull/3944)
 - Tracking Issue: [rust-lang/crates.io#0000](https://github.com/rust-lang/crates.io/issues/0000)
 
 ## Summary
