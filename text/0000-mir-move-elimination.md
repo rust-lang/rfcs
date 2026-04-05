@@ -459,11 +459,14 @@ A final pass is run over the MIR body which performs the following transformatio
 
 One surprising consequence of these changes is that implementing `Copy` for a type can inhibit the move optimization. This is because a copy doesn't invalidate any borrows of a value and therefore forbids re-using the allocation.
 
-It might be possible to address this with a language-level `move` keyword which forces a move even for `Copy` types, but at this point it's not clear that there is sufficient justification for adding this.
+It might be possible to address this with a language-level `move` keyword which forces a move even for `Copy` types, but at this point it's not clear that there is sufficient justification for adding this. Here's an example of how this keyword would work:
 
-### Operands have side-effects
-
-This change causes move operands to have side-effects in the operational semantics, which is not the case today. While it may be possible to represent allocation and deallocation of a local using separate statements like `StorageLive`/`StorageDead`, this would make lifetime analysis much harder for the proposed MIR optimization.
+```rust
+let x = 1;
+let y = &x;
+drop(move x);
+let z = *y; // Fails because x was moved. Removing `move`fixes this.
+ ```
 
 ### Src/dest aliasing in assignments
 
@@ -541,3 +544,17 @@ pub fn example() {
 ```
 
 In some situations, users may rely on the address of a local as a unique hash map key. But even then it's unreasonable to assume that this address remains unique once the local is dropped, so breakage in practice should be non-existent.
+
+## Rationale and alternatives
+
+### Preserving addresses on re-initialization
+
+One of the changes made by this RFC is that named local variables may change their address if they are de-initialized and then later re-initialized. The reason for this change is to avoid relying on NB semantics for opsem. However there is another possibility which avoids NB, which is to pre-compute the lifetimes of all locals in pre-optimization MIR and then encode in MIR which locals have overlapping lifetimes and are thus not allowed to be merged together. MIR optimizations would then rely on this data to determine whether two locals can be merged.
+
+The problem with this approach is that the overlap constraints are hard-coded into the MIR and are unable to evolve as optimizations perform constant propagation and eliminate unreachable branches. Specifying lifetimes directly in the opsem is preferable and results in much cleaner semantics for optimizations to work with.
+
+## Unresolved questions
+
+None
+
+## Future possibilities
