@@ -1,6 +1,6 @@
 - Feature Name: `inherit-default-features`)
 - Start Date: 2026-04-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3945](https://github.com/rust-lang/rfcs/pull/3945)
 - Cargo Issue: [rust-lang/cargo#0000](https://github.com/rust-lang/cargo/issues/0000)
 
 ## Summary
