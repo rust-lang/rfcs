@@ -484,8 +484,6 @@ MIR optimizations need to be careful not to shorten the live range of a local by
 
 In practice this is usually not a problem because most MIR optimizations will avoid touching locals whose address has been taken.
 
-In cases where an initializing assignment needs to be moved down, a placeholder assignment `_dest = undef` can be left in the place of the old one. This doesn't emit any machine code, but has the effect of activating the destination local without writing anything into it, thus ensuring its live range matches the one specified in the original program.
-
 ### Potentially breaking change
 
 This is technically a breaking change since it effectively reduces the live range for which an allocation is valid. This has 3 effects in practice, the most obvious one being that it's possible to write unsafe code that was previously accepted by Miri but that will result in UB under this new model. For example:
