@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-Allow disabling default features locally when inhering a package.
+Allow disabling default features locally when inheriting a package.
 ```toml
 [workspace]
 
