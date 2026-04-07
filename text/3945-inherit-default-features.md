@@ -71,7 +71,7 @@ then the end result is `features = ["default"]`.
 
 As this left some confusing cases,
 Cargo produced warnings.
-These warnings were turned into hard errors for Edition 2024 in [#13839](https://github.com/rust-lang/cargo/pull/13839).0
+These warnings were turned into hard errors for Edition 2024 in [#13839](https://github.com/rust-lang/cargo/pull/13839).
 
 This left us with:
 
