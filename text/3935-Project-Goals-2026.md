@@ -282,9 +282,10 @@ An unstable `-Zbuild-std` flag has existed for a while, but this new design — 
 This year, the Rust types team plans to stabilize the [next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2026/next-solver.html). This solver is a ground-up rewrite of the core engine that decides whether types satisfy trait bounds, normalizes associated types, and more. The types team has been working on it since late 2022, and it already powers coherence checking as of Rust 1.84. The goal for this year is to stabilize it for use across all of Rust and remove the old implementation.
 
 This goal may not *sound* like it's going to impact your life, but finishing the new solver unblocks a *lot* of stuff. To start, it allows us to make progress on the [Project Zero](https://rust-lang.github.io/rust-project-goals/2026/roadmap-project-zero.html) roadmap, which aims to fix every known type system soundness bug. It also unblocks long-desired features like implied bounds, cyclic trait matching, and features needed by the [Just add async](https://rust-lang.github.io/rust-project-goals/2026/roadmap-just-add-async.html) roadmap.
-Roadmaps offer a "zoomed out" view of the Rust project direction. Each roadmap collects a set of related project goals into a coherent theme. A typical roadmap takes several years to drive to completion, so when you look at the roadmap, you'll see not only the work we expect to do this year, but a preview of the work we expect in future years (to the extent we know that).
 
 ## Active roadmaps
+
+Roadmaps offer a "zoomed out" view of the Rust project direction. Each roadmap collects a set of related project goals into a coherent theme. A typical roadmap takes several years to drive to completion, so when you look at the roadmap, you'll see not only the work we expect to do this year, but a preview of the work we expect in future years (to the extent we know that).
 
 Not every goal is part of a roadmap, nor are they all expected to be. This initial set of roadmaps is based on the trends that we saw in the 2026 goals. Over time, we expect to add more roadmaps and refine their structure to help people quickly see where Rust is going.
 
