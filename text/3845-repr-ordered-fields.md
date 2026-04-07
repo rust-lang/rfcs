@@ -155,6 +155,7 @@ warning: use of `repr(C)` in type `Foo`
 
 After enough time has passed, and the community has switched over:
 This makes it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -167,6 +168,7 @@ This makes it easier to tell *why* the `repr` was applied to a given struct. If 
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 
 The exact algorithm is deferred to whatever the default target C compiler does with default settings (or if applicable, the most commonly used settings). 
+
 ## `repr(ordered_fields)` 
 
 > The `ordered_fields` representation is designed for one purpose: to create types that you can soundly perform operations on that rely on data layout, such as reinterpreting values as a different type
@@ -174,7 +176,9 @@ The exact algorithm is deferred to whatever the default target C compiler does w
 > This representation can be applied to structs, unions, and enums.
 > 
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
+
 ### struct
+
 When applying `repr(ordered_fields)` structs are laid out in memory in declaration order, with padding bytes added as necessary to preserve alignment.
 The alignment of a struct is the same as the alignment of the most aligned field.
 
@@ -195,7 +199,9 @@ Would be laid out in memory like so
 ```
 a...bbbbcc..dddd
 ```
+
 ### union
+
 When applying `repr(ordered_fields)`, unions would be laid out as follows:
 * the same alignment as their most aligned field
 * the same size as their largest field, rounded up to the next multiple of the union's alignment
@@ -214,7 +220,9 @@ union FooUnion {
 ```
 
 `FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
+
 ### enum
+
 When applying `repr(ordered_fields)` to an enum, the enum's tag type and discriminant will be the same as when applying `repr(C)` to the enum in edition <= 2024.
 This does mean that the tag type will be platform-specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning (name TBD).
 This warning should suggest the smallest integer type that can hold the discriminant values (preferring signed integers to break ties).
@@ -364,6 +372,7 @@ fn get_layout_for_enum(
     Ok(layout)
 }
 ```
+
 ### Migration to `repr(ordered_fields)`
 
 The migration will be handled as follows:
@@ -396,6 +405,7 @@ The migration will be handled as follows:
     * This one is currently stuck due to a larger scope than this RFC
 * do nothing
     * We keep getting bug reports on Windows (and other platforms), where `repr(C)` doesn't actually match the target C compiler, or we break a bunch of subtle unsafe code to match the target C compiler.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -433,6 +443,7 @@ See Rationale and Alternatives as well
     * `repr(consistent)`
     * `repr(declaration_order)`
     * something else?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
