@@ -266,7 +266,7 @@ This RFC would change the following:
   Questions](#unresolved-questions)
 - `url` would be deprecated in favor of explicitly requesting linked account information (we could
   continue to provide a GitHub URL if the user has a linked GitHub account)
-- A field named `github_useranme_matches` (with a value of a boolean that the user's GitHub
+- A field named `github_username_matches` (with a value of a boolean that the user's GitHub
   username is either the same as, or different from, their crates.io username)
 
 So that the response eventually looks like this (without the values supporting deprecated fields
