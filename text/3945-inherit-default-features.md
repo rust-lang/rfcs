@@ -65,7 +65,7 @@ In addressing this in [#11409](https://github.com/rust-lang/cargo/pull/11409),
 support was added for `workspace = true, default-features = false` but in a surgical manner.
 The proposed mental model for this was that the `default` feature is additive like all other features though it didn't quite accomplish that.
 When inheriting `features` the package extends but does not override the workspace.
-A dependency with `default-features = true` (implicitly or explicitly) is like a package withb `features = ["default"]`.
+A dependency with `default-features = true` (implicitly or explicitly) is like a package with `features = ["default"]`.
 So if you have a workspace dependency with `features = ["default"]` and a package with `features = []` (implicitly or explicitly),
 then the end result is `features = ["default"]`.
 
