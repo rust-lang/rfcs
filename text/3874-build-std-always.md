@@ -115,9 +115,15 @@ of `build-std` is not influenced by the dependencies of the current crate.
 When `build-std` is set to "always", then the standard library will be
 unconditionally recompiled ([?][rationale-unconditional]) in the release profile
 ([?][rationale-release-profile]) defined in its workspace as part of every clean
-build. This is primarily useful for users of tier three targets. As with other
-dependencies, the standard library's build will respect the `RUSTFLAGS`
-environment variable.
+build. This is primarily useful for users of tier three targets.
+
+As with other dependencies, the standard library's build will respect the
+`RUSTFLAGS` environment variable. `RUSTFLAGS` is respected irrespective of the
+mechanism that it is set via: `RUSTFLAGS`, `CARGO_ENCODED_RUSTFLAGS`,
+`target.<triple>.rustflags` or `target.<cfg>.rustflags`. The unstable
+`profile.rustflags` key is also respected, but from the same profile as the rest
+of the standard library build (i.e. it uses the release profile of the standard
+library's workspace).
 
 > [!NOTE]
 >
