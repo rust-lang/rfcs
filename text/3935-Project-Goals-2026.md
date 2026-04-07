@@ -30,7 +30,7 @@ Contributors *propose* goals; Rust teams *accept* them. When you propose a goal,
 
 ## How these goals were selected
 
-Goal proposals were accepted during the month of January. Many of the goals are continuing goals that are carried over from the previous year, but others goal are new.
+Goal proposals were collected during the month of January. Many of the goals are continuing goals that are carried over from the previous year, but others goal are new.
 
 In February, an *alpha* version of this RFC is reviewed with teams. Teams vet the goals to determine if they are realistic and to make sure that goal have champions from the team. A *champion* is a Rust team member that will mentor and guide the contributor as they do their work. Champions keep up with progress on the goal, help the champion figure out technical challenges, and also help the contributor to navigate the Rust team(s). Champions also field questions from others in the project who want to understand the goal.
 
@@ -115,7 +115,7 @@ Under Polonius Alpha, this code compiles.
 
 Polonius Alpha is part of a larger roadmap called [the Borrow-Checker Within](https://rust-lang.github.io/rust-project-goals/2026/roadmap-borrow-checker-within.html) that we expect to be driving over the next few years. This year, another part of that work is including Polonius Alpha in [a-mir-formality](https://github.com/rust-lang/a-mir-formality/), the [types team's](https://rust-lang.org/governance/teams/compiler/#team-types) (in-progress) specification for how the Rust type system works. As part of another goal, we are planning to [integrate a-mir-formality into the Rust reference](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html). This would make Polonius the first version of the borrow checker whose behavior is specified outside of the Rust compiler.
 
-## Extending const evaluation to *structs/enums*, *traits*, and *reflection*
+## Change const evaluation to support *traits*, and *reflection*, allow *structs/enums* as const parameter types
 
 | Goal | What and why |
 | --- | --- |
