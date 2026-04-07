@@ -409,6 +409,22 @@ See Rationale and Alternatives as well
 * The migration plan, as a whole, needs to be ironed out
     * Currently, it is just a sketch, but we need timelines, dates, and guarantees to switch `repr(C)` to match the layout algorithm of the target C compiler.
     * Before this RFC is accepted, t-compiler will need to commit to fixing the layout algorithm sometime in the next edition.
+* Should this `repr` be versioned?
+    * This way we can evolve the repr (for example, by adding new niches)
+* Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?
+* What should `repr(C)` do when a given type wouldn't compile in the corresponding `C` compiler (like fieldless structs in MSVC)? 
+	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319138105
+* Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033 or some other later edition? Yes, it's a breaking change. But at that point, it will likely only be breaking code no one uses.
+    * Leaning towards no
+* Should unions expose some niches?
+    * For example, if all variants of the union are structs that have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making a union of structs behave more like an enum).
+    * This must be answered before stabilization, as it is set in stone after that
+* Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
+	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
+* What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
+* <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types).
+	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319098177
+	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
 * The name of the new repr `repr(ordered_fields)` is a mouthful (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
     * `repr(linear)`
     * `repr(ordered)`
@@ -417,22 +433,6 @@ See Rationale and Alternatives as well
     * `repr(consistent)`
     * `repr(declaration_order)`
     * something else?
-* Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?
-* Should unions expose some niches?
-    * For example, if all variants of the union are structs that have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making a union of structs behave more like an enum).
-    * This must be answered before stabilization, as it is set in stone after that
-* Should this `repr` be versioned?
-    * This way we can evolve the repr (for example, by adding new niches)
-* Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change. But at that point, it will likely only be breaking code no one uses.
-    * Leaning towards no
-* Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
-	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
-* What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
-* <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types).
-	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319098177
-	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
-* What should `repr(C)` do when a given type wouldn't compile in the corresponding `C` compiler (like fieldless structs in MSVC)? 
-	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319138105
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
