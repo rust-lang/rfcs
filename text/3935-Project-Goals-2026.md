@@ -234,7 +234,7 @@ Finally, the [Sized trait hierarchy](https://rust-lang.github.io/rust-project-go
 
 ---
 
-Two goals this year are working to make it possible for user-defined types to be used in all the ways that you can use `Box`, `Arc`, and `&`.
+Three goals this year are working to make it possible for user-defined types to be used in all the ways that you can use `Box`, `Arc`, and `&`.
 
 [Arbitrary self types](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html) lets you use custom smart pointers as method receivers. With the `Receiver` trait and `derive(CoercePointee)`, your pointer types work just like `Box` or `Arc` — including method dispatch and coercion to `dyn Trait`:
 
@@ -248,6 +248,8 @@ impl Person {
 let person: SmartPointer<Person> = get_data();
 let bio = person.biometrics(); // just works
 ```
+
+[Reborrow traits](https://rust-lang.github.io/rust-project-goals/2026/reborrow-traits.html) allow custom pointers to be reborrowed, just like mutable references. When working with Pin, for example, you should no longer have to call `pinned_ref.as_mut()` to fix lifetime issues.
 
 We are also continuing our experimental work to support [custom field projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html) — accessing fields *through* a smart pointer. Today, `&x.field` gives you `&Field`, but there's no equivalent for `NonNull`, `Pin`, or custom pointer types. The field projections design is exploring a "virtual places" approach that would make this work generically. The goal for this year is a compiler experiment on nightly and draft RFCs, with the [beyond-refs wiki](https://rust-lang.github.io/beyond-refs/) documenting the design space.
 
