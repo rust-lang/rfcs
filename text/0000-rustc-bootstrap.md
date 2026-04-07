@@ -139,6 +139,7 @@ Cache invalidation should be done by build scripts setting `rerun-if-env-changed
 [drawbacks]: #drawbacks
 
 - This encourages using unstable features on stable, explicitly going against our goals as a project. But people are doing that anyway, and keeping the status quo does not help us prevent them, while causing many other issues.
+  - Note that while this could be seen as encouragement at the *policy* level, it's actually more restrictive at the technical level, since it requires people to make an exhaustive list of all features they're using.
 - Rustfmt is often run automatically by editor plugins, not explicitly. Additionally, right now rustfmt warns and continues when a feature gate is enabled on stable, which means the whole codebase gets reformatted. We should make sure rustfmt is changed to instead give a hard error when the environment variable is missing, which will avoid editors accidentally reformatting the whole codebase. [The rustfmt team intends to fix this](https://github.com/rust-lang/rustfmt/issues/5022).
 - This may make it less likely that people help stabilize features. But stabilizing features is [very very hard](https://medium.com/@ElizAyer/organizational-boundary-problems-too-many-cooks-or-not-enough-kitchens-2ddedc6de26a), and in the meantime people have very little recourse when they need to use an unstable feature.
 
