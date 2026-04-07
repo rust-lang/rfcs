@@ -63,7 +63,7 @@ See also the tracking issue discussion at <https://github.com/rust-lang/cargo/is
 However, initial support didn't error or even emit an "unused manifest key" warning due to bugs.
 In addressing this in [#11409](https://github.com/rust-lang/cargo/pull/11409),
 support was added for `workspace = true, default-features = false` but in a surgical manner.
-The proposed amental model for this was that the `default` feature is additive like all other features though it didn't quite accomplish that.
+The proposed mental model for this was that the `default` feature is additive like all other features though it didn't quite accomplish that.
 When inheriting `features` the package extends but does not override the workspace.
 A dependency with `default-features = true` (implicitly or explicitly) is like a package withb `features = ["default"]`.
 So if you have a workspace dependency with `features = ["default"]` and a package with `features = []` (implicitly or explicitly),
