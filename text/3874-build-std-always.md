@@ -240,7 +240,7 @@ target in the project.
 
 *See the following sections for relevant unresolved questions:*
 
-- [*What should the `build-std` configuration in `.cargo/config` be named?*][unresolved-config-name]
+- [*What should the `build-std` configuration in `.cargo/config.toml` be named?*][unresolved-config-name]
 - [*What should the "always" and "never" values of `build-std` be named?*][unresolved-config-values]
 - [*What should `build-std.crates` be named?*][unresolved-build-std-crate-name]
 - [*Should the standard library inherit RUSTFLAGS?*][unresolved-inherit-rustflags]
@@ -1398,8 +1398,8 @@ The following are aspects of the proposal which warrant further discussion or
 small details are likely to be bikeshed prior to this part of the RFC's
 acceptance or stabilisation and aren't pertinent to the overall design:
 
-### What should the `build-std.when` configuration in `.cargo/config` be named?
-[unresolved-config-name]: #what-should-the-build-stdwhen-configuration-in-cargoconfig-be-named
+### What should the `build-std.when` configuration in `.cargo/config.toml` be named?
+[unresolved-config-name]: #what-should-the-build-stdwhen-configuration-in-cargoconfigtoml-be-named
 
 What should this configuration option be named? `build-std`?
 `rebuild-standard-library`?
