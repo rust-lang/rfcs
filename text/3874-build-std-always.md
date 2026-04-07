@@ -214,7 +214,8 @@ depend on whether [*Standard library dependencies*][rfcs#3875] are implemented:
 > track the standard library crate sources, Cargo's `.d` dep-info file will not
 > include standard library crate sources, and only a `rlib` produced (no
 > `dylib`) ([?][rationale-no-dylib]). It will be built in the Cargo `target`
-> directory of the crate or workspace like any other dependency.
+> directory of the crate or workspace like any other dependency. The `rlib`s of
+> the standard library are considered intermediate artifacts.
 >
 > Standard library crates are provided to the compiler using the `--extern` flag
 > with the `noprelude` modifier ([?][rationale-noprelude-with-extern]). Standard
