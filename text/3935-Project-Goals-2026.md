@@ -230,7 +230,7 @@ Finally, the [Sized trait hierarchy](https://rust-lang.github.io/rust-project-go
 | [`derive(CoercePointee)`](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html#derive-coercepointee) | Support `dyn Trait` coercion for user-defined smart pointers. |
 | [Map the field projection design space](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html#map-the-field-projection-design-space) | Explore the virtual places approach, document it in the beyond-refs wiki, formalize borrow checker integration, and build a compiler experiment. |
 
-*People involved: [Benno Lossin][], [Alice Ryhl][], [Ding Xiang Fei][], [Jack Huey][], [Rémy Rakic][], [Niko Matsakis][], [Oliver Scherer][], [Tyler Mandry][], [TC][]*
+*People involved: [Benno Lossin][], [Alice Ryhl][], [Ding Xiang Fei][], [Jack Huey][], [Niko Matsakis][], [Oliver Scherer][], [Tyler Mandry][], [TC][]*
 
 ---
 
@@ -333,7 +333,7 @@ Large goals require the engagement of entire team(s). The teams that need to eng
 |                                                                                            |                   | [types][]                 | [Oliver Scherer][]          |
 | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                  | [Benno Lossin][]      | **[lang][]**              | [Tyler Mandry][]          |
 |                                                                                            |                   | [compiler][]              | [Ding Xiang Fei][] |
-|                                                                                            |                   | [types][]                 | [Rémy Rakic][]              |
+|                                                                                            |                   | [types][]                 | [Niko Matsakis][]              |
 |                                                                                            |                   | [libs-api][]              | *n/a*             |
 |                                                                                            |                   | [libs][]                  | *n/a*             |
 |                                                                                            |                   | [opsem][]                 | [Mario Carneiro][]             |
@@ -567,10 +567,10 @@ Small goals are covered by standard team processes and do not require dedicated 
 |                   |   | [Prepare TAIT + RTN for stabilization](https://rust-lang.github.io/rust-project-goals/2026/rtn.html)                                                                                                    |
 |                   |   | [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                       |
 |                   |   | [Stabilize the next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2026/next-solver.html)                                                                                      |
-| [Rémy Rakic][]              | 1 | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                         |
 | [Mads Marquart][]          | 1 | [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                                                                                       |
-| [Niko Matsakis][]     | 6 | [Box notation for dyn async trait](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html)                                                                                                  |
+| [Niko Matsakis][]     | 7 | [Box notation for dyn async trait](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html)                                                                                                  |
 |                   |   | [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2026/ergonomic-rc.html)                                                                                                         |
+|                   |   | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                          |
 |                   |   | [Full Const Generics](https://rust-lang.github.io/rust-project-goals/2026/const-generics.html)                                                                                                          |
 |                   |   | [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                       |
 |                   |   | [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html)                                                                                                       |
@@ -1164,7 +1164,7 @@ The following table highlights the support level requested from each affected te
 | [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                                                                                     | Large  | [Jack Huey][] | \*6                    |
 | [Immobile types and guaranteed destructors](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html)                                                                                      | Large  | [lcnr][]     | \*7                    |
 | [Assumptions on Binders](https://rust-lang.github.io/rust-project-goals/2026/assumptions_on_binders.html)                                                                                             | Medium | [Boxy][]  | \*8                    |
-| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                       | Medium | [Rémy Rakic][]      | \*9                    |
+| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                       | Medium | [Niko Matsakis][]      | \*9                    |
 | [Dictionary Passing Style Experiment](https://rust-lang.github.io/rust-project-goals/2026/dictionary-passing-style-experiment.html)                                                                   | Medium | [lcnr][]     | Review and discussions |
 | [Prepare TAIT + RTN for stabilization](https://rust-lang.github.io/rust-project-goals/2026/rtn.html)                                                                                                  | Medium | [lcnr][]     | \*10                   |
 | [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2026/pin-ergonomics.html)                                                                               | Medium | [Oliver Scherer][]  | Reviews                |
