@@ -87,7 +87,7 @@ This feature makes good use of [one of the things we found when doing our resear
 | [Stabilize polonius alpha](https://rust-lang.github.io/rust-project-goals/2026/polonius.html#stabilize-polonius-alpha) | Fix remaining issues, validate on real-world code, and ship a stable improved borrow checker. |
 | [Extend formality for Polonius alpha](https://rust-lang.github.io/rust-project-goals/2026/polonius.html#extend-formality-for-polonius-alpha) | Build a formal model of borrow checking in a-mir-formality and upstream it into the Rust reference. |
 
-*People involved: [Jack Huey][], [Rémy Rakic][], [Niko Matsakis][], [tiif][], [Amanda Stjerna][]*
+*People involved: [Amanda Stjerna][], [Jack Huey][], [Rémy Rakic][], [Niko Matsakis][], [tiif][]*
 
 ---
 
@@ -230,7 +230,7 @@ Finally, the [Sized trait hierarchy](https://rust-lang.github.io/rust-project-go
 | [`derive(CoercePointee)`](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html#derive-coercepointee) | Support `dyn Trait` coercion for user-defined smart pointers. |
 | [Map the field projection design space](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html#map-the-field-projection-design-space) | Explore the virtual places approach, document it in the beyond-refs wiki, formalize borrow checker integration, and build a compiler experiment. |
 
-*People involved: [Benno Lossin][], [Alice Ryhl][], [Ding Xiang Fei][], [Jack Huey][], [Niko Matsakis][], [Oliver Scherer][], [Tyler Mandry][], [TC][]*
+*People involved: [Benno Lossin][], [Alice Ryhl][], [Mario Carneiro][], [Ding Xiang Fei][], [Jack Huey][], [Niko Matsakis][], [Oliver Scherer][], [Tyler Mandry][], [TC][]*
 
 ---
 
@@ -253,7 +253,7 @@ let bio = person.biometrics(); // just works
 
 We are also continuing our experimental work to support [custom field projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html) — accessing fields *through* a smart pointer. Today, `&x.field` gives you `&Field`, but there's no equivalent for `NonNull`, `Pin`, or custom pointer types. The field projections design is exploring a "virtual places" approach that would make this work generically. The goal for this year is a compiler experiment on nightly and draft RFCs, with the [beyond-refs wiki](https://rust-lang.github.io/beyond-refs/) documenting the design space.
 
-Both of these goals spun out from the ongoing work to support the needs of the [Rust for Linux](https://rust-lang.github.io/rust-project-goals/2026/roadmap-rust-for-linux.html) project and are part of the [Beyond the `&`](https://rust-lang.github.io/rust-project-goals/2026/roadmap-beyond-the-ampersand.html) roadmap.
+These goals spun out from the ongoing work to support the needs of the [Rust for Linux](https://rust-lang.github.io/rust-project-goals/2026/roadmap-rust-for-linux.html) project and are part of the [Beyond the `&`](https://rust-lang.github.io/rust-project-goals/2026/roadmap-beyond-the-ampersand.html) roadmap.
 
 ## Build it your way with build-std
 
@@ -283,9 +283,11 @@ This year, the Rust types team plans to stabilize the [next-generation trait sol
 
 This goal may not *sound* like it's going to impact your life, but finishing the new solver unblocks a *lot* of stuff. To start, it allows us to make progress on the [Project Zero](https://rust-lang.github.io/rust-project-goals/2026/roadmap-project-zero.html) roadmap, which aims to fix every known type system soundness bug. It also unblocks long-desired features like implied bounds, cyclic trait matching, and features needed by the [Just add async](https://rust-lang.github.io/rust-project-goals/2026/roadmap-just-add-async.html) roadmap.
 
-## Active roadmaps
+## Roadmaps
 
 Roadmaps offer a "zoomed out" view of the Rust project direction. Each roadmap collects a set of related project goals into a coherent theme. A typical roadmap takes several years to drive to completion, so when you look at the roadmap, you'll see not only the work we expect to do this year, but a preview of the work we expect in future years (to the extent we know that).
+
+### Active roadmaps
 
 Not every goal is part of a roadmap, nor are they all expected to be. This initial set of roadmaps is based on the trends that we saw in the 2026 goals. Over time, we expect to add more roadmaps and refine their structure to help people quickly see where Rust is going.
 
@@ -333,10 +335,10 @@ Large goals require the engagement of entire team(s). The teams that need to eng
 |                                                                                            |                   | [types][]                 | [Oliver Scherer][]          |
 | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                  | [Benno Lossin][]      | **[lang][]**              | [Tyler Mandry][]          |
 |                                                                                            |                   | [compiler][]              | [Ding Xiang Fei][] |
-|                                                                                            |                   | [types][]                 | [Niko Matsakis][]              |
+|                                                                                            |                   | [types][]                 | [Niko Matsakis][]     |
 |                                                                                            |                   | [libs-api][]              | *n/a*             |
 |                                                                                            |                   | [libs][]                  | *n/a*             |
-|                                                                                            |                   | [opsem][]                 | [Mario Carneiro][]             |
+|                                                                                            |                   | [opsem][]                 | [Mario Carneiro][]          |
 | [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)              | [Amanieu d'Antras][]          | **[edition][]**           | [Eric Huss][]            |
 |                                                                                            |                   | **[libs-api][]**          | [Amanieu d'Antras][]          |
 |                                                                                            |                   | [compiler][]              | [Jane Lusby][]            |
@@ -346,7 +348,7 @@ Large goals require the engagement of entire team(s). The teams that need to eng
 | [MIR move elimination](https://rust-lang.github.io/rust-project-goals/2026/mir-move-elimination.html)                                            | [Amanieu d'Antras][]          | **[opsem][]**             | [Ralf Jung][]         |
 |                                                                                            |                   | [compiler][]              | ![TBD][]          |
 |                                                                                            |                   | [wg-mir-opt][]            | ![TBD][]          |
-|                                                                                            |                   | [lang][]                  | *n/a*             |
+|                                                                                            |                   | [lang][]                  | [Amanieu d'Antras][]          |
 | [Immobile types and guaranteed destructors](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html)                                 | [Jack Huey][]         | **[lang][]**              | [Jack Huey][]         |
 |                                                                                            |                   | **[types][]**             | [lcnr][]             |
 | [Stabilize the next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2026/next-solver.html)                               | [lcnr][]             | **[types][]**             | [lcnr][]             |
@@ -367,7 +369,6 @@ Large goals require the engagement of entire team(s). The teams that need to eng
 |                                                                                            |                   | [libs-api][]              | *n/a*             |
 | [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                                | [Tyler Mandry][]          | **[types][]**             | [Jack Huey][]         |
 |                                                                                            |                   | [lang][]                  | [Tyler Mandry][]          |
-|                                                                                            |                   | [compiler][]              | *n/a*             |
 |                                                                                            |                   | [libs][]                  | *n/a*             |
 |                                                                                            |                   | [opsem][]                 | *n/a*             |
 | [Stabilize FLS Release Cadence](https://rust-lang.github.io/rust-project-goals/2026/stabilize-fls-releases.html)                                 | [Pete LeVasseur][]       | **[fls][]**               | [Pete LeVasseur][]       |
@@ -389,7 +390,7 @@ Medium goals require support from an individual, the team champion.
 | [BorrowSanitizer](https://rust-lang.github.io/rust-project-goals/2026/borrowsanitizer.html)                                                                                                           | [Ian McCormack][]         | [compiler][]                    | [Ralf Jung][]        |
 |                                                                                                                                                 |                   | [opsem][]                       | [Ralf Jung][]        |
 |                                                                                                                                                 |                   | [infra][]                       | *n/a*            |
-|                                                                                                                                                 |                   | [lang][]                        | *n/a*            |
+|                                                                                                                                                 |                   | [lang][]                        | [Tyler Mandry][]         |
 | [Cargo cross workspace cache](https://rust-lang.github.io/rust-project-goals/2026/cargo-cross-workspace-cache.html)                                                                                   | [Ross Sullivan][]      | [cargo][]                       | [Ed Page][]           |
 | [Dictionary Passing Style Experiment](https://rust-lang.github.io/rust-project-goals/2026/dictionary-passing-style-experiment.html)                                                                   | [@Nadrieril][]        | [types][]                       | [lcnr][]            |
 | [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2026/ergonomic-rc.html)                                                                                                       | ![Help Wanted][]  | [lang][]                        | [Niko Matsakis][]    |
@@ -407,20 +408,20 @@ Medium goals require support from an individual, the team champion.
 | [In-place initialization](https://rust-lang.github.io/rust-project-goals/2026/in-place-init.html)                                                                                                     | [Alice Ryhl][]         | [lang][]                        | [Alice Ryhl][]        |
 | [Incremental Systems Rethought](https://rust-lang.github.io/rust-project-goals/2026/incremental-system-rethought.html)                                                                                | [Alejandra González][]          | [compiler][]                    | [Jack Huey][]        |
 | [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2026/macro-improvements.html)                                                                        | [Josh Triplett][]     | [lang][]                        | [Josh Triplett][]    |
-| [Control over Drop semantics](https://rust-lang.github.io/rust-project-goals/2026/manually-drop-attr.html)                                                                                            | ![Help Wanted][]  | [compiler][]                    | [Oliver Scherer][]         |
+| [Control over Drop semantics](https://rust-lang.github.io/rust-project-goals/2026/manually-drop-attr.html)                                                                                            | @thunderseethe    | [compiler][]                    | [Oliver Scherer][]         |
 |                                                                                                                                                 |                   | [lang][]                        | [@Nadrieril][]       |
-|                                                                                                                                                 |                   | [opsem][]                       | [Crystal Durham][]            |
+|                                                                                                                                                 |                   | [opsem][]                       | [Crystal Durham][]           |
 |                                                                                                                                                 |                   | [types][]                       | *n/a*            |
 | [Implement and Maintain MC/DC Coverage Support](https://rust-lang.github.io/rust-project-goals/2026/mcdc-coverage-support.html)                                                                       | @RenjiSann        | [compiler][]                    | [David Wood][]       |
 |                                                                                                                                                 |                   | [infra][]                       | *n/a*            |
 | [Implement Verifiable Mirroring Prototype](https://rust-lang.github.io/rust-project-goals/2026/mirroring.html)                                                                                        | [walterhpearce][]    | [cargo][]                       | [Arlo Siemsen][]          |
 |                                                                                                                                                 |                   | [infra][]                       | [Mark Rousskov][] |
 |                                                                                                                                                 |                   | [rustup][]                      | [Dirkjan Ochtman][]             |
-|                                                                                                                                                 |                   | [crates-io][]                   | *n/a*            |
+|                                                                                                                                                 |                   | [crates-io][]                   | [Adam Harvey][]       |
 | [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                                                                                     | @kupiakos         | [compiler][]                    | [Mads Marquart][]         |
 |                                                                                                                                                 |                   | [lang][]                        | [Scott McMurray][]        |
 |                                                                                                                                                 |                   | [libs][]                        | *n/a*            |
-|                                                                                                                                                 |                   | [opsem][]                       | [Connor Horman][]            |
+|                                                                                                                                                 |                   | [opsem][]                       | [Connor Horman][]     |
 |                                                                                                                                                 |                   | [types][]                       | *n/a*            |
 | [Nightly support for function overloading in FFI bindings](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html)                                                              | @ssbr             | [lang][]                        | [Tyler Mandry][]         |
 |                                                                                                                                                 |                   | [compiler][]                    | *n/a*            |
@@ -463,51 +464,51 @@ Medium goals require support from an individual, the team champion.
 
 Small goals are covered by standard team processes and do not require dedicated support from anyone.
 
-| Goal                                                                                                                                              | PoC              | Team                   | Champion |
-| :--                                                                                                                                               | :--              | :--                    | :--   |
-| [Expanding a-mir-formality to work better as a Rust type system spec](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html)                                                         | [Jack Huey][]        | [lang-docs][]          | *n/a* |
-|                                                                                                                                                   |                  | [spec][]               | *n/a* |
-|                                                                                                                                                   |                  | [types][]              | *n/a* |
-| [AArch64 Pointer Authentication using aarch64-unknown-linux-pauthtest target on Linux ELF platforms](https://rust-lang.github.io/rust-project-goals/2026/aarch64_pointer_authentication_pauthtest.html) | @jchlanda        | [compiler][]           | *n/a* |
-| [Stabilize Cargo's linting system](https://rust-lang.github.io/rust-project-goals/2026/cargo-lints.html)                                                                                                | [Ed Page][]           | [cargo][]              | *n/a* |
-|                                                                                                                                                   |                  | [clippy][]             | *n/a* |
-|                                                                                                                                                   |                  | [compiler][]           | *n/a* |
-| [Prototype a new set of Cargo "plumbing" commands](https://rust-lang.github.io/rust-project-goals/2026/cargo-plumbing.html)                                                                             | ![Help Wanted][] | [cargo][]              | *n/a* |
-| [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2026/cargo-script.html)                                                                                                         | [Ed Page][]           | [cargo][]              | *n/a* |
-|                                                                                                                                                   |                  | [compiler][]           | *n/a* |
-|                                                                                                                                                   |                  | [lang][]               | *n/a* |
-|                                                                                                                                                   |                  | [rustdoc][]            | *n/a* |
-| [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2026/cargo-semver-checks.html)                                                | [Predrag Gruevski][]      | [cargo][]              | *n/a* |
-|                                                                                                                                                   |                  | [rustdoc][]            | *n/a* |
-| [Improving Unsafe Code Documentation in the Rust Standard Library](https://rust-lang.github.io/rust-project-goals/2026/improve-std-unsafe.html)                                                         | @hxuhack         | [libs][]               | *n/a* |
-|                                                                                                                                                   |                  | [opsem][]              | *n/a* |
-| [Interactive cargo-tree: TUI for Cargo's dependency graph visualization](https://rust-lang.github.io/rust-project-goals/2026/interactive-cargo-tree.html)                                               | @orhun           | [cargo][]              | *n/a* |
-| [C++/Rust Interop Problem Space Mapping](https://rust-lang.github.io/rust-project-goals/2026/interop-problem-map.html)                                                                                  | [teor][]        | [compiler][]           | *n/a* |
-|                                                                                                                                                   |                  | [lang][]               | *n/a* |
-|                                                                                                                                                   |                  | [libs-api][]           | *n/a* |
-|                                                                                                                                                   |                  | [opsem][]              | *n/a* |
-| [libc 1.0 release readiness](https://rust-lang.github.io/rust-project-goals/2026/libc-1.0.html)                                                                                                         | [Yuki Okushi][]       | [crate-maintainers][]  | *n/a* |
-| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2026/libtest-json.html)                                                                                      | [Ed Page][]           | [cargo][]              | *n/a* |
-|                                                                                                                                                   |                  | [libs-api][]           | *n/a* |
-|                                                                                                                                                   |                  | [testing-devex][]      | *n/a* |
-| [Implement Open Rust Namespace Support](https://rust-lang.github.io/rust-project-goals/2026/open-namespaces.html)                                                                                       | ![Help Wanted][] | [cargo][]              | *n/a* |
-|                                                                                                                                                   |                  | [compiler][]           | *n/a* |
-| [Establish a Spot for Safety-Critical Lints in Clippy](https://rust-lang.github.io/rust-project-goals/2026/safety-critical-lints-in-clippy.html)                                                        | [Pete LeVasseur][]      | [clippy][]             | *n/a* |
-| [Stabilize never type (`!`)](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html)                                                                                             | [waffle][]    | [lang][]               | *n/a* |
-|                                                                                                                                                   |                  | [types][]              | *n/a* |
-| [Stabilizing `f16`](https://rust-lang.github.io/rust-project-goals/2026/stabilizing-f16.html)                                                                                                           | [Folkert de Vries][]      | [compiler][]           | *n/a* |
-|                                                                                                                                                   |                  | [lang][]               | *n/a* |
-|                                                                                                                                                   |                  | [libs-api][]           | *n/a* |
-| [Type System Documentation](https://rust-lang.github.io/rust-project-goals/2026/typesystem-docs.html)                                                                                                   | [Boxy][]         | [types][]              | *n/a* |
-| [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html)                                                                                                       | [Jack Wrenn][]         | [book][]               | *n/a* |
-|                                                                                                                                                   |                  | [clippy][]             | *n/a* |
-|                                                                                                                                                   |                  | [lang][]               | *n/a* |
-|                                                                                                                                                   |                  | [libs][]               | *n/a* |
-|                                                                                                                                                   |                  | [rustdoc][]            | *n/a* |
-|                                                                                                                                                   |                  | [rustfmt][]            | *n/a* |
-|                                                                                                                                                   |                  | [spec][]               | *n/a* |
-|                                                                                                                                                   |                  | [style][]              | *n/a* |
-| [Establish a User Research Team](https://rust-lang.github.io/rust-project-goals/2026/user-research-team.html)                                                                                           | [Niko Matsakis][]    | [leadership-council][] | *n/a* |
+| Goal                                                                                                                                              | PoC              | Team                   | Champion       |
+| :--                                                                                                                                               | :--              | :--                    | :--            |
+| [Expanding a-mir-formality to work better as a Rust type system spec](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html)                                                         | [Jack Huey][]        | [lang-docs][]          | *n/a*          |
+|                                                                                                                                                   |                  | [spec][]               | *n/a*          |
+|                                                                                                                                                   |                  | [types][]              | [Jack Huey][]      |
+| [AArch64 Pointer Authentication using aarch64-unknown-linux-pauthtest target on Linux ELF platforms](https://rust-lang.github.io/rust-project-goals/2026/aarch64_pointer_authentication_pauthtest.html) | @jchlanda        | [compiler][]           | [David Wood][]     |
+| [Stabilize Cargo's linting system](https://rust-lang.github.io/rust-project-goals/2026/cargo-lints.html)                                                                                                | [Ed Page][]           | [cargo][]              | *n/a*          |
+|                                                                                                                                                   |                  | [clippy][]             | *n/a*          |
+|                                                                                                                                                   |                  | [compiler][]           | *n/a*          |
+| [Prototype a new set of Cargo "plumbing" commands](https://rust-lang.github.io/rust-project-goals/2026/cargo-plumbing.html)                                                                             | ![Help Wanted][] | [cargo][]              | *n/a*          |
+| [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2026/cargo-script.html)                                                                                                         | [Ed Page][]           | [cargo][]              | *n/a*          |
+|                                                                                                                                                   |                  | [compiler][]           | *n/a*          |
+|                                                                                                                                                   |                  | [lang][]               | *n/a*          |
+|                                                                                                                                                   |                  | [rustdoc][]            | *n/a*          |
+| [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2026/cargo-semver-checks.html)                                                | [Predrag Gruevski][]      | [cargo][]              | [Ed Page][]         |
+|                                                                                                                                                   |                  | [rustdoc][]            | [Alona Enraght-Moony][] |
+| [Improving Unsafe Code Documentation in the Rust Standard Library](https://rust-lang.github.io/rust-project-goals/2026/improve-std-unsafe.html)                                                         | @hxuhack         | [libs][]               | *n/a*          |
+|                                                                                                                                                   |                  | [opsem][]              | *n/a*          |
+| [Interactive cargo-tree: TUI for Cargo's dependency graph visualization](https://rust-lang.github.io/rust-project-goals/2026/interactive-cargo-tree.html)                                               | @orhun           | [cargo][]              | *n/a*          |
+| [C++/Rust Interop Problem Space Mapping](https://rust-lang.github.io/rust-project-goals/2026/interop-problem-map.html)                                                                                  | [teor][]        | [compiler][]           | [Oliver Scherer][]       |
+|                                                                                                                                                   |                  | [lang][]               | [Tyler Mandry][]       |
+|                                                                                                                                                   |                  | [libs-api][]           | [David Tolnay][]       |
+|                                                                                                                                                   |                  | [opsem][]              | *n/a*          |
+| [libc 1.0 release readiness](https://rust-lang.github.io/rust-project-goals/2026/libc-1.0.html)                                                                                                         | [Yuki Okushi][]       | [crate-maintainers][]  | *n/a*          |
+| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2026/libtest-json.html)                                                                                      | ![Help Wanted][] | [cargo][]              | *n/a*          |
+|                                                                                                                                                   |                  | [libs-api][]           | *n/a*          |
+|                                                                                                                                                   |                  | [testing-devex][]      | *n/a*          |
+| [Implement Open Rust Namespace Support](https://rust-lang.github.io/rust-project-goals/2026/open-namespaces.html)                                                                                       | ![Help Wanted][] | [cargo][]              | *n/a*          |
+|                                                                                                                                                   |                  | [compiler][]           | *n/a*          |
+| [Establish a Spot for Safety-Critical Lints in Clippy](https://rust-lang.github.io/rust-project-goals/2026/safety-critical-lints-in-clippy.html)                                                        | [Pete LeVasseur][]      | [clippy][]             | *n/a*          |
+| [Stabilize never type (`!`)](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html)                                                                                             | [waffle][]    | [lang][]               | *n/a*          |
+|                                                                                                                                                   |                  | [types][]              | *n/a*          |
+| [Stabilizing `f16`](https://rust-lang.github.io/rust-project-goals/2026/stabilizing-f16.html)                                                                                                           | [Folkert de Vries][]      | [compiler][]           | *n/a*          |
+|                                                                                                                                                   |                  | [lang][]               | *n/a*          |
+|                                                                                                                                                   |                  | [libs-api][]           | *n/a*          |
+| [Type System Documentation](https://rust-lang.github.io/rust-project-goals/2026/typesystem-docs.html)                                                                                                   | [Boxy][]         | [types][]              | [Boxy][]       |
+| [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html)                                                                                                       | [Jack Wrenn][]         | [book][]               | *n/a*          |
+|                                                                                                                                                   |                  | [clippy][]             | *n/a*          |
+|                                                                                                                                                   |                  | [lang][]               | [Niko Matsakis][]  |
+|                                                                                                                                                   |                  | [libs][]               | *n/a*          |
+|                                                                                                                                                   |                  | [rustdoc][]            | *n/a*          |
+|                                                                                                                                                   |                  | [rustfmt][]            | *n/a*          |
+|                                                                                                                                                   |                  | [spec][]               | *n/a*          |
+|                                                                                                                                                   |                  | [style][]              | *n/a*          |
+| [Establish a User Research Team](https://rust-lang.github.io/rust-project-goals/2026/user-research-team.html)                                                                                           | [Niko Matsakis][]    | [leadership-council][] | *n/a*          |
 
 
 ### Goals by champion
@@ -543,7 +544,7 @@ Small goals are covered by standard team processes and do not require dedicated 
 |                   |   | [Implement and Maintain MC/DC Coverage Support](https://rust-lang.github.io/rust-project-goals/2026/mcdc-coverage-support.html)                                                                         |
 |                   |   | [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                       |
 | [dianne][]           | 1 | [Redesigning `super let`: Flexible Temporary Lifetime Extension](https://rust-lang.github.io/rust-project-goals/2026/redesigning-super-let.html)                                                        |
-| [Mario Carneiro][]          | 1 | [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html)                                                                                                       |
+| [Mario Carneiro][]          | 1 | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                         |
 | [Ding Xiang Fei][] | 1 | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                         |
 | [Dirkjan Ochtman][]              | 1 | [Implement Verifiable Mirroring Prototype](https://rust-lang.github.io/rust-project-goals/2026/mirroring.html)                                                                                          |
 | [David Tolnay][]          | 1 | [C++/Rust Interop Problem Space Mapping](https://rust-lang.github.io/rust-project-goals/2026/interop-problem-map.html)                                                                                  |
@@ -570,7 +571,7 @@ Small goals are covered by standard team processes and do not require dedicated 
 | [Mads Marquart][]          | 1 | [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                                                                                       |
 | [Niko Matsakis][]     | 7 | [Box notation for dyn async trait](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html)                                                                                                  |
 |                   |   | [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2026/ergonomic-rc.html)                                                                                                         |
-|                   |   | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                          |
+|                   |   | [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                         |
 |                   |   | [Full Const Generics](https://rust-lang.github.io/rust-project-goals/2026/const-generics.html)                                                                                                          |
 |                   |   | [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                       |
 |                   |   | [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html)                                                                                                       |
@@ -721,7 +722,6 @@ The following table highlights the support level requested from each affected te
 | [Promoting Parallel Front End](https://rust-lang.github.io/rust-project-goals/2026/parallel-front-end.html)                                                                                             | Small  |                   | Code Reviews           |
 | [Stabilize the Try trait](https://rust-lang.github.io/rust-project-goals/2026/stabilize-try.html)                                                                                                       | Small  |                   |                        |
 | [Implement Open Rust Namespace Support](https://rust-lang.github.io/rust-project-goals/2026/open-namespaces.html)                                                                                       | Small  |                   | \*16                   |
-| [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                                                                                       | Small  |                   |                        |
 | [build-std](https://rust-lang.github.io/rust-project-goals/2026/build-std.html)                                                                                                                         | Small  |                   | \*17                   |
 | [Stabilizing `f16`](https://rust-lang.github.io/rust-project-goals/2026/stabilizing-f16.html)                                                                                                           | Small  |                   |                        |
 | [Nightly support for function overloading in FFI bindings](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html)                                                                | Small  |                   | \*18                   |
@@ -842,43 +842,43 @@ The following table highlights the support level requested from each affected te
 \*3: CI support for MC/DC testing ([from here](https://rust-lang.github.io/rust-project-goals/2026/mcdc-coverage-support.html))
 
 #### lang team
-| Goal                                                                                                                                            | Level  | Champion      | Notes           |
-| :--                                                                                                                                             | :--    | :--           | :--             |
-| [Const Traits](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html)                                                                                                                 | Large  | [TC][]  | \*1             |
-| [reflection and comptime](https://rust-lang.github.io/rust-project-goals/2026/reflection-and-comptime.html)                                                                                           | Large  | [Scott McMurray][]     | \*2             |
-| [Full Const Generics](https://rust-lang.github.io/rust-project-goals/2026/const-generics.html)                                                                                                        | Large  | [Niko Matsakis][] | \*3             |
-| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                       | Large  | [Tyler Mandry][]      | \*4             |
-| [Redesigning `super let`: Flexible Temporary Lifetime Extension](https://rust-lang.github.io/rust-project-goals/2026/redesigning-super-let.html)                                                      | Large  | [TC][]  | \*5             |
-| [Immobile types and guaranteed destructors](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html)                                                                                      | Large  | [Jack Huey][]     | \*6             |
-| [In-place initialization](https://rust-lang.github.io/rust-project-goals/2026/in-place-init.html)                                                                                                     | Medium | [Alice Ryhl][]     | \*7             |
-| [Stabilize the next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2026/next-solver.html)                                                                                    | Medium | [Niko Matsakis][] | \*8             |
-| [Arbitrary Self Types](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html)                                                                                                 | Medium | [Tyler Mandry][]      | \*9             |
-| [Project goal - High-Level ML optimizations](https://rust-lang.github.io/rust-project-goals/2026/high-level-ml.html)                                                                                  | Medium | [TC][]  | \*10            |
-| [Control over Drop semantics](https://rust-lang.github.io/rust-project-goals/2026/manually-drop-attr.html)                                                                                            | Medium | [@Nadrieril][]    | \*11            |
-| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2026/reborrow-traits.html)                                                                                                           | Medium | [Tyler Mandry][]      | \*12            |
-| [Box notation for dyn async trait](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html)                                                                                                | Medium | [Niko Matsakis][] | RFC decision    |
-| [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2026/macro-improvements.html)                                                                        | Medium | [Josh Triplett][] | \*13            |
-| [Stabilize the Try trait](https://rust-lang.github.io/rust-project-goals/2026/stabilize-try.html)                                                                                                     | Medium | [Tyler Mandry][]      |                 |
-| [Implement Supertrait `auto impl`](https://rust-lang.github.io/rust-project-goals/2026/supertrait-auto-impl.html)                                                                                     | Medium | [Taylor Cramer][]     | \*14            |
-| [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                                                                                     | Medium | [Tyler Mandry][]      | \*15            |
-| [Prepare TAIT + RTN for stabilization](https://rust-lang.github.io/rust-project-goals/2026/rtn.html)                                                                                                  | Medium | [TC][]  | \*16            |
-| [Nightly support for function overloading in FFI bindings](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html)                                                              | Medium | [Tyler Mandry][]      | \*17            |
-| [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                                                                                     | Medium | [Scott McMurray][]     | \*18            |
-| [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2026/ergonomic-rc.html)                                                                                                       | Medium | [Niko Matsakis][] |                 |
-| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2026/pin-ergonomics.html)                                                                               | Medium | [TC][]  | Design meeting? |
-| [Explicit tail calls & `loop_match`](https://rust-lang.github.io/rust-project-goals/2026/tail-call-loop-match.html)                                                                                   | Medium | [Scott McMurray][]     | \*19            |
-| [Case study for experimental language specification, with integration into project teams and processes](https://rust-lang.github.io/rust-project-goals/2026/experimental-language-specification.html) | Medium | [Josh Triplett][] |                 |
-| [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                     | Medium | [Niko Matsakis][] | \*20            |
-| [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2026/cargo-script.html)                                                                                                       | Small  |               | \*21            |
-| [Normative Documentation for Sound `unsafe` Rust](https://rust-lang.github.io/rust-project-goals/2026/safe-unsafe-for-safety-critical.html)                                                           | Small  |               | \*22            |
-| [Wasm Components](https://rust-lang.github.io/rust-project-goals/2026/wasm-components.html)                                                                                                           | Small  |               | \*23            |
-| [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)                                                                   | Small  |               | \*24            |
-| [MIR move elimination](https://rust-lang.github.io/rust-project-goals/2026/mir-move-elimination.html)                                                                                                 | Small  | [Amanieu d'Antras][]      | RFC decision    |
-| [Stabilizing `f16`](https://rust-lang.github.io/rust-project-goals/2026/stabilizing-f16.html)                                                                                                         | Small  |               | \*25            |
-| [BorrowSanitizer](https://rust-lang.github.io/rust-project-goals/2026/borrowsanitizer.html)                                                                                                           | Small  | [Tyler Mandry][]      | \*26            |
-| [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html)                                                                                                     | Small  | [Niko Matsakis][] | \*27            |
-| [C++/Rust Interop Problem Space Mapping](https://rust-lang.github.io/rust-project-goals/2026/interop-problem-map.html)                                                                                | Small  | [Tyler Mandry][]      | Reviews         |
-| [Stabilize never type (`!`)](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html)                                                                                           | Small  |               | \*28            |
+| Goal                                                                                                                                            | Level  | Champion      | Notes                  |
+| :--                                                                                                                                             | :--    | :--           | :--                    |
+| [Const Traits](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html)                                                                                                                 | Large  | [TC][]  | \*1                    |
+| [reflection and comptime](https://rust-lang.github.io/rust-project-goals/2026/reflection-and-comptime.html)                                                                                           | Large  | [Scott McMurray][]     | \*2                    |
+| [Full Const Generics](https://rust-lang.github.io/rust-project-goals/2026/const-generics.html)                                                                                                        | Large  | [Niko Matsakis][] | \*3                    |
+| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                       | Large  | [Tyler Mandry][]      | \*4                    |
+| [Redesigning `super let`: Flexible Temporary Lifetime Extension](https://rust-lang.github.io/rust-project-goals/2026/redesigning-super-let.html)                                                      | Large  | [TC][]  | \*5                    |
+| [Immobile types and guaranteed destructors](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html)                                                                                      | Large  | [Jack Huey][]     | \*6                    |
+| [In-place initialization](https://rust-lang.github.io/rust-project-goals/2026/in-place-init.html)                                                                                                     | Medium | [Alice Ryhl][]     | \*7                    |
+| [Stabilize the next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2026/next-solver.html)                                                                                    | Medium | [Niko Matsakis][] | \*8                    |
+| [Arbitrary Self Types](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html)                                                                                                 | Medium | [Tyler Mandry][]      | \*9                    |
+| [Project goal - High-Level ML optimizations](https://rust-lang.github.io/rust-project-goals/2026/high-level-ml.html)                                                                                  | Medium | [TC][]  | \*10                   |
+| [Control over Drop semantics](https://rust-lang.github.io/rust-project-goals/2026/manually-drop-attr.html)                                                                                            | Medium | [@Nadrieril][]    | \*11                   |
+| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2026/reborrow-traits.html)                                                                                                           | Medium | [Tyler Mandry][]      | \*12                   |
+| [Box notation for dyn async trait](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html)                                                                                                | Medium | [Niko Matsakis][] | RFC decision           |
+| [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2026/macro-improvements.html)                                                                        | Medium | [Josh Triplett][] | \*13                   |
+| [Stabilize the Try trait](https://rust-lang.github.io/rust-project-goals/2026/stabilize-try.html)                                                                                                     | Medium | [Tyler Mandry][]      |                        |
+| [Implement Supertrait `auto impl`](https://rust-lang.github.io/rust-project-goals/2026/supertrait-auto-impl.html)                                                                                     | Medium | [Taylor Cramer][]     | \*14                   |
+| [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                                                                                     | Medium | [Tyler Mandry][]      | Review design document |
+| [Prepare TAIT + RTN for stabilization](https://rust-lang.github.io/rust-project-goals/2026/rtn.html)                                                                                                  | Medium | [TC][]  | \*15                   |
+| [Nightly support for function overloading in FFI bindings](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html)                                                              | Medium | [Tyler Mandry][]      | \*16                   |
+| [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                                                                                     | Medium | [Scott McMurray][]     | \*17                   |
+| [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2026/ergonomic-rc.html)                                                                                                       | Medium | [Niko Matsakis][] |                        |
+| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2026/pin-ergonomics.html)                                                                               | Medium | [TC][]  | Design meeting?        |
+| [Explicit tail calls & `loop_match`](https://rust-lang.github.io/rust-project-goals/2026/tail-call-loop-match.html)                                                                                   | Medium | [Scott McMurray][]     | \*18                   |
+| [Case study for experimental language specification, with integration into project teams and processes](https://rust-lang.github.io/rust-project-goals/2026/experimental-language-specification.html) | Medium | [Josh Triplett][] |                        |
+| [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                     | Medium | [Niko Matsakis][] | \*19                   |
+| [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2026/cargo-script.html)                                                                                                       | Small  |               | \*20                   |
+| [Normative Documentation for Sound `unsafe` Rust](https://rust-lang.github.io/rust-project-goals/2026/safe-unsafe-for-safety-critical.html)                                                           | Small  |               | \*21                   |
+| [Wasm Components](https://rust-lang.github.io/rust-project-goals/2026/wasm-components.html)                                                                                                           | Small  |               | \*22                   |
+| [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)                                                                   | Small  |               | \*23                   |
+| [MIR move elimination](https://rust-lang.github.io/rust-project-goals/2026/mir-move-elimination.html)                                                                                                 | Small  | [Amanieu d'Antras][]      | RFC decision           |
+| [Stabilizing `f16`](https://rust-lang.github.io/rust-project-goals/2026/stabilizing-f16.html)                                                                                                         | Small  |               | \*24                   |
+| [BorrowSanitizer](https://rust-lang.github.io/rust-project-goals/2026/borrowsanitizer.html)                                                                                                           | Small  | [Tyler Mandry][]      | \*25                   |
+| [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html)                                                                                                     | Small  | [Niko Matsakis][] | \*26                   |
+| [C++/Rust Interop Problem Space Mapping](https://rust-lang.github.io/rust-project-goals/2026/interop-problem-map.html)                                                                                | Small  | [Tyler Mandry][]      | Reviews                |
+| [Stabilize never type (`!`)](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html)                                                                                           | Small  |               | \*27                   |
 
 
 \*1: Semantics, syntax, and stabilization decisions ([from here](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html))
@@ -923,46 +923,43 @@ The following table highlights the support level requested from each affected te
 \*14: Team aligned already on the shape of the feature ([from here](https://rust-lang.github.io/rust-project-goals/2026/supertrait-auto-impl.html))
 
 
-\*15: Resolve design concerns like `#[override]` and review stabilization ([from here](https://rust-lang.github.io/rust-project-goals/2026/specialization.html))
+\*15: RFC review, design discussions ([from here](https://rust-lang.github.io/rust-project-goals/2026/rtn.html))
 
 
-\*16: RFC review, design discussions ([from here](https://rust-lang.github.io/rust-project-goals/2026/rtn.html))
+\*16: Design meeting Experiment ([from here](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html))
 
 
-\*17: Design meeting Experiment ([from here](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html))
+\*17: Champion and (ideally) a lang meeting ([from here](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html))
 
 
-\*18: Champion and (ideally) a lang meeting ([from here](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html))
+\*18: Some architectures cannot support guaranteed tail calls. Our current list of limitations is:<br><br>- `wasm32`/`wasm64` need the `tail-call` target feature to be enabled<br>- `powerpc` (when `elf1` is used) cannot tail call functions in other objects<br><br>Hence, rust code using guaranteed tail calls is not as portable as standard rust code. We need T-lang feedback on how to resolve this.<br><br>The all-hands is well-timed to figure out a solution. ([from here](https://rust-lang.github.io/rust-project-goals/2026/tail-call-loop-match.html))
 
 
-\*19: Some architectures cannot support guaranteed tail calls. Our current list of limitations is:<br><br>- `wasm32`/`wasm64` need the `tail-call` target feature to be enabled<br>- `powerpc` (when `elf1` is used) cannot tail call functions in other objects<br><br>Hence, rust code using guaranteed tail calls is not as portable as standard rust code. We need T-lang feedback on how to resolve this.<br><br>The all-hands is well-timed to figure out a solution. ([from here](https://rust-lang.github.io/rust-project-goals/2026/tail-call-loop-match.html))
+\*19: RFC decision for [rfcs#3838], stabilization sign-off ([from here](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html))
 
 
-\*20: RFC decision for [rfcs#3838], stabilization sign-off ([from here](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html))
+\*20: Stabilization discussions ([from here](https://rust-lang.github.io/rust-project-goals/2026/cargo-script.html))
 
 
-\*21: Stabilization discussions ([from here](https://rust-lang.github.io/rust-project-goals/2026/cargo-script.html))
+\*21: Feedback on language semantics questions as needed ([from here](https://rust-lang.github.io/rust-project-goals/2026/safe-unsafe-for-safety-critical.html))
 
 
-\*22: Feedback on language semantics questions as needed ([from here](https://rust-lang.github.io/rust-project-goals/2026/safe-unsafe-for-safety-critical.html))
+\*22: Experimentation with native Wasm features will need approval. May become "medium" if we are somehow really successful. ([from here](https://rust-lang.github.io/rust-project-goals/2026/wasm-components.html))
 
 
-\*23: Experimentation with native Wasm features will need approval. May become "medium" if we are somehow really successful. ([from here](https://rust-lang.github.io/rust-project-goals/2026/wasm-components.html))
+\*23: Review of the feature and lang implications. ([from here](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html))
 
 
-\*24: Review of the feature and lang implications. ([from here](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html))
+\*24: occasionally being fast-tracked would be nice ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilizing-f16.html))
 
 
-\*25: occasionally being fast-tracked would be nice ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilizing-f16.html))
+\*25: Champion: [Tyler Mandry][]. General support and guidance. ([from here](https://rust-lang.github.io/rust-project-goals/2026/borrowsanitizer.html))
 
 
-\*26: Champion: [Tyler Mandry][]. General support and guidance. ([from here](https://rust-lang.github.io/rust-project-goals/2026/borrowsanitizer.html))
+\*26: Will need approval for stabilization. ([from here](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html))
 
 
-\*27: Will need approval for stabilization. ([from here](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html))
-
-
-\*28: Most of the plans / design was already approved, only minor sign-offs required ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html))
+\*27: Most of the plans / design was already approved, only minor sign-offs required ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html))
 
 #### lang-docs team
 | Goal                                                                                      | Level  | Champion     | Notes |
@@ -1056,7 +1053,7 @@ The following table highlights the support level requested from each affected te
 | [BorrowSanitizer](https://rust-lang.github.io/rust-project-goals/2026/borrowsanitizer.html)                                                     | Medium | [Ralf Jung][]    | Champion: [Ralf Jung][]. |
 | [Improving Unsafe Code Documentation in the Rust Standard Library](https://rust-lang.github.io/rust-project-goals/2026/improve-std-unsafe.html) | Small  |              | \*2                  |
 | [Control over Drop semantics](https://rust-lang.github.io/rust-project-goals/2026/manually-drop-attr.html)                                      | Small  | [Crystal Durham][]       |                      |
-| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                 | Small  |              | \*3                  |
+| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                 | Small  | [Mario Carneiro][]     | \*3                  |
 | [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                               | Small  |              |                      |
 | [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                               | Small  | [Connor Horman][] | \*4                  |
 | [C++/Rust Interop Problem Space Mapping](https://rust-lang.github.io/rust-project-goals/2026/interop-problem-map.html)                          | Small  |              | \*5                  |
@@ -1154,35 +1151,35 @@ The following table highlights the support level requested from each affected te
 \*1: Design discussions and review ([from here](https://rust-lang.github.io/rust-project-goals/2026/libtest-json.html))
 
 #### types team
-| Goal                                                                                                                                            | Level  | Champion  | Notes                  |
-| :--                                                                                                                                             | :--    | :--       | :--                    |
-| [Const Traits](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html)                                                                                                                 | Large  | [Oliver Scherer][]  | \*1                    |
-| [Stabilize the next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2026/next-solver.html)                                                                                    | Large  | [lcnr][]     | \*2                    |
-| [Arbitrary Self Types](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html)                                                                                                 | Large  | [Jack Huey][] | \*3                    |
-| [Full Const Generics](https://rust-lang.github.io/rust-project-goals/2026/const-generics.html)                                                                                                        | Large  | [Boxy][]  | \*4                    |
-| [Stabilize and model Polonius Alpha](https://rust-lang.github.io/rust-project-goals/2026/polonius.html)                                                                                               | Large  | [Jack Huey][] | \*5                    |
-| [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                                                                                     | Large  | [Jack Huey][] | \*6                    |
-| [Immobile types and guaranteed destructors](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html)                                                                                      | Large  | [lcnr][]     | \*7                    |
-| [Assumptions on Binders](https://rust-lang.github.io/rust-project-goals/2026/assumptions_on_binders.html)                                                                                             | Medium | [Boxy][]  | \*8                    |
-| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                       | Medium | [Niko Matsakis][]      | \*9                    |
-| [Dictionary Passing Style Experiment](https://rust-lang.github.io/rust-project-goals/2026/dictionary-passing-style-experiment.html)                                                                   | Medium | [lcnr][]     | Review and discussions |
-| [Prepare TAIT + RTN for stabilization](https://rust-lang.github.io/rust-project-goals/2026/rtn.html)                                                                                                  | Medium | [lcnr][]     | \*10                   |
-| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2026/pin-ergonomics.html)                                                                               | Medium | [Oliver Scherer][]  | Reviews                |
-| [Architectural groundwork for expansion-time evaluation](https://rust-lang.github.io/rust-project-goals/2026/expansion-time-evaluation.html)                                                          | Medium | [Oliver Scherer][]  | \*11                   |
-| [Case study for experimental language specification, with integration into project teams and processes](https://rust-lang.github.io/rust-project-goals/2026/experimental-language-specification.html) | Medium | [Jack Huey][] | \*12                   |
-| [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                     | Medium | [lcnr][]     | \*13                   |
-| [reflection and comptime](https://rust-lang.github.io/rust-project-goals/2026/reflection-and-comptime.html)                                                                                           | Small  |           | \*14                   |
-| [Control over Drop semantics](https://rust-lang.github.io/rust-project-goals/2026/manually-drop-attr.html)                                                                                            | Small  |           |                        |
-| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2026/reborrow-traits.html)                                                                                                           | Small  |           | \*15                   |
-| [Box notation for dyn async trait](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html)                                                                                                | Small  |           | \*16                   |
-| [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)                                                                   | Small  |           | \*17                   |
-| [Stabilize the Try trait](https://rust-lang.github.io/rust-project-goals/2026/stabilize-try.html)                                                                                                     | Small  |           |                        |
-| [Implement Supertrait `auto impl`](https://rust-lang.github.io/rust-project-goals/2026/supertrait-auto-impl.html)                                                                                     | Small  |           | \*18                   |
-| [Nightly support for function overloading in FFI bindings](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html)                                                              | Small  |           | \*19                   |
-| [Type System Documentation](https://rust-lang.github.io/rust-project-goals/2026/typesystem-docs.html)                                                                                                 | Small  | [Boxy][]  | \*20                   |
-| [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                                                                                     | Small  |           |                        |
-| [Expanding a-mir-formality to work better as a Rust type system spec](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html)                                                       | Small  | [Jack Huey][] | \*21                   |
-| [Stabilize never type (`!`)](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html)                                                                                           | Small  |           | \*22                   |
+| Goal                                                                                                                                            | Level  | Champion      | Notes                  |
+| :--                                                                                                                                             | :--    | :--           | :--                    |
+| [Const Traits](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html)                                                                                                                 | Large  | [Oliver Scherer][]      | \*1                    |
+| [Stabilize the next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2026/next-solver.html)                                                                                    | Large  | [lcnr][]         | \*2                    |
+| [Arbitrary Self Types](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html)                                                                                                 | Large  | [Jack Huey][]     | \*3                    |
+| [Full Const Generics](https://rust-lang.github.io/rust-project-goals/2026/const-generics.html)                                                                                                        | Large  | [Boxy][]      | \*4                    |
+| [Stabilize and model Polonius Alpha](https://rust-lang.github.io/rust-project-goals/2026/polonius.html)                                                                                               | Large  | [Jack Huey][]     | \*5                    |
+| [Stabilize concrete type specialization](https://rust-lang.github.io/rust-project-goals/2026/specialization.html)                                                                                     | Large  | [Jack Huey][]     | Review design document |
+| [Immobile types and guaranteed destructors](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html)                                                                                      | Large  | [lcnr][]         | \*6                    |
+| [Assumptions on Binders](https://rust-lang.github.io/rust-project-goals/2026/assumptions_on_binders.html)                                                                                             | Medium | [Boxy][]      | \*7                    |
+| [Field Projections](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html)                                                                                                       | Medium | [Niko Matsakis][] | \*8                    |
+| [Dictionary Passing Style Experiment](https://rust-lang.github.io/rust-project-goals/2026/dictionary-passing-style-experiment.html)                                                                   | Medium | [lcnr][]         | Review and discussions |
+| [Prepare TAIT + RTN for stabilization](https://rust-lang.github.io/rust-project-goals/2026/rtn.html)                                                                                                  | Medium | [lcnr][]         | \*9                    |
+| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2026/pin-ergonomics.html)                                                                               | Medium | [Oliver Scherer][]      | Reviews                |
+| [Architectural groundwork for expansion-time evaluation](https://rust-lang.github.io/rust-project-goals/2026/expansion-time-evaluation.html)                                                          | Medium | [Oliver Scherer][]      | \*10                   |
+| [Case study for experimental language specification, with integration into project teams and processes](https://rust-lang.github.io/rust-project-goals/2026/experimental-language-specification.html) | Medium | [Jack Huey][]     | \*11                   |
+| [Sized Hierarchy and Scalable Vectors](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html)                                                                                     | Medium | [lcnr][]         | \*12                   |
+| [reflection and comptime](https://rust-lang.github.io/rust-project-goals/2026/reflection-and-comptime.html)                                                                                           | Small  |               | \*13                   |
+| [Control over Drop semantics](https://rust-lang.github.io/rust-project-goals/2026/manually-drop-attr.html)                                                                                            | Small  |               |                        |
+| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2026/reborrow-traits.html)                                                                                                           | Small  |               | \*14                   |
+| [Box notation for dyn async trait](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html)                                                                                                | Small  |               | \*15                   |
+| [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)                                                                   | Small  |               | \*16                   |
+| [Stabilize the Try trait](https://rust-lang.github.io/rust-project-goals/2026/stabilize-try.html)                                                                                                     | Small  |               |                        |
+| [Implement Supertrait `auto impl`](https://rust-lang.github.io/rust-project-goals/2026/supertrait-auto-impl.html)                                                                                     | Small  |               | \*17                   |
+| [Nightly support for function overloading in FFI bindings](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html)                                                              | Small  |               | \*18                   |
+| [Type System Documentation](https://rust-lang.github.io/rust-project-goals/2026/typesystem-docs.html)                                                                                                 | Small  | [Boxy][]      | \*19                   |
+| [Open Enums](https://rust-lang.github.io/rust-project-goals/2026/open-enums.html)                                                                                                                     | Small  |               |                        |
+| [Expanding a-mir-formality to work better as a Rust type system spec](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html)                                                       | Small  | [Jack Huey][]     | \*20                   |
+| [Stabilize never type (`!`)](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html)                                                                                           | Small  |               | \*21                   |
 
 
 \*1: Implementation design and sign-off ([from here](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html))
@@ -1200,55 +1197,52 @@ The following table highlights the support level requested from each affected te
 \*5: Design review, stabilization decision, reviews from [Jack Huey][] and [Matthew Jasper][] ([from here](https://rust-lang.github.io/rust-project-goals/2026/polonius.html))
 
 
-\*6: Review future extensions for plausibility, soundness, and stabilization ([from here](https://rust-lang.github.io/rust-project-goals/2026/specialization.html))
+\*6: Involved in implementation + review ([from here](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html))
 
 
-\*7: Involved in implementation + review ([from here](https://rust-lang.github.io/rust-project-goals/2026/move-trait.html))
+\*7: implementation/reviews/deciding on a design ([from here](https://rust-lang.github.io/rust-project-goals/2026/assumptions_on_binders.html))
 
 
-\*8: implementation/reviews/deciding on a design ([from here](https://rust-lang.github.io/rust-project-goals/2026/assumptions_on_binders.html))
+\*8: Collaborating on a-mir-formality on the borrow checker integration; small reviews of RFC and/or compiler PRs ([from here](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html))
 
 
-\*9: Collaborating on a-mir-formality on the borrow checker integration; small reviews of RFC and/or compiler PRs ([from here](https://rust-lang.github.io/rust-project-goals/2026/field-projections.html))
+\*9: Stabilization report review, TAIT interactions ([from here](https://rust-lang.github.io/rust-project-goals/2026/rtn.html))
 
 
-\*10: Stabilization report review, TAIT interactions ([from here](https://rust-lang.github.io/rust-project-goals/2026/rtn.html))
+\*10: Support for the restricted solver mode in the new solver ([from here](https://rust-lang.github.io/rust-project-goals/2026/expansion-time-evaluation.html))
 
 
-\*11: Support for the restricted solver mode in the new solver ([from here](https://rust-lang.github.io/rust-project-goals/2026/expansion-time-evaluation.html))
+\*11: Evaluate potential changes to (experimental) reference in routine team decisions ([from here](https://rust-lang.github.io/rust-project-goals/2026/experimental-language-specification.html))
 
 
-\*12: Evaluate potential changes to (experimental) reference in routine team decisions ([from here](https://rust-lang.github.io/rust-project-goals/2026/experimental-language-specification.html))
+\*12: Type System implementation and stabilization sign-off ([from here](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html))
 
 
-\*13: Type System implementation and stabilization sign-off ([from here](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html))
+\*13: General discussion on any additional type-system changes ([from here](https://rust-lang.github.io/rust-project-goals/2026/reflection-and-comptime.html))
 
 
-\*14: General discussion on any additional type-system changes ([from here](https://rust-lang.github.io/rust-project-goals/2026/reflection-and-comptime.html))
+\*14: Review work on the type system is expected to be trivial and feature-gated ([from here](https://rust-lang.github.io/rust-project-goals/2026/reborrow-traits.html))
 
 
-\*15: Review work on the type system is expected to be trivial and feature-gated ([from here](https://rust-lang.github.io/rust-project-goals/2026/reborrow-traits.html))
+\*15: May have changes to dyn-compatibility rules ([from here](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html))
 
 
-\*16: May have changes to dyn-compatibility rules ([from here](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html))
+\*16: Review of any changes to HIR ty lowering or method resolution ([from here](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html))
 
 
-\*17: Review of any changes to HIR ty lowering or method resolution ([from here](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html))
+\*17: `r? types` when touching the type system. Expect that anything beyond "simple" types changes may be rejected or de-prioritized. [^types-small] ([from here](https://rust-lang.github.io/rust-project-goals/2026/supertrait-auto-impl.html))
 
 
-\*18: `r? types` when touching the type system. Expect that anything beyond "simple" types changes may be rejected or de-prioritized. [^types-small] ([from here](https://rust-lang.github.io/rust-project-goals/2026/supertrait-auto-impl.html))
+\*18: No dedicated reviewer needed/given, but tracking issue should note the needed for dedicated types review prior to stabilization ([from here](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html))
 
 
-\*19: No dedicated reviewer needed/given, but tracking issue should note the needed for dedicated types review prior to stabilization ([from here](https://rust-lang.github.io/rust-project-goals/2026/overloading-for-ffi.html))
+\*19: Discussion and moral support ([from here](https://rust-lang.github.io/rust-project-goals/2026/typesystem-docs.html))
 
 
-\*20: Discussion and moral support ([from here](https://rust-lang.github.io/rust-project-goals/2026/typesystem-docs.html))
+\*20: Members may have comments/thoughts on direction and priorities; Review work for a-mir-formality ([from here](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html))
 
 
-\*21: Members may have comments/thoughts on direction and priorities; Review work for a-mir-formality ([from here](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html))
-
-
-\*22: We expect to only need normal reviews ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html))
+\*21: We expect to only need normal reviews ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html))
 
 #### wg-mir-opt team
 | Goal                                            | Level  | Champion | Notes          |
@@ -1350,6 +1344,7 @@ These goals were not accepted either for want of resources or consensus. In some
 [Yoshua Wuyts]: https://github.com/yoshuawuyts
 [Yuki Okushi]: https://github.com/JohnTitor
 [all]: https://www.rust-lang.org/governance/teams
+[all-hands]: https://www.rust-lang.org/governance/teams
 [alumni]: https://www.rust-lang.org/governance/teams
 [android]: https://www.rust-lang.org/governance/teams
 [apple]: https://www.rust-lang.org/governance/teams
@@ -1391,6 +1386,7 @@ These goals were not accepted either for want of resources or consensus. In some
 [faq]: #frequently-asked-questions
 [fls]: http://github.com/rust-lang/fls-team
 [fls-contributors]: https://www.rust-lang.org/governance/teams
+[formality]: https://github.com/rust-lang/a-mir-formality
 [foundation-board-project-directors]: https://www.rust-lang.org/governance/teams
 [foundation-email-redirects]: https://www.rust-lang.org/governance/teams
 [foundation-staff]: https://www.rust-lang.org/governance/teams
@@ -1461,6 +1457,8 @@ These goals were not accepted either for want of resources or consensus. In some
 [rustconf-emails]: https://www.rust-lang.org/governance/teams
 [rustdoc]: https://github.com/rust-lang/rust
 [rustdoc-frontend]: https://www.rust-lang.org/governance/teams
+[rustdoc-internals]: https://www.rust-lang.org/governance/teams
+[rustdoc-json-backend]: https://www.rust-lang.org/governance/teams
 [rustfmt]: https://github.com/rust-lang/rustfmt
 [rustfmt-contributors]: https://github.com/rust-lang/rustfmt
 [rustlings]: https://github.com/rust-lang/rustlings/
