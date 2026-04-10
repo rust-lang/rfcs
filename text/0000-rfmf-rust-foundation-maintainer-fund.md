@@ -284,7 +284,7 @@ Maintainers in Residence can work substantial part-time — the key requirement 
 
 ## What about sponsors who want to pay for a particular item to get done?
 
-That's outside the scope of the RFMF, which is undirected funding — sponsors contribute to a general fund and the Leadership Council decides how to deploy it. A companion effort, the proposed Project Goals Funding program (see [Future possibilities][]), is designed for exactly this: sponsors direct funding at specific Project Goals, and the Foundation issues grants to advance that work. Sponsors seeking that level of direction should look there rather than the RFMF.
+That's outside the scope of the RFMF, which is undirected funding — sponsors contribute to a general fund and the Leadership Council decides how to deploy it. A companion effort, the proposed Project Goals Funding program (see [Future possibilities][#future-possibilities]), is designed for exactly this: sponsors direct funding at specific Project Goals, and the Foundation issues grants to advance that work. Sponsors seeking that level of direction should look there rather than the RFMF.
 
 ## Why are RFMF funds dedicated to maintainers?
 
