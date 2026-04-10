@@ -174,7 +174,7 @@ The precise terms of the working arrangement are not defined by this RFC. Whethe
 
 ## We recommend a flat pay structure to start
 
-We recommend starting with a single flat rate rather than individually negotiated compensation. A flat rate keeps the program simple, avoids the perception that some maintainers are valued more than others for equivalent work, and removes the disadvantage that negotiation creates for people who tend to undersell themselves. The rate should be publicly advertised as part of the call for applications.
+We recommend starting with a single flat rate or small fixed set of flat rates (e.g. 2-3) rather than individually negotiated compensation. Flat rates keep the program simple, avoids the perception that some maintainers are valued more than others for equivalent work, and removes the disadvantage that individual negotiation creates for people who tend to undersell themselves. The rates should be publicly advertised as part of any call for applications.
 
 That said, the Funding team and Foundation may adjust the compensation approach over time as the program learns what works — including moving to multiple bands, cost-of-living adjustments, or individually negotiated rates if that proves necessary. The Funding team and Foundation determine the specific rate(s).
 
