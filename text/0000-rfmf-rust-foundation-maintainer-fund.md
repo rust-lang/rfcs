@@ -140,6 +140,8 @@ The Funding team's role is to keep a pulse on the project and work with the Foun
 
 The Foundation supports the Funding team with logistics. The Foundation issues contracts or manages employment.
 
+The Leadership Council appoints new members for the Funding team, for fixed terms (e.g. one year at a time), which can be renewed. This helps ensure that the membership reflects the will and needs of broader Project teams, since the Funding team should consider the needs of all of those teams. The charter of the Funding team should capture this.
+
 *Unresolved question:* The Funding team may also take on the duties of the Grants team proposed in [RFC 3919]. See the [Unresolved Questions](#unresolved-questions) section.
 
 ## The Funding team owns the health of the RFMF program
