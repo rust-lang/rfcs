@@ -124,7 +124,7 @@ The Leadership Council as well as the teams benefitting from the work of Maintai
 
 ## What Maintainers in Residence do
 
-Maintainers in Residence split their time between team priorities and individual priorities of their own choosing within their area of focus. The exact balance varies depending on the individual, their experience, and the needs of the team — the important thing is that both team-directed and self-directed work are expected. This is about "team-directed vs. self-directed," not "maintenance vs. features." The PSF's experience after nearly five years confirms that focusing purely on team-directed needs and multiplicative maintenance can be very draining; giving time for self-directed projects "made all the difference" in satisfaction (see [Prior Art][prior-art]).
+Maintainers in Residence split their time between team priorities and individual priorities of their own choosing within their area of focus. The exact balance varies depending on the individual, their experience, and the needs of the team — the important thing is that both team-directed and self-directed work are expected. This is about "team-directed vs. self-directed," not "maintenance vs. features." The Python Software Foundation's experience after nearly five years confirms that focusing purely on team-directed needs and multiplicative maintenance can be very draining; giving time for self-directed projects "made all the difference" in satisfaction (see [Prior Art][prior-art]).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
