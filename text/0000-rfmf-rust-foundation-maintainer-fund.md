@@ -212,7 +212,7 @@ The expectation is that a typical MiR could satisfy these requirements by regist
 
 ## The Funding team collects feedback (positive or negative) on MiR performance
 
-Feedback on MiR performance (positive or negative) can be directed privately to the Funding team. The Funding team will also periodically seek feedback from the project proactively. The Funding team and the manager at the Foundation will convey feedback to the MiR at regular intervals. Feedback, particularly negative feeback, is private and should not be shared publicly without permission from the MiR.
+Feedback on MiR performance (positive or negative) can be directed privately to the Funding team. The Funding team will also periodically seek feedback from the project proactively. The Funding team and the manager at the Foundation will convey feedback to the MiR at regular intervals. Feedback, particularly negative feedback, is private and should not be shared publicly without permission from the MiR.
 
 When negative feedback is received, the Funding team will gather context and work with the MiR manager (see next section) to resolve the concern. Typically this means a conversation that brings about a change in behavior. In extreme cases, this might include performance management options like terminating the arrangement or opting not to renew.
 
