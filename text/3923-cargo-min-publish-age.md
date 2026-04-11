@@ -102,7 +102,7 @@ And `registry.min-publish-age` sets it for crates.io.
 
 For example:
 ```toml
-[registry.my-org]
+[registries.my-org]
 index = "https://my.org"
 min-publish-age = 0 # this registry is fully trusted
 
