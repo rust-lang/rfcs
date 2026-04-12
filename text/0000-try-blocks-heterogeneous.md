@@ -172,9 +172,8 @@ Please also take into consideration that rust sometimes intentionally diverges f
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- [ ] What should the syntax be? See [Issue #154128](https://github.com/rust-lang/rust/issues/154128) for discussion of alternatives (`:`, `->`, `as`, ...)
+- [ ] What type should be annotated? This should probably be the full type, with optional inferance, as currently implemented for `bikeshed`, but see [Issue #154127](https://github.com/rust-lang/rust/issues/154127) for discussion.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
