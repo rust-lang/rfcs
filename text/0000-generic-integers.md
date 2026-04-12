@@ -190,7 +190,7 @@ Overall, you should expect integers where `N` is not a power of two to take up m
 
 ## Basic semantics
 
-The compiler will gain the built-in integer types `u<N>` and `i<N>`, where `const N: usize`. These be identical to existing `uN` and `iN` types wherever possible, e.g. `u<8> == u8`.
+The compiler will gain the built-in integer types `u<N>` and `i<N>`, where `const N: usize`. These will be identical to existing `uN` and `iN` types wherever possible, e.g. `u<8> == u8`.
 
 `usize`/`isize` continue to be separate from `u<N>`/`i<N>`, where `N` is the target pointer width, as this also applied to `uN` and `iN`. `bool` will also be made different from `u<1>` for similar reasons, even though casting `false` to `0` and `true` to `1` will remain possible.
 
