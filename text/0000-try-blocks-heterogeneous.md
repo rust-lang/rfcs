@@ -134,16 +134,84 @@ fn heterogeneous_into_anyhow() {
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+_Assuming the explanation for try blocks is implemented as per RFC 3712_
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should _think_ about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
+> This behaviour is what you want in the vast majority of simple cases.  In particular,
+> it always works for things with just one `?`, so simple things like `try { a? + 1 }`
+> will do the right thing with minimal syntactic overhead.  It's also common to want
+> to group a bunch of things with the same error type.  Perhaps it's a bunch of calls
+> to one library, which all use that library's error type.  Or you want to do
+> [a bunch of `io` operations](<https://github.com/rust-lang/rust/blob/d6f3a4ecb48ead838638e902f2fa4e5f3059779b/>> > compiler/rustc_borrowck/src/nll.rs#L355-L367) which all use `io::Result`.  Additionally, `try` blocks work with
+> `?`-on-`Option` as well, where error-conversion is never needed, since there is only `None`.
+>
+> It will fail to compile, however, if not everything shares the same error type.
+> Suppose we add some formatting operation to the previous example:
+>
+> ```rust,edition2021,compile_fail
+> let pair_result = try {
+>     let a = std::fs::read_to_string("hello")?;
+>     let b = std::fs::read_to_string("world")?;
+>     let c: i32 = b.parse()?;
+>     (a, c)
+> };
+> ```
+>
+> The compiler won't let us do that:
+>
+> ```text
+> error[E0308]: mismatched types
+>   --> src/lib.rs:14:32
+>    |
+>    |     let c: i32 = b.parse()?;
+>    |                           ^ expected struct `std::io::Error`, found struct `ParseIntError`
+>    = note: expected enum `Result<_, std::io::Error>`
+>               found enum `Result<_, ParseIntError>`
+> note: return type inferred to be `Result<_, std::io::Error>` here
+>   --> src/lib.rs:14:32
+>    |
+>    |     let a = std::fs::read_to_string("hello")?;
+>    |                                             ^
+> ```
+>
+> For now, the best solution for that mixed-error case is the same as before: to refactor it to a function.
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+*replace the final sentence with ...*
+
+While it may be obvious, or even irrelevant, to you which error type pair_result could potentially have, the compiler has no way to know this.
+
+Just like in other situations where the compiler cannot safely infer the exact type to use, you must annotate the block with a valid error type. We've already mentioned that `Result` automatically converts between error types where a suitable implementation of `Into` exists and you can leverage this and write:
+
+```rust
+let pair_result = try bikeshed Result<_, PairError> {
+  let a = std::fs::read_to_string("hello")?;
+  let b = std::fs::read_to_string("world")?;
+  let c: i32 = b.parse()?;
+  (a, c)
+};
+```
+
+As long as you have defined a suitable error:
+
+```rust
+enum PairError {
+    IoError(Box<io::Error>),
+    ParseError(Box<num::ParseIntError>),
+}
+
+impl From<io::Error> for PairError {
+    fn from(e: io::Error) -> Self {
+        Self::IoError(Box::new(e))
+    }
+}
+
+impl From<num::ParseIntError> for PairError {
+    fn from(e: num::ParseIntError) -> Self {
+        Self::ParseError(Box::new(e))
+    }
+}
+```
+
+Of course, there are crates available to simplify this if you do not want or need to create your own custom error type.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
