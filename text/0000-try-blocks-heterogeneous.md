@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-[RFC 3721](https://github.com/rust-lang/rfcs/pull/3721) implemented default support for homogeneous `try {...}` blocks, where all `?` return the same error type. This RFC aims to provide support for explicit annotation of the returned error type from a `try {...}` block.
+[RFC 3721](https://github.com/rust-lang/rfcs/pull/3721) implemented default support for homogeneous `try {...}` blocks, where all `?`s return the same error type. This RFC aims to provide support for explicit annotation of the returned error type from a `try {...}` block.
 
 ## Motivation
 [motivation]: #motivation
@@ -38,7 +38,7 @@
 >
 > ~ [purplesyringa commenting on #3721](https://github.com/rust-lang/rfcs/pull/3721#issuecomment-2466852085)
 
-Currently there is no way to get the following example to compile as the compiler is unable to safely determine the correct types returned from the try blocks and no notation available for the user to specify the type:
+Currently there is no way to get the following example to compile, as the compiler is unable to safely determine the correct types returned from the try blocks, and no notation is available for the user to specify the type:
 
 ```rust
 #![feature(try_blocks)]
@@ -90,9 +90,11 @@ fn heterogeneous_into_exists() {
 }
 ```
 
-The initial experimental approach to provide a prrof-of-concept introduced the (deliberate placeholder) syntax `try bikeshed ... {...}` in [PR #149489](https://github.com/rust-lang/rust/pull/149489).
+The initial experimental approach to provide a prrof-of-concept introduced the (**deliberate placeholder**) syntax `try bikeshed ... {...}` in [PR #149489](https://github.com/rust-lang/rust/pull/149489).
 
-_For the remainder of this RFC we will continue with `bikeshed` to allow for working examples. See open questions and [try bikeshed: What should the syntax be?](https://github.com/rust-lang/rust/issues/154128) for consideration of possible target syntax._
+>_For the remainder of this RFC we will continue with `bikeshed` to allow for examples which work on current nightly with `#![feature(try_blocks_heterogeneous)]`._
+>
+>_See open questions and [try bikeshed: What should the syntax be?](https://github.com/rust-lang/rust/issues/154128) for consideration of possible target syntax._
 
 This would allow the above example to become:
 
@@ -134,7 +136,7 @@ fn heterogeneous_into_anyhow() {
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-_Assuming the explanation for try blocks is implemented as per RFC 3712_
+_Assuming the explanation for try blocks is implemented as per RFC 3712, which contains:_
 
 > This behaviour is what you want in the vast majority of simple cases.  In particular,
 > it always works for things with just one `?`, so simple things like `try { a? + 1 }`
@@ -177,7 +179,7 @@ _Assuming the explanation for try blocks is implemented as per RFC 3712_
 
 *replace the final sentence with ...*
 
-While it may be obvious, or even irrelevant, to you which error type pair_result could potentially have, the compiler has no way to know this.
+While it may be obvious, or even irrelevant, to you which error type `pair_result` could potentially have, the compiler has no way to know this.
 
 Just like in other situations where the compiler cannot safely infer the exact type to use, you must annotate the block with a valid error type. We've already mentioned that `Result` automatically converts between error types where a suitable implementation of `Into` exists and you can leverage this and write:
 
