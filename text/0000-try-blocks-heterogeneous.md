@@ -263,6 +263,23 @@ Please also take into consideration that rust sometimes intentionally diverges f
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
+### Allow inference via function return type
+
+For cases such as
+
+```rust
+fn heterogeneous_via_return_type() -> Result<(), Error1> {
+    let x = try { err1("1")? + err2("2")? }?;
+    let y = try { err2("1")? + err1("2")? };
+    assert_eq!(x, y?);
+    Ok(())
+}
+```
+
+where the errors involved all implement `Into<Error1>`
+
+
+
 Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
 way. Try to use this section as a tool to more fully consider all possible
