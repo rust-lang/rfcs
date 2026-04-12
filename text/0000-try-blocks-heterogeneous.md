@@ -107,7 +107,24 @@ fn heterogeneous_into_exists() {
 and for cases where no direct `Into` relationship exists, or is needed, via a common third error type:
 
 ```rust
-fn heterogeneous_into_exists() {
+use std::{error::Error, fmt::Display};
+impl Error for Error1 {}
+impl Display for Error1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Error1")?;
+        Ok(())
+    }
+}
+
+impl Error for Error2 {}
+impl Display for Error2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Error2")?;
+        Ok(())
+    }
+}
+
+fn heterogeneous_into_anyhow() {
     let x = try bikeshed anyhow::Result<_> { err1("1")? + err2("2")? };
     let y = try bikeshed anyhow::Result<_> { err2("1")? + err1("2")? };
     assert_eq!(x.unwrap(), y.unwrap());
@@ -121,7 +138,7 @@ Explain the proposal as if it was already included in the language and you were 
 
 - Introducing new named concepts.
 - Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
+- Explaining how Rust programmers should _think_ about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
 - If applicable, provide sample error messages, deprecation warnings, or migration guidance.
 - If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
 - Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
@@ -142,7 +159,7 @@ The section should return to the examples given in the previous section, and exp
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+Why should we _not_ do this?
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
