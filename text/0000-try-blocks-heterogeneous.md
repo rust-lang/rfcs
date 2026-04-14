@@ -90,7 +90,7 @@ fn heterogeneous_into_exists() {
 }
 ```
 
-The initial experimental approach to provide a prrof-of-concept introduced the (**deliberate placeholder**) syntax `try bikeshed ... {...}` in [PR #149489](https://github.com/rust-lang/rust/pull/149489).
+The initial experimental approach to provide a proof-of-concept introduced the (**deliberate placeholder**) syntax `try bikeshed ... {...}` in [PR #149489](https://github.com/rust-lang/rust/pull/149489).
 
 >_For the remainder of this RFC we will continue with `bikeshed` to allow for examples which work on current nightly with `#![feature(try_blocks_heterogeneous)]`._
 >
@@ -468,7 +468,7 @@ Please also take into consideration that rust sometimes intentionally diverges f
 [unresolved-questions]: #unresolved-questions
 
 - [ ] What should the syntax be? See [Issue #154128](https://github.com/rust-lang/rust/issues/154128) for discussion of alternatives (`:`, `->`, `as`, _nothing_ just `try T {}`, ...)
-- [ ] What type should be annotated? This should probably be the full type, with optional inferance, as currently implemented for `bikeshed`, but see [Issue #154127](https://github.com/rust-lang/rust/issues/154127) for discussion.
+- [ ] What type should be annotated? This should probably be the full type, with optional inference, as currently implemented for `bikeshed`, but see [Issue #154127](https://github.com/rust-lang/rust/issues/154127) for discussion.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
