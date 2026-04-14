@@ -473,7 +473,7 @@ Please also take into consideration that rust sometimes intentionally diverges f
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-### Allow inference via function return type
+### Allow inference via function return type or variable binding
 
 For cases such as
 
@@ -481,6 +481,7 @@ For cases such as
 fn heterogeneous_via_return_type() -> Result<(), Error1> {
     let x = try { err1("1")? + err2("2")? }?;
     let y = try { err2("1")? + err1("2")? };
+    let _: Result<_, Error2> = try { err2("1")? + err1("2")? };
     assert_eq!(x, y?);
     Ok(())
 }
