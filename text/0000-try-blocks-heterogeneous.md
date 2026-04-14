@@ -218,6 +218,224 @@ _replace the final sentence with ..._
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+This described the experimental implementation, currently in place in nightly, as implemented by [scottmcm in PR 149489](https://github.com/rust-lang/rust/pull/149489) with occasional additional comments by the RFC author.
+
+### Compiler changes
+
+#### Extend `ast::ExprKind::TryBlock` to store optional return type
+
+```rust
+pub enum ExprKind {
+  ...
+  // previously: TryBlock(Box<Block>),
+  TryBlock(Box<Block>, Option<Box<Ty>>),
+  ...
+}
+```
+
+with associated adjustments to `visit::walk_fn`, `assert!`
+
+#### Parse & pretty-print syntax `try bikeshed T {...}`
+
+1. Add (temporary) `bikeshed` keyword (see [unresolved-questions]) to available Tokens
+
+    ```rust
+    enum TokenType {
+    ...
+        SymBikeshed,
+    ...
+    }
+    ```
+
+    ```rust
+    macro_rules! exp {
+    ...
+        (Bikeshed) => { exp!(@sym, bikeshed, SymBikeshed) };
+    ...
+    }
+    ```
+
+2. Add `bikeshed` & `try_blocks_heterogeneous` spanned symbols
+
+    ```rust
+    symbols! {
+    ...
+        Symbols {
+        ...
+            bikeshed,
+        ...
+            try_blocks_heterogeneous,
+        }
+    ...
+    }
+    ```
+
+3. Parse `try` blocks with optional `bikeshed` keyword
+
+    ```rust
+    /// Parses a `try {...}` or `try bikeshed Ty {...}` expression (`try` token already eaten).
+    fn parse_try_block(&mut self, span_lo: Span) -> PResult<'a, Box<Expr>> {
+        // ADD: do we have an annotated type?
+        let annotation =
+            if self.eat_keyword(exp!(Bikeshed)) { Some(self.parse_ty()?) } else { None };
+
+        let (attrs, body) = self.parse_inner_attrs_and_block(None)?;
+        if self.eat_keyword(exp!(Catch)) {
+            Err(self.dcx().create_err(errors::CatchAfterTry { span: self.prev_token.span }))
+        } else {
+            let span = span_lo.to(body.span);
+            //ADD: homogeneous & heterogeneous try blocks are behind separate feature gates
+            let gate_sym =
+                if annotation.is_none() { sym::try_blocks } else { sym::try_blocks_heterogeneous };
+            
+            self.psess.gated_spans.gate(gate_sym, span);
+            Ok(self.mk_expr_with_attrs(span, ExprKind::TryBlock(body, annotation), attrs))
+        }
+    }
+    ```
+
+    ```rust
+    fn is_try_block(&self) -> bool {
+        self.token.is_keyword(kw::Try)
+            && self.look_ahead(1, |t| {
+                *t == token::OpenBrace
+                    || t.is_metavar_block()
+                    // ADD: optional `bikeshed` following `try`
+                    || t.kind == TokenKind::Ident(sym::bikeshed, IdentIsRaw::No)
+            })
+            && self.token_uninterpolated_span().at_least_rust_2018()
+    }
+    ```
+
+4. Correctly pretty print `bikeshed` annotated `try` blocks
+
+    ```rust
+    ast::ExprKind::TryBlock(blk, opt_ty) => {
+        let cb = self.cbox(0);
+        let ib = self.ibox(0);
+        self.word_nbsp("try");
+        // ADD: if there if a type annotation, prefix with `bikeshed`
+        if let Some(ty) = opt_ty {
+            self.word_nbsp("bikeshed");
+            self.print_type(ty);
+            self.space();
+        }
+        self.print_block_with_attrs(blk, attrs, cb, ib)
+    }
+    ```
+
+#### Desugaring
+
+1. Introduce `TryBlockScope` enum
+
+    ```rust
+    // The originating scope for an `Expr` when desugaring `?`
+    enum TryBlockScope {
+        /// There isn't a `try` block, so a `?` will use `return`.
+        Function,
+        /// We're inside a `try { … }` block, so a `?` will block-break
+        /// from that block using a type depending only on the argument.
+        Homogeneous(HirId),
+        /// We're inside a `try bikeshed _ { … }` block, so a `?` will block-break
+        /// from that block using the type specified.
+        Heterogeneous(HirId),
+    }
+    ```
+
+2. Update desugaring `try` blocks at definition site
+
+    ```rust
+    /// Desugar `try { <stmts>; <expr> }` into `{ <stmts>; ::std::ops::Try::from_output(<expr>) }`,
+    /// `try { <stmts>; }` into `{ <stmts>; ::std::ops::Try::from_output(()) }`
+    /// and save the block id to use it as a break target for desugaring of the `?` operator.
+    fn lower_expr_try_block(&mut self, body: &Block, opt_ty: Option<&Ty>) -> hir::ExprKind<'hir> {
+        let body_hir_id = self.lower_node_id(body.id);
+        
+        // ADD differentiation
+        let new_scope = if opt_ty.is_some() {
+            TryBlockScope::Heterogeneous(body_hir_id)
+        } else {
+            TryBlockScope::Homogeneous(body_hir_id)
+        };
+        let whole_block = self.with_try_block_scope(new_scope, |this| {
+            let mut block = this.lower_block_noalloc(body_hir_id, body, true);
+    ...
+            this.arena.alloc(block)
+        });
+
+        // ADD identification of `try bikeshed` as typed blocks
+        if let Some(ty) = opt_ty {
+            let ty = self.lower_ty(ty, ImplTraitContext::Disallowed(ImplTraitPosition::Path));
+            let block_expr = self.arena.alloc(self.expr_block(whole_block));
+            hir::ExprKind::Type(block_expr, ty)
+        } else {
+            hir::ExprKind::Block(whole_block, None)
+        }
+    }
+    ```
+
+3. Update desugaring `?`, specifically in the construction of the `ControlFlow::Break` arm and the final return value
+
+    ```rust
+    /// Desugar `ExprKind::Try` from: `<expr>?` into:
+    /// ```ignore (pseudo-rust)
+    /// match Try::branch(<expr>) {
+    ///     ControlFlow::Continue(val) => #[allow(unreachable_code)] val,,
+    ///     ControlFlow::Break(residual) =>
+    ///         #[allow(unreachable_code)]
+    ///         // If there is an enclosing `try {...}`:
+    ///         break 'catch_target Residual::into_try_type(residual),
+    ///         // Otherwise:
+    ///         return Try::from_residual(residual),
+    /// }
+    /// ```
+    fn lower_expr_try(&mut self, span: Span, sub_expr: &Expr) -> hir::ExprKind<'hir> {
+    ...
+        // `ControlFlow::Break(residual) =>
+        //     #[allow(unreachable_code)]
+        //     return Try::from_residual(residual),`
+        let break_arm = {
+        ...
+
+            //  (hir::LangItem, Result<HirId, LoopIdError>)
+            let (constructor_item, target_id) = match self.try_block_scope {
+                TryBlockScope::Function => {
+                    (hir::LangItem::TryTraitFromResidual, Err(hir::LoopIdError::OutsideLoopScope))
+                }
+                TryBlockScope::Homogeneous(block_id) => {
+                    (hir::LangItem::ResidualIntoTryType, Ok(block_id))
+                }
+                // `try bikeshed` treated like a function for construction of residual expression,
+                // but with available Hirid for the source block
+                TryBlockScope::Heterogeneous(block_id) => {
+                    (hir::LangItem::TryTraitFromResidual, Ok(block_id))
+                }
+            };
+            let from_residual_expr = self.wrap_in_try_constructor(
+                // replace previous inline `if let Some() else` to differentiate try block vs function
+                constructor_item,
+                try_span,
+                self.arena.alloc(residual_expr),
+                unstable_span,
+            );
+            // replace `if let Some() else` with `if .is_ok() else` to differentiate try block vs function
+            let ret_expr = if target_id.is_ok() {
+    ...
+        // originating scope: try blocks vs function
+        match self.try_block_scope {
+            TryBlockScope::Homogeneous(block_id) | TryBlockScope::Heterogeneous(block_id) => {
+                hir::ExprKind::Break(
+                    hir::Destination { label: None, target_id: Ok(block_id) },
+                    Some(from_yeet_expr),
+                )
+            }
+            TryBlockScope::Function => self.checked_return(Some(from_yeet_expr)),
+        }
+    }
+    ```
+
+(Note: also take this opportunity to rename various `catch...` items to `try...`)
+
 This is the technical portion of the RFC. Explain the design in sufficient detail that:
 
 - Its interaction with other features is clear.
