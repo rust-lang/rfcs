@@ -175,45 +175,45 @@ _Assuming the explanation for try blocks is implemented as per RFC 3712, which c
 >    |                                             ^
 > ```
 >
-> For now, the best solution for that mixed-error case is the same as before: to refactor it to a function.
+> ~~For now, the best solution for that mixed-error case is the same as before: to refactor it to a function.~~
 
-*replace the final sentence with ...*
+_replace the final sentence with ..._
 
-While it may be obvious, or even irrelevant, to you which error type `pair_result` could potentially have, the compiler has no way to know this.
-
-Just like in other situations where the compiler cannot safely infer the exact type to use, you must annotate the block with a valid error type. We've already mentioned that `Result` automatically converts between error types where a suitable implementation of `Into` exists and you can leverage this and write:
-
-```rust
-let pair_result = try bikeshed Result<_, PairError> {
-  let a = std::fs::read_to_string("hello")?;
-  let b = std::fs::read_to_string("world")?;
-  let c: i32 = b.parse()?;
-  (a, c)
-};
-```
-
-As long as you have defined a suitable error:
-
-```rust
-enum PairError {
-    IoError(Box<io::Error>),
-    ParseError(Box<num::ParseIntError>),
-}
-
-impl From<io::Error> for PairError {
-    fn from(e: io::Error) -> Self {
-        Self::IoError(Box::new(e))
-    }
-}
-
-impl From<num::ParseIntError> for PairError {
-    fn from(e: num::ParseIntError) -> Self {
-        Self::ParseError(Box::new(e))
-    }
-}
-```
-
-Of course, there are crates available to simplify this if you do not want or need to create your own custom error type.
+> While it may be obvious, or even irrelevant, to you which error type `pair_result` could potentially have, the compiler has no way to know this.
+>
+> Just like in other situations where the compiler cannot safely infer the exact type to use, you must annotate the block with a valid error type. We've already mentioned that `Result` automatically converts between error types where a suitable implementation of `Into` exists and you can leverage this and write:
+>
+> ```rust
+> let pair_result = try bikeshed Result<_, PairError> {
+>   let a = std::fs::read_to_string("hello")?;
+>   let b = std::fs::read_to_string("world")?;
+>   let c: i32 = b.parse()?;
+>   (a, c)
+> };
+> ```
+>
+> As long as you have defined a suitable error:
+>
+> ```rust
+> enum PairError {
+>     IoError(Box<io::Error>),
+>     ParseError(Box<num::ParseIntError>),
+> }
+> 
+> impl From<io::Error> for PairError {
+>     fn from(e: io::Error) -> Self {
+>         Self::IoError(Box::new(e))
+>     }
+> }
+> 
+> impl From<num::ParseIntError> for PairError {
+>     fn from(e: num::ParseIntError) -> Self {
+>         Self::ParseError(Box::new(e))
+>     }
+> }
+> ```
+>
+> Of course, there are crates available to simplify this if you do not want or need to create your own custom error type.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -279,8 +279,6 @@ fn heterogeneous_via_return_type() -> Result<(), Error1> {
 ```
 
 where the errors involved all implement `Into<Error1>`
-
-
 
 Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
