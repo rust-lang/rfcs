@@ -437,7 +437,7 @@ with associated adjustments to `visit::walk_fn`, `assert!`
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we _not_ do this?
+This adds an additional keyword in a position and form which where there is not a single, well-ingrained idiom. While more complicated to implement it _may_ be possible to cover all required use cases via type inference, althought this could lead to a more complicated syntax for edge cases.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
