@@ -467,7 +467,7 @@ Please also take into consideration that rust sometimes intentionally diverges f
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- [ ] What should the syntax be? See [Issue #154128](https://github.com/rust-lang/rust/issues/154128) for discussion of alternatives (`:`, `->`, `as`, ...)
+- [ ] What should the syntax be? See [Issue #154128](https://github.com/rust-lang/rust/issues/154128) for discussion of alternatives (`:`, `->`, `as`, _nothing_ just `try T {}`, ...)
 - [ ] What type should be annotated? This should probably be the full type, with optional inferance, as currently implemented for `bikeshed`, but see [Issue #154127](https://github.com/rust-lang/rust/issues/154127) for discussion.
 
 ## Future possibilities
