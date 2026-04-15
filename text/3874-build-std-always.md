@@ -1,7 +1,7 @@
 - Feature Name: `build-std-always`
 - Start Date: 2025-06-05
 - RFC PR: [rust-lang/rfcs#3874](https://github.com/rust-lang/rfcs/pull/3874)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#155363](https://github.com/rust-lang/rust/issues/155363)
 
 ## Summary
 [summary]: #summary
