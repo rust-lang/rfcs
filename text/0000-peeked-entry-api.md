@@ -24,7 +24,7 @@ We want to merge these iterators into a single iterator with the same properties
 That is, its values must be sorted and unique.
 Equal values should be "merged" into a single one.
 Implementing this with `Peekable` is straightforward.
-We `peek` values from the underlying iterators, compare them, and either yield the lesser or the merged value:
+We `peek` values from the underlying iterators, compare them, and yield either the lesser or the merged value:
 
 ```rust
 struct MergeIter<
@@ -122,7 +122,7 @@ Sample implementation: [`here`](https://github.com/NamorNiradnug/rust/commit/d42
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-It seems like a niche feature.
+It seems to be a niche feature.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
