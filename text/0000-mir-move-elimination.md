@@ -455,19 +455,6 @@ A final pass is run over the MIR body which performs the following transformatio
 
 ## Drawbacks
 
-### `Copy` is no longer "free"
-
-One surprising consequence of these changes is that implementing `Copy` for a type can inhibit the move optimization. This is because a copy doesn't invalidate any borrows of a value and therefore forbids re-using the allocation.
-
-It might be possible to address this with a language-level `move` keyword which forces a move even for `Copy` types, but at this point it's not clear that there is sufficient justification for adding this. Here's an example of how this keyword would work:
-
-```rust
-let x = 1;
-let y = &x;
-drop(move x);
-let z = *y; // Fails because x was moved. Removing `move`fixes this.
- ```
-
 ### Src/dest aliasing in assignments
 
 MIR assignments currently have the constraint that, for types which are not treated as scalars, the source and destination places are [not allowed to overlap](https://github.com/rust-lang/rust/issues/68364). This constraint exists to make codegen easier since such assignments can be lowered to a `memcpy` call. Not having this constraint would require codegen to insert an intermediate allocation to handle cases such as `_1 = (_1.1, _1.0)` where the source and destination may alias.
@@ -556,3 +543,29 @@ The problem with this approach is that the overlap constraints are hard-coded in
 None
 
 ## Future possibilities
+
+### Applying this optimization to `Copy` types
+
+One surprising consequence of these changes is that implementing `Copy` for a type can inhibit the move optimization. This is because a copy doesn't invalidate any borrows of a value and therefore forbids re-using the allocation. Consider the following example:
+
+```rust
+let mut a = 1; // i32 implements Copy
+
+// This may save the address of a to access later.
+observe(&raw mut a);
+
+// This is a copy, it does *not* invalide the borrow of a.
+let mut b = a;
+
+// This is allowed to access *both* a and b, so merging these is not allowed.
+observe(&raw mut b);
+```
+
+It might be possible to address this with a language-level `move` keyword which forces a move even for `Copy` types, but at this point it's not clear that there is sufficient justification for adding this. Here's an example of how this keyword would work:
+
+```rust
+let x = 1;
+let y = &x;
+drop(move x);
+let z = *y; // Fails because x was moved. Removing `move` fixes this.
+ ```
