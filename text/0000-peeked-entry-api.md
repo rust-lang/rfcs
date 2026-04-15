@@ -66,7 +66,7 @@ First, we don't directly return the compared values.
 This does not express our intent clearly and is bugprone.
 Second, we use `unwrap` that cannot ever fail.
 This is a sign of poorly expressed invariants.
-We could use `?` instead, but, again, it would never actually shortcut, and it mught be even more confusing.
+We could use `?` instead, but, again, it would never actually shortcut, and it might be even more confusing.
 
 The proposed entry-like API solves both of these problems. The code looks like this:
 
@@ -117,7 +117,7 @@ This allows to efficiently implement `Deref` and `DerefMut` without performing a
 `extract` moves the value out and breaks the invariant.
 Hence it consumes the `PeekedEntry` object.
 
-A sample implementation: TODO
+Sample implementation: [`here`](https://github.com/NamorNiradnug/rust/commit/d423cb389e1dd32fafd9ed7b4d8f439801c09403)
 
 ## Drawbacks
 [drawbacks]: #drawbacks
