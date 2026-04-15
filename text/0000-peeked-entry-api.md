@@ -127,15 +127,14 @@ It seems to be a niche feature.
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-An alternative is to not implement this in the standard library but outside.
-The only difference would be the inability to use nice method-call syntax for `.peek_entry()`.
-The implementation would also be a little less pretty.
+An alternative is to not implement this in the standard library.
+This API can be imlemented with pointers and `unsafe` without using the `Peekable`'s internals.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Are `peek_entry()` and `PeekedEntry` good names?
-They could be confusing, because `Peekable` has nothing to do with `[Hash]Set/Map`.
+They could be confusing, because `Peekable` has nothing to do with `(Hash|BTree)(Set|Map)`.
 Although there is some similarity.
 
 ## Future possibilities
