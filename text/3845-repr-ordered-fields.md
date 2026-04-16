@@ -206,6 +206,8 @@ see the current Rust reference entry for `repr(C)`: https://doc.rust-lang.org/st
 
 The exact algorithm is deferred to whatever the default target C compiler does with default settings (or if applicable, the most commonly used settings). `rustc` may grow extra flags to control the behavior of `repr(C)`, in order to match certain flags in the default C compiler, however those will need to be their own proposals. This RFC does not specify any extra control over `repr(C)`.
 
+If any bugs are found (i.e. differences between the target C compiler's layout/ABI and `repr(C)`) then the Rust team reserves the right to change the behavior of `repr(C)` to comply with the target C compiler.
+
 ## `repr(C)`
 
 This repr's meaning depends on the edition of the crate:
@@ -475,7 +477,7 @@ See Rationale and Alternatives as well
     * discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2291506953
 * What should `repr(C)` do when a given type wouldn't compile in the corresponding `C` compiler (like fieldless structs in MSVC)? 
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319138105
-* <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types).
+* <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (over-aligned types).
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319098177
 	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
 * ~~Should unions expose some niches?~~ [no](https://github.com/rust-lang/rfcs/pull/3845#discussion_r3088073911)
