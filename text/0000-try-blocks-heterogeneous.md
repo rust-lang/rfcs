@@ -437,7 +437,7 @@ with associated adjustments to `visit::walk_fn`, `assert!`
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-This adds an additional keyword in a position and form which where there is not a single, well-ingrained idiom. While more complicated to implement it _may_ be possible to cover all required use cases via type inference, althought this could lead to a more complicated syntax for edge cases.
+This adds further syntax complexity to the language with another, slightly different, way in which types must be annotated. The open question on the correct syntax shows that whatever is chosen it will not be immediately obvious to users.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
