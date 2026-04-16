@@ -139,7 +139,7 @@ If *any* extern block or function (including `extern "Rust"`) is used in the cra
 
 This does miss one potential use case, where a crate provides a suite of FFI-capable types, but does not actually provide any `extern` functions or blocks. This should be an extremely small minority of crates, and they can silence this warning crate-wide.
 
-The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c`.
+The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c`. It will be triggered whenever there is a `repr(C)` type, but no `extern` blocks/functions in the crate. This is a basic heuristic to reduce noise, since it is unlikely that you want the `C` repr unless you are interacting with `C` or some other language.
 
 ```
 warning: use of `repr(C)` in type `Foo`
@@ -225,7 +225,7 @@ union FooUnion {
 
 When applying `repr(ordered_fields)` to an enum, the enum's tag type and discriminant will be the same as when applying `repr(C)` to the enum in edition <= 2024.
 This does mean that the tag type will be platform-specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning (name TBD).
-This warning should suggest the smallest integer type that can hold the discriminant values (preferring signed integers to break ties).
+This warning should suggest the smallest integer type that can hold the discriminant values (preferring signed integers to break ties). Since this changes the layout of the type, the warning should mention that the layout will change.
 
 For discriminants, this means that it will follow the given algorithm for each variant in declaration order of the variants:
 * if a variant has an explicit discriminant value, then that value is assigned
@@ -356,14 +356,17 @@ fn get_layout_for_enum(
 ) -> Result<Layout, LayoutError> {
     assert_eq!(discriminants.len(), variant_layouts.len());
 
-    let variant_data_layout = variant_layouts.iter()
-        .try_fold(
-            Layout::new::<()>(),
-            |acc, variant_layout| Ok(layout_max(acc, get_layout_for_struct(variant_layout)?.1)?)
-        )?;
-    
+    let variant_data_layouts = variant_layouts.iter()
+        // each variant's fields are represented as a struct
+        .map(|variant_fields_layout| get_layout_for_struct(variant_fields_layout).map(|x| x.1))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // then the set of all variants is represented as a union
+    let variant_data_layout = get_layout_for_union(variant_data_layouts)?;
+
     let tag_layout = get_layout_for_tag(discriminants);
 
+    // the tag is then prepended to that union
     let (_, layout) = get_layout_for_struct(&[
         tag_layout,
         variant_data_layout
@@ -430,7 +433,7 @@ See Rationale and Alternatives as well
 * <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types).
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319098177
 	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
-* Should unions expose some niches?
+* ~~Should unions expose some niches?~~ [no](https://github.com/rust-lang/rfcs/pull/3845#discussion_r3088073911)
     * For example, if all variants of the union are structs that have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making a union of structs behave more like an enum).
     * This must be answered before stabilization, as it is set in stone after that
 * Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
