@@ -391,8 +391,8 @@ fn get_layout_for_enum(
 ) -> Result<Layout, LayoutError> {
     assert_eq!(discriminants.len(), variant_layouts.len());
 
+    // each variant's fields are represented as a struct
     let variant_data_layouts = variant_layouts.iter()
-        // each variant's fields are represented as a struct
         .map(|variant_fields_layout| get_layout_for_struct(variant_fields_layout).map(|x| x.1))
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -459,11 +459,12 @@ See Rationale and Alternatives as well
 * The migration plan, as a whole, needs to be ironed out
     * Currently, it is just a sketch, but we need timelines, dates, and guarantees to switch `repr(C)` to match the layout algorithm of the target C compiler.
     * Before this RFC is accepted, t-compiler will need to commit to fixing the layout algorithm sometime in the next edition.
-* Should this `repr` be versioned?
+* ~~Should this `repr` be versioned?~~
     * This way we can evolve the repr (for example, by adding new niches)
+    * no need to for now, this can be done as a future proposal
 * Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033 or some other later edition? Yes, it's a breaking change. But at that point, it will likely only be breaking code no one uses.
     * Leaning towards no
-* Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?
+* ~~Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?~~ Not in this RFC
     * discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2291506953
 * What should `repr(C)` do when a given type wouldn't compile in the corresponding `C` compiler (like fieldless structs in MSVC)? 
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319138105
@@ -473,7 +474,7 @@ See Rationale and Alternatives as well
 * ~~Should unions expose some niches?~~ [no](https://github.com/rust-lang/rfcs/pull/3845#discussion_r3088073911)
     * For example, if all variants of the union are structs that have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making a union of structs behave more like an enum).
     * This must be answered before stabilization, as it is set in stone after that
-* Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
+* ~~Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)~~ This is now a hard error
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
 * What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
 * The name of the new repr `repr(ordered_fields)` is a mouthful (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
