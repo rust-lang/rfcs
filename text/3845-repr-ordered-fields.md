@@ -432,6 +432,7 @@ The migration will be handled as follows:
     * The two idiom lints will come into effect to provide an off ramp for `repr(C#editionCurr)` and  `repr(C#editionNext)`
 * Once the following edition rolls around (2030?)
     * `repr(C#editionCurr)` and `repr(C#editionNext)` are no longer valid. You may only use `repr(ordered_fields)` or `repr(C)`
+    * unsure about this step, it's not necessary, but it seems nice to prevent usage of a migration step.
 
 # Drawbacks
 [drawbacks]: #drawbacks
