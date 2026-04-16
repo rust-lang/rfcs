@@ -40,11 +40,11 @@ RFCs:**
 [rfcs#3873-motivation]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#motivation
 [rfcs#3873-dependencies]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#dependencies
 
-[rfcs#3874]: https://github.com/rust-lang/rfcs/pull/3874
-[rfcs#3874-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#proposal
-[rfcs#3874-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#rationale-and-alternatives
-[rfcs#3874-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#unresolved-questions
-[rfcs#3874-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#future-possibilities
+[rfcs#3874]: https://rust-lang.github.io/rfcs/3874-build-std-always.html
+[rfcs#3874-proposal]: https://rust-lang.github.io/rfcs/3874-build-std-always.html#proposal
+[rfcs#3874-rationale-and-alternatives]: https://rust-lang.github.io/rfcs/3874-build-std-always.html#rationale-and-alternatives
+[rfcs#3874-unresolved-questions]: https://rust-lang.github.io/rfcs/3874-build-std-always.html#unresolved-questions
+[rfcs#3874-future-possibilities]: https://rust-lang.github.io/rfcs/3874-build-std-always.html#future-possibilities
 
 ## Motivation
 [motivation]: #motivation
