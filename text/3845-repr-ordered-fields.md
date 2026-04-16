@@ -484,6 +484,12 @@ See Rationale and Alternatives as well
     * `repr(consistent)`
     * `repr(declaration_order)`
     * something else?
+* The name of the new repr `repr(C#editionCurr)` and `repr(C#editionNext)` are bad (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
+    * `repr(C#edition2024)`/`repr(C#edition2027)`
+    * `repr(e24#C)`/`repr(e27#C)`
+    * `repr(e2024#C)`/`repr(e2027#C)`
+    * ~~`repr(C24)`/`repr(C27)`~~ - likely too confusing to actual C standards
+    * something else?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
