@@ -475,6 +475,10 @@ Web API will similarly be updated to support `builtin_deps`.
 - [*Why add a new key to Cargo's registry index JSON schema?*][rationale-cargo-builtindeps]
 - [*Why can `builtin_deps` shadow other packages in the registry?*][rationale-cargo-index-shadowing]
 
+*See the following sections for relevant unresolved questions:*
+
+- [*Should parsed manifests be used instead of the registry index?*][unresolved-registry-changes]
+
 [cargo-registry-web-publish]: https://doc.rust-lang.org/cargo/reference/registry-web-api.html#publish
 
 ### Cargo subcommands
@@ -992,8 +996,8 @@ compiler invocations it will eventually make - it queries the dependency
 resolver as to which dependencies a given crate has. The dependency resolver
 only looks at the source of a dependency, in many cases a registry source (i.e.
 a dependency from crates.io). In practice, this is the entry in the Cargo index
-for that dependency. As this is the only information available, that a crate
-depends on the standard library must be reflected in the index entry.
+for that dependency. As this is the information that is directly available, that
+a crate depends on the standard library should be reflected in the index entry.
 
 Alternatively, the Cargo manifests of dependencies would need to be parsed in
 order to determine whether they have standard library dependencies as the index
@@ -1125,6 +1129,15 @@ default that can be changed later if this is deemed necessary, without breaking
 any existing users.
 
 ↩ [*`dev-dependencies` and `build-dependencies`*][dev-dependencies-and-build-dependencies]
+
+### Should parsed manifests be used instead of the registry index?
+[unresolved-registry-changes]: #should-parsed-manifests-be-used-instead-of-the-registry-index
+
+An alternative to changing the registry index would be checking the parsed
+manifests of dependencies - which are downloaded and available when the unit
+graph is being built (and used for other Cargo features).
+
+↩ [*Registries*][registries]
 
 ### Should `cargo metadata` include the standard library's dependencies?
 [unresolved-cargo-metadata]: #should-cargo-metadata-include-the-standard-librarys-dependencies
