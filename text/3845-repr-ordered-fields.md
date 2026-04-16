@@ -183,6 +183,12 @@ warning: use of `repr(C)` in type `Foo`
 After enough time has passed, and the community has switched over:
 This makes it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout.
 
+The idiom lint `repr_c_curr` will trigger on usages of `repr(C#editionCurr)`. This is allow-by-default on current editions and warn by default on new editions.
+On the current edition it will guide people towards `repr(C#editionNext)` or `repr(ordered_fields)`. 
+On future current editions it will guide people towards `repr(C)` or `repr(ordered_fields)`. 
+
+The idiom lint `repr_c_next` will trigger on usages of `repr(C#editionNext)`. This is allow-by-default on current editions and deny-by-default/warn-by-default in future editions. This comes with a machine applicable fix to switch to `repr(C)`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
