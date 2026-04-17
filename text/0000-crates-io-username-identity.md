@@ -583,7 +583,8 @@ Is this the `carols10cents` you wanted? [y/N]
     - Should we start displaying it on user pages?
     - Should we start using these ID-based URLs as the canonical user URLs? That is, should
       visiting `https://crates.io/users/carols10cents` redirect to `https://crates.io/users/id/396`?
-    - Should we accept it in the CLI, such as `cargo owner --add id:396`?
+    - Should we accept it in the CLI, such as `cargo owner --add id:396`? And/or should we accept
+      GitHub IDs in the CLI, such as `cargo owner --add github_id: 123456789`?
 - Should we have a URL for user pages or for the user API that allows specifying a prefix of an
   OAuth service, to allow for looking up a crates.io user when you only know, say, their GitHub
   username? For example, the user page at `https://crates.io/users/{user}` calls the `find_user`
