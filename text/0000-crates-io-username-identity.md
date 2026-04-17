@@ -199,7 +199,8 @@ example, renames away from that username or deletes their account and another us
 `carols10cents` username to appear to be that person to users who don't know about the rename or
 deletion. We plan to limit the re-use of usernames, using a similar mechanism that we have today
 that prevents re-use of a deleted crate name, so that no one could claim an abandonded username
-for, say, 30 days.
+for, say, 30 days. We will allow the person who changed away from a username to reclaim/"revert to"
+that username within the re-use prevention period.
 
 We also plan to mitigate the effectiveness of impersonation attacks by making the display of the
 linked accounts associated with a crates.io account very clear so that anyone is able to feel
