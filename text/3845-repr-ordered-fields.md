@@ -68,7 +68,7 @@ This RFC will require a large migration across the ecosystem. There are two majo
 * FFI-only crates, like `*-sys` crates or crates that expose a `C` interface
     * these crates should ideally have to do no work. They want the fixed `repr(C)`
 * Pure Rust crates that don't rely on the C calling convention
-    * This is for role 2, they typically don't want their layout changing from under them. So switching to `repr(ordered_fields)` will be the correct fix, with one exception: `enum`s with fields. This is likely a very small minority, since using `repr(C)` on an enum with fields is very niche, esp. because it's easy to get UB when using Rust enums with FFI.
+    * This is for role 2, they typically don't want their layout changing from under them. So switching to `repr(ordered_fields)` will be the correct fix, with one exception: `enum`s with fields. This is likely a very small minority, since using `repr(C)` on an enum with fields is very niche, esp. because it's easy to get UB when using Rust enums with FFI. Also it is already possible to get a platform independent layout for enums, using `repr(u*)` and `repr(i*)`.
 
 There are a number of other use-cases which aren't put on a pedestal like these two. Many of them are detailed near the [end](#migration-examples) of this document.
 
@@ -176,7 +176,7 @@ This does miss some potential use cases
 2. the crate wants to interact with hardware, and using `repr(C)` is the correct repr
 3. the crate wants is using shared memory with another process, and using `repr(C)` is the correct repr.
 
-Since this is an allow-by-default lint, I think this is fine.
+Since this is an allow-by-default lint, it is fine to have some false-positives.
 
 The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c` (i.e. `edition_2024_repr_c` shouldn't be emitted if `suspicious_repr_c` is emitted to reduce noise).
 
@@ -491,7 +491,7 @@ The plan
 * `cargo fix` in current edition - to replace all `repr(C)` with `repr(C#editionCurr)`
 * replace all `C#editionCurr` with `ordered_fields`
 * update any enums with an equivalent discriminant
-    * I expect there to be few cases of this, since you can already use `repr(u*)` and `repr(i*)` to get stable layouts for enums
+    * enums with `repr(C)` are expected to be uncommon
 * update to the new edition (this can be done at anytime after step 1)
 
 If you cannot switch to `ordered_fields`
