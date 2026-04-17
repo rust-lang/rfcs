@@ -614,6 +614,10 @@ Is this the `carols10cents` you wanted? [y/N]
   because there's no way they could match their GitHub account. Alternatively, we could allow
   consecutive hyphens or ending in hyphen _only_ if that matches your GitHub account exactly. Would
   this be confusing? Is this a significant number of accounts worth handling specially?
+- Would it be useful to display on the crates.io website that a user had recently changed their
+  username (without displaying what their old username was for privacy reasons, and for some value
+  of "recently")? This could alert people that they might not have the username of the person they
+  want to add as a crate owner, for example.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
