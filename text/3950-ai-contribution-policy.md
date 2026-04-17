@@ -1,0 +1,143 @@
+- Feature Name: N/A
+- Start Date: 2026-03-13
+- RFC PR: [rust-lang/rfcs#3950](https://github.com/rust-lang/rfcs/pull/3950)
+- Issue: N/A
+
+## Summary
+[summary]: #summary
+
+We adopt a Rust Project contribution policy for AI-generated work.  This applies to all Project spaces.
+
+## Motivation
+
+In the Rust Project, we've seen an increase in unwanted and unhelpful contributions where contributors used generative AI.  These are frustrating and costly to reviewers in the Project.  We need to find ways to reduce the incidence of these and to lower the cost of handling them.
+
+We hope that by stating our expectations clearly that fewer contributors will send us unhelpful things and more contributors will send us helpful ones.  We hope that this policy will make decisions and communication less costly for reviewers and moderators.
+
+## Policy design approach
+
+People in the Rust Project have diverse — and in some cases, strongly opposed — views on generative AI and on its use.  To address the problem in front of us, this policy describes only those items on which Project members agree.
+
+## Contribution policy for AI-generated work
+
+In all Rust Project spaces:
+
+- Submitting AI-generated work when you weren't in the loop is prohibited.
+- Submitting AI-generated work when you haven't checked it with care is prohibited.
+- Submitting AI-generated work when you don't have reason to believe you understand it is prohibited.
+- Submitting AI-generated work when you can't explain it to a reviewer is prohibited.
+- Feeding reviewer questions into an AI tool and proxying the output directly back is prohibited.
+
+## Definitions, questions, and answers
+
+### What is AI-generated work?
+
+Work is AI-generated when agentic or generative machine-learning tools are used to directly create the work.
+
+### What's it mean to be in the loop?
+
+To be in the loop means to be part of the discussion — to be an integral part of the creative back and forth.  You were in the loop if you were there, engaged, and contributing meaningfully when the creation happened.
+
+### What's it mean to check something with care?
+
+To check something with care means to treat its correctness as important to you.  It means to assume that you're the last line of defense and that nobody else will catch your mistakes.  It means to give it your full attention — the way you would pack a parachute that you're about to wear.
+
+### What's it mean to have reason to believe you understand something?
+
+To understand something means that you have a correct mental model of what that thing is, what its purpose is, what it's doing, and how it works.  This is more than we expect.  You're allowed to be wrong.
+
+But you must have *reason* to believe that you understand it.  You must have put in the work to have a mental model and a personal theory of why that model is correct.
+
+It's not enough to just have heard a theory.  If you can close your eyes and map the thing out and why the thing is correct — in a way that you believe and would bet on — then you have reason to believe you understand it.
+
+### What's it mean to be able to explain something to a reviewer?
+
+Reviewers need to build a mental model of their own.  They may want to know about yours in order to help them.  You need to be able to articulate your mental model and the reasons you believe that model to be correct.
+
+### What's it mean to proxy output directly back to a reviewer?
+
+Reviewers want to have a discussion with you, not with a tool.  They want to probe your mental model.  When a reviewer asks you questions, we need the answers to come from you.  If they come from a tool instead, then you're just a proxy.
+
+### When contributions appear to fall short of this policy, what do reviewers do?
+
+Reviewers may reject any contribution that falls short of this policy without any explanation.  A simple link to this policy is sufficient.
+
+### Should reviewers investigate to determine if AI tools were used?
+
+There's no need to investigate to determine if AI tools were used.  If the contribution seems on its face to fall short, then just reject the contribution, link to this policy, and, at your discretion, notify the moderators.
+
+### What should I do if my contribution was rejected under this policy?
+
+If your contribution was rejected under this policy, first, step back and honestly evaluate whether your contribution did in fact fall short.  We appreciate people who are honest with themselves about this.  If your contribution failed even one of the policy items above — in letter or spirit — then it fell short of this policy.
+
+If your contribution fell short, reflect on what you could do better.  We need contributors who put heart into their contributions — not just point a tool at our repositories.  If you do want to contribute, then put a lot of care and attention into your next contribution.  If you've already been banned, then reach out to the moderation team and talk about what you've learned and why you want to contribute.
+
+If you're sure that your contribution didn't fall short but you're a new contributor, see the next item.  As a new contributor, it's difficult to use these tools in a way that won't appear to reviewers as falling short.  We encourage you to try again without using generative AI tools, especially for authorship.
+
+In other cases, please understand that we will sometimes make mistakes.  Explain concisely why you believe the contribution to be correct and compatible with this policy; someone will have a look.
+
+### As a new contributor, is it OK to use AI tools?
+
+This policy does not prohibit anyone from using AI tools.  But as a new contributor, it's a good practice to first contribute without using generative AI tools, especially for authorship.  Using these tools correctly is difficult without a firm baseline understanding.  Without this understanding, it's easy to use these tools in a way that will fall short (or appear to reviewers as falling short) of this policy.
+
+### What if I follow the policy but my work sounds like the output of an LLM?
+
+This policy does not prohibit work — that otherwise complies with the policy — from merely *sounding like* the output of an LLM.  But keep in mind that we want to hear from you, not from a tool, so we encourage you to speak in your own voice.  A contribution that sounds like it came from an LLM will, in practice, have a higher risk of being rejected — as a false positive — by a reviewer, even if it complies with this policy.
+
+### Does this apply to PRs, issues, proposals, comments, etc.?
+
+This policy applies to pull requests, issues, proposals in all forms, comments in all places, and all other means of contributing to the Rust Project.
+
+### By not banning use of AI tools, does this RFC endorse them?
+
+By not banning use of AI tools, this RFC does not endorse their use.  People in the Project have diverse views on generative AI and on its use.  This RFC takes no position — positive or negative — on the use of these tools beyond forbidding those things the policy prohibits.
+
+### Is this the final policy for contributions or for AI-assisted contributions?
+
+This policy is intended to solve the problem in front of us.  The world is moving quickly at the moment, and Project members are continuing to explore, investigate, learn, and discuss.  Other policies may be adopted later, and this RFC intends to be easy for other policies — of any nature — to build on.
+
+### Does this policy require disclosure of the use of generative AI tools?
+
+This policy does not require disclosure of the use of generative AI tools.  This is a complex question on which Project members have diverse views and where members are continuing to explore, investigate, learn, and discuss.  Later policies may further address this.
+
+### Is requiring that contributors take care an acceptable policy item?
+
+To take care is to give something your full attention and treat its correctness as important to you.  That's a meaningful distinction.  As reviewers, we can tell when someone has taken care and when the person has not — there are many signs of this.
+
+At the same time, taking care is just one requirement of the policy.  If a contribution is prohibited by any item in the policy, then it's prohibited by the policy.  A contribution may be rejected under this policy even if we cannot tell whether the person took care.
+
+### Is requiring that contributors have reason to believe they understand an acceptable policy item?
+
+Even the best contributors may sometimes misunderstand their own contributions.  We do not require that people actually understand the things they submit.  But we expect contributors to have *good reason* to expect that they understand what they're submitting to us.  This is reasonable to ask, and it's a prerequisite for a contributor being able to explain the contribution to a reviewer and have a productive conversation.
+
+At the same time, having reason to believe that one understands the contribution is just one requirement of the policy.  If a contribution is prohibited by any item in the policy, then it's prohibited by the policy.  A contribution may be rejected under this policy even if we cannot tell whether the person had good reason for that belief.
+
+### Can teams adopt other policies?
+
+This RFC adopts a minimum policy for the Project.  It does not prohibit teams from adopting more specific ones.
+
+At the same time, there is a cost to having different policies across the Project: it risks surprise and confusion for contributors.  By adopting a policy that represents those items on which we have wide agreement and that addresses the concrete problems we're seeing across the Project, we hope to create less need for custom policies and more certainty for contributors.
+
+### What about public communications?
+
+This RFC does not have any policy items focused on the public communications of the Project.  But proposals for Project communications are contributions and must follow this policy.  Later policies may further address this.
+
+### Does this policy make a distinction between new and existing contributors?
+
+New and existing contributors are treated in the same way under this policy.  All contributors — including all Project members — may only make contributions that are compatible with this policy.
+
+At the same time, new contributors face additional challenges in using generative AI tools to produce contributions that reviewers will recognize as compatible with this policy.  It's a good practice for new contributors to first work without using generative AI tools, especially for authorship, to build the baseline understanding required.
+
+### Should the policy require care and attention proportional to that required of reviewers?
+
+An earlier version of the draft that became this RFC stated:
+
+> Submitting AI-generated work without exercising care and attention proportional to what you're asking of reviewers is prohibited.
+
+Is that needed?  In drafting this RFC, it came to feel redundant.  In explaining what it means to check work carefully, we say that this means to check something with care, to treat its correctness as important to you, and to give it your full attention.  That's exactly what it means to exercise care and attention proportional to what's being asked of a reviewer.
+
+## Acknowledgments
+
+Thanks to Jieyou Xu for fruitful collaboration on earlier policy drafts.  Thanks to Niko Matsakis, Eric Huss, Tyler Mandry, Oliver Scherer, Jakub Beránek, Rémy Rakic, Pete LeVasseur, Eric Holk, Yosh Wuyts, David Wood, Jack Huey, Jacob Finkelman, and many others for thoughtful discussion.
+
+All views and errors remain those of the author alone.
