@@ -580,6 +580,7 @@ See Rationale and Alternatives as well
     * `repr(stable)`
     * something else?
 * The name of the new repr `repr(C#editionCurr)` and `repr(C#editionNext)` are bad (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
+    * maybe instead of `repr(C#editionNext)`, it should have an edition agnostic name [zullip link](https://rust-lang.zulipchat.com/#narrow/channel/410673-t-lang.2Fmeetings/topic/Design.20meeting.202026-04-15.3A.20RFC.203845.20.60repr.28ordered_fields.29.60/near/585817094)
     * `repr(C#edition2024)`/`repr(C#edition2027)`
     * `repr(e24#C)`/`repr(e27#C)`
     * `repr(e2024#C)`/`repr(e2027#C)`
