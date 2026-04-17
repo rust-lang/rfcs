@@ -618,6 +618,9 @@ Is this the `carols10cents` you wanted? [y/N]
   username (without displaying what their old username was for privacy reasons, and for some value
   of "recently")? This could alert people that they might not have the username of the person they
   want to add as a crate owner, for example.
+- For a user that recently changed their crates.io username, should we prevent that user from being
+  added as an owner of a crate for a short holding period (1 day, for example) to potentially slow
+  down/prevent impersonation attacks? How often would this be a false positive/annoyance?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
