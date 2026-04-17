@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Introduce a few new `repr`s (all names can be bikeshedded if this RFC is accepted):
+Introduce a few new `repr`s (all names are placeholders and can be bikeshedded if this RFC is accepted):
 * `repr(ordered_fields)`
 * `repr(C#editionCurr)`
 * `repr(C#editionNext)`
@@ -18,7 +18,7 @@ Layout-wise, this is the same as `repr(C)` on all current editions where both co
 
 `repr(C#editionCurr)` is the same as `repr(C)` on all current editions. This will preserve the same layout and ABI as `repr(C)` on current editions. This repr is mainly targeted for use during the transition time. This way we can do an automated fix for `repr(C)` -> `repr(C#editionCurr)`, and you will know that this was done by an automated fix. If we used `repr(ordered_fields)` for this purpose, then it would be ambiguous if that was intentional or automated.
 
-`repr(C#editionNext)` is the same as `repr(C)` on the next edition. This repr is mainly targeted for use during the transition time. This `repr` should *only* be used for FFI. This serves the dual purpose of `repr(C#editionCurr)`, it allows piecewise migration to the new edition while staying on the old edition.
+`repr(C#editionNext)` is the same as `repr(C)` on the next edition. This repr is mainly targeted for use during the transition time. This `repr` should *only* be used for FFI. This serves the dual purpose of `repr(C#editionCurr)`, it allows piecemeal migration to the new edition while staying on the old edition.
 
 `repr(C)`, this will be defined as the same representation as the platform C compiler, as specified by the target-triple. This `repr` should *only* be used for FFI.
 
@@ -166,7 +166,7 @@ This does miss some potential use cases
 
 Since this is an allow-by-default lint, I think this is fine.
 
-The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c` (i.e. `edition_2024_repr_c` shouldn't be emitted if `suspicious_repr_c` is emitted).
+The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c` (i.e. `edition_2024_repr_c` shouldn't be emitted if `suspicious_repr_c` is emitted to reduce noise).
 
 ```
 warning: use of `repr(C)` in type `Foo`
@@ -180,23 +180,27 @@ warning: use of `repr(C)` in type `Foo`
    = note: `repr(C)` is intended for FFI, and since there are no `extern` blocks or functions, it's likely that you meant to use `repr(ordered_fields)` to get a stable and consistent layout for your type.
 ```
 
-After enough time has passed, and the community has switched over:
-This makes it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout.
-
 The idiom lint `repr_c_curr` will trigger on usages of `repr(C#editionCurr)`. This is allow-by-default on current editions and warn by default on new editions.
 On the current edition it will guide people towards `repr(C#editionNext)` or `repr(ordered_fields)`. 
 On future current editions it will guide people towards `repr(C)` or `repr(ordered_fields)`. 
 
 The idiom lint `repr_c_next` will trigger on usages of `repr(C#editionNext)`. This is allow-by-default on current editions and deny-by-default/warn-by-default in future editions. This comes with a machine applicable fix to switch to `repr(C)`.
 
+After enough time has passed, and the community has switched over:
+This makes it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## `repr(C#editionCurr)`
 
-see the current Rust reference entry for `repr(C)`: https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation
+Note: This will be identical to `repr(C)` on current editions.
+
+See the current Rust reference entry for `repr(C)`: https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation
 
 ## `repr(C#editionNext)`
+
+Note: This will be a consistent way to refer to the fixed `repr(C)`. It is intended to only be used for the migration between editions, however it is possible to use this to have an edition-agnostic way to refer to the fixed `repr(C)`. This second use-case is considered, but will not be prioritized.
 
 > The `C#editionNext` representation is designed for one purpose: creating types that are interoperable with the C Language.
 > 
@@ -210,11 +214,15 @@ If any bugs are found (i.e. differences between the target C compiler's layout/A
 
 ## `repr(C)`
 
+Note: This preserves the nice name of `repr(C)`, and gives it the intended meaning.
+
 This repr's meaning depends on the edition of the crate:
 * on editions < `editionNext`, this means `repr(C#editionCurr)`
 * on editions >= `editionNext`, this means `repr(C#editionNext)`
 
 ## `repr(ordered_fields)` 
+
+Note: This provides a nice name for a Rust-specific, stable, consistent layout.
 
 > The `ordered_fields` representation is designed for one purpose: to create types that you can soundly perform operations on that rely on data layout, such as reinterpreting values as a different type
 > 
@@ -432,9 +440,6 @@ The migration will be handled as follows:
     * `repr(C)` on the new edition will *not* warn. Instead, the meaning will have changed to mean *only* compatibility with C. The docs should be adjusted to mention this edition wrinkle.
     * The warning for previous editions will continue to be in effect
     * The two idiom lints will come into effect to provide an off ramp for `repr(C#editionCurr)` and  `repr(C#editionNext)`
-* Once the following edition rolls around (2030?)
-    * `repr(C#editionCurr)` and `repr(C#editionNext)` are no longer valid. You may only use `repr(ordered_fields)` or `repr(C)`
-    * unsure about this step, it's not necessary, but it seems nice to prevent usage of a migration step.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -493,6 +498,7 @@ See Rationale and Alternatives as well
     * `repr(serial)`
     * `repr(consistent)`
     * `repr(declaration_order)`
+    * `repr(stable)`
     * something else?
 * The name of the new repr `repr(C#editionCurr)` and `repr(C#editionNext)` are bad (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
     * `repr(C#edition2024)`/`repr(C#edition2027)`
