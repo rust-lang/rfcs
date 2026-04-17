@@ -62,6 +62,18 @@ This code generally falls into one of these buckets:
 So, providing any fix for role 2 of `repr(C)` would subtly break any users of role 1.
 This breakage cannot be checked easily since it affects unsafe code making assumptions about data layouts, making it difficult to fix within a single edition/existing editions.
 
+### Guiding principle
+
+This RFC will require a large migration across the ecosystem. There are two major use-cases that are prioritized in this document
+* FFI-only crates, like `*-sys` crates or crates that expose a `C` interface
+    * these crates should ideally have to do no work. They want the fixed `repr(C)`
+* Pure Rust crates that don't rely on the C calling convention
+    * This is for role 2, they typically don't want their layout changing from under them. So switching to `repr(ordered_fields)` will be the correct fix, with one exception: `enum`s with fields. This is likely a very small minority, since using `repr(C)` on an enum with fields is very niche, esp. because it's easy to get UB when using Rust enums with FFI.
+
+There are a number of other use-cases which aren't put on a pedestal like these two. Many of them are detailed near the [end](#migration-examples) of this document.
+
+For these other use-cases, this RFC should make it possible to upgrade to the new edition and get the behavior you want. But it may require more work or it may not look as pretty (after all the bikeshedding for this RFC is done).
+
 ### Layout issues
 
 Before we delve into the proposed solution, we go into a little more detail about the aforementioned platform layout issues.
@@ -440,6 +452,73 @@ The migration will be handled as follows:
     * `repr(C)` on the new edition will *not* warn. Instead, the meaning will have changed to mean *only* compatibility with C. The docs should be adjusted to mention this edition wrinkle.
     * The warning for previous editions will continue to be in effect
     * The two idiom lints will come into effect to provide an off ramp for `repr(C#editionCurr)` and  `repr(C#editionNext)`
+
+### Migration Examples
+
+In this section, we'll go over a few different crate archetypes, and one possible migration timeline for them. This is *not* an intended migration plan, forced migration plan, or anything of that nature. This is only to provide examples that show what archetypes were considered when designing this plan.
+
+They core here is to minimize the work needed to for the migration across a wide variety of types of crates. The biggest priority is ensuring that FFI-only crates don't have to do any work, and if you only have non-FFI use-cases it should be almost as simple as find/replace
+
+#### `*-sys` crate
+
+These crates typically only have `extern` blocks and types. They are universally only for FFI, so the migration plan is simple.
+
+* update edition to the next edition - no changes required
+
+#### crates exposing a C interface (only FFI usages of `repr(C)`)
+
+These are crates written in Rust, but expose an interface to be called from another language.
+
+* update edition to the next edition - no changes required
+
+#### crates help build a FFI interface
+
+This includes crates like `bindgen`, `cxx`, `pyo3`, `jni`, or `uniffi` which help build FFI interfaces.
+
+Depending on the tool, they may or may not be edition-aware. If they are edition aware, then they can use `repr(C#editionNext)` or `repr(C)` to get the fixed `repr(C)` depending on the edition.
+
+If they are not edition aware, then they may migrate to using `repr(C#editionNext)` exclusively to ensure they get the fixed `repr(C)` on all editions.
+
+#### crates using `repr(C)` purely for stable layout (no stable calling convention required)
+
+If you can switch to `ordered_fields`, for example because
+* you can migrate any existing data already stored
+* don't have any data stored
+* aren't using `repr(C)` with enums (the only difference in layout between `repr(ordered_fields)` and current `repr(C)`).
+
+The plan
+
+* `cargo fix` in current edition - to replace all `repr(C)` with `repr(C#editionCurr)`
+* replace all `C#editionCurr` with `ordered_fields`
+* update any enums with an equivalent discriminant
+    * I expect there to be few cases of this, since you can already use `repr(u*)` and `repr(i*)` to get stable layouts for enums
+* update to the new edition (this can be done at anytime after step 1)
+
+If you cannot switch to `ordered_fields`
+
+* `cargo fix` in current edition - to replace all `repr(C)` with `repr(C#editionCurr)`
+* update to the new edition, and just keep using `repr(C#editionCurr)`
+
+This use-case is expected to be a small minority of cases. It will still work, and preserve the old behavior on new editions, but it may not look as nice. The best case scenario is to try and migrate the existing data to the new format, and start using `repr(ordered_fields)`.
+
+#### If you need `repr(C)`'s current layout and calling convention
+
+* `cargo fix` in current edition - to replace all `repr(C)` with `repr(C#editionCurr)`
+* update to the new edition (this can be done at anytime after step 1)
+
+This use-case is expected to be a small minority of cases. It will still work, and preserve the old behavior on new editions, but it may 
+not look as nice.
+
+This use case cannot be catered to without expanding the scope of this RFC considerably, so it is out of scope. This plan will still allow migration to the new edition, but it may not look as nice.
+
+#### If you have a mixture of use-cases
+
+* `cargo fix` in current edition - to replace all `repr(C)` with `repr(C#editionCurr)`
+* for each `C#editionCurr`, choose which guarantee you need and switch to `repr(C#editionNext)` or `repr(ordered_fields)`
+* update to the next edition
+* `cargo fix` - to replace all `repr(C#editionNext)` with `repr(C)`
+
+This use-case has to take the brunt of the work, but this is unavoidable in any proposal to fix `repr(C)`. This plan allows gradually migrating all cases to their intended `repr`, and makes it easy to track progress.
 
 # Drawbacks
 [drawbacks]: #drawbacks
