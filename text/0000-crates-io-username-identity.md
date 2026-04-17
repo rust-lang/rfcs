@@ -109,8 +109,19 @@ GitHub allows users to change their username (but keep the same GitHub ID number
 can know it's the same account) or delete their account, which makes the username available for
 someone else to claim (with a different GitHub ID number than was previously associated with it).
 
-Crates.io currently does not proactively check GitHub for account status. If someone takes these
-actions:
+Crates.io currently does not proactively check GitHub for account status, at the time of this RFC's
+drafting, but [we hope to implement proactive
+checking](https://github.com/rust-lang/crates.io/pull/13143) before this RFC is implemented and
+independently of this RFC's acceptance. Before this RFC is implemented, we would check with GitHub
+for all renames/deletes to update crates.io's usernames one last time. After this RFC is
+implemented, the script would be changed to only update the `oauth_github.username` and not the
+crates.io username.
+
+There's still a possibility of a window of time between when a user renames or deletes their GitHub
+account and when crates.io learns about it (depending on how often we check each account), during
+which the following scenarios could occur.
+
+If someone takes these actions:
 
 1. Creates GitHub account with the username "example"
 2. Logs in to crates.io with that account so that they have the crates.io username "example"
