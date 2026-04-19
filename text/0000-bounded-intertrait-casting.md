@@ -1072,6 +1072,66 @@ error[E0XXX]: `Root` cannot be used as a cast root: missing `TraitMetadataTable`
   = help: add a supertrait bound: `trait Root: TraitMetadataTable<dyn Root> {}`
 ```
 
+### `TraitMetadataTable` type argument must be a trait object
+
+Emitted when a trait declaration names `TraitMetadataTable<T>` as a
+supertrait and `T` is not a `dyn Trait` type. The `TraitMetadataTable`
+machinery is defined only over trait objects (its blanket impl requires
+`T: Pointee<Metadata = DynMetadata<T>>`), so non-`dyn` arguments render
+the bound uninhabitable and are never what the author intended.
+
+```
+error[E0XXX]: `TraitMetadataTable` type argument must be a trait object
+ --> src/main.rs:5:23
+  |
+5 | pub trait ChildTrait: TraitMetadataTable<u32> {}
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^
+  |                       |
+  |                       `u32` is not a `dyn Trait` type
+  |
+  = note: `TraitMetadataTable<T>` requires
+          `T: Pointee<Metadata = DynMetadata<T>>`, which holds only for
+          trait objects
+  = help: use `dyn Self` to declare `ChildTrait` as a cast root, or
+          `dyn R` for a cast-root supertrait `R` of `ChildTrait`
+```
+
+### Mismatched `TraitMetadataTable` type argument
+
+Emitted when a trait declaration names `TraitMetadataTable<dyn X>` as a
+supertrait and `dyn X` is neither `dyn Self` (which would declare this
+trait as a cast root) nor `dyn R` for a transitive supertrait `R` that
+is itself a cast root. Such a bound is satisfiable by the blanket impl
+but places the trait in no reachable cast graph, so it is almost always
+a user mistake.
+
+```
+error[E0XXX]: `TraitMetadataTable` type argument does not match a cast root
+ --> src/main.rs:7:25
+  |
+5 | pub trait Root: TraitMetadataTable<dyn Root> {}
+  |     ---- cast root
+6 | pub trait Unrelated: TraitMetadataTable<dyn Unrelated> {}
+  |     --------- unrelated cast root
+7 | pub trait ChildTrait: Root + TraitMetadataTable<dyn Unrelated> {}
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |                              `dyn Unrelated` is not a (transitive)
+  |                              supertrait of `ChildTrait`
+  |
+  = note: on a trait `Tr`, a `TraitMetadataTable<dyn X>` supertrait
+          bound requires `X = Self` (declaring `Tr` as a cast root) or
+          `X = R` for some transitive supertrait `R` of `Tr` that is
+          itself a cast root
+  = help: subtraits inherit `TraitMetadataTable<dyn Root>` from their
+          root — the explicit bound is usually unnecessary
+  = help: if you meant to place `ChildTrait` in `Root`'s graph, write
+          `TraitMetadataTable<dyn Root>`; if you meant `ChildTrait` to
+          be its own root, write `TraitMetadataTable<dyn ChildTrait>`
+```
+
+Both diagnostics are emitted at trait-definition time regardless of
+whether any `cast!` expression mentions the trait.
+
 ### Lifetime erasure violation (downcast-unsafe trait graph)
 
 Emitted when a subtrait introduces lifetime parameters that are not expressible
@@ -1113,21 +1173,17 @@ This reuses the existing object-safety diagnostics.
 
 ### Global-phase diagnostics
 
-The following is emitted during the global codegen phase (after
+The following are surfaced during the global codegen phase (after
 monomorphization), not during typeck:
 
-**No global crate identified.** If the crate graph contains delayed codegen
-requests for `TraitMetadataTable` intrinsics but no crate in the compilation
-satisfies the global-crate criteria, a link-time error is emitted:
-
-```
-error: no global crate for trait metadata computation
-  |
-  = note: trait casts using `TraitMetadataTable` require a binary, staticlib,
-          or cdylib crate in the dependency graph
-  = help: if compiling a library intended for later linking, this is expected;
-          the global phase will run in the final artifact's crate
-```
+**No global crate.** A compilation that contains delayed cast-intrinsic
+requests but no global crate is ill-formed. The implementation should
+raise a clear diagnostic in the cases it can detect directly — for
+example, a final artifact compiled with `-Z global_crate=no`. Cases the
+driver cannot distinguish from "library intended for later linking"
+(notably standalone dylibs) degrade to an ordinary link-time failure
+against the unresolved cast-intrinsic symbols; the naming of those
+symbols should be chosen so the linker's message is self-explanatory.
 
 **Unused cast-target trait pruned (lint, off by default).** When a trait
 appears as a cast target in a `trait_metadata_index` instantiation but no
