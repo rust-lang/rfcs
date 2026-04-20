@@ -58,6 +58,28 @@ Reviewers need to build a mental model of their own.  They may want to know abou
 
 Reviewers want to have a discussion with you, not with a tool.  They want to probe your mental model.  When a reviewer asks you questions, we need the answers to come from you.  If they come from a tool instead, then you're just a proxy.
 
+### Does this policy ban vibecoding?
+
+This policy bans vibecoding.  Andrej Karpathy, who originated the term, [described](https://x.com/karpathy/status/1886192184808149383) *vibecoding* as:
+
+> There's a new kind of coding I call "vibe coding", where you fully give in to the vibes, embrace exponentials, and forget that the code even exists...  I "Accept All" always[;] I don't read the diffs anymore.  When I get error messages I just copy paste them in with no comment [—] usually that fixes it.  The code grows beyond my usual comprehension...  Sometimes the LLMs can't fix a bug so I just work around it or ask for random changes until it goes away...  [I]t's not really coding — I just see stuff, say stuff, run stuff, and copy paste stuff, and it mostly works.
+
+If you didn't read the diffs, then you can't have checked the work with care, you can't have reason to believe you understand it, and you're not in a position to explain it to a reviewer without feeding the questions to the tool and proxying the output back.  If it's grown beyond your comprehension, then even reading the diffs won't help — you don't understand it, won't be able to explain it, and can't say you've checked it with care.
+
+Violating even one of these policy items is enough to violate the policy.
+
+### Does this policy ban slop?
+
+This policy goes further than banning slop.  *Slop* is unwanted, **low-quality**, AI-generated work.  This policy does not consider the quality of the work.  High-quality AI-generated work is still prohibited if it fails any item in the policy — e.g., because it was *vibecoded*.  If you weren't in the loop, didn't check the work with care, don't have reason to believe you understand it, or can't explain it to a reviewer, then the contribution is prohibited — regardless of the quality of the work.
+
+### Does this policy ban fully automated AI-generated contributions?
+
+This policy bans fully automated AI-generated contributions.  These are the worst of the unwanted contributions that have come our way, and each item in the policy independently bans these.
+
+If you created the work in a fully automated way, then you weren't in the loop, you can't have checked it with care, you can't have reason to believe you understand it, and you're not in a position to explain it to a reviewer without feeding the questions to the tool and proxying the output back.
+
+Violating even one of these policy items is enough to violate the policy.
+
 ### When contributions appear to fall short of this policy, what do reviewers do?
 
 Reviewers may reject any contribution that falls short of this policy without any explanation.  A simple link to this policy is sufficient.
