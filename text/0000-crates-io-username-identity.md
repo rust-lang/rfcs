@@ -194,6 +194,7 @@ These requirements will be clearly documented on a page on crates.io as well as 
 when we are requiring the person to pick a crates.io username.
 
 ## Crates.io account rename restrictions
+[crates-io-account-rename-restrictions]: #crates-io-account-rename-restrictions
 
 The biggest concerns with allowing crates.io username changes are impersonation and resurrection
 attacks.
@@ -422,6 +423,16 @@ owner.
 - People who can't or don't want to have their GitHub username and crates.io username match will
   have a warning by their username that they might not want to have there and might imply there's
   something wrong or untrustworthy about their account when that isn't the case
+- When crates.io was first created, only implementing GitHub OAuth for authentication was the
+  quickest and lowest effort way to have a functional package registry in the rush to the Rust 1.0
+  launch. GitHub was, and still is to a slightly lesser extent, the most widely used platform for
+  open source developers. GitHub profiles (as denoted by their username) convey identity which can
+  confer trust. By allowing crates.io usernames to potentially diverge from GitHub usernames, and
+  eventually to potentially have accounts only associated with accounts on service providers other
+  than GitHub, crates.io loses any conferred identity verification or trust bestowed via
+  association. Crates.io could also be more vulnerable to impersonation or account resurrection
+  attacks, as discussed (with potential mitigations) in [Crates.io account rename
+  restrictions][crates-io-account-rename-restrictions].
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
