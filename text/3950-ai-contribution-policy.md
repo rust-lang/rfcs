@@ -18,7 +18,21 @@ We hope that by stating our expectations clearly that fewer contributors will se
 
 People in the Rust Project have diverse — and in some cases, strongly opposed — views on generative AI and on its use.  To address the problem in front of us, this policy describes only those items on which Project members agree.
 
+## Normative sections
+
+[Normative sections]: #normative-sections
+
+These sections are normative:
+
+- [Contribution policy for AI-generated work]
+- [Definitions, questions, and answers]
+- [Normative sections]
+
+Other sections are not normative.
+
 ## Contribution policy for AI-generated work
+
+[Contribution policy for AI-generated work]: #contribution-policy-for-ai-generated-work
 
 In all Rust Project spaces:
 
@@ -29,6 +43,8 @@ In all Rust Project spaces:
 - Feeding reviewer questions into an AI tool and proxying the output directly back is prohibited.
 
 ## Definitions, questions, and answers
+
+[Definitions, questions, and answers]: #definitions-questions-and-answers
 
 ### What is AI-generated work?
 
@@ -122,18 +138,6 @@ This policy is intended to solve the problem in front of us.  The world is movin
 
 This policy does not require disclosure of the use of generative AI tools.  This is a complex question on which Project members have diverse views and where members are continuing to explore, investigate, learn, and discuss.  Later policies may further address this.
 
-### Is requiring that contributors take care an acceptable policy item?
-
-To take care is to give something your full attention and treat its correctness as important to you.  That's a meaningful distinction.  As reviewers, we can tell when someone has taken care and when the person has not — there are many signs of this.
-
-At the same time, taking care is just one requirement of the policy.  If a contribution is prohibited by any item in the policy, then it's prohibited by the policy.  A contribution may be rejected under this policy even if we cannot tell whether the person took care.
-
-### Is requiring that contributors have reason to believe they understand an acceptable policy item?
-
-Even the best contributors may sometimes misunderstand their own contributions.  We do not require that people actually understand the things they submit.  But we expect contributors to have *good reason* to expect that they understand what they're submitting to us.  This is reasonable to ask, and it's a prerequisite for a contributor being able to explain the contribution to a reviewer and have a productive conversation.
-
-At the same time, having reason to believe that one understands the contribution is just one requirement of the policy.  If a contribution is prohibited by any item in the policy, then it's prohibited by the policy.  A contribution may be rejected under this policy even if we cannot tell whether the person had good reason for that belief.
-
 ### Can teams adopt other policies?
 
 This RFC adopts a minimum policy for the Project.  It does not prohibit teams from adopting more specific ones.
@@ -149,6 +153,20 @@ This RFC does not have any policy items focused on the public communications of 
 New and existing contributors are treated in the same way under this policy.  All contributors — including all Project members — may only make contributions that are compatible with this policy.
 
 At the same time, new contributors face additional challenges in using generative AI tools to produce contributions that reviewers will recognize as compatible with this policy.  It's a good practice for new contributors to first work without using generative AI tools, especially for authorship, to build the baseline understanding required.
+
+## Other questions and answers
+
+### Is requiring that contributors take care an acceptable policy item?
+
+To take care is to give something your full attention and treat its correctness as important to you.  That's a meaningful distinction.  As reviewers, we can tell when someone has taken care and when the person has not — there are many signs of this.
+
+At the same time, taking care is just one requirement of the policy.  If a contribution is prohibited by any item in the policy, then it's prohibited by the policy.  A contribution may be rejected under this policy even if we cannot tell whether the person took care.
+
+### Is requiring that contributors have reason to believe they understand an acceptable policy item?
+
+Even the best contributors may sometimes misunderstand their own contributions.  We do not require that people actually understand the things they submit.  But we expect contributors to have *good reason* to expect that they understand what they're submitting to us.  This is reasonable to ask, and it's a prerequisite for a contributor being able to explain the contribution to a reviewer and have a productive conversation.
+
+At the same time, having reason to believe that one understands the contribution is just one requirement of the policy.  If a contribution is prohibited by any item in the policy, then it's prohibited by the policy.  A contribution may be rejected under this policy even if we cannot tell whether the person had good reason for that belief.
 
 ### Should the policy require care and attention proportional to that required of reviewers?
 
