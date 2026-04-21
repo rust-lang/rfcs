@@ -84,9 +84,11 @@ If you didn't read the diffs, then you can't have checked the work with care, yo
 
 Violating even one of these policy items is enough to violate the policy.
 
-### Does this policy ban slop?
+<div id="does-this-policy-ban-slop"></div>
 
-This policy goes further than banning slop.  *Slop* is unwanted, **low-quality**, AI-generated work.  This policy does not consider the quality of the work.  High-quality AI-generated work is still prohibited if it fails any item in the policy — e.g., because it was *vibecoded*.  If you weren't in the loop, didn't check the work with care, don't have reason to believe you understand it, or can't explain it to a reviewer, then the contribution is prohibited — regardless of the quality of the work.
+### Does this policy ban AI slop?
+
+This policy goes further than banning AI slop.  *AI slop* is unwanted, **low-quality**, AI-generated work.  This policy does not consider the quality of the work.  High-quality AI-generated work is still prohibited if it fails any item in the policy — e.g., because it was *vibecoded*.  If you weren't in the loop, didn't check the work with care, don't have reason to believe you understand it, or can't explain it to a reviewer, then the contribution is prohibited — regardless of the quality of the work.
 
 ### Does this policy ban fully automated AI-generated contributions?
 
