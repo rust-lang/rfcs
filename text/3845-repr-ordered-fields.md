@@ -18,9 +18,9 @@ Layout-wise, this is the same as `repr(C)` on all current editions where both co
 
 `repr(C#editionCurr)`: the same as `repr(C)` on all current editions. This will preserve the same layout and ABI as `repr(C)` on current editions. This repr is mainly targeted for use during the transition time. This way we can do an automated fix for `repr(C)` -> `repr(C#editionCurr)`, and you will know that this was done by an automated fix. If we used `repr(ordered_fields)` for this purpose, then it would be ambiguous if that was intentional or automated.
 
-`repr(C#editionNext)`: the same as `repr(C)` on the next edition. This repr is mainly targeted for use during the transition time. This `repr` should *only* be used for FFI. This serves the dual purpose of `repr(C#editionCurr)`, it allows piecemeal migration to the new edition while staying on the old edition.
+`repr(C#editionNext)`: the same as `repr(C)` on the next edition. This repr is mainly targeted for use during the transition time. This `repr` should *only* be used for FFI. This serves the dual purpose of `repr(C#editionCurr)`, it allows piecemeal migration to the new edition while staying on the old edition. This `repr` should *only* be used for FFI.
 
-`repr(C)`: On current editions the meaning will not change. On new this will be defined as the same representation as the platform C compiler, as specified by the target-triple. This `repr` should *only* be used for FFI.
+`repr(C)`: On current editions the meaning will not change. On future editions this will be defined as the same representation as the platform C compiler, as specified by the target-triple. In future editions, this `repr` should *only* be used for FFI.
 
 Introduce a few new warnings and errors
 1. A error when `repr(ordered_fields)` is used on enums without the tag type specified.
