@@ -124,6 +124,10 @@ This policy does not prohibit anyone from using AI tools.  But as a new contribu
 
 This policy does not prohibit work — that otherwise complies with the policy — from merely *sounding like* the output of an LLM.  But keep in mind that we want to hear from you, not from a tool, so we encourage you to speak in your own voice.  A contribution that sounds like it came from an LLM will, in practice, have a higher risk of being rejected — as a false positive — by a reviewer, even if it complies with this policy.
 
+### What happens to me if my contributions are rejected under this policy?
+
+If your contributions are rejected under this policy and reported to the moderators, the moderators will decide on appropriate next steps that could be as severe as banning you from the Project and all of its spaces.  The moderators will consider the details of each situation when deciding on these next steps.  While this RFC defines what is prohibited, it leaves the handling of violations fully to the discretion of the moderators.
+
 ### Does this apply to PRs, issues, proposals, comments, etc.?
 
 This policy applies to pull requests, issues, proposals in all forms, comments in all places, and all other means of contributing to the Rust Project.
