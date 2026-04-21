@@ -64,7 +64,7 @@ impl From<ParseIntError> for Error2 {
 }
 
 impl From<Error1> for Error2 {
-    fn from(_: Error2) -> Self {
+    fn from(_: Error1) -> Self {
         Self
     }
 }
