@@ -13,14 +13,14 @@ Introduce a few new `repr`s (all names are placeholders and can be bikeshedded i
 
 And the meaning of `repr(C)` will change in the next edition (presumably `Edition 2027`). All the new reprs can be applied to `struct`, `enum`, and `union` types. 
 
-`repr(ordered_fields)` provides a simple, predicable in memory layout for types. This RFC does *NOT* specify a stable ABI for `repr(ordered_fields)` - that should either be handled by a future RFC or another `repr`.
+`repr(ordered_fields)`: provides a simple, predicable in memory layout for types. This RFC does *NOT* specify a stable ABI for `repr(ordered_fields)` - that should either be handled by a future RFC or another `repr`.
 Layout-wise, this is the same as `repr(C)` on all current editions where both compile.
 
-`repr(C#editionCurr)` is the same as `repr(C)` on all current editions. This will preserve the same layout and ABI as `repr(C)` on current editions. This repr is mainly targeted for use during the transition time. This way we can do an automated fix for `repr(C)` -> `repr(C#editionCurr)`, and you will know that this was done by an automated fix. If we used `repr(ordered_fields)` for this purpose, then it would be ambiguous if that was intentional or automated.
+`repr(C#editionCurr)`: the same as `repr(C)` on all current editions. This will preserve the same layout and ABI as `repr(C)` on current editions. This repr is mainly targeted for use during the transition time. This way we can do an automated fix for `repr(C)` -> `repr(C#editionCurr)`, and you will know that this was done by an automated fix. If we used `repr(ordered_fields)` for this purpose, then it would be ambiguous if that was intentional or automated.
 
-`repr(C#editionNext)` is the same as `repr(C)` on the next edition. This repr is mainly targeted for use during the transition time. This `repr` should *only* be used for FFI. This serves the dual purpose of `repr(C#editionCurr)`, it allows piecemeal migration to the new edition while staying on the old edition.
+`repr(C#editionNext)`: the same as `repr(C)` on the next edition. This repr is mainly targeted for use during the transition time. This `repr` should *only* be used for FFI. This serves the dual purpose of `repr(C#editionCurr)`, it allows piecemeal migration to the new edition while staying on the old edition.
 
-`repr(C)`, this will be defined as the same representation as the platform C compiler, as specified by the target-triple. This `repr` should *only* be used for FFI.
+`repr(C)`: On current editions the meaning will not change. On new this will be defined as the same representation as the platform C compiler, as specified by the target-triple. This `repr` should *only* be used for FFI.
 
 Introduce a few new warnings and errors
 1. A error when `repr(ordered_fields)` is used on enums without the tag type specified.
@@ -145,14 +145,19 @@ Any fix for this requires splitting up `repr(C)`.
 
 `repr(ordered_fields)` is a new representation that can be applied to `struct`, `enum`, and `union` to give them a consistent, cross-platform, and predictable in-memory layout.
 
-`repr(C)` in edition <= 2024 is an alias for `repr(ordered_fields)` and in all other editions, it matches the default C compiler for the given target triple for structs, unions, and field-less enums. Enums with fields are laid out as a struct containing a tag and payload. With the payload being a union of structs of all the variants. (This is how they are currently laid out in `repr(C)`)
+`repr(C)` in current editions is an alias for `repr(C#editionCurr)` and in all other editions, it matches the default C compiler for the given target triple for structs, unions, and field-less enums. Enums with fields are laid out as a struct containing a tag and payload. With the payload being a union of structs of all the variants. This is how they are currently laid out in `repr(C)`. The calling convention of `repr(C)` will also remain the same and all current editions.
 
-Using `repr(C)` in editions <= 2024 triggers a lint (seen below) as an edition migration compatibility lint with a machine-applicable fix that switches it to `repr(C#editionCurr)`.
+`repr(C)` in future editions is an alias for `repr(C#editionNext)`. It will lay out types in the same way as `C` would, and will use the same calling convention as `C`.
+
+Using `repr(C)` in all current editions triggers a lint (seen below) as an edition migration compatibility lint with a machine-applicable fix that switches it to `repr(C#editionCurr)`.
 * If you are using `repr(C)` for FFI, then you should switch to `repr(C#editionNext)`
 * If you are not using `repr(C)` for FFI, then you should switch to `repr(ordered_fields)`
 
-The machine-applicable fix is provided to allow users to do migrations on their own terms. This way a user can do `cargo fix`, update the edition themselves, then fix uses of `repr(C#editionCurr)` in the new edition.
+The machine-applicable fix is provided to allow users to do migrations on their own terms. This way a user can do `cargo fix` to get warning free code. Then choose one of the following
+* fix uses of `repr(C#editionCurr)` at their leisure, then update to new edition
+* update to new edition, then fix uses of `repr(C#editionCurr)` at their leisure
 
+Here's an example of how the lint could look
 ```
 warning: use of `repr(C)` in type `Foo`
   --> src/main.rs:14:10
@@ -165,11 +170,11 @@ warning: use of `repr(C)` in type `Foo`
    = note: `repr(C)` is planned to change meaning in the next edition to match the target platform's layout algorithm. This may change the layout of this type on certain platforms. To keep the current layout, switch to `repr(C#editionNext)` or `repr(ordered_fields)`
 ```
 
-Using `repr(C)` on all editions (including > 2024) when there are no extern blocks or functions in the crate will trigger a allow-by-default lint (`suspicious_repr_c`) suggesting to use `repr(ordered_fields)`.
+Using `repr(C)`/`repr(C#editionCurr)`/`repr(C#editionNext)` on all editions (including in future editions) when there are no extern blocks or functions in the crate will trigger a allow-by-default lint (`suspicious_repr_c`) suggesting to use `repr(ordered_fields)`.
 
-This is allow by default, since the edition lint should do the heavy lifting. This reduces the noise, and provides a tool for interested users to reduce their reliance on `repr(C)` when it is probably not needed.
+This is allow by default, since the edition lint should do the heavy lifting, so it's better to reduces the noise. This is still provided as a tool for interested users to reduce their reliance on `repr(C)` (or it's variants) when it is probably not needed. Since the largest difference between `repr(C)` and `repr(ordered_fields)` is calling convention.
 
-If *any* extern block or function (including `extern "Rust"`) is used in the crate, then the `suspicious_repr_c` lint will not be triggered. This way, we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
+If *any* extern block or function (including `extern "Rust"`) uses the given type in the crate, then the `suspicious_repr_c` lint will not be triggered. This way, we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
 
 This does miss some potential use cases
 1. where a crate provides a suite of FFI-capable types, but does not actually provide any `extern` functions or blocks.
@@ -193,13 +198,13 @@ warning: use of `repr(C)` in type `Foo`
 ```
 
 The idiom lint `repr_c_curr` will trigger on usages of `repr(C#editionCurr)`. This is allow-by-default on current editions and warn by default on new editions.
-On the current edition it will guide people towards `repr(C#editionNext)` or `repr(ordered_fields)`. 
-On future current editions it will guide people towards `repr(C)` or `repr(ordered_fields)`. 
+* On the current edition it will guide people towards `repr(C#editionNext)` or `repr(ordered_fields)`.
+* On future current editions it will guide people towards `repr(C)` or `repr(ordered_fields)`.
 
 The idiom lint `repr_c_next` will trigger on usages of `repr(C#editionNext)`. This is allow-by-default on current editions and deny-by-default/warn-by-default in future editions. This comes with a machine applicable fix to switch to `repr(C)`.
 
 After enough time has passed, and the community has switched over:
-This makes it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout.
+This makes it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout unrelated to FFI.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -212,7 +217,7 @@ See the current Rust reference entry for `repr(C)`: https://doc.rust-lang.org/st
 
 ## `repr(C#editionNext)`
 
-Note: This will be a consistent way to refer to the fixed `repr(C)`. It is intended to only be used for the migration between editions, however it is possible to use this to have an edition-agnostic way to refer to the fixed `repr(C)`. This second use-case is considered, but will not be prioritized.
+Note: This will be a consistent way to refer to the fixed `repr(C)`. It is intended to only be used for the migration between editions. It is possible to use this to have an edition-agnostic way to refer to the fixed `repr(C)`. This second use-case is considered, but will not be prioritized.
 
 > The `C#editionNext` representation is designed for one purpose: creating types that are interoperable with the C Language.
 > 
@@ -220,17 +225,17 @@ Note: This will be a consistent way to refer to the fixed `repr(C)`. It is inten
 > 
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 
-The exact algorithm is deferred to whatever the default target C compiler does with default settings (or if applicable, the most commonly used settings). `rustc` may grow extra flags to control the behavior of `repr(C)`, in order to match certain flags in the default C compiler, however those will need to be their own proposals. This RFC does not specify any extra control over `repr(C)`.
+The exact algorithm is deferred to whatever the default target `C` compiler does with default settings (or if applicable, the most commonly used settings). `rustc` may grow extra flags to control the behavior of `repr(C)`, in order to match certain flags in the default C compiler, however those will need to be their own proposals. This RFC does not specify any extra control over `repr(C)`.
 
-If any bugs are found (i.e. differences between the target C compiler's layout/ABI and `repr(C)`) then the Rust team reserves the right to change the behavior of `repr(C)` to comply with the target C compiler.
+If any bugs are found (i.e. differences between the target C compiler's layout/ABI and `repr(C)`) then the Rust team reserves the right to change the behavior of `repr(C)` to conform with the target C compiler.
 
 ## `repr(C)`
 
 Note: This preserves the nice name of `repr(C)`, and gives it the intended meaning.
 
 This repr's meaning depends on the edition of the crate:
-* on editions < `editionNext`, this means `repr(C#editionCurr)`
-* on editions >= `editionNext`, this means `repr(C#editionNext)`
+* on current editions this means `repr(C#editionCurr)`
+* on future editions, this means `repr(C#editionNext)`
 
 ## `repr(ordered_fields)` 
 
@@ -288,14 +293,14 @@ union FooUnion {
 
 ### enum
 
-When applying `repr(ordered_fields)` to an enum, the tag type must be specified. i.e. `repr(ordered_fields, u8)` or `repr(ordered_fields, i32)`. If a tag type is not specified, then this results in a hard error, which should suggest the smallest integer type that can hold the discriminant values (preferring signed integers to break ties).
+When applying `repr(ordered_fields)` to an enum, the tag type must be specified. i.e. `repr(ordered_fields, u8)` or `repr(ordered_fields, i32)`. It is a hard error to leave the tag type unspecified. The error should suggest the smallest integer type that can hold the discriminant values.
 
 For discriminants, this means that it will follow the given algorithm for each variant in declaration order of the variants:
 * if a variant has an explicit discriminant value, then that value is assigned
 * else if this is the first variant in declaration order, then the discriminant is zero
 * else the discriminant value is one more than the previous variant's discriminant (in declaration order)
 
-If an enum doesn't have any fields, then it is represented exactly by its discriminant. 
+If an enum doesn't have any fields, then it is represented exactly by its discriminant.
 ```rust
 // tag = i16
 // represented as i16
@@ -339,6 +344,8 @@ enum BarEnum {
 #[repr(ordered_fields)]
 struct BarEnumRepr {
 	tag: BarTag,
+    // note that there may be padding here depending on the enum,
+    // which is why the layout differs from `#[repr(uN)]`/`#[repr(iN)]`
 	data: BarEnumData,
 }
 
@@ -408,8 +415,9 @@ fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError>
     Ok(layout.pad_to_align())
 }
 
-/// Takes in the layout of each variant (and their fields) (in declaration order), and returns the layout of the entire enum
-/// the offsets of all fields of the enum are left as an exercise for the readers
+/// Takes in the layout of each variant (and their fields) (in declaration order),
+/// and returns the layout of the entire enum the offsets of all fields of
+/// the enum are left as an exercise for the readers
 /// NOTE: the enum tag is always at offset 0
 fn get_layout_for_enum(
     // the discriminants may be negative for some enums
