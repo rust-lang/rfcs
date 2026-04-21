@@ -130,13 +130,13 @@ If your contribution was rejected under this policy, first, step back and honest
 
 If your contribution fell short, reflect on what you could do better.  We need contributors who put heart into their contributions — not just point a tool at our repositories.  If you do want to contribute, then put a lot of care and attention into your next contribution.  If you've already been banned, then reach out to the moderation team and talk about what you've learned and why you want to contribute.
 
-If you're sure that your contribution didn't fall short but you're a new contributor, see the next item.  As a new contributor, it's difficult to use these tools in a way that won't appear to reviewers as falling short.  We encourage you to try again without using generative AI tools, especially for authorship.
+If you're sure that your contribution didn't fall short but you're a new contributor, see the next item.  As a new contributor, it's difficult to use these tools in a way that won't appear to reviewers as falling short.  We encourage you to try again without using generative AI tools, especially for assisting in creation (rather than learning).
 
 In other cases, please understand that we will sometimes make mistakes.  Explain concisely why you believe the contribution to be correct and compatible with this policy; someone will have a look.
 
 ### As a new contributor, is it OK to use AI tools?
 
-This policy does not prohibit anyone from using AI tools.  But as a new contributor, it's a good practice to first contribute without using generative AI tools, especially for authorship.  Using these tools correctly is difficult without a firm baseline understanding.  Without this understanding, it's easy to use these tools in a way that will fall short (or appear to reviewers as falling short) of this policy.
+This policy does not prohibit anyone from using AI tools.  But as a new contributor, it's a good practice to first contribute without using generative AI tools, especially for assisting in creation (rather than learning).  Using these tools correctly is difficult without a firm baseline understanding.  Without this understanding, it's easy to use these tools in a way that will fall short (or appear to reviewers as falling short) of this policy.
 
 ### What if I follow the policy but my work sounds like the output of an LLM?
 
@@ -176,7 +176,7 @@ This RFC does not have any policy items focused on the public communications of 
 
 New and existing contributors are treated in the same way under this policy.  All contributors — including all Project members — may only make contributions that are compatible with this policy.
 
-At the same time, new contributors face additional challenges in using generative AI tools to produce contributions that reviewers will recognize as compatible with this policy.  It's a good practice for new contributors to first work without using generative AI tools, especially for authorship, to build the baseline understanding required.
+At the same time, new contributors face additional challenges in using generative AI tools to produce contributions that reviewers will recognize as compatible with this policy.  It's a good practice for new contributors to first work without using generative AI tools, especially for assisting in creation (rather than learning), to build the baseline understanding required.
 
 ## Other questions and answers
 
