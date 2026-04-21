@@ -180,6 +180,12 @@ At the same time, new contributors face additional challenges in using generativ
 
 ## Other questions and answers
 
+### Does accepting AI-generated work risk our ability to redistribute Rust?
+
+What about the copyright situation?  Since this policy does not ban AI-generated work, does that risk our ability to redistribute Rust under our license?  Niko Matsakis [reports](https://nikomatsakis.github.io/rust-project-perspectives-on-ai/feb27-summary.html#the-legality-of-ai-usage):
+
+> On this topic, the Rust Project Directors consulted the Rust Foundation's legal counsel and they did not have significant concerns about Rust accepting LLM-generated code from a legal perspective.  Some courts have found that AI-generated code is not subject to copyright and it's expected that others will follow suit.  Any human-contributed original expression would be owned by the human author, but if that author is the contributor (or the modifications are licensed under an open source license), the situation is no different from any human-origin contribution.  However, this does not present a legal obstacle to us redistributing the code, because, as this code is not copyrighted, it can be freely redistributed.  Further, while it is possible for LLMs to generate code (especially small portions) that is identical to code in the training data, outstanding litigation has not revealed that this is a significant issue, and often such portions are too small or contain such limited originality that they may not qualify for copyright protection.
+
 ### Is requiring that contributors take care an acceptable policy item?
 
 To take care is to give something your full attention and treat its correctness as important to you.  That's a meaningful distinction.  As reviewers, we can tell when someone has taken care and when the person has not — there are many signs of this.
