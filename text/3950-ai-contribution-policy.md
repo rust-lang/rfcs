@@ -146,7 +146,7 @@ This policy does not require disclosure of the use of generative AI tools.  This
 
 ### Can teams adopt other policies?
 
-This RFC adopts a minimum policy for the Project.  It does not prohibit teams from adopting more specific ones.
+This RFC adopts a policy for shared Project spaces and a baseline policy for all team spaces.  It does not restrict any team from adopting policies for its own spaces that add prohibitions.
 
 At the same time, there is a cost to having different policies across the Project: it risks surprise and confusion for contributors.  By adopting a policy that represents those items on which we have wide agreement and that addresses the concrete problems we're seeing across the Project, we hope to create less need for custom policies and more certainty for contributors.
 
