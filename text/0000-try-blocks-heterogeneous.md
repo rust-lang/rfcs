@@ -406,7 +406,7 @@ with associated adjustments to `visit::walk_fn`, `assert!`
                     (hir::LangItem::ResidualIntoTryType, Ok(block_id))
                 }
                 // `try bikeshed` treated like a function for construction of residual expression,
-                // but with available Hirid for the source block
+                // but with available HirId for the source block
                 TryBlockScope::Heterogeneous(block_id) => {
                     (hir::LangItem::TryTraitFromResidual, Ok(block_id))
                 }
@@ -471,7 +471,7 @@ Once the correct keyword / syntax is identified the remainder is an early desuga
 
 Therefore, if in the future we get new type system features that would allow improved "fallback hinting" or inference of unannotated
 `try` blocks, we could relax the restrictions on homogeneous `try` blocks while still maintaining the ability to annotate for explicit
-clarity or where inferance is not possible. This would be easy to achieve over an edition change, but we don't need to wait for an unknown to ship something now; we can switch how it works later easily enough.
+clarity or where inference is not possible. This would be easy to achieve over an edition change, but we don't need to wait for an unknown to ship something now; we can switch how it works later easily enough.
 
 ## Prior art
 [prior-art]: #prior-art
