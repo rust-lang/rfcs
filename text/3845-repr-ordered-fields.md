@@ -247,7 +247,7 @@ Note: This provides a nice name for a Rust-specific, stable, consistent layout.
 > 
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 
-### struct
+### `struct`
 
 When applying `repr(ordered_fields)` structs are laid out in memory in declaration order, with padding bytes added as necessary to preserve alignment.
 The alignment of a struct is the same as the alignment of the most aligned field.
@@ -270,7 +270,7 @@ Would be laid out in memory like so
 a...bbbbcc..dddd
 ```
 
-### union
+### `union`
 
 When applying `repr(ordered_fields)`, unions would be laid out as follows:
 * the same alignment as their most aligned field
@@ -291,7 +291,7 @@ union FooUnion {
 
 `FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
 
-### enum
+### `enum`
 
 When applying `repr(ordered_fields)` to an enum, the tag type must be specified. i.e. `repr(ordered_fields, u8)` or `repr(ordered_fields, i32)`. It is a hard error to leave the tag type unspecified. The error should suggest the smallest integer type that can hold the discriminant values.
 
@@ -447,6 +447,39 @@ fn get_layout_for_enum(
 }
 ```
 
+### `packed`
+
+When `repr(ordered_fields, packed(N))` is applied to a struct, any field who's type has an alignment > `N` has it's alignment capped to `N`. Even if that type has a `repr(align(M))` attribute applied. Otherwise the rules are the same as described above.
+
+For example, for a struct
+
+```rust
+// size = 64, align = 64
+#[repr(align(64))]
+struct OverAligned(u8);
+
+// size = 64, align = 4
+#[repr(ordered_fields, packed(4))]
+struct X {
+    val: OverAligned
+}
+
+// size = 64, align = 1
+#[repr(ordered_fields, packed)]
+struct Y {
+    val: OverAligned
+}
+```
+
+This behavior is chosen since it is consistent with the handling of naturally over-aligned fields (such as if the field has type `u64`), and since pre-mono errors don't work in the context of generic types. So a behavior has to be chosen for the following type, and the only consistent behavior is the one described above:
+
+```rust
+#[repr(ordered_fields, packed)]
+struct Underalign<T> {
+    val: T,
+}
+```
+
 ## Migration Plan
 
 The migration will be handled as follows:
@@ -569,7 +602,7 @@ See Rationale and Alternatives as well
     * discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2291506953
 * What should `repr(C)` do when a given type wouldn't compile in the corresponding `C` compiler (like fieldless structs in MSVC)? 
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319138105
-* <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (over-aligned types).
+* ~~<a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (over-aligned types).~~ yes
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319098177
 	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
 * ~~Should unions expose some niches?~~ [no](https://github.com/rust-lang/rfcs/pull/3845#discussion_r3088073911)
