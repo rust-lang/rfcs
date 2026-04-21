@@ -100,11 +100,29 @@ Violating even one of these policy items is enough to violate the policy.
 
 ### When contributions appear to fall short of this policy, what do reviewers do?
 
-Reviewers may reject any contribution that falls short of this policy without any explanation.  A simple link to this policy is sufficient.
+Reviewers may reject any contribution that falls short of this policy without detailed explanation.  Simply link to the policy or paste this template:
+
+> On initial review, unfortunately, this contribution appears to be an AI-generated work that falls short of one or more of our policies:
+>
+> - Submitting AI-generated work when you weren't in the loop is prohibited.
+> - Submitting AI-generated work when you haven't checked it with care is prohibited.
+> - Submitting AI-generated work when you don't have reason to believe you understand it is prohibited.
+> - Submitting AI-generated work when you can't explain it to a reviewer is prohibited.
+> - Feeding reviewer questions into an AI tool and proxying the output directly back is prohibited.
+>
+> For details, see [RFC 3950](https://github.com/rust-lang/rfcs/pull/3950).
+>
+> We will not be reviewing this work further.
+>
+> While we trust that you intended to be helpful in making this contribution, these contributions do not help us.  Reviewing contributions requires a lot of time and energy.  Contributions such as this do not deliver enough value to justify that cost.
+>
+> We know this may be disappointing to hear.  We're sorry about that.  It pains us to reject contributions and potentially turn away well-meaning contributors.  For next steps you can take, please see:
+>
+> - *[What should I do if my contribution was rejected under this policy?](https://github.com/rust-lang/rfcs/blob/TC/ai-contribution-policy/text/3950-ai-contribution-policy.md#what-should-i-do-if-my-contribution-was-rejected-under-this-policy)*
 
 ### Should reviewers investigate to determine if AI tools were used?
 
-There's no need to investigate to determine if AI tools were used.  If the contribution seems on its face to fall short, then just reject the contribution, link to this policy, and, at your discretion, notify the moderators.
+There's no need to investigate to determine if AI tools were used.  If the contribution seems on its face to fall short, then just reject the contribution, link to the policy or paste the template, and, at your discretion, notify the moderators.
 
 ### What should I do if my contribution was rejected under this policy?
 
