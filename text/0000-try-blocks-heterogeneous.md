@@ -442,27 +442,54 @@ This adds further syntax complexity to the language with another, slightly diffe
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+### Homogenous try-blocks with manual error conversion
+
+Only support homogeneous `try` blocks and force manual conversion.
+
+For example, you could do something like
+
+```rust
+try {
+        err1("1").map_err(Into::<anyhow::Error>::into)?
+            + err2("2").map_err(Into::<anyhow::Error>::into)?
+    };
+```
+
+1. This leads much more verbose code where multiple error types are involved.
+1. In cases where the final `Residual` is not any of the `Residuals` inside the `try` block (likely a very common situation with `anyhow`) this creates further verbosity by forcing turbofish annotation in at least one place.
+1. Changing the block `Residual` requires multiple adjustments.
+1. This breaks for cases where the `Try` type in question is not `Result`/`Option` unless it implements an equivalent of `map_err()`.
+1. It is not immediately obvious to the user reading the block definition what the resulting `Residual` will be, the information is inside the block, not at the start of the definition. When you see `try bikeshed Foo {` you know the type without analysing the block.
+
+### Fold through some type function that attempts to merge residuals
+
+This is much less local, complex to implement and removes control from the user.
+
+### Could we evolve this in future?
+
+Once the correct keyword / syntax is identified the remainder is an early desugaring to existing features, this is the easiest kind of thing to change over editions.
+
+Therefore, if in the future we get new type system features that would allow improved "fallback hinting" or inference of unannotated
+`try` blocks, we could relax the restrictions on homogeneous `try` blocks while still maintaining the ability to annotate for explicit
+clarity or where inferance is not possible. This would be easy to achieve over an edition change, but we don't need to wait for an unknown to ship something now; we can switch how it works later easily enough.
 
 ## Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+Languages with traditional exceptions don't return a value from `try` blocks, so don't have this problem.
+Even checked exceptions are still always the `Exception` type.
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
+In C#, the `?.` operator is scoped without a visible lexical block.
 
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
+### Related RFCs & experimental features
 
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+- [RFC2388 `try-expr`](https://rust-lang.github.io/rfcs/2388-try-expr.html)
+- [RFC3721 `homogeneous_try_blocks`](https://rust-lang.github.io/rfcs/3721-homogeneous-try-blocks.html)
+- [RFC3058 `try-trait-v2`](https://rust-lang.github.io/rfcs/3058-try-trait-v2.html)
+- [Tracking issue #91285 `try_trait_v2_residual`](https://github.com/rust-lang/rust/issues/91285)
+- [Tracking issue #63178 `Iterator::try_find`](https://github.com/rust-lang/rust/issues/63178)
+- [Tracking issue #79711 `array::try_map`](https://github.com/rust-lang/rust/issues/79711)
+- [Tracking issue #89379 `try_array_from_fn`](https://github.com/rust-lang/rust/issues/89379)
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
