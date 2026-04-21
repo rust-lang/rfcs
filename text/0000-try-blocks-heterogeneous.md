@@ -490,6 +490,7 @@ In C#, the `?.` operator is scoped without a visible lexical block.
 - [Tracking issue #63178 `Iterator::try_find`](https://github.com/rust-lang/rust/issues/63178)
 - [Tracking issue #79711 `array::try_map`](https://github.com/rust-lang/rust/issues/79711)
 - [Tracking issue #89379 `try_array_from_fn`](https://github.com/rust-lang/rust/issues/89379)
+- [Tracking issue #96373 `yeet_expr`](https://github.com/rust-lang/rust/issues/96373)
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
