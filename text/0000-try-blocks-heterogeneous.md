@@ -143,7 +143,7 @@ _Assuming the explanation for try blocks is implemented as per RFC 3712, which c
 > will do the right thing with minimal syntactic overhead.  It's also common to want
 > to group a bunch of things with the same error type.  Perhaps it's a bunch of calls
 > to one library, which all use that library's error type.  Or you want to do
-> [a bunch of `io` operations](<https://github.com/rust-lang/rust/blob/d6f3a4ecb48ead838638e902f2fa4e5f3059779b/>> > compiler/rustc_borrowck/src/nll.rs#L355-L367) which all use `io::Result`.  Additionally, `try` blocks work with
+> [a bunch of `io` operations](https://github.com/rust-lang/rust/blob/d6f3a4ecb48ead838638e902f2fa4e5f3059779b/compiler/rustc_borrowck/src/nll.rs#L355-L367) which all use `io::Result`.  Additionally, `try` blocks work with
 > `?`-on-`Option` as well, where error-conversion is never needed, since there is only `None`.
 >
 > It will fail to compile, however, if not everything shares the same error type.
