@@ -483,9 +483,9 @@ In C#, the `?.` operator is scoped without a visible lexical block.
 
 ### Related RFCs & experimental features
 
-- [RFC2388 `try-expr`](https://rust-lang.github.io/rfcs/2388-try-expr.html)
-- [RFC3721 `homogeneous_try_blocks`](https://rust-lang.github.io/rfcs/3721-homogeneous-try-blocks.html)
-- [RFC3058 `try-trait-v2`](https://rust-lang.github.io/rfcs/3058-try-trait-v2.html)
+- [RFC #2388 `try-expr`](https://rust-lang.github.io/rfcs/2388-try-expr.html)
+- [RFC #3721 `homogeneous_try_blocks`](https://rust-lang.github.io/rfcs/3721-homogeneous-try-blocks.html)
+- [RFC #3058 `try-trait-v2`](https://rust-lang.github.io/rfcs/3058-try-trait-v2.html)
 - [Tracking issue #91285 `try_trait_v2_residual`](https://github.com/rust-lang/rust/issues/91285)
 - [Tracking issue #63178 `Iterator::try_find`](https://github.com/rust-lang/rust/issues/63178)
 - [Tracking issue #79711 `array::try_map`](https://github.com/rust-lang/rust/issues/79711)
