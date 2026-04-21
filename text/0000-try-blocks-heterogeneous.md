@@ -136,7 +136,7 @@ fn heterogeneous_into_anyhow() {
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-_Assuming the explanation for try blocks is implemented as per RFC 3712, which contains:_
+_Assuming the explanation for try blocks is implemented as per RFC 3721, which contains:_
 
 > This behaviour is what you want in the vast majority of simple cases.  In particular,
 > it always works for things with just one `?`, so simple things like `try { a? + 1 }`
