@@ -314,7 +314,7 @@ with associated adjustments to `visit::walk_fn`, `assert!`
         let cb = self.cbox(0);
         let ib = self.ibox(0);
         self.word_nbsp("try");
-        // ADD: if there if a type annotation, prefix with `bikeshed`
+        // ADD: if there is a type annotation, prefix with `bikeshed`
         if let Some(ty) = opt_ty {
             self.word_nbsp("bikeshed");
             self.print_type(ty);
@@ -442,7 +442,7 @@ This adds further syntax complexity to the language with another, slightly diffe
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-### Homogenous try-blocks with manual error conversion
+### Homogeneous try-blocks with manual error conversion
 
 Only support homogeneous `try` blocks and force manual conversion.
 
@@ -455,7 +455,7 @@ try {
     };
 ```
 
-1. This leads much more verbose code where multiple error types are involved.
+1. This leads to much more verbose code where multiple error types are involved.
 1. In cases where the final `Residual` is not any of the `Residuals` inside the `try` block (likely a very common situation with `anyhow`) this creates further verbosity by forcing turbofish annotation in at least one place.
 1. Changing the block `Residual` requires multiple adjustments.
 1. This breaks for cases where the `Try` type in question is not `Result`/`Option` unless it implements an equivalent of `map_err()`.
