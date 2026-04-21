@@ -591,7 +591,7 @@ See Rationale and Alternatives as well
 [unresolved-questions]: #unresolved-questions
 
 * The migration plan, as a whole, needs to be ironed out
-    * Currently, it is just a sketch, but we need timelines, dates, and guarantees to switch `repr(C)` to match the layout algorithm of the target C compiler.
+    * Currently, it is just a sketch, but we need timelines, dates, ~~and guarantees to switch `repr(C)` to match the layout algorithm of the target C compiler.~~ accepting this RFC will enforce this guarantee
     * Before this RFC is accepted, t-compiler will need to commit to fixing the layout algorithm sometime in the next edition.
 * ~~Should this `repr` be versioned?~~
     * This way we can evolve the repr (for example, by adding new niches)
