@@ -234,6 +234,20 @@ Downsides:
 - Each early stage in the process needs to know about later stages to correctly set `--cfg`
 - Does not help with dynamically used dependencies like with `curl`
 
+### Implicitly ignore duplicate dependencies
+
+If a direct dependency is also a transitive dependency,
+Cargo can ignore it, assuming the user did it intentionally for dependency resolution or feature activation.
+False negatives is unlikely to have much of an impact because the dependency is already going to be built.
+The worst that can happen is some extra features get activated.
+
+Pros:
+- Automatic
+
+Downsides
+- Can lead to extra features being activated than needed
+- Does not help with dynamically used dependencies like with `curl`
+
 ## Prior art
 [prior-art]: #prior-art
 
