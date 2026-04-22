@@ -223,6 +223,10 @@ When a crate has no builtin dependency on `std` (or an optional builtin
 dependency on `std`), then Cargo will pass `-Zcrate-attr=no_std` to rustc (or
 some equivalent; [?][rationale-no_std]).
 
+Builtin dependencies defined in `workspace.dependencies` are inherited by
+members of the workspace in the same way as any other dependency and then the
+same behaviour and constraints apply.
+
 *See the following sections for rationale/alternatives:*
 
 - [*Why explicitly declare dependencies on the standard library in `Cargo.toml`?*][rationale-why-explicit-deps]
