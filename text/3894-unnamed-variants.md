@@ -117,7 +117,7 @@ in C++), a newtype integer isn't as ergonomic to use as an `enum`:
 - It is arduous to read the generated definition - the variants are inside of an
   `impl` instead of next to the name. It hides the type's nature as an enum.
 - It's invalid to `use` the pseudo-variants like with `use EnumName::*`.
-- The third-party macro ecosystem built around enums can't be used.
+- The third-party macro ecosystem built around enums can't be simply used.
 - Rust is a systems language that can move data around efficiently, and so
   first-class support for named integers is valuable for embedded programmers.
 - Code analysis and lints specific to enums are unavailable.
@@ -153,9 +153,8 @@ ensure that unknown values cannot be exposed to Rust.
 
 [repr-c-field-less]: https://doc.rust-lang.org/reference/type-layout.html#reprc-field-less-enums
 
-With unnamed variants, the current guidance surrounding sharing enums with C can
-thus be simplified greatly: add a `_ = ..` variant and UB from invalid values
-aren't a concern.
+With unnamed variants, interoperating with a C `enum` is very simple: add
+`#[repr(C)]` and `_ = ..` to a Rust enum and it's compatible with C.
 
 `bindgen` has [multiple ways][bindgen-enum-variation] to generate Rust that
 correspond to a C enum, the default being to define a series of `const` items.
@@ -163,6 +162,10 @@ Its best-effort logic to determine the backing integer type for a C enum does
 not always match that of `repr(C)` on a Rust `enum`. A future version of
 `bindgen` could use this feature to add a `_ = ..` variant to a Rust `enum`  by
 default, instead of a exposing a less-effective `non_exhaustive` attribute.
+
+Today, Rust for Linux configures `bindgen` to generate newtype integers. It
+would switch to using a first-class `enum` type if they were sound to use with
+an evolving C `enum`.
 
 [bindgen-enum-variation]: https://docs.rs/bindgen/0.72.1/bindgen/enum.EnumVariation.html
 
@@ -261,28 +264,8 @@ assert_eq!(FuelLevel::try_from(10).unwrap() as u32, 10);
 assert!(FuelLevel::try_from(21).is_err());
 ```
 
-With other extensions, this could even be generic:
-
-```rust
-trait EnumDiscriminant {
-    type Ranged<const RANGE: Range<Self>>;
-}
-
-impl EnumDiscriminant for u32 {
-    type Ranged<const RANGE: Range<Self>> = RangedU32<RANGE>;
-}
-
-#[repr(u32)]
-enum RangedU32<const RANGE: Range<u32>> {
-    _ = RANGE,
-}
-
-type Ranged<T, const RANGE: Range<T>> = <T as EnumDiscriminant>::Ranged<RANGE>;
-
-type FuelLevel = Ranged<u32, 0..=100>;
-```
-
-[Pattern types][pattern types] are a more direct way to express this.
+[Pattern types][pattern types] are a more direct and flexible way to express
+this.
 
 [pattern types]: https://github.com/rust-lang/rust/pull/107606
 
@@ -2108,7 +2091,7 @@ assert_eq!(Color::Red as u8, 0);
 // help: specify a discriminant with `2 as Color::Unknown`
 // let c = Color::Unknown;
 
-// Use an `as` cast to construct `Color::Unknown` safely.
+// Use an `as` cast to construct `Color::Unknown` without data loss.
 let c = 3 as Color::Unknown;
 assert_eq!(c as u8, 3);
 
