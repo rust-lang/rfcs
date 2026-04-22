@@ -202,6 +202,38 @@ Downsides:
 
 As an aside: is `lib` or `link` a more appropriate field name?
 
+### Target dependencies
+
+```toml
+[target.'cfg(resolve = "versions")'.dependencies]
+# replaces `cfg(false)` which may break with https://github.com/rust-lang/cargo/issues/6179
+[target.'cfg(resolve = "features")'.dependencies]
+mechanism = { version = "1.0", features = ["semantic-addition"] }
+```
+
+Add Cargo-specific built-in cfgs for what parts of Cargo should respect or ignore the dependencies.
+
+`resolve = "versions"`
+- runs during version selection
+- ignored for feature selection
+- ignored for build
+
+`resolve = "features"` is a superset of `versions` (ie version selection sets `--cfg resolve=versions --cfg resolve=features`)
+- runs during version selection
+- runs during feature selection
+- ignored for build
+
+Pros:
+- Close to the dependency
+- Builds off of existing concepts in a way that can also scale to more use cases
+- `resolve = "versions"` can work without an MSRV bump
+
+Downsides:
+- Carves into user `cfg`s, possibly breaking someone
+- Could lead to confusing error messages if a user gets clever and does `not(resolve = "versions")`
+- Each early stage in the process needs to know about later stages to correctly set `--cfg`
+- Does not help with dynamically used dependencies like with `curl`
+
 ## Prior art
 [prior-art]: #prior-art
 
