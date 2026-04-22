@@ -248,6 +248,10 @@ Downsides
 - Can lead to extra features being activated than needed
 - Does not help with dynamically used dependencies like with `curl`
 
+### Do nothing, have people disable the lint
+
+This is likely insufficient on its own but may be a worthwhile answer for cases not as easily covered, like `curl`.
+
 ## Prior art
 [prior-art]: #prior-art
 
