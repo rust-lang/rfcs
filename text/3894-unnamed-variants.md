@@ -423,6 +423,42 @@ By contrast, an unnamed variant affects API _and_ ABI semver compatibility:
 For enums that have relevant discriminant values, an unnamed variant may be the
 better choice. This is often the case for enums declaring an explicit `repr`.
 
+### Syntax "sugar"
+
+An unnamed variant declaration can be thought of as optimized syntax sugar for
+declaring a variant with an unwritable name for each unused discriminant in the
+declared range.
+
+```rust
+// This:
+#[repr(u32)]
+enum Fruit {
+    Apple,
+    Orange,
+    Banana = 4,
+    _ = 2..=5,
+}
+
+// Is like syntax sugar for:
+#[repr(u32)]
+enum Fruit {
+    Apple = 0,
+    Orange = 1,
+    Banana = 4,
+    #[doc(hidden)] _Unnamed2 = 2,
+    #[doc(hidden)] _Unnamed3 = 3,
+    // No `_Unnamed4` because that's claimed by `Banana`.
+    #[doc(hidden)] _Unnamed5 = 5,
+}
+```
+
+However, not even the defining crate can write `Fruit::_Unnamed2`, unlike a
+[private enum variant][private-variants-rfc]. There's also no limit to the
+number of unnamed variants an enum can allocate, so the entire range of `u32`
+can be declared as valid discriminants with `_ = ..`.
+
+[private-variants-rfc]: https://github.com/rust-lang/rfcs/issues/3506
+
 ## Reference-level explanation
 
 ### Unnamed variants
