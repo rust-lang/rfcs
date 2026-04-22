@@ -46,9 +46,9 @@ pub enum TaskState {
 }
 ```
 
-`non_exhaustive` is specified for forwards compatibility, since it should be a
+`non_exhaustive` is specified for forward compatibility, since it should be a
 non-breaking change for variants to be added to `TaskState`. This works by
-requiring foreign crates to include a wildcard branch when `match`ing. Once a
+requiring downstream crates to include a wildcard branch when `match`ing. Once a
 new `Paused` variant is added to `TaskState`, any code that previously compiled
 when using the `TaskState` will continue to do so. However, if any part of the
 system is _not_ recompiled, that old code will see the `Paused` variant as
@@ -91,7 +91,7 @@ crate, to handle the case where it's not one of the currently-named variants.
 ### Protobuf
 
 Protocol Buffers (Protobuf), a language-neutral serialization mechanism, is
-designed to be forwards and backwards compatible when extending a schema.
+designed to be forward and backward compatible when extending a schema.
 Initially, it defined all of its enums as closed. However, this caused confusing
 and often incorrect behavior with `repeated` enums, and so the `proto3` syntax
 [switched to open enums][protobuf-history]. Handling unknown values
@@ -175,7 +175,7 @@ Ensuring ABI compatibility when extending a library requires extra care. While
 `non_exhaustive` grants API compatibility as variants are added, it [does _not_
 provide ABI compatibility][non-exhaustive-ub]. By claiming discriminants for
 future extensions to an enum, libraries can choose to remain ABI
-forwards-compatible as new variants are added.
+forward compatible as new variants are added.
 
 Projects like Redox and relibc would use this feature for this reason among
 others listed.
@@ -410,7 +410,7 @@ enum may be added as the type evolves.
 - It is flexible in how new variants are represented.
 - It does _not_ affect what discriminants are currently valid to represent.
 - Crates must be recompiled to use new enum variants.
-- It affects _only_ foreign crates.
+- It affects _only_ downstream crates.
 
 By contrast, an unnamed variant affects API _and_ ABI semver compatibility:
 
@@ -711,38 +711,124 @@ declaring crate - the enum is "universally non-exhaustive".
 
 #### Compatibility
 
-Given enum versions A and B with some change between them:
+Given an enum in crate version _A_, published first, and version _B_ introducing
+some change to the enum:
 
-- A change is forwards-compatible if a library designed for enum version A can
-  use A or B.
-- A change is backwards-compatible if a library designed for enum version B can
-  use A or B.
-- A change is fully-compatible if it is both forwards and backwards compatible.
-- A change is API compatible if the change does not affect static compilation
-  using a single enum source, either A or B.
-- A change is ABI compatible if the change does not affect dynamically linked
-  libraries compiled using enum versions A and B (with the same Rust compiler).
+- An enum in _A_ or _B_ may be a `repr(Int)` true `enum` with unnamed variants
+  as described by this RFC or a newtype `struct` wrapping `Int` with `pub`
+  associated constants for each named variant.
+- A change is **API compatible** if idiomatic downstream code designed for
+  version _A_ behaves correctly when it's upgraded to version _B_ and statically
+  recompiled.
+  - This excludes breaking changes due to glob imports and other discouraged
+    behavior.
+  - Compatibility is required in only one direction: downstream source code
+    written with _A_ must continue to compile with _B_, not vice versa.
+  - This corresponds to a **minor change** as defined by [RFC 1105] and the
+    [Cargo SemVer Reference]; we use "API compatible" here to distinguish from
+    ABI concerns. By contrast, a **major change** requires non-trivial
+    changes to be made in downstream source code to accommodate it.
+- The enum in _A_ is **ABI forward compatible** with _B_ if code that is
+  compiled to receive enum values of version _A_ functions correctly when it
+  receives values with the ABI of version _B_.
+- The enum in _B_ is **ABI backward compatible** with _A_ if code that is
+  compiled to receive enum values of version _B_ functions correctly when it
+  receives values with the ABI of version _A_. This is relevant to separate
+  compilation of interoperating systems, such as with plugins or microservices.
+- A change is **ABI compatible** if dynamically linked libraries compiled with
+  _A_ and/or _B_ interoperate correctly. Both directions of compatibility must
+  be considered for ABI: a library compiled with _A_ may produce values that are
+  then passed to code expecting _B_, and vice versa.
+  - This requires that the enum versions are backward and forward ABI compatible
+    with each other.
+  - This requires all code be compiled with the same version of Rust or to use a
+    stable `repr` and calling convention where ABI compatibility is expected.
+- [Control Flow Integrity](#control-flow-integrity) (CFI) introduces further
+  constraints when considering ABI compatibility.
 
-It is an API and ABI fully-compatibile change to:
+[RFC 1105]: https://rust-lang.github.io/rfcs/1105-api-evolution.html
+[Cargo SemVer Reference]: https://doc.rust-lang.org/cargo/reference/semver.html
 
-- Add a named variant to a field-less enum using a discriminant that was
-  previously claimed.
-  - When doing the this, removing the last unnamed variant may cause warnings
-    for unused code in client libraries, as a wildcard branch is no longer
-    required. This can be avoided by then adding `#[non_exhaustive]` to the
-    enum.
+These changes are **API and ABI compatible**:
 
-It is an API fully-compatible and ABI backwards-compatible change to:
+- Replace a `repr(transparent)` newtype `struct` wrapping a non-`pub` `Int` with
+  a `repr(Int)` open `enum` of the same name and defining the same variant
+  names.
+  - This breaks the defining crate's usage of `.0`.
+  - Associated constants may represent multiple variants with the same
+    discriminant.
+  - For `repr(C)`, the `Int` must be ABI compatible with the target's chosen
+    integer type for a C `enum` with an equivalent definition. This is usually
+    `core::ffi::c_int`.
+  - This defines a `repr(Int)` `enum` as having the same ABI as `Int`. See
+    [Control Flow Integrity](#control-flow-integrity) for ABI caveats.
+- Given an `enum` in _A_ with an unnamed variant claiming discriminant _D_, add
+  a named variant in _B_ claiming discriminant _D_.
+  - This replaces the unnamed variant, although the unnamed variant declaration
+    may remain unchanged if _D_ is contained in its discriminant range.
+  - Removing the last unnamed variant may warn for `unreachable_patterns` in
+    downstream crates, as a wildcard branch is no longer required. This can be
+    avoided by adding `#[non_exhaustive]` to the enum when removing the last
+    unnamed variant.
 
-- Replace `#[non_exhaustive]` on an enum with an unnamed variant.
+These changes are **API compatible** and produce a _B_ that is
+**ABI backward compatible** with _A_:
+
+- Replace `#[non_exhaustive]` with an unnamed variant on an `enum`.
   - This may require changes to the defining crate to add wildcard branches.
-- Add another claimed discriminant, if an unnamed variant already exists on the
-  enum.
+  - _B_ may produce values that are invalid if passed to code compiled with _A_.
+- Given an `enum` in _A_ that has an invalid discriminant _D_ and is either
+  `#[non_exhaustive]` or contains unnamed variants, add an unnamed variant in _B_
+  claiming discriminant _D_.
+  - _B_ may produce values that are invalid if passed to code compiled with _A_.
 
-It is an API and ABI backwards-compatible change to:
+These changes are **ABI compatible** but break API compatibility, and are
+particularly sensitive to [CFI](#control-flow-integrity):
 
-- Add an unnamed variant to an enum without `#[non_exhaustive]` or another
-  unnamed variant. The same caveat regarding unused wildcard branches applies.
+- Replace a `repr(transparent)` newtype `struct` wrapping a `pub` `Int` with a
+  `repr(Int)` open `enum` of the same name and defining the same variant names.
+  - This breaks downstream source code using `.0` to access the discriminant.
+  - This breaks downstream source code using the tuple constructor to build a
+    value with a given discriminant.
+- Replace a `repr(Int)` open `enum` with a `repr(transparent)` newtype `struct`
+  wrapping a non-`pub` `Int`.
+  - This breaks downstream source code that writes `use Enum::Variant` because
+    associated constants cannot be imported.
+  - If the `struct` field in B is instead `pub`, it is a possibly-breaking API
+    change due to breaking source code that defines a `fn` with the same name as
+    the enum.
+
+This change produces a _B_ that is **ABI backward compatible** with _A_
+but breaks API compatibility:
+
+- Given an `enum` in _A_ that contains no unnamed variants and isn't
+  `#[non_exhaustive]`, add an unnamed variant.
+  - This breaks exhaustive `match` downstream and in the defining crate when
+    _B_ is substituted.
+
+##### Control Flow Integrity
+
+Control Flow Integrity describes a set of checks inserted into a compiled
+program to make it harder to exploit bugs. One such check validates indirect
+jumps, such as function pointer invocations, by requiring the argument types
+passed by the caller to match the parameter types expected by the callee. CFI
+treats a mismatch as erroneous and aborts the program.
+
+The [`cfi_encoding`] attribute overrides the symbol that distinguishes types for
+CFI. Depending on [how the C enums were compiled][libc-5066] and how CFI is
+configured, it may be necessary to set an explicit `cfi_encoding` to avoid
+causing CFI errors, like when replacing a `repr(transparent)` `struct` with an
+`enum`.
+
+`repr(Int)` `enum`s are defined as ABI compatible with `Int` and `repr(C)`
+`enum`s as ABI compatible with the target's chosen integer type for the enum.
+The presence of an unnamed variant in an `enum` does not affect its CFI
+encoding. This RFC does not otherwise define
+[how `repr(Int)` enums should interact with CFI][ucg-489].
+
+[ucg-489]: https://github.com/rust-lang/unsafe-code-guidelines/issues/489
+[`cfi_encoding`]: https://doc.rust-lang.org/nightly/unstable-book/language-features/cfi-encoding.html
+[libc-5066]: https://github.com/rust-lang/libc/issues/5066
 
 #### Applicable lints
 
@@ -1635,8 +1721,8 @@ Pros:
 Cons:
 
 - It expands the scope of `non_exhaustive`: the wildcard branch required by
-  unnamed variants apply to the defining crate as well as foreign crates. This
-  could make it harder to explain to newer users.
+  unnamed variants applies to the defining crate as well as downstream crates.
+  This could make it harder to explain to newer users.
 - The variant name being an underscore _already_ implies that a wildcard branch
   is needed.
 - It always requires two lines to achieve ABI non-exhaustiveness.
@@ -1726,7 +1812,7 @@ a suboptimal experience:
   avoids creating Rust enums from C/C++ enums because of this. It provides an
   option for newtype enums directly.
 - ICU4X uses newtype enums for [certain properties][icu4x-props] which must be
-  forwards compatible with future versions of the enum.
+  forward compatible with future versions of the enum.
 - OpenTitan's [`with_unknown!`] macro also uses this pattern to create
   "C-like enums".
 - `winapi-rs` defines an [`ENUM`][winapi-enum] macro which generates plain
@@ -1776,7 +1862,8 @@ described in the Alternatives section above.
 
 ## Unresolved questions
 
-None.
+Is the Control Flow Integrity encoding of types the only blocker for `repr(Int)`
+`enum` to be ABI compatibile with `Int`?
 
 ## Future possibilities
 
