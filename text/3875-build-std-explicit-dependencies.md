@@ -626,7 +626,9 @@ dependencies?*][unresolved-cargo-metadata].
 
 [`cargo pkgid`][cargo-pkgid] when passed `-p core` would print
 `builtin://.#core` as the source, likewise with `alloc` and `std`. This format
-complies with [Cargo's spec for Package IDs][cargo-pkgid-spec].
+complies with [Cargo's spec for Package IDs][cargo-pkgid-spec]. See also
+unresolved question [*What should the exact format of the `pkgid` spec for
+builtin dependencies be?*][unresolved-cargo-pkgid].
 
 [`cargo remove`][cargo-remove] will remove `core`, `alloc` or `std` explicitly
 from the manifest if invoked with those crate names (using the same heuristics
@@ -1188,6 +1190,14 @@ disruptive.
 ↩ [*Cargo subcommands*][cargo-subcommands]
 
 [crate_metadata]: https://crates.io/crates/cargo_metadata
+
+### What should the exact format of the `pkgid` spec for builtin dependencies be?
+[unresolved-cargo-pkgid]: #what-should-the-exact-format-of-the-pkgid-spec-for-builtin-dependencies-be
+
+The format for builtin dependencies of `cargo pkgid` can be changed prior to
+stabilisation and does not need to match what is proposed in this RFC exactly.
+
+↩ [*Cargo subcommands*][cargo-subcommands]
 
 ## Prior art
 [prior-art]: #prior-art
