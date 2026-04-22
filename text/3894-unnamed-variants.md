@@ -1595,11 +1595,15 @@ enum IpProto {
 This is not mutually exclusive with unnamed variants, but this RFC chooses to
 leave claimed ranges of discriminants as anonymous to keep the feature simple.
 It can be left as [future work](#discriminant-ranges-for-named-variants) for the
-language. Some of the issues are:
+language. Some of the concerns are:
 
-- Adding an `Icmp = 1` variant affects `matches!(1 as IpProto, IpProto::Other)`:
-  it is an API-breaking change. Unnamed variants are more useful for enum
-  evolution - a key design goal.
+- It is a possibly-breaking change to add `Icmp = 1`. It affects the result of
+  `matches!(1 as IpProto, IpProto::Other)`; changing the semantics of a pattern
+  match in downstream code is a major (API-breaking) change for all current Rust
+  features. However, upstream code or the [Cargo SemVer Reference] _could_ warn
+  downstream users that it's not appropriate to depend upon the valid
+  discriminants for `Other` remaining the same across a minor version bump
+  because it is a `..` variant.
 - It is ambiguous what value should be chosen when `IpProto::Other` is used in
   an expression. Some reasonable ways to avoid that are:
   - Define an arbitrary rule to choose a discriminant for an `IpProto::Other`
@@ -1624,101 +1628,202 @@ language. Some of the issues are:
   `matches!(o, IpProto::Other) && o != IpProto::Other`. If `derive(PartialEq)`
   treats all `IpProto::Other` as equal, then it may drastically reduce the
   performance of the `derive` without an obvious opt-in by the author.
-  - If named variants' ranges can overlap other named variants as shown above,
-    then the performance of `matches!(o, IpProto::Other)` degrades as further
-    variants are added and the set of discriminants representing `Other` becomes
-    more sparse. No other pattern has this characteristic, where the performance
-    of matching a pattern is affected by unmentioned properties of the matched
-    type.
+- If named variants' ranges can overlap other named variants as shown above,
+  then the performance of `matches!(o, IpProto::Other)` degrades as further
+  variants are added and the set of discriminants representing `Other` becomes
+  more sparse. No other pattern has this characteristic where the performance
+  of matching a pattern is affected by unmentioned properties of the matched
+  type. This is not great for a systems language.
 
-Most of the utility provided by named variant discriminant ranges can be
-provided by replacing it with unnamed variants and using a macro to determine
-whether an enum's discriminant is assigned to a named variant. This makes it
-clear that declaring a new named variant with an unnamed variant's discriminant
-will affect the method's return value. For example:
+The ability to distinguish a known and unknown discriminant granted by this
+feature can be substituted with unnamed variants and a
+[derive macro](#isnamedvariant-derive).
 
-```rust
-#[repr(transparent, u32)]
-#[derive(IsNamedVariant)]
-enum IpProto {
-    Tcp = 6,
-    Udp = 17,
-    _ = ..,
-}
-
-/// Equivalent to fallibly building `IpProto::Other` from `x`.
-fn build_unknown_proto(x: u32) -> Option<IpProto> {
-    (!(x as IpProto).is_named_variant()).then_some(x as u32)
-}
-
-assert!(!(3u32 as IpProto).is_named_variant());
-assert!(build_unknown_proto(3).is_some());
-assert!((6u32 as IpProto).is_named_variant());
-assert!(build_unknown_proto(6).is_none());
-```
-
-### `..` at the end
-
-```rust
-#[repr(u8)]
-enum IpProto {
-    Tcp = 6,
-    Udp = 17,
-
-    // "the rest of the variants exist"
-    ..
-}
-```
-
-- This is less flexible than `_ = ..`, and is awkward to restrict to smaller or
-  discontiguous ranges.
-- This resembles the [rest pattern] more than the [full range expression] that
-  discriminants are assigned to and the [wildcard pattern] that it requires.
-
-[full range expression]: https://doc.rust-lang.org/reference/expressions/range-expr.html#grammar-RangeFullExpr
-[rest pattern]: https://doc.rust-lang.org/reference/patterns.html?#rest-patterns
-[wildcard pattern]: https://doc.rust-lang.org/reference/patterns.html?#wildcard-pattern
-
-### An "other" variant carries unknown discriminants like a tuple variant
+### A "wildcard" tuple variant with an unknown discriminant field
 
 An alternative way to specify a field-less open enum could be to write this:
 
 ```rust
-#[repr(u32)]
+#[repr(u32, bikeshed_niche_optimize)]
 enum IpProto {
     Tcp = 6,
     Udp = 17,
 
-    // bikeshed syntax
-    Other(0..6 | 7..17 | 18..=u32::MAX),
+    // A private enum variant with a pattern type.
+    priv Other(u8 is 0..6 | 7..17 | 18..=u32::MAX),
 }
 ```
 
+Because the only valid representations of the field in `Other` are invalid
+representations for the other variants, this could be optimized to be the size
+of a `u32` and thus an `unsafe` transmute for `0` to `IpProto` results in
+`IpProto::Other(0)`. Then, if the variant is declared
+[private][private-variants-rfc], it a minor change to add a new variant to
+`IpProto`.
+
 This would mean that the `Other` variant is a named way to refer to unlisted
-values and works in pattern matching naturally, while being a zero-cost
+values and works in pattern matching directly, all while being a zero-cost
 representation:
 
 ```rust
+// Changes behavior when the pattern type in `Other` changes.
 if let IpProto::Other(x) = proto {
     // `proto` was *not* `Tcp` or `Udp`; its integer value is in `x`.
 }
+assert_eq!(mem::size_of::<IpProto>(), mem::size_of::<u32>());
+assert!(matches!(
+  unsafe { mem::transmute::<u32, IpProto>(0) },
+  // Breaks if we add a variant with discriminant `0`.
+  IpProto::Other(0)
+));
+assert!(matches!(
+  unsafe { mem::transmute::<u32, IpProto>(6) },
+  IpProto::Tcp
+));
 ```
 
-However, this has some problems. For one, it's peculiar for a tuple variant
-syntax to not carry a payload, but a discriminant. It is also possible to
-build the variant with a discriminant value, which means that it would need
-to be constrained by a [pattern type][pattern types] - one that may end up
-far more complicated if it overlaps with named variants. It is also an API
-breaking change to move the discriminant `2` to a new named variant, since
-it breaks anyone passing `2` into an `IpProto::Other` expression.
+Some concerns:
 
-```rust
-if let IpProto::Other(x) = IpProto::Other(6) {
-    // This branch is not taken, since it's actually an `IpProto::Tcp`!
-}
-```
+- `repr(u32)` currently _disables_ niche optimization of the enum based on its
+  variants' fields, so, for consistency, a new `repr` that enables niche
+  optimization in a stabilized manner should be defined before this is exposed
+  to users.
+- This requires [pattern types] to function, which is a larger and more complex
+  feature to implement and for Rust user's to learn than unnamed variants.
+- Without [private variants][private-variants-rfc], it is a possibly-breaking
+  change to replace a discriminant from the `Other` variant with a new named
+  variant. This breaks code that tries to construct a `Other` with that
+  discriminant and affects the type signature of the field. It can also affect
+  the semantic behavior of a pattern match which is considered a major change
+  for all current Rust features. However, upstream code _could_ warn downstream
+  users that it's not appropriate to depend upon the pattern type within `Other`
+  remaining the same across minor version bumps, with documentation or a new
+  attribute.
+- As a result, this feature would have a long critical path to stabilization.
+- The wildcard variant optimization shown here has no clear way to extend to
+  `enum`s with fields in the future.
+- It requires extra effort to set up correctly, since the pattern type cannot
+  overlap the other field-less variants.
+- It requires extra effort to ensure this optimization is actually taking
+  place. Every addition of a variant requires a change to pattern type of the
+  "wildcard variant" field. This would require a static assertion and likely
+  a macro to ensure that all expected variants are covered.
+- This has the same issue regarding the complexity of `match` as the type
+  evolves as the `Other = ..` alternative above.
+- This would introduce a new concept to Rust users: that a tuple variant field
+  can carry a discriminant directly rather than a payload (which can
+  discriminate).
 
-A `derive(IsNamedVariant)` macro as shown above could replace this behavior.
+Like with `Other = ..`, the utility of determining if the discriminant is known
+can be provided [with a macro](#isnamedvariant-derive), and an `as` cast
+accesses the discriminant value.
+
+### Forward compatibility with newtype `struct`s
+
+As described in [Compatibility](#compatibility), it is a minor change to replace
+a `repr(transparent)` newtype `struct` wrapping a non-`pub` `Int` with an open
+`enum` using unnamed variants. However, this would require the following
+non-trivial changes to `repr(Int/C)` enums:
+
+- The enum name is a constructor `fn(Repr) -> Enum`:
+
+  ```rust
+  assert_eq!(Color(1), Color::Blue);
+  assert!(
+      [0, 3, 2].map(Color),
+      matches!([Color::Red, _, Color::Green])
+  )
+  ```
+
+  - This is valid for any open enum, the same as the `as` cast from integer.
+  - This mirrors the `derive(Debug)` format, is ergonomic, and is clear at
+    callsite. Thus it may be worth adding to Rust even if `.0` isn't.
+  - When should one prefer the constructor over the `as` cast? Always?
+
+- `.0` provides direct access to the discriminant value of `enum`s with an
+  explicit representation:
+
+  ```rust
+  let mut c = Color::Blue;
+  assert_eq!(c.0, 1);
+  c.0 += 1;
+  assert!(matches!(c, Color::Green));
+  assert_eq!(c.0, 2);
+  ```
+
+  - This could be supported for _any_ enum with an explicit `repr(Int/C)` by
+    having closed enums be `unsafe` to mutate through `.0` - it's an
+    [unsafe field].
+
+There are some clear benefits:
+
+- It is possible to get a reference directly to the discriminant, which can be
+  useful when performing lifetime-constrained zero-copy serialization.
+- The type of `.0` is exactly the `repr`, and doesn't require the user specify a
+  type to `as` cast to and possibly truncate. Currently, there's no language
+  feature in Rust that does this - it requires a macro or codegen to guarantee.
+  This can cause subtle bugs, especially for `repr(C)`:
+
+  ```rust
+  #[repr(C)]
+  enum Oops {
+      // On any platform where this is more than `c_int::MAX`.
+      TooBig = 2_147_483_649,
+  }
+  assert_eq!(Oops::TooBig as core::ffi::c_int, -2_147_483_647);
+  ```
+
+  Instead, `.0` accesses the discriminant without fear of truncation:
+
+  ```rust
+  assert_eq!(Oops::TooBig.0, 2_147_483_649);
+  // mismatched types, expected `i32`, got `i64`
+  // let _: c_int = X::V.0;
+  ```
+
+- Some discriminant-manipulating operations are simpler than with `as` casts:
+
+  ```rust
+  #[repr(u32)]
+  enum X {
+      A = 0,
+      B = 1,
+  }
+  let mut x = X::A;
+  assert_eq!(x.0, 0);
+
+  // SAFETY: 1 is a valid discriminant for `X`.
+  unsafe { x.0 += 1; }
+
+  assert!(matches!(x, X::B));
+  ```
+
+- A fielded enum with `#[repr(Int)]` and/or `#[repr(C)]` is guaranteed to have
+  its discriminant values starting from 0. However, for any given value of that
+  enum, there's no built-in way to extract what the integer value of the
+  discriminant is safely. The `unsafe` mechanism is
+  `(&thenum as *const _ as *const Int).read()`. For open fielded enums, some
+  direct access to the discriminant would be even more valuable, since the
+  discriminant could be entirely unknown and the user may want to know its
+  value.
+
+[unsafe field]: https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html
+
+However, this is a subjectively ugly and undiscoverable syntax to access the
+discriminant of an `enum`. One possibility: when introduced, treat these forms
+as deprecated and throw a warning to recommend a better syntax than `.0` but
+still allow the desired migration be a minor change across the ecosystem.
+
+There are also existing proposals to [read][rfc-3607] and [write][rfc-3727] the
+discriminant directly. They propose alternative syntax, with
+`.enum#discriminant` rather than `.0` and `discriminant_of!`/`set_discriminant`
+built-ins respectively.
+
+[rfc-3607]: https://github.com/rust-lang/rfcs/pull/3607
+[rfc-3727]: https://github.com/rust-lang/rfcs/pull/3727
+
+So, in order for that to work, `.0` would be necessary. However, this is too
+confusing of a syntax for an `enum` to access the discriminant.
 
 ### Forbid unnamed variants' discriminants from overlapping named ones
 
@@ -1925,6 +2030,38 @@ Is the Control Flow Integrity encoding of types the only blocker for `repr(Int)`
 
 ## Future possibilities
 
+### `IsNamedVariant` derive
+
+There are certain cases in which it's useful to distinguish between known/named
+and unknown/unnamed discriminants. Since unnamed variants cannot do that
+syntactically, a `derive` macro can read the definition and generate a
+`fn(&self) -> bool` that determines if an enum value represents an unnamed
+discriminant. This fits the Rust precedent of requiring an opt-in macro for a
+minor change to a type definition to result in a change in semantics. While this
+can be provided by third parties, it may be better for the ecosystem to have a
+standard library solution.
+
+```rust
+#[repr(transparent, u32)]
+#[derive(IsNamedVariant)]
+enum IpProto {
+    Tcp = 6,
+    Udp = 17,
+    _ = ..,
+}
+
+// Equivalent to fallibly building `IpProto::Other` from `x` in the
+// "wildcard variant" alternatives above.
+fn build_unknown_proto(x: u32) -> Option<IpProto> {
+    (!(x as IpProto).is_named_variant()).then_some(x as u32)
+}
+
+assert!(!(3u32 as IpProto).is_named_variant());
+assert!(build_unknown_proto(3).is_some());
+assert!((6u32 as IpProto).is_named_variant());
+assert!(build_unknown_proto(6).is_none());
+```
+
 ### Discriminant ranges for named variants
 
 A future extension could allow for named variants to specify ranges as
@@ -2014,146 +2151,6 @@ pub enum Shape {
     // FromInfo { name: &'static ShapeInfo } = 2,
 }
 ```
-
-### Tuple-like syntax for `repr` enums
-
-A very useful thing this RFC enables is that replacing this:
-
-```rust
-// The "newtype integer enum" pattern.
-#[derive(PartialEq, Eq)]
-pub struct Color(u32);
-impl Color {
-    const Red: Color = Color(0);
-    const Blue: Color = Color(1);
-    const Green: Color = Color(2);
-}
-```
-
-with this:
-
-```rust
-#[derive(PartialEq, Eq)]
-#[repr(u32)]
-pub enum Color {
-    Red,
-    Blue,
-    Green,
-    _ = ..,
-}
-```
-
-is a non-breaking change for client crates.
-
-However, if the library initially exposed the discriminant field as `pub`, as
-`bindgen`, `icu4x`, and `open-enum` do, then the migration to an open `enum`
-requires that `Color(discriminant)` and `color.0` also function as originally.
-
-These each have their own independent utility:
-
-#### Tuple constructor
-
-The enum name is a constructor `fn(Repr) -> Enum`:
-
-```rust
-assert_eq!(Color(1), Color::Blue);
-assert!(
-    [0, 3, 2].map(Color),
-    matches!([Color::Red, _, Color::Green])
-)
-```
-
-- This is valid for any open enum, the same as the `as` cast from integer.
-- This mirrors the `derive(Debug)` format, is ergonomic, and is clear at
-  callsite. Thus it may be worth adding to Rust even if `.0` isn't.
-- When should one prefer the constructor over the `as` cast? Always?
-
-#### Discriminant field access
-
-`.0` provides direct access to the discriminant value of `enum`s with an
-explicit representation:
-
-```rust
-let mut c = Color::Blue;
-assert_eq!(c.0, 1);
-c.0 += 1;
-assert!(matches!(c, Color::Green));
-assert_eq!(c.0, 2);
-```
-
-This is subjectively ugly and undiscoverable syntax to access the discriminant
-of an `enum`. One possibility: when introduced, treat as deprecated and throw a
-warning to recommend a better syntax than `.0` but still allow the desired
-non-breaking migration.
-
-As with unnamed variants, the `enum` must not be `repr(Rust)` in order to
-guarantee that an integer is used as the discriminant.
-
-There are a few distinct advantages compared to `as` casting:
-
-- It is possible to get a reference directly to the discriminant, which can be
-  useful when performing lifetime-constrained zero-copy serialization.
-- The type of `.0` is exactly the `repr`, and doesn't require the user specify a
-  type to `as` cast to and possibly truncate. Currently, there's no language
-  feature in Rust that does this - it requires a macro or codegen to guarantee.
-  This can cause subtle bugs, especially for `repr(C)`:
-
-  ```rust
-  #[repr(C)]
-  enum Oops {
-      // On any platform where this is more than `c_int::MAX`.
-      TooBig = 2_147_483_649,
-  }
-  assert_eq!(Oops::TooBig as core::ffi::c_int, -2_147_483_647);
-  ```
-
-  Instead, `.0` accesses the discriminant without fear of truncation:
-
-  ```rust
-  assert_eq!(Oops::TooBig.0, 2_147_483_649);
-  // mismatched types, expected `i32`, got `i64`
-  // let _: c_int = X::V.0;
-  ```
-
-This could be supported for _any_ enum with an explicit `repr(Int)` by having
-closed enums be `unsafe` to mutate through `.0` - it's an [unsafe field].
-
-```rust
-#[repr(u32)]
-enum X {
-    A = 0,
-    B = 1,
-}
-let mut x = X::A;
-assert_eq!(x.0, 0);
-
-// SAFETY: 1 is a valid discriminant for `X`.
-unsafe { x.0 += 1; }
-
-assert!(matches!(x, X::B));
-```
-
-[unsafe field]: https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html
-
-There are also existing proposals to [read][rfc-3607] and [write][rfc-3727] this
-discriminant directly. They propose alternative syntax, with
-`.enum#discriminant` rather than `.0` and `discriminant_of!`/`set_discriminant`
-built-ins respectively.
-
-[rfc-3607]: https://github.com/rust-lang/rfcs/pull/3607
-[rfc-3727]: https://github.com/rust-lang/rfcs/pull/3727
-
-### Extracting the integer value of the discriminant for fielded enums
-
-A fielded enum with `#[repr(Int)]` and/or `#[repr(C)]` is guaranteed to have its
-discriminant values starting from 0. However, for any given value of that enum,
-there's no built-in way to extract what the integer value of the discriminant is
-safely. The unsafe mechanism is `(&thenum as *const _ as *const Int).read()`.
-For open fielded enums, this would be even more valuable, since the discriminant
-could be entirely unknown and the programmer may want to know its value.
-
-Perhaps this uses the same `.0` syntax as above, or an extension to
-`mem::Discriminant`?
 
 ### `match` on ranges of enums
 
