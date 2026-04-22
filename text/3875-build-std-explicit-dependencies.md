@@ -858,7 +858,11 @@ similarly to other dependencies in their manifest, but the behaviour will be
 subtly different than with implicit builtin dependencies (where `extern crate`
 is required).
 
+See [the rustc documentation for more details on `noprelude`][doc_extern_opts].
+
 ↩ [*Proposal*][proposal]
+
+[doc_extern_opts]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/extern-options.html#--extern-options
 
 ### Why not require builtin dependencies instead of supporting implicit ones?
 [rationale-no-migration]: #why-not-require-builtin-dependencies-instead-of-supporting-implicit-ones
