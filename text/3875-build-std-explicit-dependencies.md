@@ -282,6 +282,23 @@ core = { builtin = true }
 Crates with these dependency sources will remain unable to be published to
 crates.io.
 
+Building on both of the above, a `core`/`alloc`/`std` dependency can have
+`path`/`git` source at the same time as a `builtin` source. This allows the
+crate to remain publishable while the `path`/`git` source is only used locally:
+
+```toml
+[package]
+name = "hello_world"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+std = { builtin = true, path = "../my_std" } # published as `builtin` dep, `path` used locally
+```
+
+This mirrors the existing behaviour for `path`/`git` sources when combined with
+registry sources.
+
 ### Patches
 [patches]: #patches
 
