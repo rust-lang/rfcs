@@ -828,23 +828,35 @@ but breaks API compatibility:
 
 ##### Control Flow Integrity
 
-Control Flow Integrity describes a set of checks inserted into a compiled
+Control Flow Integrity (CFI) describes a set of checks inserted into a compiled
 program to make it harder to exploit bugs. One such check validates indirect
-jumps, such as function pointer invocations, by requiring the argument types
-passed by the caller to match the parameter types expected by the callee. CFI
-treats a mismatch as erroneous and aborts the program.
+jumps, such as function pointer invocations, by aborting if the caller and
+callee disagree on the type signature of the function.
+
+CFI treats C enums as a different type from their backing integer type, so
+transmuting `fn(MyEnum)` to `fn(c_int)` and calling the function will lead to an
+abort even if `MyEnum` is backed by `c_int`. Similarly, transmuting
+`fn(MyEnum1)` to `fn(MyEnum2)` and calling the function also leads to an abort.
+
+When using CFI, `repr(Int/C)` `enum`s are ABI compatible with C `enum` of the
+same name and backing integer type, while [_not_ being compatible][ucg-489] with
+the backing integer type directly. If the C source uses a [`typedef`][libc-5066]
+instead of `enum`, then it already uses the same CFI encoding as the relevant
+integer.
+
+CFI compares the _name_ of the `enum` when validating a function call signature,
+so for compatibility between Rust and C over FFI, Rust must declare the open
+enum with exactly the same CFI name as the C enum for them to be ABI compatible.
+The presence of an unnamed variant in an `enum` does not affect its CFI
+encoding.
+
+When using CFI, a `#[repr(transparent)]` newtype `struct` is ABI compatible with
+the underlying integer type, and not with any `enum` types.
 
 The [`cfi_encoding`] attribute overrides the symbol that distinguishes types for
-CFI. Depending on [how the C enums were compiled][libc-5066] and how CFI is
-configured, it may be necessary to set an explicit `cfi_encoding` to avoid
-causing CFI errors, like when replacing a `repr(transparent)` `struct` with an
-`enum`.
-
-`repr(Int)` `enum`s are defined as ABI compatible with `Int` and `repr(C)`
-`enum`s as ABI compatible with the target's chosen integer type for the enum.
-The presence of an unnamed variant in an `enum` does not affect its CFI
-encoding. This RFC does not otherwise define
-[how `repr(Int)` enums should interact with CFI][ucg-489].
+CFI and can indicate whether the enum is meant to interoperate with a C enum of
+the same name or the backing integer. This allows for an ABI compatible switch
+from newtype `struct` to open `enum`.
 
 [ucg-489]: https://github.com/rust-lang/unsafe-code-guidelines/issues/489
 [`cfi_encoding`]: https://doc.rust-lang.org/nightly/unstable-book/language-features/cfi-encoding.html
@@ -1928,6 +1940,10 @@ representing integers, which matches the C standard (C23 §6.7.3.3). However,
 to imply that it is ABI compatible with `Int`. What if `repr(transparent, Int)`
 could be specified to make it explicit that ABI compatibility with `Int` is
 required, including by CFI?
+
+This could also be inverted: `repr(Int)` is treated as CFI compatible with `Int`
+but `repr(C, Int)` is CFI compatible with a C `enum`. This would be confusing
+for `enum`s with fields, where the `C` also changes the layout of the type.
 
 The reason the RFC does not choose this is because `#[cfi_encoding]` and
 compiler flags can predictably override CFI behavior for cases where the
