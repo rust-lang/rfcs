@@ -105,9 +105,10 @@ Crates without an explicit dependency on the standard library now have a
 implicit dependency ([?][rationale-no-migration]) on that target's default set
 of standard library crates (see
 [build-std-always][rfcs#3874-standard-library-crate-stability]). Any explicit
-standard library dependency present in any dependency table will disable the
-implicit dependencies (e.g. an explicit `builtin` or `path` dependency from
-`std` will disable the implicit dependencies).
+standard library dependency present in any dependency table applicable to the
+current target will disable the implicit dependencies (e.g. an explicit
+`builtin` or `path` dependency from `std` will disable the implicit
+dependencies).
 
 > [!NOTE]
 >
