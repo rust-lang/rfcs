@@ -163,9 +163,10 @@ not always match that of `repr(C)` on a Rust `enum`. A future version of
 `bindgen` could use this feature to add a `_ = ..` variant to a Rust `enum`  by
 default, instead of a exposing a less-effective `non_exhaustive` attribute.
 
-Today, Rust for Linux configures `bindgen` to generate newtype integers. It
-would switch to using a first-class `enum` type if they were sound to use with
-an evolving C `enum`.
+Today, Rust for Linux configures `bindgen` to generate newtype integers and raw
+integers, based on if the enums are mapped to a `typedef` of the underlying
+integer type. It would switch to using a first-class `enum` type where
+possible if they were sound to use with an evolving C `enum`.
 
 [bindgen-enum-variation]: https://docs.rs/bindgen/0.72.1/bindgen/enum.EnumVariation.html
 
