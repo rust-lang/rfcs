@@ -269,7 +269,7 @@ To specify a version requirement on a package without using it, you can do:
 foo = "1.0.0"
 ```
 
-This would not work for feature activations.
+This works for version constraints but not feature activations.
 
 ### `peerDependencies`
 
