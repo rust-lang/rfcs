@@ -1174,8 +1174,8 @@ as:
 
 - `cargo pkgid` and `cargo build --message-format` will unconditionally use the
   new `pkgid` spec anyway;
-- `cargo_metadata` does not currently parse the pkgid spec so this won't break
-  all users;
+- [`cargo_metadata`][crate_metadata] does not currently parse the pkgid spec so
+  this won't break all users;
 - and this will also show up in the source which is still opaque and
   `cargo_metadata` does not parse
 
@@ -1184,6 +1184,8 @@ using `cargo-util-schemas` or their own parser, which is unlikely to be
 disruptive.
 
 ↩ [*Cargo subcommands*][cargo-subcommands]
+
+[crate_metadata]: https://crates.io/crates/cargo_metadata
 
 ## Prior art
 [prior-art]: #prior-art
