@@ -1557,6 +1557,28 @@ declaration.
 Unnamed variants use the same syntax to assign discriminants, except they do not
 have to have a name and thus can be assigned to discontiguous ranges.
 
+### `..` at the end
+
+```rust
+#[repr(u8)]
+enum IpProto {
+    Tcp = 6,
+    Udp = 17,
+
+    // "the rest of the variants exist"
+    ..
+}
+```
+
+- This is less flexible than `_ = ..`, is awkward to restrict to smaller or
+  discontiguous ranges, and introduces a larger syntax change.
+- This resembles the [rest pattern] more than the [full range expression] that
+  discriminants are assigned to and the [wildcard pattern] that it requires.
+
+[full range expression]: https://doc.rust-lang.org/reference/expressions/range-expr.html#grammar-RangeFullExpr
+[rest pattern]: https://doc.rust-lang.org/reference/patterns.html?#rest-patterns
+[wildcard pattern]: https://doc.rust-lang.org/reference/patterns.html?#wildcard-pattern
+
 ### Discriminant ranges for named variants instead of unnamed variants
 
 What if instead this were valid?
