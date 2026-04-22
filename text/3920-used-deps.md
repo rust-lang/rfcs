@@ -15,9 +15,10 @@ Rustc can report to Cargo
 [unused externs](https://doc.rust-lang.org/nightly/rustc/json.html#unused-dependency-notifications)
 which Cargo can aggregate and report back which dependencies are unused.
 
-However, not all dependencies exist for using their `extern` in the current package, including
+However, not all dependencies always use the `extern` in the current package, including
 - activating a feature on a transitive dependency
 - pinning the version of a transitive dependency in `Cargo.toml` (however, normally this would be done via `Cargo.lock` or `target."cfg(false)".dependencies`)
+- dependencies that are only used based on `RUSTFLAGS`/`build.rs` ([example](https://docs.rs/crate/curl/0.4.49/source/build.rs))
 
 The user needs a way to be able to augment what the compiler reports with their intentions.
 
@@ -197,6 +198,7 @@ Pros:
 
 Downsides:
 - Requires a comment to make sense of it
+- Does not help with dynamically used dependencies like with `curl`
 
 As an aside: is `lib` or `link` a more appropriate field name?
 
