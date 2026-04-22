@@ -317,9 +317,6 @@ edition = "2024"
 std = { builtin = true }
 
 [patch.builtin] # permitted on nightly
-std = { .. }
-
-[patch.builtin] # permitted on nightly
 std = { path = "../libstd" }
 ```
 
