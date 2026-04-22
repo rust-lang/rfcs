@@ -25,7 +25,9 @@ People in the Rust Project have diverse — and in some cases, strongly opposed 
 These sections are normative:
 
 - [Contribution policy for AI-generated work]
-- [Definitions, questions, and answers]
+- [Definitions]
+- [Applying the policy]
+- [Guidance]
 - [Normative sections]
 
 Other sections are not normative.
@@ -42,9 +44,13 @@ In all Rust Project spaces:
 - Submitting AI-generated work when you can't explain it to a reviewer is prohibited.
 - Feeding reviewer questions into an AI tool and proxying the output directly back is prohibited.
 
-## Definitions, questions, and answers
+<div id="definitions-questions-and-answers"></div>
 
-[Definitions, questions, and answers]: #definitions-questions-and-answers
+## Definitions
+
+[Definitions]: #definitions
+
+This section defines the meaning of terms used in the policy items.  As these definitions affect the meaning of those items, this section is part of the policy.
 
 ### What is AI-generated work?
 
@@ -74,6 +80,12 @@ Reviewers need to build a mental model of their own.  They may want to know abou
 
 Reviewers want to have a discussion with you, not with a tool.  They want to probe your mental model.  When a reviewer asks you questions, we need the answers to come from you.  If they come from a tool instead, then you're just a proxy.
 
+## Applying the policy
+
+[Applying the policy]: #applying-the-policy
+
+This section describes how to apply the policy to certain contribution patterns.  The analyses in these descriptions affect the interpretation of the policy and serve as precedents for how to apply the policy to other patterns and situations, so this section is normative.
+
 ### Does this policy ban vibecoding?
 
 This policy bans vibecoding.  Andrej Karpathy, who originated the term, [described](https://x.com/karpathy/status/1886192184808149383) *vibecoding* as:
@@ -97,6 +109,12 @@ This policy bans fully automated AI-generated contributions.  These are the wors
 If you created the work in a fully automated way, then you weren't in the loop, you can't have checked it with care, you can't have reason to believe you understand it, and you're not in a position to explain it to a reviewer without feeding the questions to the tool and proxying the output back.
 
 Violating even one of these policy items is enough to violate the policy.
+
+## Guidance
+
+[Guidance]: #guidance
+
+This section states the expectations we have of reviewers.  This is part of the policy and is normative.  It also gives guidance to contributors.  This guidance creates certain expectations of us and so is normative.  Finally, this section normatively guides how certain aspects of the policy are to be interpreted.
 
 ### When contributions appear to fall short of this policy, what do reviewers do?
 
@@ -150,14 +168,6 @@ If your contributions are rejected under this policy and reported to the moderat
 
 This policy applies to pull requests, issues, proposals in all forms, comments in all places, and all other means of contributing to the Rust Project.
 
-### By not banning use of AI tools, does this RFC endorse them?
-
-By not banning use of AI tools, this RFC does not endorse their use.  People in the Project have diverse views on generative AI and on its use.  This RFC takes no position — positive or negative — on the use of these tools beyond forbidding those things the policy prohibits.
-
-### Is this the final policy for contributions or for AI-assisted contributions?
-
-This policy is intended to solve the problem in front of us.  The world is moving quickly at the moment, and Project members are continuing to explore, investigate, learn, and discuss.  Other policies may be adopted later, and this RFC intends to be easy for other policies — of any nature — to build on.
-
 ### Does this policy require disclosure of the use of generative AI tools?
 
 This policy does not require disclosure of the use of generative AI tools.  This is a complex question on which Project members have diverse views and where members are continuing to explore, investigate, learn, and discuss.  Later policies may further address this.
@@ -180,11 +190,21 @@ At the same time, new contributors face additional challenges in using generativ
 
 ## Other questions and answers
 
+This section provides background, rationale for the design of the policy, and descriptions of what the policy does and does not do.  It is not normative.
+
 ### Does accepting AI-generated work risk our ability to redistribute Rust?
 
 What about the copyright situation?  Since this policy does not ban AI-generated work, does that risk our ability to redistribute Rust under our license?  Niko Matsakis [reports](https://nikomatsakis.github.io/rust-project-perspectives-on-ai/feb27-summary.html#the-legality-of-ai-usage):
 
 > On this topic, the Rust Project Directors consulted the Rust Foundation's legal counsel and they did not have significant concerns about Rust accepting LLM-generated code from a legal perspective.  Some courts have found that AI-generated code is not subject to copyright and it's expected that others will follow suit.  Any human-contributed original expression would be owned by the human author, but if that author is the contributor (or the modifications are licensed under an open source license), the situation is no different from any human-origin contribution.  However, this does not present a legal obstacle to us redistributing the code, because, as this code is not copyrighted, it can be freely redistributed.  Further, while it is possible for LLMs to generate code (especially small portions) that is identical to code in the training data, outstanding litigation has not revealed that this is a significant issue, and often such portions are too small or contain such limited originality that they may not qualify for copyright protection.
+
+### By not banning use of AI tools, does this RFC endorse them?
+
+By not banning use of AI tools, this RFC does not endorse their use.  People in the Project have diverse views on generative AI and on its use.  This RFC takes no position — positive or negative — on the use of these tools beyond forbidding those things the policy prohibits.
+
+### Is this the final policy for contributions or for AI-assisted contributions?
+
+This policy is intended to solve the problem in front of us.  The world is moving quickly at the moment, and Project members are continuing to explore, investigate, learn, and discuss.  Other policies may be adopted later, and this RFC intends to be easy for other policies — of any nature — to build on.
 
 ### Is requiring that contributors take care an acceptable policy item?
 
