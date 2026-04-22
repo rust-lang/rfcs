@@ -1934,6 +1934,29 @@ equivalent to `#[non_exhaustive]`. However, this is confusing for a syntax that
 describes ranges of variants: what does the range `_ = ..` actually cover? Is
 there still ABI compatibility?
 
+### Require `repr(transparent, Int)` on `enum` for ABI compatibility with `Int`
+
+This RFC defines ABI compatibility between `repr(Int/C)` enums and their
+representing integers, which matches the C standard (C23 §6.7.3.3). However,
+[CFI](#control-flow-integrity) may treat these as incompatible types and abort.
+
+`repr(Int)` on an `enum` specifies an explicit discriminant, but does not have
+to imply that it is ABI compatible with `Int`. What if `repr(transparent, Int)`
+could be specified to make it explicit that ABI compatibility with `Int` is
+required, including by CFI?
+
+The reason the RFC does not choose this is because `#[cfi_encoding]` and
+compiler flags can predictably override CFI behavior for cases where the
+distinction between `repr(transparent)` `struct` and open `enum` may matter.
+
+### Don't introduce a new `as` cast
+
+This RFC introduces new a `as` cast from integer to `enum` that _cannot_ cause
+data loss. While it would be excellent for Rust to provide a non-`as` mechanism
+to convert from integer to `enum` such as a `TryFrom` `derive`, such a mechanism
+should be provided for all `enum`s, not just those with unnamed fields as
+affected defined by this RFC.
+
 ## Prior art
 
 _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
