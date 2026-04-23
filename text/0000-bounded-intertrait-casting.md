@@ -389,11 +389,12 @@ pub trait TraitMetadataTable<SuperTrait>: MetaSized
 where
     SuperTrait: MetaSized + Pointee<Metadata = DynMetadata<SuperTrait>>,
 {
-    /// Retrieval is via a "virtual const" rather than a virtual
-    /// function call. The returned slice is a static array of all
-    /// trait vtables for this concrete type. Its order is
-    /// implementation-defined and unstable, but constant for a given
-    /// `SuperTrait`. Must not dereference any part of `self`.
+    /// The returned slice is a static array of all trait vtables for
+    /// this concrete type. Its order is implementation-defined and
+    /// unstable, but constant for a given `SuperTrait`. Must not
+    /// dereference any part of `self`. (Lowering this to a "virtual
+    /// const" rather than a virtual function call is a desired future
+    /// optimization; this RFC does not require it.)
     fn derived_metadata_table(&self) -> (&'static u8, NonNull<Option<NonNull<()>>>);
 }
 ```
