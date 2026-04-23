@@ -1018,14 +1018,11 @@ The `core::intrinsics::trait_metadata_*` intrinsics remain unstable
 indefinitely; user code reaches this feature exclusively through the
 stable `TraitCast` / `cast!` surface.
 
-### Compile-time rejection: pruning
+### Unreachable cast targets
 
-A cast whose target trait is not reached by any cast in the program
-is rejected at *compile time* (see *Diagnostics*), not at runtime.
-This is part of the stable contract: the rejection is deterministic
-given the full program text. The `unused_cast_target` lint handles
-the related case of a cast target whose slot exists but is
-unreachable (no concrete type implements it).
+The `unused_cast_target` lint handles the case of a cast target
+whose slot exists but is unreachable (no concrete type in the
+program implements it).
 
 ### Out-of-contract reliance
 
