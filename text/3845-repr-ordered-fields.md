@@ -41,13 +41,13 @@ But in some cases, these two roles are in tension due to platform's C layout not
 * On MSVC, a `repr(C, packed)` with `repr(align)` fields has special behavior: the inner `repr(align)` takes priority, so fields can be highly aligned even in a packed struct. (https://github.com/rust-lang/rust/issues/100743)
   (Rust tries to avoid this by forbidding `repr(align)` fields in `repr(packed)` structs, but that check is easily bypassed with generics.)
 * On MSVC-x32, `u64` fields are 8-aligned in structs, but the type is only 4-aligned when allocated on the stack. (https://github.com/rust-lang/rust/issues/112480)
-* On AIX, `f64` fields sometimes but not always get 8-aligned in structs. (https://github.com/rust-lang/rust/issues/151910)
+* On AIX, `f64` fields are sometimes, but not always, get 8-aligned in structs. (https://github.com/rust-lang/rust/issues/151910)
 
 These are all niche cases, but they add up.
 Furthermore, it is just fundamentally wrong for Rust to claim that `repr(C)` layout matches C code for the same target while also specifying an exact algorithm for `repr(C)`:
-the C standard does not prescribe any particular struct layout, so any target/ABI is in principle free to come up with whatever bespoke rules they like.
+the C standard does not prescribe any particular struct layout, so any target/ABI is in principle free to come up with whatever bespoke rules they like. This puts us in a similar position to `std::env::set_var`, where Rust claimed that it was thread-safe, the POSIX standard said it's not, and Rust had to do a breaking change to fix this.
 
-However, fixing this is hard because of (unsafe) code that relies on the other role of `repr(C)`, giving a deterministic layout.
+Fixing this is hard because of (unsafe) code that relies on the other role of `repr(C)`, giving a deterministic layout.
 We therefore cannot just "fix" `repr(C)`, we need some sort of transition plan.
 This code generally falls into one of these buckets:
 * rely on the exact layout being consistent across platforms
@@ -64,20 +64,23 @@ This breakage cannot be checked easily since it affects unsafe code making assum
 
 ### Guiding principle
 
-This RFC will require a large migration across the ecosystem. There are two major use-cases that are prioritized in this document
+This RFC will require a large migration across the ecosystem. There are two major use-cases that are prioritized in this document.
 * FFI-only crates, like `*-sys` crates or crates that expose a `C` interface
-    * these crates should ideally have to do no work. They want the fixed `repr(C)`
+    * These crates should ideally have to do no work. They want the fixed `repr(C)`
 * Pure Rust crates that don't rely on the C calling convention
     * This is for role 2, they typically don't want their layout changing from under them. So switching to `repr(ordered_fields)` will be the correct fix, with one exception: `enum`s with fields. This is likely a very small minority, since using `repr(C)` on an enum with fields is very niche, esp. because it's easy to get UB when using Rust enums with FFI. Also it is already possible to get a platform independent layout for enums, using `repr(u*)` and `repr(i*)`.
 
-There are a number of other use-cases which aren't put on a pedestal like these two. Many of them are detailed near the [end](#migration-examples) of this document.
+There are a number of other use-cases which aren't as highly prioritized like these two. Many of them are detailed near the [end](#migration-examples) of this document.
 
 For these other use-cases, this RFC should make it possible to upgrade to the new edition and get the behavior you want. But it may require more work or it may not look as pretty (after all the bikeshedding for this RFC is done).
+
+This is justified because it is expected that these two major cases will cover the vast majority of cases seen in the wild.
 
 ### Layout issues
 
 Before we delve into the proposed solution, we go into a little more detail about the aforementioned platform layout issues.
 Some of them cannot be solved with this RFC alone, but all of them have require some approach to split up the two roles of `repr(C)`.
+Since this RFC is trying to be the minimal fix to split `repr(C)`, any fix will either depend on this RFC or contain this RFC as part of the fix. Accepting this RFC will provide an incremental upgrade to the situation.
 
 ## MSVC: zero-length arrays
 
@@ -116,7 +119,7 @@ By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, pac
 
 ## MSVC-x32: u64 alignment
 
-Splitting `repr(C)` also allows making progress on dealing with the MSVC "quirk" [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480).
+Splitting `repr(C)` also allows making progress on dealing with the MSVC "quirk" [rust-lang/rust#112480](https://github.com/rust-lang/rust/issues/112480).
 
 The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8 bytes, and may instead only align them to 4 bytes.
 Our interpretation of this behavior is that `alignof` reports the *preferred* alignment (rather than the required alignment) for the type, and MSVC chooses to sometimes overalign `u64` fields in structs.
