@@ -132,6 +132,8 @@ $ # or ...
 $ cargo add some-package@1.3.0
 ```
 
+`cargo update` won't preserve the use of the new version after a `cargo generate-lockfile` while `cargo add` will.
+
 This is due to the `resolver.incompatible-publish-age = "fallback"` default which preserves your `Cargo.lock` and respects too-high of version requirements despite your minimum-release age.
 
 [1]: https://doc.rust-lang.org/cargo/reference/config.html
@@ -272,22 +274,41 @@ consistent with existing Cargo options, as described in [Related Options in Carg
 The term "publish" was used rather than "package", "version", or "release" to make it
 clear that this only applies to crates that are published in a registry.
 
+`publish` is redundant with this being in the `registry` table.
+This helps with the above disambiguation and for clarity in discussing this as a shorthand.
+
 `cooldown` was avoided due to term generally referring to throttling while we are looking for a certain maturity.
 
 ### `fallback` and `deny`
 
-We default `resolver.incompatible-publish-age` to `fallback` rather than `deny`
-and defer support for `deny` to future possibilities, because that allows
-users to easily override the minimum age for specific crates when necessary.
+`resolver.incompatible-publish-age` is starting with just support for `allow` and `fallback`, leaving `deny` for future consideration,
+because that allows users to easily override the minimum age for specific crates when necessary.
 
 Specifically, with `fallback` it is possible to override the minimum age behavior for
 specific crates by specifying a more specific version in `Cargo.toml`, or using `cargo update --precise`.
 
 Furthermore, with `fallback`, and the ability to override versions as mentioned above,
-it isn't as critical to have a way to list crates to exclude from the rule in configuration.
+we can defer support for an exclusion list as well,
+simplifying the design work we need to do now and being able to gather more requirements in case it becomes worth addressing in the future.
 
-We anticipate that `fallback` will be sufficient for most use cases, but the possibility of a `deny` option
-can be revisited if necessary.
+The one danger of `fallback` is that a malicious actor with the right permissions can publish a malicious version and yank the safe versions,
+bypassing the `min-publish-age`.
+
+### Timestamp vs duration
+
+Some prior art
+- exclusively use a timestamp
+- allow either a timestamp or a relative time within the same field
+
+While a timestamp has its uses
+(see [`--publish-time`](https://doc.rust-lang.org/cargo/reference/unstable.html#lockfile-publish-time)),
+it wouldn't be as ergonomic for this use case.
+
+Designing the field to support both would create a trap for users trying to reproduce a problem from the past in that they are likely to set the timestamp but overlook that they need to take the existing duration into account.
+Even if they do remember to take the existing duration into account,
+it would be more convenient if they can be set separately.
+
+Setting the timestamp to resolve to is left as a future possibility
 
 ### Per-registry configuration
 
@@ -307,6 +328,11 @@ Exclude lists tend to be used either for:
 - Marking a source as always trusted: we have this covered through per-registry configuration
 
 One problem with an exclude list is that they tend to be a static solution (all versions) for a transient problem (a subset of versions).
+This can lead people open to an attack after a high-value upgrade.
+We could make the exclude list use the [Package ID Spec](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html) format and even require a full version to be specified.
+
+Users likely will need to exclude transitive dependencies as well.
+For instance, to use a too-new version of `clap`, you may also need to exclude `clap_builder`, `clap_derive`, and `clap_lex`.
 
 An exclude list can always be added in the future if a strong enough use case presents itself.
 By delaying, we can also take into account any future changes.
@@ -469,3 +495,4 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
     - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
   - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
+- A `resolver.now` field for setting the time for which `min-publish-age` should be compared against
