@@ -32,6 +32,8 @@ fn parse_my_data(
 ) { }
 ```
 
+The parameter names should also show up on rustdoc.
+
 ### Benefit: Better LSP hints
 
 When calling `log` in the body of `parse_my_data`, the LSP can provide the function parameter names as "inlay parameter name hints":
