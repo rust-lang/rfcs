@@ -148,7 +148,7 @@ Note that this means that:
 [drawbacks]: #drawbacks
 
 * This makes the syntax of `impl Fn` and friends slightly more complicated
-* This makes the syntax of `impl Fn` and friends inconsistent with that of `fn` pointers.
+* This keeps the syntax of `impl Fn` and friends inconsistent with that of `fn` pointers, as to avoid the historic mistakes mentioned in the [reference level explanation](#reference-level-explanation).
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
