@@ -14,7 +14,7 @@ fn parse_my_data(
     log: impl Fn(msg: String, priority: usize)
 ) { }
 ```
-Similar to named function parameters, these names don't affect rust's semantics.
+Similar to named function pointer parameters, these names don't affect rust's semantics.
 
 ## Motivation
 [motivation]: #motivation
