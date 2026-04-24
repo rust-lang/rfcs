@@ -73,6 +73,16 @@ fn parse_my_data(
 ) { }
 ```
 
+This same syntax also applies to `Fn`, `FnMut` and `FnOnce` trait bounds, for example:
+```rust
+fn parse_my_data<
+    L: Fn(msg: String, priority: usize)
+>(
+    data: &str,
+    log: L
+) { }
+```
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
