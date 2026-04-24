@@ -1,6 +1,6 @@
-- Feature Name: `named_fn_trait_arguments`
+- Feature Name: `named_fn_trait_parameters`
 - Start Date: 2026-04-24
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3955](https://github.com/rust-lang/rfcs/pull/3955)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 ## Summary
