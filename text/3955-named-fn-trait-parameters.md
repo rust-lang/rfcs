@@ -92,30 +92,17 @@ The syntax `Fn`, `FnMut` and `FnOnce` traits is currently not documented in the 
 
 Before this RFC, the syntax rules are:
 ```grammar,types
-ImplTraitParen -> `impl` TraitBoundParen
+TypePathFn -> `(` TypePathFnInputs? `)` (`->` TypeNoBounds)?
 
-TraitBoundParen ->
-      ( `?` | ForLifetimes )? TypePath TraitBoundParenArgs
-    | `(` ( `?` | ForLifetimes )? TypePath TraitBoundParenArgs `)`
-    
-TraitBoundParenArgs -> `(` FunctionParametersNoAttr? `)` BareFunctionReturnType?
-
-FunctionParametersNoAttr ->
-    Type ( `,` Type )* `,`?
-    
-BareFunctionReturnType -> `->` TypeNoBounds
+TypePathFnInputs -> Type (`,` Type)* `,`?
 ```
 
-After this RFC, the following rules will change:
+After this RFC, the `TypePathFnInputs` rule will be replaced by:
 
 ```grammar,types
-TraitBoundParenArgs -> `(` MaybeNamedFunctionParametersNoAttr? `)` BareFunctionReturnType?
+TypePathFnInputs -> TypePathFnInput (`,` TypePathFnInput)* `,`?
 
-MaybeNamedFunctionParametersNoAttr ->
-    MaybeNamedParamNoAttr ( `,` MaybeNamedParamNoAttr )* `,`?
-    
-MaybeNamedParamNoAttr ->
-    ( ( IDENTIFIER | `_` ) `:` )? Type
+TypePathFnInput -> ( ( IDENTIFIER | `_` ) `:` )? Type
 ```
 
 Note that this means that:
