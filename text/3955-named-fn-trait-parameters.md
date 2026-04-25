@@ -107,13 +107,14 @@ Note that this means that:
 
 - Attributes are not allowed on parameters of these traits. This remains unchanged from the current situation. The following will not work:
   ```rust
-  fn test(x: impl Fn(#[allow(unused)] msg: String, priority: usize), y: usize) { }
+  fn test(x: impl Fn(#[cfg(...)] msg: String, priority: usize), y: usize) { }
   ```
   Note that attributes are already allowed on `fn` pointers:
   ```rust
-  fn test(x: fn(#[allow(unused)] msg: String, priority: usize), y: usize) { }
+  fn test(x: fn(#[cfg(...)] msg: String, priority: usize), y: usize) { }
   ```
-  The reason why attributes are not allowed is to keep this RFC and the implementation simple, and because I don't see a use for them.
+  The reason why attributes are not allowed is to keep this RFC and the implementation simple. 
+  Allowing attributes such as `#[cfg(...)]` could be useful, but is out of scope for this RFC.
   
 - This syntax does not match that of `fn` pointers exactly.
   For historic reasons, the following `fn` pointer type is allowed:
