@@ -7,10 +7,9 @@
 [summary]: #summary
 
 This proposal adds a new configuration option to cargo allowing users to specify a minimum age for dependency versions.
-When adding or updating a dependency, cargo will prefer versions of a registry crate that
-are older than the minimum age.
-`Cargo.lock`, version requirements, and `cargo update --precise` can bypass this, allowing
-for exceptions like for urgent security fixes.
+When specified, Cargo won't use a version of a registry crate
+that is newer than the minimum age,
+with a way to override for exceptions like urgent security fixes.
 
 An example configuration would be:
 
