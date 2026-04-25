@@ -276,20 +276,20 @@ This helps with the above disambiguation and for clarity in discussing this as a
 
 `cooldown` was avoided due to term generally referring to throttling while we are looking for a certain maturity.
 
-### `fallback` and `deny`
+### Starting with `deny`
 
-`resolver.incompatible-publish-age` is starting with just support for `allow` and `fallback`, leaving `deny` for future consideration,
-because that allows users to easily override the minimum age for specific crates when necessary.
+`resolver.incompatible-publish-age` starts with `allow` and `deny`.
+The `fallback` option is deferred to future consideration.
 
-Specifically, with `fallback` it is possible to override the minimum age behavior for
-specific crates by specifying a more specific version in `Cargo.toml`, or using `cargo update --precise`.
+Starting with `deny` rather than `fallback` closes the yank attack vector:
+with `fallback`, a malicious actor with the right permissions could publish a malicious version
+and yank the safe versions, forcing the resolver to fall back to the malicious too-new version.
+`deny` prevents this by erroring instead of falling back.
 
-Furthermore, with `fallback`, and the ability to override versions as mentioned above,
-we can defer support for an exclusion list as well,
-simplifying the design work we need to do now and being able to gather more requirements in case it becomes worth addressing in the future.
-
-The one danger of `fallback` is that a malicious actor with the right permissions can publish a malicious version and yank the safe versions,
-bypassing the `min-publish-age`.
+Unlike `resolver.incompatible-rust-versions` which starts with `fallback`,
+`deny` is viable here because `pubtime` data is exhaustive.
+crates.io sets it for every version once backfilled,
+so there are no gaps that would cause spurious errors.
 
 ### Timestamp vs duration
 
@@ -321,7 +321,7 @@ for different packages.
 ### Exclude list
 
 Exclude lists tend to be used either for:
-- Forcing a specific newer version: we have this covered through the `fallback` mechanism
+- Forcing a specific newer version: we have this covered through `cargo update --precise`
 - Marking a source as always trusted: we have this covered through per-registry configuration
 
 One problem with an exclude list is that they tend to be a static solution (all versions) for a transient problem (a subset of versions).
