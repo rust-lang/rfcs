@@ -142,7 +142,7 @@ Note that this means that:
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 * An alternative would be to match the `fn` pointer syntax perfectly. This would make the implementation more complicated, without much benefit other than consistency.
-* This needs to be implemented in the language, it cannot be provided by a macro or library as it 
+* This needs to be implemented in the language, it cannot be provided by a macro or library as it affects syntactic sugar of the language itself.
 * This makes Rust code easier to read, as it adds better ways to document function signatures.
 
 ## Prior art
