@@ -481,15 +481,16 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 ## Future Possibilities
 [future-possibilities]: #future-possibilities
 
-- Support "deny" for `resolver.incompatible-publish-age`.
-  - This is initially excluded, because it isn't clear how this should behave with respect to versions already in Cargo.lock, or use with the `--precise` flag.
-  - What would an error look like?
-  - How would you be able to override this for specific crates for important security updates, or for related crates that should be released at the same time?
+- Support `fallback` for `resolver.incompatible-publish-age`.
+  - With `fallback`, too-new versions would be deprioritized but still allowed as a last resort.
+  - This was not included initially because of the yank attack vector:
+    a malicious actor could yank safe versions and force the resolver to fall back to a too-new malicious version.
+  - May be useful for risk-tolerant workflows that prefer a degraded resolve over an error
+    when with other tool/mechanism help validating too-new versions are safe to use.
 - Add a way to specify that the minimum age doesn't apply to certain packages. For example, by having an array of crates that should always use the newest version.
   - The use case is solved through other means and we'll need to get runtime and gather use cases before deciding how to further evolve this
-  - The "I need a security fix now" use case is handled by  bumping versions in `Cargo.toml` and/or `Cargo.lock`
+  - The "I need a security fix now" use case is handled by `cargo update --precise` and bumping versions in `Cargo.toml`
   - The "I have a trusted package source" is handled by the making this configurable per-registry
     - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
-  - This may be more important if support for "deny" is added to `resolver.incompatible-publish-age`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
 - A `resolver.now` field for setting the time for which `min-publish-age` should be compared against
