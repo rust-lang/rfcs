@@ -49,11 +49,9 @@ Note that this is **not** a full solution to compromised dependencies. It can in
 [guide-level-explanation]: #guide-level-explanation
 
 The `registry.global-min-publish-age` [configuration option][1][^1] for Cargo can be used to specify a minimum age for published versions to use.
-When set, Cargo will select versions with a publish time ("pubtime") that is older than that duration,
-if possible.
-
-This is paired with `resolver.incompatible-publish-age` to control the behavior across all registries,
-whether to `allow` newer packages or only `fallback` to them when no others are available.
+When set, Cargo treats versions with a publish time ("pubtime") newer than that duration like yanked versions:
+Cargo will not use a too-new version unless it is already recorded in `Cargo.lock`,
+and will generate an error if there are no longer any compatible versions.
 
 For example, in your `<repo>/.cargo/config.toml`, you may have:
 
@@ -67,7 +65,7 @@ Running `cargo update` will look something like:
 $ cargo update
 Updating index
  Locking 1 package to recent Rust 1.60 compatible version
-  Adding some-package v1.2.3 (available: v1.6.0, published 2 days ago)
+  Adding some-package v1.2.3 (available: v1.3.0, published 2 days ago)
 ```
 
 While a CI job runs:
@@ -84,14 +82,11 @@ steps:
 ```
 
 This will mean that:
-- Locally, `cargo add foo` will default the version requirement on `foo` to be low enough to support the 7 day old package
-- Locally, `cargo update` will update your `Cargo.lock` to versions within the minimum-release age
-- This CI job will verify the latest versions of your dependencies
 
-Note: this check does not apply to
-- path dependencies
-- git dependencies
-- registries that do not include `pubtime` (crates.io supports it)
+- Locally, `cargo update` will only select versions older than the minimum publish age,
+  e.g., `some-package@1.2.3`
+- This CI job will verify the latest versions of your dependencies,
+  e.g., `some-package@1.3.0`
 
 ### Per-registry configuration
 
@@ -117,23 +112,37 @@ This will use a minimum publish age of
 - no minimum for `my-org`
 - 14 days for any other registry.
 
-### Using newer version
+### When no version matches
 
-In some cases, it may be desirable to use a version that is newer than the minimum publish age.
+If no version of a dependency satisfies both the version requirement and the minimum publish age,
+the resolve will error, similar to when all matching versions are yanked:
 
-Say `some-package` from [earlier](#guide-level-explanation) has a fix for a vulnerability in v1.3.0, you could do one of:
 ```console
-$ cargo update some-package --precise 1.3.0
-Updating index
- Locking 1 package to recent Rust 1.60 compatible version
-  Adding some-package v1.2.3 (published 10 days ago, available: v1.6.0, published 2 days ago)
-$ # or ...
-$ cargo add some-package@1.3.0
+$ cargo update
+error: failed to select a version for the requirement `some-package = "^1.3"`
+  version 1.3.0 is too new (published 2 days ago, minimum age 14 days)
 ```
 
-`cargo update` won't preserve the use of the new version after a `cargo generate-lockfile` while `cargo add` will.
+### Using newer versions
 
-This is due to the `resolver.incompatible-publish-age = "fallback"` default which preserves your `Cargo.lock` and respects too-high of version requirements despite your minimum-release age.
+In some cases, it may be desirable to use a version that is newer than the minimum publish age.
+For example, `some-package` from [earlier](#guide-level-explanation) has a fix for a vulnerability in v1.3.0.
+
+Since too-new versions follow yanked semantics,
+the same override mechanisms apply:
+
+```console
+$ cargo update some-package --precise 1.3.0
+warning: selected package `some-package@1.3.0` is too new
+  = note: published 2 days ago, minimum age 14 days
+    Updating some-package v1.2.3 -> v1.3.0
+```
+
+To record the intent more permanently,
+bump the version requirement in `Cargo.toml`.
+
+For a broader override, the `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow` environment variable
+disables the check entirely.
 
 [1]: https://doc.rust-lang.org/cargo/reference/config.html
 [^1]: As specified in `.cargo/config.toml` files
