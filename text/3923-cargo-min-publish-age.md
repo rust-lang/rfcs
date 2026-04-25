@@ -156,7 +156,7 @@ This RFC adds a few new configuration options to [cargo configuration](https://d
 
 ```toml
 [resolver]
-incompatible-publish-age = "fallback" # Specifies how resolver reacts to these
+incompatible-publish-age = "deny" # Specifies how resolver reacts to these
 
 [registries.<name>]
 min-publish-age = "..."  # Override `registry.global-min-publish-age` for this registry
@@ -171,16 +171,13 @@ global-min-publish-age = "0"  # Minimum time span allowed for packages from this
 #### `resolver.incompatible-publish-age`
 
 * Type: String
-* Default: `"fallback"`
+* Default: `"deny"`
 * Environment: `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE`
 
 When resolving the version of a dependency, specify the behavior for versions with a `pubtime` (if present) that is incompatible with `registry.min-publish-age`. Values include:
 
 * `allow`: treat pubtime-incompatible versions like any other version
-* `fallback`: only consider pubtime-incompatible versions if no other version matched
-
-If the value is `fallback`, then cargo will print a warning if no suitable version can be found and the resolver is forced to select a version that is newer
-than allowed by the appropriate `min-publish-age` setting.
+* `deny`: treat pubtime-incompatible versions like yanked versions
 
  See the [resolver](https://doc.rust-lang.org/cargo/reference/resolver.html#rust-version) chapter for more details.
 
@@ -235,23 +232,15 @@ Generally, `"0"`, `"N days"`, and `"N weeks"` will be used.
 
 In addition to what is specified above
 
-* `min-publish-age` only applies to dependencies fetched from a registry that publishes `pubtime`, such as crates.io.
+* Only applies to dependencies fetched from a registry that publishes `pubtime`, such as crates.io.
   * They do not apply to git or path dependencies, in
     part because there is not always an obvious publish time, or a way to find alternative versions.
   * They do not apply to registries that don't set `pubtime`, as there is no reliable way to know when the version was published.
-* If a specific version is explicitly specified in Cargo.toml, or on the command line, that has higher precedence than the publish time check,
-  and will be assumed to be valid.
-* `cargo add`
-  * If a version is not explicitly specified by the user and the package is fetched from a registry (not a path or git), the version requirement will default to one that includes a version compatible with `min-publish-age`
-* `cargo install`
-  * If a specific version is not specified by the user, respect `registries.min-publish-age` for the version of the crate itself,
-    as well as transitive dependencies when possible.
 * When resolving dependencies:
-  * Any crates updated from the registry will only consider versions published
-    before the time specified by the appropriate `min-publish-age` option.
-  * If the version of a crate in the lockfile is already newer than `min-publish-age`, then `cargo update` will not update that crate, nor will
-    it downgrade to an older version. It will leave the version as it is.
-  * Yanked status has higher precedence than `resolver.incompatible-publish-age`
+  * Pubtime-incompatible versions are not considered for new resolves,
+    but if already present in `Cargo.lock`, they are left in place.
+  * If no version satisfies both the version requirement and the minimum publish age,
+    the resolve will error.
   * Precedence with `resolver.incompatible-rust-version` is unspecified (but `resolver.incompatible-rust-version` will likely have higher precedence)
   * A status message will be printed when selecting a non-latest version as well for incompatible versions.
 * `cargo update` specifically:
