@@ -461,7 +461,7 @@ Some precedents in Cargo
 
 > * Sets registry specific values
 
-`yanked`: can't do new resolves to it but left in if already there. Unstable support to force it with `--precise` but that doesn't apply recursively.
+`yanked`: can't do new resolves to it but left in if already there. `--precise` can force it but that doesn't apply recursively.
 
 pre-release: requires opt-in through version requirement. Unstable support to force it with `--precise` but that doesn't apply recursively.
 
