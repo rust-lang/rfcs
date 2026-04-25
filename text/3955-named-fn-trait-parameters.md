@@ -103,40 +103,54 @@ TypePathFnInputs -> TypePathFnInput (`,` TypePathFnInput)* `,`?
 TypePathFnInput -> ( ( IDENTIFIER | `_` ) `:` )? Type
 ```
 
-Note that this means that:
+Below are two chapters on some design tradeoffs made here.
 
-- Attributes are not allowed on parameters of these traits. This remains unchanged from the current situation. The following will not work:
-  ```rust
-  fn test(x: impl Fn(#[cfg(...)] msg: String, priority: usize), y: usize) { }
-  ```
-  Note that attributes are already allowed on `fn` pointers:
-  ```rust
-  fn test(x: fn(#[cfg(...)] msg: String, priority: usize), y: usize) { }
-  ```
-  The reason why attributes are not allowed is to keep this RFC and the implementation simple. 
-  Allowing attributes such as `#[cfg(...)]` could be useful, but is out of scope for this RFC.
+### Attributes are not allowed on parenthesized generic argument lists
+Attributes are not allowed on parameters of these traits. This remains unchanged from the current situation. The following will not work:
+```rust
+fn test(x: impl Fn(#[cfg(...)] msg: String, priority: usize), y: usize) { }
+```
+Note that attributes are already allowed on `fn` pointers:
+```rust
+fn test(x: fn(#[cfg(...)] msg: String, priority: usize), y: usize) { }
+```
+The reason why attributes are not allowed is to keep this RFC and the implementation simple.
+Allowing attributes such as `#[cfg(...)]` could be useful, but is out of scope for this RFC.
+This choice is the most safe and conservative choice, attributes could be allowed in the future.
   
-- This syntax does not match that of `fn` pointers exactly.
-  For historic reasons, the following `fn` pointer type is allowed:
-  ```rust
-  #[cfg(false)]
-  type T = fn(mut x: (), &x: (), &&x: (), false: (), &_: (), &true: ());
-  ```
-  But this RFC proposes that the following `impl Fn` type is not allowed:
+### Patterns are not allowed in parenthesized generic argument lists
+This syntax is not consistent with other features in the language.
+The names of function parameters are limited to ``IDENTIFIER | `_` ``.
+This choice is made because it is the most safe and conservative choice, keeping the option open to allow patterns in the future if desired.
+Below is a comparison with two other language features:  
 
-  ```rust
-  #[cfg(false)]
-  impl Fn(mut x: (), &x: (), &&x: (), false: (), &_: (), &true: ());
-  ```
+#### `fn` pointers
+This is unlike `fn` pointers, which allows a `RestrictedPat` (and then semantically rejects anything other than identifiers).
+Therefore, the following program compiles:
+```rust
+#[cfg(false)]
+type F = fn(mut x: (), &x: (), &&x: (), false: (), &_: (), &true: ());
+```
+```
+RestrictedPat = Ident | "&" Ident | "&&" Ident | "mut" CommonIdent;
+Ident = CommonIdent | ReservedIdent (* includes `_`, `false`, `true` *)
+```
 
-  The names of function parameters are limited to ``IDENTIFIER | `_` ``.
-  The reason why we don't match the syntax of `fn` pointer types is because the syntax was a historic mistake and we should not repeat that.
+#### trait functions without bodies 
+This is also unlike trait functions without bodies. Arbitrary patterns are allowed (and then semantically anything other than identifiers is rejected).
+Therefore, the following program compiles:
+```rust
+#[cfg(false)]
+trait Test {
+    fn x((x, y): usize);
+}
+```
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
 * This makes the syntax of `impl Fn` and friends slightly more complicated
-* This keeps the syntax of `impl Fn` and friends inconsistent with that of `fn` pointers, as to avoid the historic mistakes mentioned in the [reference level explanation](#reference-level-explanation).
+* This keeps the syntax of `impl Fn` and friends inconsistent with that of `fn` pointers nor functions in trait definitions, for the reasoning about this see  [reference level explanation](#reference-level-explanation).
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
