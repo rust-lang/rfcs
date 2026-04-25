@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-Allow (optional) named function parameters in `Fn`, `FnMut`, and `FnOnce`.
+Allow (optional) named function parameters in parenthesized generic argument lists, such as those of `Fn`, `FnMut`, `FnOnce`, `AsyncFn`, `AsyncFnMut`, and `AsyncFnOnce`.
 For example:
 ```rust
 fn parse_my_data(
@@ -65,7 +65,7 @@ Note that the syntax for this feature does not exactly match that of `fn` pointe
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-You can give names to parameters in the `Fn`, `FnMut` and `FnOnce` traits to better document the meaning of these parameters, to help people who call your function.
+You can give names to parameters to the `Fn` trait and its friends to better document the meaning of these parameters, to help people who call your function.
 These names are optional and don't have any semantic meaning. Named and unnamed parameters can be mixed, for example:
 
 ```rust
@@ -75,7 +75,7 @@ fn parse_my_data(
 ) { }
 ```
 
-This same syntax also applies to `Fn`, `FnMut` and `FnOnce` trait bounds, for example:
+This same syntax also applies to trait bounds, for example:
 ```rust
 fn parse_my_data<
     L: Fn(msg: String, priority: usize)
@@ -88,9 +88,7 @@ fn parse_my_data<
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The syntax `Fn`, `FnMut` and `FnOnce` traits is currently not documented in the reference. 
-
-Before this RFC, the syntax rules are:
+Before this RFC, the syntax rules of parenthesized generic argument lists are:
 ```grammar,types
 TypePathFn -> `(` TypePathFnInputs? `)` (`->` TypeNoBounds)?
 
