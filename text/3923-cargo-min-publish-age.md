@@ -465,8 +465,6 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 ## Unresolved Questions
 [unresolved-questions]: #unresolved-questions
 
-* When a version requirement is incompatible with minimum-release age, should we pick the oldest or newest version?
-* Should we name this to also cover the [`cargo generate-lockfile --publish-time`](https://github.com/rust-lang/cargo/issues/16271) use case?
 * Would it be better to have `registry.min-publish-age` be the global setting, and `registries.crates-io.min-publish-age` be the setting for the crates.io registry?
   The current proposal is based on precedent of "credential-provider" and "global-credential-provider", but perhaps we shouldn't follow that precedent?
 * How do we make it clear when things are held back?
@@ -474,8 +472,8 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
   * We list MSRVs for unselected packages, should we also list publish times? I'm assuming that should be in local time
   * Locking message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) is in UTC time, see [Tracking Issue for _lockfile-publish-time_ #16271](https://github.com/rust-lang/cargo/issues/16271), when relative time differences likely make local time more relevant
 * Implementation wise, will there be much complexity in getting per registry information into `VersionPreferences` and using it?
-* `fallback` precedence between this and `incompatible-rust-version`?
-  * Most likely, `incompatible-rust-version` should have higher precedence to increase the chance of builds succeeding.
+* `deny` precedence between this and `incompatible-rust-version`?
+  * Both produce errors, but `incompatible-rust-version` will likely be evaluated first to increase the chance of builds succeeding.
 * Can we, and should we make any guarantees about security when using this feature, such as "a release of a malicious version of a crate will not compromise the build
 
 ## Future Possibilities
