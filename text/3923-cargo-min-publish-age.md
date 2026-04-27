@@ -104,7 +104,7 @@ For example:
 ```toml
 [registries.my-org]
 index = "https://my.org"
-min-publish-age = 0 # this registry is fully trusted
+min-publish-age = "0" # this registry is fully trusted
 
 [registry]
 # Default for any registry without a specific value
@@ -208,7 +208,7 @@ than allowed by the appropriate `min-publish-age` setting.
  * An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”
  * `"0"` to allow all packages
 
-Generally, `0`, `"N days"`, and `"N weeks"` will be used.
+Generally, `"0"`, `"N days"`, and `"N weeks"` will be used.
 
 #### `registry.global-min-publish-age`
 
