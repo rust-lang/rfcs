@@ -279,17 +279,21 @@ This helps with the above disambiguation and for clarity in discussing this as a
 ### Starting with `deny`
 
 `resolver.incompatible-publish-age` starts with `allow` and `deny`.
-The `fallback` option is deferred to future consideration.
-
-Starting with `deny` rather than `fallback` closes the yank attack vector:
-with `fallback`, a malicious actor with the right permissions could publish a malicious version
-and yank the safe versions, forcing the resolver to fall back to the malicious too-new version.
-`deny` prevents this by erroring instead of falling back.
 
 Unlike `resolver.incompatible-rust-versions` which starts with `fallback`,
 `deny` is viable here because `pubtime` data is exhaustive.
 crates.io sets it for every version once backfilled,
 so there are no gaps that would cause spurious errors.
+
+A `fallback` option would deprioritize too-new versions but still allow them as a last resort.
+This is deferred because it opens the yank attack vector:
+a malicious actor with right permissions could publish a malicious version and yank the safe versions.
+It then forces the resolver to fall back to the malicious too-new version.
+`deny` prevents this by erroring instead of falling back.
+
+`fallback` may be useful in the future for risk-tolerant workflows
+that prefer a degraded resolve over an error,
+particularly when combined with other tools that validate pubtime-incompatible versions.
 
 ### Timestamp vs duration
 
@@ -483,12 +487,8 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 ## Future Possibilities
 [future-possibilities]: #future-possibilities
 
-- Support `fallback` for `resolver.incompatible-publish-age`.
-  - With `fallback`, too-new versions would be deprioritized but still allowed as a last resort.
-  - This was not included initially because of the yank attack vector:
-    a malicious actor could yank safe versions and force the resolver to fall back to a too-new malicious version.
-  - May be useful for risk-tolerant workflows that prefer a degraded resolve over an error
-    when with other tool/mechanism help validating too-new versions are safe to use.
+- Support `fallback` for `resolver.incompatible-publish-age`
+  (see [Starting with `deny`](#starting-with-deny) for why this is deferred).
 - Add an exclude list for `min-publish-age`
   (see [Exclude list](#exclude-list) for why this is deferred).
 - When all compatible older-than-min-age versions are yanked
