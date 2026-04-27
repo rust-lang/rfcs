@@ -490,5 +490,8 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
   - The "I need a security fix now" use case is handled by `cargo update --precise` and bumping versions in `Cargo.toml`
   - The "I have a trusted package source" is handled by the making this configurable per-registry
     - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
+- When all compatible older-than-min-age versions are yanked
+  and a newer non-yanked version exists,
+  Cargo could alert the user that they may want to override with `--precise`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
 - A `resolver.now` field for setting the time for which `min-publish-age` should be compared against
