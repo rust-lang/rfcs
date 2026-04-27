@@ -494,4 +494,6 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
   and a newer non-yanked version exists,
   Cargo could alert the user that they may want to override with `--precise`.
 - Potentially support other source of publish time besides the `pubtime` field from a cargo registry.
-- A `resolver.now` field for setting the time for which `min-publish-age` should be compared against
+- A `resolver.now` field for setting the reference time that `min-publish-age` is compared against.
+  This could be useful for offline workflows where wall-clock time keeps advancing
+  but the registry index may be stale.
