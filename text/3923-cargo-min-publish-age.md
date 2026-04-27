@@ -326,6 +326,10 @@ Exclude lists tend to be used either for:
 
 One problem with an exclude list is that they tend to be a static solution (all versions) for a transient problem (a subset of versions).
 This can lead people open to an attack after a high-value upgrade.
+An exclude list of just names is helpful for "I have a trusted package source" scenario,
+but less so for "I need a security fix now".
+The user must remember to remove the exclusion once it is no longer needed,
+or they lose protection for future versions of that package.
 We could make the exclude list use the [Package ID Spec](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html) format and even require a full version to be specified.
 
 Users likely will need to exclude transitive dependencies as well.
@@ -485,11 +489,8 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
     a malicious actor could yank safe versions and force the resolver to fall back to a too-new malicious version.
   - May be useful for risk-tolerant workflows that prefer a degraded resolve over an error
     when with other tool/mechanism help validating too-new versions are safe to use.
-- Add a way to specify that the minimum age doesn't apply to certain packages. For example, by having an array of crates that should always use the newest version.
-  - The use case is solved through other means and we'll need to get runtime and gather use cases before deciding how to further evolve this
-  - The "I need a security fix now" use case is handled by `cargo update --precise` and bumping versions in `Cargo.toml`
-  - The "I have a trusted package source" is handled by the making this configurable per-registry
-    - Note: an exclude list of just names is helpful for "I have a trusted package source" but an attack vector for "I need a security fix now" because it leaves it to the user to remove it once it is no longer needed
+- Add an exclude list for `min-publish-age`
+  (see [Exclude list](#exclude-list) for why this is deferred).
 - When all compatible older-than-min-age versions are yanked
   and a newer non-yanked version exists,
   Cargo could alert the user that they may want to override with `--precise`.
