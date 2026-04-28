@@ -138,8 +138,16 @@ warning: selected package `some-package@1.3.0` is too new
     Updating some-package v1.2.3 -> v1.3.0
 ```
 
-To record the intent more permanently,
-bump the version requirement in `Cargo.toml`.
+A limitation of `cargo update --precise` is that you can only force the use of that one package
+but it may have dependencies on new versions as well.
+You can temporarily disable the check to accomplish this:
+
+```console
+$ CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow cargo update clap --precise 4.5.3
+Updating clap 4.3.0 -> 4.5.3 (published 2 days ago, minimum age 14 days)
+Updating clap_derive 4.3.0 -> 4.5.3 (published 2 days ago, minimum age 14 days)
+Updating clap_builder 4.3.0 -> 4.5.3 (published 2 days ago, minimum age 14 days)
+```
 
 For a broader override, the `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow` environment variable
 disables the check entirely.
