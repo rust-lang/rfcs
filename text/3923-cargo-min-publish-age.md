@@ -128,19 +128,8 @@ error: failed to select a version for the requirement `some-package = "^1.3"`
 In some cases, it may be desirable to use a version that is newer than the minimum publish age.
 For example, `some-package` from [earlier](#guide-level-explanation) has a fix for a vulnerability in v1.3.0.
 
-Since too-new versions follow yanked semantics,
-the same override mechanisms apply:
-
-```console
-$ cargo update some-package --precise 1.3.0
-warning: selected package `some-package@1.3.0` is too new
-  = note: published 2 days ago, minimum age 14 days
-    Updating some-package v1.2.3 -> v1.3.0
-```
-
-A limitation of `cargo update --precise` is that you can only force the use of that one package
-but it may have dependencies on new versions as well.
-You can temporarily disable the check to accomplish this:
+The `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow` environment variable
+can temporarily disable the check:
 
 ```console
 $ CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow cargo update clap --precise 4.5.3
@@ -149,8 +138,7 @@ Updating clap_derive 4.3.0 -> 4.5.3 (published 2 days ago, minimum age 14 days)
 Updating clap_builder 4.3.0 -> 4.5.3 (published 2 days ago, minimum age 14 days)
 ```
 
-For a broader override, the `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow` environment variable
-disables the check entirely.
+Once the versions are recorded in `Cargo.lock`, subsequent resolves will keep them.
 
 [1]: https://doc.rust-lang.org/cargo/reference/config.html
 [^1]: As specified in `.cargo/config.toml` files
@@ -356,7 +344,7 @@ for different packages.
 ### Exclude list
 
 Exclude lists tend to be used either for:
-- Forcing a specific newer version: we have this covered through `cargo update --precise`
+- Forcing a specific newer version: we have this covered through `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow` combined with `cargo update --precise`
 - Marking a source as always trusted: we have this covered through per-registry configuration
 
 One problem with an exclude list is that they tend to be a static solution (all versions) for a transient problem (a subset of versions).
