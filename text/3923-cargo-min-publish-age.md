@@ -162,7 +162,7 @@ incompatible-publish-age = "deny" # Specifies how resolver reacts to these
 min-publish-age = "..."  # Override `registry.global-min-publish-age` for this registry
 
 [registry]
-min-publish-age = "0"  # Override `registry.global-min-publish-age` for crates.io
+min-publish-age = "..."  # Override `registry.global-min-publish-age` for crates.io
 global-min-publish-age = "0"  # Minimum time span allowed for packages from this registry
  ```
 
