@@ -480,6 +480,12 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
   * We list MSRVs for unselected packages, should we also list publish times? I'm assuming that should be in local time
   * Locking message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) is in UTC time, see [Tracking Issue for _lockfile-publish-time_ #16271](https://github.com/rust-lang/cargo/issues/16271), when relative time differences likely make local time more relevant
 * Implementation wise, will there be much complexity in getting per registry information into `VersionPreferences` and using it?
+* Is `resolver.incompatible-publish-age` needed at all?
+  Setting `registry.global-min-publish-age = "0"` achieves the same as `resolver.incompatible-publish-age = "allow"`.
+  The resolver setting provides a clearer intent for transient overrides
+  and a path to `fallback` in the future, but adds configuration complexity,
+  especially if we never expand the values beyond "allow" and "deny".
+  The resolver setting also doesn't support per-registry config.
 * `deny` precedence between this and `incompatible-rust-version`?
   * Both produce errors, but `incompatible-rust-version` will likely be evaluated first to increase the chance of builds succeeding.
 * Can we, and should we make any guarantees about security when using this feature, such as "a release of a malicious version of a crate will not compromise the build
