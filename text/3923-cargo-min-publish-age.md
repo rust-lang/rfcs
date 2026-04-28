@@ -267,6 +267,8 @@ In addition to what is specified above
 ## Drawbacks
 [drawbacks]: #drawbacks
 
+### Slower problem discovery
+
 The biggest drawback is that if this is widely used, it could potentially lead to it taking longer for problems to be discovered after a version is published.
 However, most likely, there will be a spread of values used, depending on risk tolerance, and hopefully the result is actually that there will be a more gradual rollout in most
 cases.
@@ -274,6 +276,13 @@ cases.
 Also, even if all users of a crate set a minimum publish age there is still value in a delay, because it provides time for automated security scanners, and human reviewers
 to review the changes before the new version is pulled in by updates. And in the case of a malicious release made using compromised credentials, it give the actual developer
 time to realize their credentials have been compromised and yank the version before it is widely used.
+
+### Disjoint resolver config values
+
+`resolver.incompatible-publish-age` supports `allow`/`deny`
+while `resolver.incompatible-rust-versions` supports `allow`/`fallback`,
+which may be confusing.
+See [Starting with `deny`](#starting-with-deny) for why the value sets differ.
 
 ## Rationale and Alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
