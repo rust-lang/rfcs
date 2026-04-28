@@ -499,6 +499,14 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 ## Unresolved Questions
 [unresolved-questions]: #unresolved-questions
 
+### Before RFC acceptance
+
+* Can we, and should we, make any guarantees about security when using this feature,
+  such as "a malicious version of a crate will not compromise the build
+  if published within the minimum publish age window"?
+
+### Before stabilization
+
 * Would it be better to have `registry.min-publish-age` be the global setting, and `registries.crates-io.min-publish-age` be the setting for the crates.io registry?
   The current proposal is based on precedent of "credential-provider" and "global-credential-provider", but perhaps we shouldn't follow that precedent?
 * How do we make it clear when things are held back?
@@ -508,9 +516,6 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 * Implementation wise, will there be much complexity in getting per registry information into `VersionPreferences` and using it?
 * `deny` precedence between this and `incompatible-rust-version`?
   * Both produce errors, but `incompatible-rust-version` will likely be evaluated first to increase the chance of builds succeeding.
-* Can we, and should we, make any guarantees about security when using this feature,
-  such as "a malicious version of a crate will not compromise the build
-  if published within the minimum publish age window"?
 
 ## Future Possibilities
 [future-possibilities]: #future-possibilities
