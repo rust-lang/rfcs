@@ -303,6 +303,11 @@ It then forces the resolver to fall back to the malicious too-new version.
 `fallback` may be useful in the future for risk-tolerant workflows
 that prefer a degraded resolve over an error,
 particularly when combined with other tools that validate pubtime-incompatible versions.
+It would also help with `cargo update --precise` for packages with transitive dependencies.
+For example,
+`CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=fallback cargo update clap --precise 4.5.3`
+would pull in only the necessary too-new transitive dependencies
+rather than disabling the check entirely with `allow`.
 
 ### Timestamp vs duration
 
