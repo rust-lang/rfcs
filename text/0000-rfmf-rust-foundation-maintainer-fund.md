@@ -290,6 +290,10 @@ Maintainers in Residence can work substantial part-time — the key requirement 
 
 That's outside the scope of the RFMF, which is undirected funding — sponsors contribute to a general fund and the Leadership Council decides how to deploy it. A companion effort, the proposed Project Goals Funding program (see [Future possibilities][#future-possibilities]), is designed for exactly this: sponsors direct funding at specific Project Goals, and the Foundation issues grants to advance that work. Sponsors seeking that level of direction should look there rather than the RFMF.
 
+## Why would a company fund the RFMF instead of hiring a maintainer directly?
+
+During the [discussion on the RFC](https://github.com/rust-lang/rfcs/pull/3931#r2943144693), the question was raised as to what incentive companies have to pay into the (project-controlled) RFMF versus hiring a maintainer directly. If companies wish to hire maintainers directly, we think that is great. However, our experience is that the incentives at companies tend to reward *contribution* more than *maintenance*, as contribution has more visible value to the company; but contribution without maintenance doesn't work, and as a result many company's efforts to contribute to Rust wind up stalled. The intention for the RFMF is to give companies a price-effective way to share the cost of maintenance by pooling funds. In so doing, they both help ensure Rust's continued improvement *and* make it easier for their own contributions to be accepted (since there are maintainers to review them).
+
 ### Why are RFMF funds dedicated to maintainers?
 
 Sponsors contributing to the RFMF want to know their money is going directly to fund maintainers. Dedicating the funds gives the fund a clear value proposition: every dollar goes to paying people who maintain Rust. Without this restriction, the Leadership Council could use RFMF funds for any purpose — travel grants, event sponsorship, infrastructure — all valuable, but harder to explain to a company evaluating its return on investment. Since money is fungible, dedicating RFMF funds to maintainers frees up budget for other purposes.
