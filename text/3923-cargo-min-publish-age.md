@@ -49,7 +49,7 @@ Note that this is **not** a full solution to compromised dependencies. It can in
 [guide-level-explanation]: #guide-level-explanation
 
 The `registry.global-min-publish-age` [configuration option][1][^1] for Cargo can be used to specify a minimum age for published versions to use.
-When set, Cargo treats versions with a publish time ("pubtime") newer than that duration like yanked versions:
+When set, Cargo treats versions with a publish time ("pubtime") newer than that duration:
 Cargo will not use a too-new version unless it is already recorded in `Cargo.lock`,
 and will generate an error if there are no longer any compatible versions.
 
@@ -173,9 +173,9 @@ global-min-publish-age = "0"  # Minimum time span allowed for packages from this
 When resolving the version of a dependency, specify the behavior for versions with a `pubtime` (if present) that is incompatible with `registry.min-publish-age`. Values include:
 
 * `allow`: treat pubtime-incompatible versions like any other version
-* `deny`: treat pubtime-incompatible versions like yanked versions
+* `deny`: ignore pubtime-incompatible versions unless they already exist in the lock file
 
- See the [resolver](https://doc.rust-lang.org/cargo/reference/resolver.html#rust-version) chapter for more details.
+See the resolver chapter for more details.
 
 ### Added to [`[registries]`](https://doc.rust-lang.org/cargo/reference/config.html#registries)
 
@@ -224,33 +224,40 @@ Generally, `"0"`, `"N days"`, and `"N weeks"` will be used.
 * An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”
 * `"0"` to allow all packages
 
-### Behavior
+### Added to [Resolver](https://doc.rust-lang.org/cargo/reference/resolver.html)
 
-In addition to what is specified above
+_"Pubtime-incompatible versions" as a sibling section to [Yanked versions]_
 
-* Only applies to dependencies fetched from a registry that publishes `pubtime`, such as crates.io.
-  * They do not apply to git or path dependencies, in
-    part because there is not always an obvious publish time, or a way to find alternative versions.
-  * They do not apply to registries that don't set `pubtime`, as there is no reliable way to know when the version was published.
-  * For [source replacement],
-    registry mirrors are expected to preserve `pubtime` from the index to be applicable.
-    Local registries and directory (vendored) sources typically don't have `pubtime`,
-    so the check does not apply.
-* When resolving dependencies,
-  pubtime-incompatible versions follow the same rules as [yanked versions]:
-  * They are not considered for new resolves,
-    but if already present in `Cargo.lock`, they are left in place.
-  * If no version satisfies both the version requirement and the minimum publish age,
-    the resolve will error.
-  * A status message will be printed when selecting a non-latest version
-    as well for incompatible versions.
-  * [`cargo update --precise`] can override the policy,
-    just as it can select a yanked version.
-  * `cargo install` skips pubtime-incompatible versions as well
+Versions with a publish time newer than the configured [`min-publish-age`]
+are considered pubtime-incompatible.
+When [`resolver.incompatible-publish-age`] is set to `deny`,
+the resolver will ignore these versions
+unless they already exist in the `Cargo.lock` file.
+Setting the config to `allow` would disables the check,
+which if combined with `cargo update --precise`,
+cargo would pull in a specific version and its transitive dependencies.
+
+[`resolver.incompatible-publish-age`]: config.md#resolverincompatible-publish-age
+[`min-publish-age`]: config.md#registryglobal-min-publish-age
+[Yanked versions]: https://doc.rust-lang.org/cargo/reference/resolver.html#yanked-versions
+
+### Applicability
+
+The minimum publish age check applies to the following dependency sources:
+
+* Dependencies fetched from a registry that publishes `pubtime`, such as crates.io.
+* Does not apply to git or path dependencies,
+  in part because there is not always an obvious publish time,
+  or a way to find alternative versions.
+* Does not apply to registries that don't set `pubtime`,
+  as there is no reliable way to know when the version was published.
+* For [source replacement],
+  registry mirrors are expected to preserve `pubtime` from the index to be applicable.
+  Local registries and directory (vendored) sources typically don't have `pubtime`,
+  so the check does not apply.
+* `cargo install` also skips pubtime-incompatible versions.
 
 [source replacement]: https://doc.rust-lang.org/cargo/reference/source-replacement.html
-[yanked versions]: https://doc.rust-lang.org/cargo/reference/resolver.html#yanked-versions
-[`cargo update --precise`]: https://doc.rust-lang.org/cargo/commands/cargo-update.html#option-cargo-update---precise
 
 ## Drawbacks
 [drawbacks]: #drawbacks
