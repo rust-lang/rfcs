@@ -250,6 +250,7 @@ In addition to what is specified above
     as well for incompatible versions.
   * [`cargo update --precise`] can override the policy,
     just as it can select a yanked version.
+  * `cargo install` skips pubtime-incompatible versions as well
 
 [source replacement]: https://doc.rust-lang.org/cargo/reference/source-replacement.html
 [yanked versions]: https://doc.rust-lang.org/cargo/reference/resolver.html#yanked-versions
