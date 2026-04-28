@@ -200,7 +200,7 @@ See the resolver chapter for more details.
 
 * Type: String
 * Default: none
-* Environment: `CARGO_REGISTRY_<name>_MIN_PUBLISH_AGE`
+* Environment: `CARGO_REGISTRY_MIN_PUBLISH_AGE`
 
  Specifies the minimum timespan since a version's `pubtime` that it may be considered for `resolver.incompatible-publish-age` for packages from crates.io not set, `registry.global-min-publish-age` will be used.
 
@@ -215,7 +215,7 @@ Generally, `"0"`, `"N days"`, and `"N weeks"` will be used.
 
 * Type: String
 * Default: `"0"`
-* Environment: `CARGO_GLOBAL_REGISTRY_<name>_MIN_PUBLISH_AGE`
+* Environment: `CARGO_REGISTRY_GLOBAL_MIN_PUBLISH_AGE`
 
  Specifies the global minimum timespan since a version's `pubtime` that it may be considered for `resolver.incompatible-publish-age` for packages. If `min-publish-age` is not set for a specific registry using `registries.<name>.min-publish-age`, Cargo will use this minimum publish age.
 
