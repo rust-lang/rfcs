@@ -245,7 +245,6 @@ In addition to what is specified above
     but if already present in `Cargo.lock`, they are left in place.
   * If no version satisfies both the version requirement and the minimum publish age,
     the resolve will error.
-  * Precedence with `resolver.incompatible-rust-version` is unspecified (but `resolver.incompatible-rust-version` will likely have higher precedence)
   * A status message will be printed when selecting a non-latest version as well for incompatible versions.
 * `cargo update` specifically:
   * If `--precise` is used, that version will be used, even if it
