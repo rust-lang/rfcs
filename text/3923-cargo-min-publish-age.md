@@ -236,6 +236,10 @@ In addition to what is specified above
   * They do not apply to git or path dependencies, in
     part because there is not always an obvious publish time, or a way to find alternative versions.
   * They do not apply to registries that don't set `pubtime`, as there is no reliable way to know when the version was published.
+  * For [source replacement],
+    registry mirrors are expected to preserve `pubtime` from the index to be applicable.
+    Local registries and directory (vendored) sources typically don't have `pubtime`,
+    so the check does not apply.
 * When resolving dependencies:
   * Pubtime-incompatible versions are not considered for new resolves,
     but if already present in `Cargo.lock`, they are left in place.
@@ -246,6 +250,8 @@ In addition to what is specified above
 * `cargo update` specifically:
   * If `--precise` is used, that version will be used, even if it
     newer than the policy would otherwise allow
+
+[source replacement]: https://doc.rust-lang.org/cargo/reference/source-replacement.html
 
 ## Drawbacks
 [drawbacks]: #drawbacks
