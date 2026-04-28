@@ -13,8 +13,6 @@ The Maintainer in Residence program is dedicated to hiring long-term maintainers
 
 Selecting Maintainers in Residence is a collaboration between the Foundation and a "Funding team" appointed by the Leadership Council. This Funding team will weigh the set of applications against the project's needs and priorities.
 
-Funding team members must not disproportionately come from any one company, legal entity, or closely related set of legal entities, to avoid impropriety or the appearance of impropriety. If the Funding team has 5 or fewer representatives, no more than 1 representative may have any given affiliation; if the Funding has 6 or more representatives, no more than 2 representatives may have any given affiliation. (This affiliation limit comes from [RFC 3392](https://rust-lang.github.io/rfcs/3392-leadership-council.html#limits-on-representatives-from-a-single-companyentity), and the Funding team charter should import the definition of affiliations and the processes around handling them from there. The Leadership Council may update this policy through its normal decision-making process.)
-
 The Funding team is additionally charged with ensuring the program's overall success. When sponsors contribute undirected funding, they are investing in the Rust project as a whole — and the project should meet them in good faith. Project teams receiving support from the program are expected to help the Funding team manage sponsor relations, e.g., by meeting with sponsors or providing other reasonable sponsor benefits.
 
 [RFC 3919]: https://github.com/rust-lang/rfcs/pull/3919
@@ -145,6 +143,10 @@ The Foundation supports the Funding team with logistics. The Foundation issues c
 To ensure the membership reflects the will and needs of the teams of the Project overall, new members will be appointed to the Funding team for fixed terms (e.g., one year at a time) which can be renewed.  Either the council will make these appointments or the members will be directly appointed by the top-level teams.  This will be decided when the council adopts the team charter.
 
 *Unresolved question:* The Funding team may also take on the duties of the Grants team proposed in [RFC 3919]. See the [Unresolved Questions](#unresolved-questions) section.
+
+### Funding team affiliation limits
+
+Funding team members must not disproportionately come from any one company, legal entity, or closely related set of legal entities, to avoid impropriety or the appearance of impropriety. If the Funding team has 5 or fewer representatives, no more than 1 representative may have any given affiliation; if the Funding team has 6 or more representatives, no more than 2 representatives may have any given affiliation. (This affiliation limit comes from [RFC 3392](https://rust-lang.github.io/rfcs/3392-leadership-council.html#limits-on-representatives-from-a-single-companyentity), and the Funding team charter should import the definition of affiliations and the processes around handling them from there. The Leadership Council may update this policy through its normal decision-making process.)
 
 ### The Funding team owns the health of the RFMF program
 
