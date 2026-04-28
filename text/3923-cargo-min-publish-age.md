@@ -34,10 +34,10 @@ For more background on version maturity requirements as a risk mitigation, see
 There would be value in a gradual roll out scheme for the ecosystem.
 New versions can introduce inadvertent breaking changes, bugs, or security vulnerabilities.
 Having everyone discover these problems at once leads to a wider, costlier disruption to the ecosystem.
-Some maintainers are fine being on the bleeding edge, taking on those costs, and act as a canary for the ecosystem.
+Some maintainers are fine being on the bleeding edge, taking on those costs, and acting as a canary for the ecosystem.
 Those who are more risk averse can choose how much stagnation they are willing to accept for others to discover these problems and get them worked out.
 Maintainers may even want to blend these in one project: keep risks down for local development while CI has a dependency version canary job to identify future problems and track their status.
-Granted, this only helps if the problems are discovered by yourself or others.  Any fixes will also be subject to the minimum-release age but at least these will be available to upgrade to so long as there is an exception mechanism.
+Granted, this only helps if the problems are discovered by yourself or others. Any fixes will also be subject to the minimum-release age but at least these will be available to upgrade to so long as there is an exception mechanism.
 
 Allowing maintainers to encourage a certain degree of maturity for dependency versions can help these use cases.
 
@@ -202,7 +202,7 @@ See the resolver chapter for more details.
 * Default: none
 * Environment: `CARGO_REGISTRY_MIN_PUBLISH_AGE`
 
- Specifies the minimum timespan since a version's `pubtime` that it may be considered for `resolver.incompatible-publish-age` for packages from crates.io not set, `registry.global-min-publish-age` will be used.
+ Specifies the minimum timespan since a version's `pubtime` that it may be considered for `resolver.incompatible-publish-age` for packages from crates.io. If not set, `registry.global-min-publish-age` will be used.
 
  It supports the following values:
 
@@ -233,7 +233,7 @@ are considered pubtime-incompatible.
 When [`resolver.incompatible-publish-age`] is set to `deny`,
 the resolver will ignore these versions
 unless they already exist in the `Cargo.lock` file.
-Setting the config to `allow` would disables the check,
+Setting the config to `allow` would disable the check,
 which if combined with `cargo update --precise`,
 cargo would pull in a specific version and its transitive dependencies.
 
@@ -269,7 +269,7 @@ However, most likely, there will be a spread of values used, depending on risk t
 cases.
 
 Also, even if all users of a crate set a minimum publish age there is still value in a delay, because it provides time for automated security scanners, and human reviewers
-to review the changes before the new version is pulled in by updates. And in the case of a malicious release made using compromised credentials, it give the actual developer
+to review the changes before the new version is pulled in by updates. And in the case of a malicious release made using compromised credentials, it gives the actual developer
 time to realize their credentials have been compromised and yank the version before it is widely used.
 
 ### Disjoint resolver config values
@@ -295,7 +295,7 @@ clear that this only applies to crates that are published in a registry.
 `publish` is redundant with this being in the `registry` table.
 This helps with the above disambiguation and for clarity in discussing this as a shorthand.
 
-`cooldown` was avoided due to term generally referring to throttling while we are looking for a certain maturity.
+`cooldown` was avoided due to the term generally referring to throttling while we are looking for a certain maturity.
 
 ### Starting with `deny`
 
@@ -308,7 +308,7 @@ so there are no gaps that would cause spurious errors.
 
 A `fallback` option would deprioritize too-new versions but still allow them as a last resort.
 This is deferred because it opens the yank attack vector:
-a malicious actor with right permissions could publish a malicious version and yank the safe versions.
+a malicious actor with the right permissions could publish a malicious version and yank the safe versions.
 It then forces the resolver to fall back to the malicious too-new version.
 `deny` prevents this by erroring instead of falling back.
 
@@ -323,7 +323,7 @@ rather than disabling the check entirely with `allow`.
 
 ### Timestamp vs duration
 
-Some prior art
+Some prior art:
 - exclusively use a timestamp
 - allow either a timestamp or a relative time within the same field
 
@@ -335,7 +335,7 @@ Designing the field to support both would create a trap for users trying to repr
 Even if they do remember to take the existing duration into account,
 it would be more convenient if they can be set separately.
 
-Setting the timestamp to resolve to is left as a future possibility
+Setting the timestamp to resolve to is left as a future possibility.
 
 ### Per-registry configuration
 
@@ -355,7 +355,7 @@ Exclude lists tend to be used either for:
 - Marking a source as always trusted: we have this covered through per-registry configuration
 
 One problem with an exclude list is that they tend to be a static solution (all versions) for a transient problem (a subset of versions).
-This can lead people open to an attack after a high-value upgrade.
+This can leave people open to an attack after a high-value upgrade.
 An exclude list of just names is helpful for "I have a trusted package source" scenario,
 but less so for "I need a security fix now".
 The user must remember to remove the exclusion once it is no longer needed,
@@ -367,7 +367,7 @@ For instance, to use a too-new version of `clap`, you may also need to exclude `
 
 An exclude list can always be added in the future if a strong enough use case presents itself.
 By delaying, we can also take into account any future changes.
-For example, if the focus is on different levels trust within the same registry,
+For example, if the focus is on different levels of trust within the same registry,
 we could design a solution around [registry namespacing](https://internals.rust-lang.org/t/survey-of-organizational-ownership-and-registry-namespace-designs-for-cargo-and-crates-io/24027/4),
 assuming support is added.
 
@@ -430,7 +430,7 @@ environment variable.
 The `cooldown` option provides a number of settings, including:
 
 - `default-days` – Default minimum age of release, in days
-- `semver-major-days`, `semver-minor-days`, `smever-patch-days` -- Override the cooldown/minimum-release-age based on what kind of release it is.
+- `semver-major-days`, `semver-minor-days`, `semver-patch-days` -- Override the cooldown/minimum-release-age based on what kind of release it is.
 - `include` / `exclude` – a list of packages to include/exclude in the "cooldown". Supports wildcards. `exclude` has higher priority than `include`.
 
 "Security" updates bypass the `cooldown` settings.
@@ -445,7 +445,7 @@ The options below can be provided in global, or project-specific configuration f
 
 `minimumReleaseAge` specifies a duration which all updates must be older than for renovate to create an update. It looks like the duration specification uses units (ex. "3 days"), however, again I can't find a precise specification for the syntax.
 
-It is possible to create separate rules with different `minimumReleaseAge` configurations, on per-package basis, or across groups of packages/registries.
+It is possible to create separate rules with different `minimumReleaseAge` configurations, on a per-package basis, or across groups of packages/registries.
 
 "Security" updates bypass the minimum release age checks.
 
@@ -508,7 +508,9 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 * Implementation wise, will there be much complexity in getting per registry information into `VersionPreferences` and using it?
 * `deny` precedence between this and `incompatible-rust-version`?
   * Both produce errors, but `incompatible-rust-version` will likely be evaluated first to increase the chance of builds succeeding.
-* Can we, and should we make any guarantees about security when using this feature, such as "a release of a malicious version of a crate will not compromise the build
+* Can we, and should we, make any guarantees about security when using this feature,
+  such as "a malicious version of a crate will not compromise the build
+  if published within the minimum publish age window"?
 
 ## Future Possibilities
 [future-possibilities]: #future-possibilities
