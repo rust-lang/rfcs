@@ -393,6 +393,11 @@ have any impact on local changes, like directly editing `Cargo.toml` causing an 
 ["Package Managers Need to Cool Down"](https://nesbitt.io/2026/03/04/package-managers-need-to-cool-down.html) discusses several implementations of this in various
 package managers (including this RFC).
 
+["Dependency-cooldown discussions warm up"](https://lwn.net/Articles/1068692/)
+covers the broader ecosystem debate around dependency cooldowns,
+including an alternative "upload queue" approach
+where registries delay distribution rather than consumers delay adoption.
+
 ### Debian "testing"
 
 Debian's "testing" distribution consists of packages from unstable that have been in the "unstable" distribution for a certain minimum age (2-10 days depending on an `urgency` field in the package changelog), have been built for all previously supported targets, have their dependencies in testing, and don't have any new release-critical bugs.
