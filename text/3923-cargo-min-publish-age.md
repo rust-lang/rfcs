@@ -240,17 +240,20 @@ In addition to what is specified above
     registry mirrors are expected to preserve `pubtime` from the index to be applicable.
     Local registries and directory (vendored) sources typically don't have `pubtime`,
     so the check does not apply.
-* When resolving dependencies:
-  * Pubtime-incompatible versions are not considered for new resolves,
+* When resolving dependencies,
+  pubtime-incompatible versions follow the same rules as [yanked versions]:
+  * They are not considered for new resolves,
     but if already present in `Cargo.lock`, they are left in place.
   * If no version satisfies both the version requirement and the minimum publish age,
     the resolve will error.
-  * A status message will be printed when selecting a non-latest version as well for incompatible versions.
-* `cargo update` specifically:
-  * If `--precise` is used, that version will be used, even if it
-    newer than the policy would otherwise allow
+  * A status message will be printed when selecting a non-latest version
+    as well for incompatible versions.
+  * [`cargo update --precise`] can override the policy,
+    just as it can select a yanked version.
 
 [source replacement]: https://doc.rust-lang.org/cargo/reference/source-replacement.html
+[yanked versions]: https://doc.rust-lang.org/cargo/reference/resolver.html#yanked-versions
+[`cargo update --precise`]: https://doc.rust-lang.org/cargo/commands/cargo-update.html#option-cargo-update---precise
 
 ## Drawbacks
 [drawbacks]: #drawbacks
