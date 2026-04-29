@@ -128,7 +128,7 @@ Impls can now rely on the default methods being const, too, and don't need to ov
 
 ### `const` methods and non-`const` methods on the same trait
 
-If the trait is marked as `const trait Trait`, then all methods under an `const impl Foo for Trait` are assumed
+If the trait is marked as `const trait Trait`, then all methods under an `const impl Trait for Foo` are assumed
 to be callable in const contexts. Thus the only way to implement a `const trait` using non-const operations
 would be to use a non-const `impl`: `impl Foo for Trait`. There is no opt-out from const per-method because it's a
 niche use case that can be trivially worked around.
@@ -147,7 +147,7 @@ Examples:
 * `trait Foo: const Bar {}`, requiring every type that has an impl for `Foo` (even a non-const one), to also have a trait impl with `const` methods for `Bar`.
 * `trait Foo { type Bar: const Trait; }`, requiring all the impls to provide a type for `Bar` that has a trait impl with `const` methods for `Trait`
 
-Such an bound allows you to use the trait methods of those types within a const block or any other const context, because we know that the type has a trait impl with `const` methods and thus
+Such a bound allows you to use the trait methods of those types within a const block or any other const context, because we know that the type has a trait impl with `const` methods and thus
 must be executable at compile time. The following function will invoke the `Default` impl of a type at compile time and store the result in a constant. Then it returns that constant instead of computing the value every time.
 
 ```rust
@@ -192,7 +192,7 @@ fn main() {
 ```
 
 What we instead want is that, just like `const fn` can be called at runtime and compile time, we want their trait bounds' constness
-to mirror that behaviour. So we're introducing `[const] Trait` bounds, which mean "const if called from const context" (slight oversimplifcation, but read on).
+to mirror that behaviour. So we're introducing `[const] Trait` bounds, which mean "const if called from const context" (slight oversimplification, but read on).
 
 The only thing we need to change in our above example is the `default` function, changing the `const Default` bound to a `[const] Default` one.
 
@@ -331,7 +331,7 @@ const _: () = {
 
 Note that the use of `assert_eq!` is waiting on `Debug` impls becoming `const`, which
 will likely be tracked under a separate feature gate under the purview of T-libs.
-Similarly other traits will be made `const` over time, but doing so will be
+Similiarly other traits will be made `const` over time, but doing so will be
 unblocked by this feature.
 
 ### `const Fn*` traits
@@ -379,7 +379,7 @@ Most of the time it suffices to add `const` after the `impl`.
 The compiler will then guide you and suggest where to also
 add `[const]` bounds for trait bounds on generic parameters of methods or the impl.
 
-Similarly you can make your traits available for users of your crate to implement constly using `[const]`.
+Similiarly you can make your traits available for users of your crate to implement constly using `[const]`.
 Note that this will make all methods callable from const contexts, thus imposing stricter requirements on default
 method bodies currently and in the future.
 The compiler will guide you and suggest where to also add `[const]` bounds for super trait bounds or trait bounds
@@ -432,7 +432,7 @@ Everywhere where non-const trait bounds can be written.
     * super trait bounds
     * where bounds
     * associated type bounds
-* return position impl trait
+* return position impl trait and dyn traits are not covered by this RFC
 
 ### `const` desugaring
 
@@ -917,6 +917,20 @@ impl Trait for Type {
 ```
 
 This does not enable the use cases that `const trait`s would enable, because changing an existing method to `const fn` under a trait would be a breaking change, while changing a trait to `const trait` would not.
+
+### Const inherent impls
+
+Another natural extension of this RFC is to allow inherent impls to be const as well:
+
+```rust
+const impl<T: [const] Trait> Foo<T> {
+    pub fn my_method() {
+        // ...
+    }
+}
+```
+
+Doing so allows the `impl` to have `[const]` bounds and would imply all of its associated functions are `const`.
 
 ### Derives
 
