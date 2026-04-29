@@ -60,9 +60,11 @@ const fn foo() {
 }
 ```
 
+Enabling const traits will allow these builtin language constructs to be used in const code, including but not limited to: `for` loops, `?` operator, and user-defined binary operators such as `==`. Furthermore, it will make it possible to call methods on generic types in const code, making them much more expressive.
+
 ## Background
 
-This RFC requires familarity with "const contexts", so you may have to read [the relevant reference section](https://doc.rust-lang.org/reference/const_eval.html#const-context) first.
+This RFC requires familiarity with "const contexts", so you may have to read [the relevant reference section](https://doc.rust-lang.org/reference/const_eval.html#const-context) first.
 
 Calling functions during const eval requires those functions' bodies to only use statements that const eval can handle. While it's possible to just run any code until it hits a statement const eval cannot handle, that would mean the function body is part of its semver guarantees. Something as innocent as a logging statement would make the function uncallable during const eval.
 
@@ -97,8 +99,8 @@ for types whose `Default` impl's `default` method satisfies all rules that `cons
 (including some annotation that guarantees this won't break by accident).
 It must always be possible to call `default` outside of const contexts with no limitations on the generic parameters that may be passed.
 
-Similarly it should be possible to write `compile_time_default` in a way that also requires calls
-outside of const contexts to only pass generic parameters whose `Default::default` method satisifies
+Similarly, it should be possible to write `compile_time_default` in a way that also requires calls
+outside of const contexts to only pass generic parameters whose `Default::default` method satisfies
 the usual `const fn` rules. This is necessary in order to allow a const block
 (which can access generic parameters) in the function body to invoke methods on the generic parameter.
 
@@ -109,23 +111,27 @@ So, we need some annotation that differentiates a `T: Default` bound from one th
 
 ## Nomenclature and new syntax concepts
 
-### Const methods
+### Const traits and their methods
 
-Traits can declare methods as `const`. Changing an existing non-`const` method to a `const` one is a breaking change, as all impls are now required to provide the method as `const`, which existing impls can't. However, adding a new `const` method with a default body is not a breaking change.
+Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `const` and all the methods will become const callable.
 
 ```rust
-trait Trait {
-    const fn method();
+const trait Trait {
+    fn thing();
 }
 ```
 
-These methods need to be implemented as `const`:
+A trait needs to be `const` to use `const Trait` bounds and have `const impl`s on them.
 
-```rust
-impl Trait for Type {
-    const fn method() {}
-}
-```
+A method's (optional) default body must satisfy everything a `const fn` body must, making them callable in const contexts.
+Impls can now rely on the default methods being const, too, and don't need to override them with a const body.
+
+### `const` methods and non-`const` methods on the same trait
+
+If the trait is marked as `const trait Trait`, then all methods under an `const impl Foo for Trait` are assumed
+to be callable in const contexts. Thus the only way to implement a `const trait` using non-const operations
+would be to use a non-const `impl`: `impl Foo for Trait`. There is no opt-out from const per-method because it's a
+niche use case that can be trivially worked around.
 
 ### Const trait bounds
 
@@ -149,28 +155,6 @@ fn compile_time_default<T: const Default>() -> T {
     const { T::default() }
 }
 ```
-
-### Const traits and their methods
-
-Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `const` and all the methods will become const callable.
-
-```rust
-const trait Trait {
-    fn thing();
-}
-```
-
-A trait needs to be `const` to use `const Trait` bounds and have `const impl`s on them.
-
-A method's (optional) default body must satisfy everything a `const fn` body must, making them callable in const contexts.
-Impls can now rely on the default methods being const, too, and don't need to override them with a const body.
-
-### `const` methods and non-`const` methods on the same trait
-
-If the trait is marked as `const trait Trait`, then all methods under an `const impl Foo for Trait` are assumed
-to be callable in const contexts. Thus the only way to implement a `const trait` using non-const operations
-would be to use a non-const `impl`: `impl Foo for Trait`. There is no opt-out from const per-method because it's a
-niche use case that can be trivially worked around.
 
 ### Conditionally-const trait bounds
 
@@ -912,6 +896,27 @@ as they need to actually call the generic `FnOnce` argument or nested `PartialEq
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+### Const methods
+
+It seems natural to want, in addition to allowing `const impl`s for `const trait`s, individual methods to require `const` in all implementations.
+
+As the described feature appears to be orthogonal with the rest of const traits, proposing the following should be quite possible:
+
+```rust
+trait Trait {
+    const fn method();
+}
+```
+
+These methods need to be implemented as `const`, no matter whether they are `const impl`s:
+
+```rust
+impl Trait for Type {
+    const fn method() {}
+}
+```
+
+This does not enable the use cases that `const trait`s would enable, because changing an existing method to `const fn` under a trait would be a breaking change, while changing a trait to `const trait` would not.
 
 ### Derives
 
