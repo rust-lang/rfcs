@@ -514,8 +514,6 @@ pre-release: requires opt-in through version requirement. Unstable support to fo
 
 ### Before stabilization
 
-* Would it be better to have `registry.min-publish-age` be the global setting, and `registries.crates-io.min-publish-age` be the setting for the crates.io registry?
-  The current proposal is based on precedent of "credential-provider" and "global-credential-provider", but perhaps we shouldn't follow that precedent?
 * How do we make it clear when things are held back?
   * The "locking" message for [Cargo time machine (generate lock files based on old registry state) #5221](https://github.com/rust-lang/cargo/issues/5221) lists one time but the time here is dependent on where any given package is from
   * We list MSRVs for unselected packages, should we also list publish times? I'm assuming that should be in local time
