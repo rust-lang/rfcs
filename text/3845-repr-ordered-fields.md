@@ -151,7 +151,7 @@ For more details, see this discussion on [irlo](https://internals.rust-lang.org/
 `repr(C)` in future editions is an alias for `repr(C#editionNext)`. It will lay out types in the same way as `C` would, and will use the same calling convention as `C`.
 
 Using `repr(C)` in all current editions triggers a lint (seen below) as an edition migration compatibility lint with a machine-applicable fix that switches it to `repr(C#editionCurr)`.
-* If you are using `repr(C)` for FFI, then you should switch to `repr(C#editionNext)`
+* If you are using `repr(C)` for FFI, then you should switch to `repr(C#editionNext)` or upgrade to the new edition
 * If you are not using `repr(C)` for FFI, then you should switch to `repr(ordered_fields)`
 
 The machine-applicable fix is provided to allow users to do migrations on their own terms. This way a user can do `cargo fix` to get warning free code. Then choose one of the following
@@ -173,7 +173,7 @@ warning: use of `repr(C)` in type `Foo`
 
 Using `repr(C)`/`repr(C#editionCurr)`/`repr(C#editionNext)` on all editions (including in future editions) when there are no extern blocks or functions in the crate will trigger a allow-by-default lint (`suspicious_repr_c`) suggesting to use `repr(ordered_fields)`.
 
-This is allow by default, since the edition lint should do the heavy lifting, so it's better to reduces the noise. This is still provided as a tool for interested users to reduce their reliance on `repr(C)` (or it's variants) when it is probably not needed. Since the largest difference between `repr(C)` and `repr(ordered_fields)` is calling convention.
+This is allow by default to reduce noise, since the edition lint should do the heavy lifting. This is still provided as a tool for interested users to reduce their reliance on `repr(C)` (or it's variants) when it is probably not needed. Since the largest difference between `repr(C)` and `repr(ordered_fields)` is calling convention.
 
 If *any* extern block or function (including `extern "Rust"`) uses the given type in the crate, then the `suspicious_repr_c` lint will not be triggered. This way, we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
 
