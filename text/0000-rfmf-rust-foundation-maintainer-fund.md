@@ -7,7 +7,7 @@
 
 This RFC defines the relationship between the Rust Foundation Maintainer Fund (RFMF) and the open-source Rust project. The RFMF is a dedicated fund used to support Rust maintenance: open-ended, multiplicative work that improves Rust and its codebase.
 
-The Leadership Council has a Project Priorities budget, which is used to fund various initiatives, such as travel grants or program management. RFMF funds will be directed to this budget, but they will be dedicated to activities that direct funding to individual maintainers. This includes the existing program management program and would include the proposed Project Grants Program ([RFC 3919]), which provides modest stipends to recognize and support existing contributors. It will also include a third program, the *Maintainer in Residence program*, proposed by this RFC.
+The Leadership Council has a Project Priorities budget, which is used to fund various initiatives, such as travel grants or program management. RFMF funds will be directed to this budget, but they will be dedicated to activities that direct funding to individual maintainers. This includes the existing program management program and would include the proposed Project Grants Program ([RFC 3919]), which provides modest stipends to recognize and support existing contributors. It will also include a third program, the *Maintainer in Residence (MiR) program*, proposed by this RFC.
 
 The Maintainer in Residence program is dedicated to hiring long-term maintainers and funding their maintenance work in full. Maintainers' in Residence time is split between priorities guided by the teams they are supporting and priorities of their own choosing within the project.
 
