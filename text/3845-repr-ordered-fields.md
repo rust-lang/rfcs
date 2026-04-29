@@ -48,13 +48,13 @@ Furthermore, it is just fundamentally wrong for Rust to claim that `repr(C)` lay
 the C standard does not prescribe any particular struct layout, so any target/ABI is in principle free to come up with whatever bespoke rules they like. This puts us in a similar position to `std::env::set_var`, where Rust claimed that it was thread-safe, the POSIX standard said it's not, and Rust had to do a breaking change to fix this.
 
 Fixing this is hard because of (unsafe) code that relies on the other role of `repr(C)`, giving a deterministic layout.
-We therefore cannot just "fix" `repr(C)`, we need some sort of transition plan.
+We therefore cannot just "fix" `repr(C)`, we need a new `repr` and some sort of transition plan to move people to the new `repr`.
 This code generally falls into one of these buckets:
-* rely on the exact layout being consistent across platforms
+* rely on the exact layout being consistent across platforms/versions
 	* for example, zero-copy deserialization (see [rkyv](https://crates.io/crates/rkyv))
 * manually calculating the offsets of fields
 	* This is common in code written before the stabilization of `offset_of` (currently only stabilized for `struct`)/`&raw const`/`&raw mut`
-	* But sometimes this is still required if you are manually doing type-erasure and handling DSTs (for example, implementing [`erasable::Erasable`](https://docs.rs/erasable/1.3.0/erasable/trait.Erasable.html))
+	* This is still required if you are manually doing type-erasure and handling DSTs (for example, implementing [`erasable::Erasable`](https://docs.rs/erasable/1.3.0/erasable/trait.Erasable.html))
 * manually calculating the layout for a DST, to prepare an allocation (see [slice-dst](https://crates.io/crates/slice-dst), specifically [here](https://github.com/CAD97/pointer-utils/blob/0fe399f8f7e519959224069360f3900189086683/crates/slice-dst/src/lib.rs#L162-L163))
 * match layouts of two different types (or even, two different monomorphizations of the same generic type)
 	* see [here](https://github.com/rust-lang/rust/pull/68099), where in `alloc` this is done for `Rc` and `Arc` to give a consistent layout for all `T`. For example, by ensuring that the strong count is at offset `0`, and the weak count at offset `size_of::<usize>()`.
@@ -64,7 +64,7 @@ This breakage cannot be checked easily since it affects unsafe code making assum
 
 ### Guiding principle
 
-This RFC will require a large migration across the ecosystem. There are two major use-cases that are prioritized in this document.
+This RFC will require a large migration across the ecosystem for anyone upgrading to the next edition. There are two major use-cases that are prioritized in this document.
 * FFI-only crates, like `*-sys` crates or crates that expose a `C` interface
     * These crates should ideally have to do no work. They want the fixed `repr(C)`
 * Pure Rust crates that don't rely on the C calling convention
