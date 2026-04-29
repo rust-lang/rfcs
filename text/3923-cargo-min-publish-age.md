@@ -121,6 +121,8 @@ the resolve will error, similar to when all matching versions are yanked:
 $ cargo update
 error: failed to select a version for the requirement `some-package = "^1.3"`
   version 1.3.0 is too new (published 2 days ago, minimum age 14 days)
+help: to preserve the min-publish-age, downgrade the version requirement to `"1.1"`
+help: to use `"1.3"` anyways, re-resolve with `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow`
 ```
 
 ### Using newer versions
