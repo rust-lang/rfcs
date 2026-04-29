@@ -92,7 +92,7 @@ On Windows MSVC, `repr(C)` doesn't always match what MSVC does for ZST structs (
 struct SomeFFI([i64; 0]);
 ```
 
-Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for case 1. They want it to be size 0 (as it currently is). 
+Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for role 1. They want it to be size 0 (as it currently is). 
 
 ## MSVC: `repr(align)` inside `repr(packed)`
 
@@ -138,10 +138,8 @@ struct Floats {
   c: f64, // at offset 12
 }
 ```
-There is no way to obtain such a layout using Rust's `repr(C)` layout algorithm.
+There is no way to obtain such a layout using Rust's `repr(C)` layout algorithm. Currently, `c`is at offset `16`, and the size is `24` bytes. If we simply lower the alignment of `f64` to 4, we'll get the right offsets, but the size will be `20` bytes. So either way, we'll need to adjust the rules for `repr(C)` to get a proper fix.
 For more details, see this discussion on [irlo](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594/3).
-
-Any fix for this requires splitting up `repr(C)`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
