@@ -57,7 +57,7 @@ This code generally falls into one of these buckets:
 	* But sometimes this is still required if you are manually doing type-erasure and handling DSTs (for example, implementing [`erasable::Erasable`](https://docs.rs/erasable/1.3.0/erasable/trait.Erasable.html))
 * manually calculating the layout for a DST, to prepare an allocation (see [slice-dst](https://crates.io/crates/slice-dst), specifically [here](https://github.com/CAD97/pointer-utils/blob/0fe399f8f7e519959224069360f3900189086683/crates/slice-dst/src/lib.rs#L162-L163))
 * match layouts of two different types (or even, two different monomorphizations of the same generic type)
-	* see [here](https://github.com/rust-lang/rust/pull/68099), where in `alloc` this is done for `Rc` and `Arc` to give a consistent layout for all `T`
+	* see [here](https://github.com/rust-lang/rust/pull/68099), where in `alloc` this is done for `Rc` and `Arc` to give a consistent layout for all `T`. For example, by ensuring that the strong count is at offset `0`, and the weak count at offset `size_of::<usize>()`.
 
 So, providing any fix for role 2 of `repr(C)` would subtly break any users of role 1.
 This breakage cannot be checked easily since it affects unsafe code making assumptions about data layouts, making it difficult to fix within a single edition/existing editions.
