@@ -393,7 +393,7 @@ Like, let's take an often-cited *good* use of AI, which is used by the Linux ker
 >
 > **Corollary (from callstack.md)**: For deadlocks, infinite waits, crashes, and data corruption, "concrete evidence" means proving the code path is structurally possible — not proving it will definitely execute on every run. A `wait_event` with no timeout and no fallback wake condition is a deadlock bug if the wake condition depends on external events that can stop. Do not dismiss such bugs as "unlikely in practice."
 >
-> This file contains instructions to help you prove a given bug is real.  You must follow every instruction in every section.  Do not skip steps, and you must complete task POSITIVE.1 before completing the false positive check. This file contains instructions to help you prove a given bug is real. You must follow every instruction in every section. Do not skip steps, and you must complete task POSITIVE.1 before completing the false positive check.
+> This file contains instructions to help you prove a given bug is real.  You must follow every instruction in every section.  Do not skip steps, and you must complete task POSITIVE.1 before completing the false positive check.
 
 [kernel review prompts]: https://github.com/masoncl/review-prompts/blob/main/kernel/false-positive-guide.md
 
