@@ -125,7 +125,7 @@ Other characters are usually rendered literally, except for
 - circumflex, `^`, which is used for exponents
 - underscore, `_`, which is used for subscript
 - single quote, `'`, which becomes the prime symbol
-- tile, `~`, which becomes a rendered, non-breaking space (since ordinary spaces are used for grouping)
+- tilde, `~`, which becomes a rendered, non-breaking space (since ordinary spaces are used for grouping)
 - percent, `%`, which mark line comments
 - NUL, which is not allowed
 
