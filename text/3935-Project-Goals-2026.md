@@ -1,18 +1,18 @@
 - Feature Name: `project_goals_2026`
 - Start Date: 2026-02-23
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/issues/0000)(https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3935](https://github.com/rust-lang/rfcs/pull/3935)
 
-# Summary
+## Summary
 
 Establish the initial round of Rust Project Goals for 2026 along with a set of current roadmaps, which describe multi-year development arcs.
 
 New Rust Project Goals may be added over the course of the year but only if all required resources (champions, funding, etc) are already known.
 
-# Motivation
+## Motivation
 
 The 2026 goal slate consists of 66 project goals. In comparison to prior rounds, we have changed to *annual* goals rather than six-month goal periods. Annuals goals give us more time to discuss and organize.
 
-## Why we set goals
+### Why we set goals
 
 Goals serve multiple purposes.
 
@@ -22,32 +22,32 @@ For users, goals serve as a roadmap, giving you an early picture of what work we
 
 For Rust maintainers, goals help to surface interactions across teams. They aid in coordination because people know what work others are aiming to do and where they may need to offer support.
 
-## Goals are *proposed* by contributors and *accepted* by teams
+### Goals are *proposed* by contributors and *accepted* by teams
 
 As an open-source project, Rust's goal process works differently than a company's. In a company, leadership sets goals and assigns employees to execute them. Rust doesn't have employees - we have contributors who volunteer their time and energy. So in our process, goals begin with the *contributor*: the person (or company) that wants to do the work.
 
 Contributors *propose* goals; Rust teams *accept* them. When you propose a goal, you're saying you're prepared to invest the time to make it happen. When a team accepts, they're committing to support that work - doing reviews, engaging in RFC discussions, and providing the guidance needed to land it in Rust.
 
-## How these goals were selected
+### How these goals were selected
 
 Goal proposals were collected during the month of January. Many of the goals are continuing goals that are carried over from the previous year, but others goal are new.
 
 In February, an *alpha* version of this RFC is reviewed with teams. Teams vet the goals to determine if they are realistic and to make sure that goal have champions from the team. A *champion* is a Rust team member that will mentor and guide the contributor as they do their work. Champions keep up with progress on the goal, help the champion figure out technical challenges, and also help the contributor to navigate the Rust team(s). Champions also field questions from others in the project who want to understand the goal.
 
-## How to follow along with a goal's progress
+### How to follow along with a goal's progress
 
 Once the Goals RFC is accepted, you can follow along with the progress on a goal in a few different ways:
 
 * Each goal has a tracking issue. Goal contributors and champions are expected to post regular updates. These updates are also posted to Zulip in the `#project-goals` channel.
 * Regular blog posts cover major happenings in goals.
 
-# Guide-level explanation
+## Guide-level explanation
 
 There are a total of 66 planned for this year. That's a lot! You can see the complete list, but to help you get a handle on it, we've selected a few to highlight. These are goals that will be stabilizing this year or which we think people will be particularly excited to learn about.
 
 **Important:** You have to understand the nature of a Rust goal. Rust is an open-source project, which means that progress only happens when contributors come and *make* it happen. When the Rust project declares a goal, that means that (a) contributors, who we call the *task owners*, have said they want to do the work and (b) members of the Rust team members have promised to support them. Sometimes those task owners are volunteers, sometimes they are paid by a company, and sometimes they supported by grants. But no matter which category they are, if they ultimately are not able to do the work (say, because something else comes up that is higher priority for them in their lives), then the goal won't happen. That's ok, there's always next year!
 
-## Running Rust scripts will get more convenient with *cargo script*
+### Running Rust scripts will get more convenient with *cargo script*
 
 | Goal | What and why |
 | --- | --- |
@@ -80,7 +80,7 @@ and run it with `cargo my_ip.rs`.  Or, thanks to the `#!` line, you can just run
 
 This feature makes good use of [one of the things we found when doing our research for the Vision Doc](https://blog.rust-lang.org/2025/12/19/what-do-people-love-about-rust/#but-what-they-love-is-the-sense-of-empowerment-and-versatility): that people love Rust not only because it helps them build foundational software, but because it's a expressive and productive enough that "you can write everything from the top to the bottom of your stack in it" (-- Rust expert and consultant focused on embedded and real-time systems). Until now, the fly in the ointment was that packaging up a Rust package required several files and required people to do a separate compilation step. Cargo script solves that problem.
 
-## The borrow checker will be more flexible with *Polonius alpha*
+### The borrow checker will be more flexible with *Polonius alpha*
 
 | Goal | What and why |
 | --- | --- |
@@ -115,7 +115,7 @@ Under Polonius Alpha, this code compiles.
 
 Polonius Alpha is part of a larger roadmap called [the Borrow-Checker Within](https://rust-lang.github.io/rust-project-goals/2026/roadmap-borrow-checker-within.html) that we expect to be driving over the next few years. This year, another part of that work is including Polonius Alpha in [a-mir-formality](https://github.com/rust-lang/a-mir-formality/), the [types team's](https://rust-lang.org/governance/teams/compiler/#team-types) (in-progress) specification for how the Rust type system works. As part of another goal, we are planning to [integrate a-mir-formality into the Rust reference](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html). This would make Polonius the first version of the borrow checker whose behavior is specified outside of the Rust compiler.
 
-## Change const evaluation to support *traits*, and *reflection*, allow *structs/enums* as const parameter types
+### Change const evaluation to support *traits*, and *reflection*, allow *structs/enums* as const parameter types
 
 | Goal | What and why |
 | --- | --- |
@@ -161,7 +161,7 @@ const fn sum_up<I: [const] Iterator<Item = i32>>(iter: I) -> i32 {
 
 Finally, we're beginning early experimental work on compile-time reflection — the ability for const functions to inspect type information. It's too early to promise specifics, but the long-term vision is things like serialization working without derive macros.
 
-## Ergonomic ref-counting and (maybe) async traits
+### Ergonomic ref-counting and (maybe) async traits
 
 | Goal | What and why |
 | --- | --- |
@@ -192,7 +192,7 @@ tokio::spawn(async {
 
 We also plan to cut a "practical path" to support [invoking async fns through `dyn Trait`](https://rust-lang.github.io/rust-project-goals/2026/afidt-box.html). The initial version would be limited to boxed futures but the goal is to be forwards-compatible with the ongoing [in-place initialization](https://rust-lang.github.io/rust-project-goals/2026/in-place-init.html) designs for non-boxed allocation (e.g., stack). The RFC for this hasn't been written yet, and the proposal includes some new syntax, so that could be spicy! Stay tuned.
 
-## Try, never, extern types, oh my!
+### Try, never, extern types, oh my!
 
 | Goal | What and why |
 | --- | --- |
@@ -221,7 +221,7 @@ The [never type `!`](https://rust-lang.github.io/rust-project-goals/2026/stabili
 
 Finally, the [Sized trait hierarchy](https://rust-lang.github.io/rust-project-goals/2026/scalable-vectors.html) work will stabilize a richer set of sizing traits, which unblocks [extern types](https://github.com/rust-lang/rfcs/pull/1861) — another long-requested feature. Today, `?Sized` conflates "unsized but has metadata" with "truly sizeless." The new hierarchy distinguishes these cases. This same work is also laying the foundation for scalable vector support (Arm SVE), where vector sizes depend on the CPU rather than being fixed at compile time.
 
-## Going "beyond the `&`" with better integration for custom pointer types
+### Going "beyond the `&`" with better integration for custom pointer types
 
 | Goal | What and why |
 | --- | --- |
@@ -255,7 +255,7 @@ We are also continuing our experimental work to support [custom field projection
 
 These goals spun out from the ongoing work to support the needs of the [Rust for Linux](https://rust-lang.github.io/rust-project-goals/2026/roadmap-rust-for-linux.html) project and are part of the [Beyond the `&`](https://rust-lang.github.io/rust-project-goals/2026/roadmap-beyond-the-ampersand.html) roadmap.
 
-## Build it your way with build-std
+### Build it your way with build-std
 
 | Goal | What and why |
 | --- | --- |
@@ -269,7 +269,7 @@ A new version of [build-std](https://rust-lang.github.io/rust-project-goals/2026
 
 An unstable `-Zbuild-std` flag has existed for a while, but this new design — progressing through a series of RFCs ([one accepted](https://github.com/rust-lang/rfcs/pull/3873), [two more](https://github.com/rust-lang/rfcs/pull/3874) [in review](https://github.com/rust-lang/rfcs/pull/3875)) — has a path to stabilization. Build-std is also part of the [Rust for Linux](https://rust-lang.github.io/rust-project-goals/2026/roadmap-rust-for-linux.html) roadmap.
 
-## Closing soundness bugs and supporting new lang features with a new trait solver
+### Closing soundness bugs and supporting new lang features with a new trait solver
 
 | Goal | What and why |
 | --- | --- |
@@ -283,11 +283,11 @@ This year, the Rust types team plans to stabilize the [next-generation trait sol
 
 This goal may not *sound* like it's going to impact your life, but finishing the new solver unblocks a *lot* of stuff. To start, it allows us to make progress on the [Project Zero](https://rust-lang.github.io/rust-project-goals/2026/roadmap-project-zero.html) roadmap, which aims to fix every known type system soundness bug. It also unblocks long-desired features like implied bounds, cyclic trait matching, and features needed by the [Just add async](https://rust-lang.github.io/rust-project-goals/2026/roadmap-just-add-async.html) roadmap.
 
-## Roadmaps
+### Roadmaps
 
 Roadmaps offer a "zoomed out" view of the Rust project direction. Each roadmap collects a set of related project goals into a coherent theme. A typical roadmap takes several years to drive to completion, so when you look at the roadmap, you'll see not only the work we expect to do this year, but a preview of the work we expect in future years (to the extent we know that).
 
-### Active roadmaps
+#### Active roadmaps
 
 Not every goal is part of a roadmap, nor are they all expected to be. This initial set of roadmaps is based on the trends that we saw in the 2026 goals. Over time, we expect to add more roadmaps and refine their structure to help people quickly see where Rust is going.
 
@@ -301,17 +301,17 @@ Not every goal is part of a roadmap, nor are they all expected to be. This initi
 | [Rust for Linux](https://rust-lang.github.io/rust-project-goals/2026/roadmap-rust-for-linux.html)                   | [Tomas Sedovic][] | Build the Linux kernel with only stable language features.                                                                                  |
 | [Safety-Critical Rust](https://rust-lang.github.io/rust-project-goals/2026/roadmap-safety-critical-rust.html)       | [Pete LeVasseur][]   | MC/DC coverage, a specification that tracks stable releases, and `unsafe` documentation — the evidence safety assessors need                |
 
-# Reference-level explanation
+## Reference-level explanation
 
 This section contains the complete list of all 66 [goals](#goals) for 2026. There are a lot of them! You may prefer to look at the [roadmaps](https://rust-lang.github.io/rust-project-goals/2026/roadmaps.html) to get a higher level picture of where Rust is going.
 
 
 
-## Goals
+### Goals
 
-### Goals by size
+#### Goals by size
 
-#### Large goals
+##### Large goals
 
 Large goals require the engagement of entire team(s). The teams that need to engage with the goal are highlighted in bold.
 
@@ -375,7 +375,7 @@ Large goals require the engagement of entire team(s). The teams that need to eng
 |                                                                                            |                   | [spec][]                  | *n/a*             |
 
 
-#### Medium goals
+##### Medium goals
 
 Medium goals require support from an individual, the team champion.
 
@@ -460,7 +460,7 @@ Medium goals require support from an individual, the team champion.
 |                                                                                                                                                 |                   | [libs][]                        | *n/a*            |
 
 
-#### Small goals
+##### Small goals
 
 Small goals are covered by standard team processes and do not require dedicated support from anyone.
 
@@ -511,7 +511,7 @@ Small goals are covered by standard team processes and do not require dedicated 
 | [Establish a User Research Team](https://rust-lang.github.io/rust-project-goals/2026/user-research-team.html)                                                                                           | [Niko Matsakis][]    | [leadership-council][] | *n/a*          |
 
 
-### Goals by champion
+#### Goals by champion
 
 | Champion          | # | Goal                                                                                                                                              |
 | :--               | :-- | :--                                                                                                                                               |
@@ -609,7 +609,7 @@ Small goals are covered by standard team processes and do not require dedicated 
 | [Jane Lusby][]            | 1 | [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)                                                                     |
 
 
-### Goals by team
+#### Goals by team
 
 The following table highlights the support level requested from each affected team. Each goal specifies the level of involvement needed:
 
@@ -620,7 +620,7 @@ The following table highlights the support level requested from each affected te
 "Small" asks require someone on the team to "second" the goal. "Medium" and "Large" asks require a dedicated champion from the team.
 
 
-#### book team
+##### book team
 | Goal                                        | Level | Champion | Notes |
 | :--                                         | :--   | :-- | :-- |
 | [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html) | Small |  | \*1 |
@@ -628,12 +628,12 @@ The following table highlights the support level requested from each affected te
 
 \*1: Will need approval for book changes. ([from here](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html))
 
-#### bootstrap team
+##### bootstrap team
 | Goal                                                                                           | Level | Champion | Notes |
 | :--                                                                                            | :--   | :-- | :-- |
 | [Stabilize MemorySanitizer and ThreadSanitizer Support](https://rust-lang.github.io/rust-project-goals/2026/stabilization-of-sanitizer-support.html) | Small |  |  |
 
-#### cargo team
+##### cargo team
 | Goal                                                                                                | Level  | Champion   | Notes                 |
 | :--                                                                                                 | :--    | :--        | :--                   |
 | [build-std](https://rust-lang.github.io/rust-project-goals/2026/build-std.html)                                                                           | Large  | [Eric Huss][]     | \*1                   |
@@ -674,7 +674,7 @@ The following table highlights the support level requested from each affected te
 
 \*8: Alignment on direction, possible integration help and review. ([from here](https://rust-lang.github.io/rust-project-goals/2026/interactive-cargo-tree.html))
 
-#### clippy team
+##### clippy team
 | Goal                                                                                       | Level | Champion | Notes |
 | :--                                                                                        | :--   | :-- | :-- |
 | [Stabilize Cargo's linting system](https://rust-lang.github.io/rust-project-goals/2026/cargo-lints.html)                                         | Small |  | \*1 |
@@ -690,7 +690,7 @@ The following table highlights the support level requested from each affected te
 
 \*3: Will need approval for clippy support. ([from here](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html))
 
-#### compiler team
+##### compiler team
 | Goal                                                                                                                                              | Level  | Champion          | Notes                  |
 | :--                                                                                                                                               | :--    | :--               | :--                    |
 | [Architectural groundwork for expansion-time evaluation](https://rust-lang.github.io/rust-project-goals/2026/expansion-time-evaluation.html)                                                            | Large  | [Vadim Petrochenkov][]     | \*1                    |
@@ -790,12 +790,12 @@ The following table highlights the support level requested from each affected te
 
 \*20: We expect to only need normal reviews. ([from here](https://rust-lang.github.io/rust-project-goals/2026/tail-call-loop-match.html))
 
-#### crate-maintainers team
+##### crate-maintainers team
 | Goal                                      | Level | Champion | Notes |
 | :--                                       | :--   | :-- | :-- |
 | [libc 1.0 release readiness](https://rust-lang.github.io/rust-project-goals/2026/libc-1.0.html) | Small |  |  |
 
-#### crates-io team
+##### crates-io team
 | Goal                                                     | Level | Champion   | Notes |
 | :--                                                      | :--   | :--        | :-- |
 | [build-std](https://rust-lang.github.io/rust-project-goals/2026/build-std.html)                                | Small |            | \*1 |
@@ -807,7 +807,7 @@ The following table highlights the support level requested from each affected te
 
 \*2: Primarily focused on potential future logging/bandwidth savings. ([from here](https://rust-lang.github.io/rust-project-goals/2026/mirroring.html))
 
-#### edition team
+##### edition team
 | Goal                                                                          | Level | Champion | Notes |
 | :--                                                                           | :--   | :--    | :-- |
 | [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html) | Large | [Eric Huss][] | \*1 |
@@ -815,7 +815,7 @@ The following table highlights the support level requested from each affected te
 
 \*1: Review the feasibility of this proposal as well as the specific API changes. ([from here](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html))
 
-#### fls team
+##### fls team
 | Goal                                                       | Level | Champion    | Notes |
 | :--                                                        | :--   | :--         | :-- |
 | [Stabilize FLS Release Cadence](https://rust-lang.github.io/rust-project-goals/2026/stabilize-fls-releases.html) | Large | [Pete LeVasseur][] | \*1 |
@@ -823,7 +823,7 @@ The following table highlights the support level requested from each affected te
 
 \*1: Core work of authoring and releasing FLS versions on schedule ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilize-fls-releases.html))
 
-#### infra team
+##### infra team
 | Goal                                                                                           | Level  | Champion         | Notes                 |
 | :--                                                                                            | :--    | :--              | :--                   |
 | [Implement Verifiable Mirroring Prototype](https://rust-lang.github.io/rust-project-goals/2026/mirroring.html)                                       | Medium | [Mark Rousskov][] | \*1                   |
@@ -841,7 +841,7 @@ The following table highlights the support level requested from each affected te
 
 \*3: CI support for MC/DC testing ([from here](https://rust-lang.github.io/rust-project-goals/2026/mcdc-coverage-support.html))
 
-#### lang team
+##### lang team
 | Goal                                                                                                                                            | Level  | Champion      | Notes                  |
 | :--                                                                                                                                             | :--    | :--           | :--                    |
 | [Const Traits](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html)                                                                                                                 | Large  | [TC][]  | \*1                    |
@@ -961,7 +961,7 @@ The following table highlights the support level requested from each affected te
 
 \*27: Most of the plans / design was already approved, only minor sign-offs required ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html))
 
-#### lang-docs team
+##### lang-docs team
 | Goal                                                                                      | Level  | Champion     | Notes |
 | :--                                                                                       | :--    | :--          | :-- |
 | [Arbitrary Self Types](https://rust-lang.github.io/rust-project-goals/2026/arbitrary-self-types.html)                                           | Medium | [TC][] | \*1 |
@@ -978,7 +978,7 @@ The following table highlights the support level requested from each affected te
 
 \*3: General discussion of shape of integration of a-mir-formality into reference ([from here](https://rust-lang.github.io/rust-project-goals/2026/a-mir-formality.html))
 
-#### leadership-council team
+##### leadership-council team
 | Goal                                                    | Level | Champion | Notes |
 | :--                                                     | :--   | :-- | :-- |
 | [Establish a User Research Team](https://rust-lang.github.io/rust-project-goals/2026/user-research-team.html) | Small |  | \*1 |
@@ -986,7 +986,7 @@ The following table highlights the support level requested from each affected te
 
 \*1: Org decision to establish team, ongoing coordination ([from here](https://rust-lang.github.io/rust-project-goals/2026/user-research-team.html))
 
-#### libs team
+##### libs team
 | Goal                                                                                       | Level | Champion | Notes                 |
 | :--                                                                                        | :--   | :-- | :--                   |
 | [Improving Unsafe Code Documentation in the Rust Standard Library](https://rust-lang.github.io/rust-project-goals/2026/improve-std-unsafe.html)  | Small |  | Review pull requests; |
@@ -1014,7 +1014,7 @@ The following table highlights the support level requested from each affected te
 
 \*5: Will need approval for documentation changes. ([from here](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html))
 
-#### libs-api team
+##### libs-api team
 | Goal                                                                                  | Level  | Champion      | Notes          |
 | :--                                                                                   | :--    | :--           | :--            |
 | [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)         | Large  | [Amanieu d'Antras][]      | \*1            |
@@ -1045,7 +1045,7 @@ The following table highlights the support level requested from each affected te
 
 \*5: Reviews of RFC and API surface area ([from here](https://rust-lang.github.io/rust-project-goals/2026/ergonomic-rc.html))
 
-#### opsem team
+##### opsem team
 | Goal                                                                                      | Level  | Champion     | Notes                |
 | :--                                                                                       | :--    | :--          | :--                  |
 | [Normative Documentation for Sound `unsafe` Rust](https://rust-lang.github.io/rust-project-goals/2026/safe-unsafe-for-safety-critical.html)     | Large  | [Ralf Jung][]    | \*1                  |
@@ -1073,12 +1073,12 @@ The following table highlights the support level requested from each affected te
 
 \*5: Problem statement review ([from here](https://rust-lang.github.io/rust-project-goals/2026/interop-problem-map.html))
 
-#### project-exploit-mitigations team
+##### project-exploit-mitigations team
 | Goal                                                                                           | Level  | Champion | Notes              |
 | :--                                                                                            | :--    | :--      | :--                |
 | [Stabilize MemorySanitizer and ThreadSanitizer Support](https://rust-lang.github.io/rust-project-goals/2026/stabilization-of-sanitizer-support.html) | Medium | [Ramon de C Valle][] | Dedicated reviewer |
 
-#### rustdoc team
+##### rustdoc team
 | Goal                                                                                               | Level  | Champion        | Notes |
 | :--                                                                                                | :--    | :--             | :-- |
 | [Evolving the standard library API across editions](https://rust-lang.github.io/rust-project-goals/2026/library-api-evolution.html)                      | Medium | [Guillaume Gomez][] | \*1 |
@@ -1098,7 +1098,7 @@ The following table highlights the support level requested from each affected te
 
 \*4: Discussion and moral support ([from here](https://rust-lang.github.io/rust-project-goals/2026/cargo-semver-checks.html))
 
-#### rustfmt team
+##### rustfmt team
 | Goal                                        | Level | Champion | Notes |
 | :--                                         | :--   | :-- | :-- |
 | [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html) | Small |  | \*1 |
@@ -1106,7 +1106,7 @@ The following table highlights the support level requested from each affected te
 
 \*1: Will need approval for rustfmt support. ([from here](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html))
 
-#### rustup team
+##### rustup team
 | Goal                                                     | Level  | Champion | Notes |
 | :--                                                      | :--    | :--  | :-- |
 | [Implement Verifiable Mirroring Prototype](https://rust-lang.github.io/rust-project-goals/2026/mirroring.html) | Medium | [Dirkjan Ochtman][] | \*1 |
@@ -1114,7 +1114,7 @@ The following table highlights the support level requested from each affected te
 
 \*1: Required for integrating the prototype into the primary toolchain installer. ([from here](https://rust-lang.github.io/rust-project-goals/2026/mirroring.html))
 
-#### spec team
+##### spec team
 | Goal                                                                                                                                            | Level | Champion | Notes |
 | :--                                                                                                                                             | :--   | :-- | :-- |
 | [Stabilize FLS Release Cadence](https://rust-lang.github.io/rust-project-goals/2026/stabilize-fls-releases.html)                                                                                      | Small |  | \*1 |
@@ -1134,7 +1134,7 @@ The following table highlights the support level requested from each affected te
 
 \*4: General discussion on how this may align with other efforts to specify Rust. ([from here](https://rust-lang.github.io/rust-project-goals/2026/experimental-language-specification.html))
 
-#### style team
+##### style team
 | Goal                                        | Level | Champion | Notes |
 | :--                                         | :--   | :-- | :-- |
 | [Stabilize Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html) | Small |  | \*1 |
@@ -1142,7 +1142,7 @@ The following table highlights the support level requested from each affected te
 
 \*1: Will need approval for style guide changes. ([from here](https://rust-lang.github.io/rust-project-goals/2026/unsafe-fields.html))
 
-#### testing-devex team
+##### testing-devex team
 | Goal                                                         | Level | Champion | Notes |
 | :--                                                          | :--   | :-- | :-- |
 | [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2026/libtest-json.html) | Small |  | \*1 |
@@ -1150,7 +1150,7 @@ The following table highlights the support level requested from each affected te
 
 \*1: Design discussions and review ([from here](https://rust-lang.github.io/rust-project-goals/2026/libtest-json.html))
 
-#### types team
+##### types team
 | Goal                                                                                                                                            | Level  | Champion      | Notes                  |
 | :--                                                                                                                                             | :--    | :--           | :--                    |
 | [Const Traits](https://rust-lang.github.io/rust-project-goals/2026/const-traits.html)                                                                                                                 | Large  | [Oliver Scherer][]      | \*1                    |
@@ -1244,12 +1244,12 @@ The following table highlights the support level requested from each affected te
 
 \*21: We expect to only need normal reviews ([from here](https://rust-lang.github.io/rust-project-goals/2026/stabilize-never-type.html))
 
-#### wg-mir-opt team
+##### wg-mir-opt team
 | Goal                                            | Level  | Champion | Notes          |
 | :--                                             | :--    | :-- | :--            |
 | [MIR move elimination](https://rust-lang.github.io/rust-project-goals/2026/mir-move-elimination.html) | Medium |  | Design meeting |
 
-#### wg-parallel-rustc team
+##### wg-parallel-rustc team
 | Goal                                                  | Level | Champion      | Notes |
 | :--                                                   | :--   | :--           | :-- |
 | [Promoting Parallel Front End](https://rust-lang.github.io/rust-project-goals/2026/parallel-front-end.html) | Large | [Vadim Petrochenkov][] | \*1 |
@@ -1257,9 +1257,9 @@ The following table highlights the support level requested from each affected te
 
 \*1: Discussion and Implementation ([from here](https://rust-lang.github.io/rust-project-goals/2026/parallel-front-end.html))
 
-# Frequently asked questions
+## Frequently asked questions
 
-## How does the goal process work?
+### How does the goal process work?
 
 **Project goals** are proposed bottom-up by a **point of contact**, somebody who is willing to commit resources (time, money, leadership) to seeing the work get done. The point of contact identifies the problem they want to address and sketches the solution of how they want to do so. They also identify the support they will need from the Rust teams (typically things like review bandwidth or feedback on RFCs). Teams then read the goals and provide feedback. If the goal is approved, teams are committing to support the point of contact in their work.
 
@@ -1267,7 +1267,7 @@ Project goals can vary in scope from an internal refactoring that affects only o
 
 Of the proposed goals, a small subset are selected by the roadmap owner as **roadmap goals**. Roadmap goals are chosen for their high impact (many Rust users will be impacted) and their shovel-ready nature (the org is well-aligned around a concrete plan). Roadmap goals are the ones that will feature most prominently in our public messaging and which should be prioritized by Rust teams where needed.
 
-## What goal were not accepted?
+### What goal were not accepted?
 
 These goals were not accepted either for want of resources or consensus. In some cases, narrower versions of these goals were proposed instead.
 
