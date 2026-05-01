@@ -88,7 +88,7 @@ rustdoc will use the edition-specific default (which is currently to disable it)
 
 The `math_syntax` attribute accepts an optional list of `key="value"` pairs for
 custom macros. This is similar to the `macros` parameter that KaTeX accepts,
-but the `key` part only includes the name of the macro, without the backslash
+but the `key` is an ident that only includes the name of the macro, without the backslash
 or the number of parameters. The `"value"` is a string literal with TeX-like code,
 and, optionally, `#`numbered parameter placeholders.
 
