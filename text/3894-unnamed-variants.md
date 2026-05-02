@@ -838,39 +838,81 @@ but breaks API compatibility:
 
 ##### Control Flow Integrity
 
-Control Flow Integrity (CFI) describes a set of checks inserted into a compiled
-program to make it harder to exploit bugs. One such check validates indirect
-jumps, such as function pointer invocations, by aborting if the caller and
-callee disagree on the type signature of the function.
+[Control Flow Integrity][llvm-cfi] (CFI) describes a set of checks inserted into
+a compiled program to make it harder to exploit bugs. One such check validates
+function pointer calls by aborting if the function type signatures of the
+dynamic caller and static callee are considered incompatible by the check.
 
-CFI treats C enums as a different type from their backing integer type, so
-transmuting `fn(MyEnum)` to `fn(c_int)` and calling the function will lead to an
-abort even if `MyEnum` is backed by `c_int`. Similarly, transmuting
-`fn(MyEnum1)` to `fn(MyEnum2)` and calling the function also leads to an abort.
+[llvm-cfi]: https://clang.llvm.org/docs/ControlFlowIntegrity.html
 
-When using CFI, `repr(Int/C)` `enum`s are ABI compatible with C `enum` of the
-same name and backing integer type, while [_not_ being compatible][ucg-489] with
-the backing integer type directly. If the C source uses a [`typedef`][libc-5066]
-instead of `enum`, then it already uses the same CFI encoding as the relevant
-integer.
+This function signature is encoded into the binary and compared at runtime. To
+compose this string, Clang/Rust use the mangled name of an `enum`, referred
+to below as a type's _CFI encoding_. If two types share a CFI encoding,
+CFI considers them compatible for the purposes of function pointer casts.
 
-CFI compares the _name_ of the `enum` when validating a function call signature,
-so for compatibility between Rust and C over FFI, Rust must declare the open
-enum with exactly the same CFI name as the C enum for them to be ABI compatible.
-The presence of an unnamed variant in an `enum` does not affect its CFI
-encoding.
+These all share the same encoding and are compatible for CFI signature checking
+when used as parameters or return values in a function using the C ABI
+(`extern "C" fn`):
 
-When using CFI, a `#[repr(transparent)]` newtype `struct` is ABI compatible with
-the underlying integer type, and not with any `enum` types.
+- `enum foo { ... }` in C/C++ global namespace
+- `typedef enum { ... } foo` in C/C++ global namespace
+- `typedef enum foo { ... } bar` in C/C++ global namespace using `enum foo` or
+  `bar`. A `typedef` name is only encoded when the type it names is anonymous.
+- `enum class foo { ... }` in C++ global namespace
+- `#[repr(C)] enum foo` in Rust (ignoring modules)
+- `enum foo : uint16_t` in C and `enum class foo : uint16_t` in C++ also share
+  this encoding, since Clang doesn't encode the backing integer for the `enum`.
+  It remains ABI incompatible with the above types.
 
-The [`cfi_encoding`] attribute overrides the symbol that distinguishes types for
-CFI and can indicate whether the enum is meant to interoperate with a C enum of
-the same name or the backing integer. This allows for an ABI compatible switch
-from newtype `struct` to open `enum`.
+These share a different CFI encoding:
 
-[ucg-489]: https://github.com/rust-lang/unsafe-code-guidelines/issues/489
-[`cfi_encoding`]: https://doc.rust-lang.org/nightly/unstable-book/language-features/cfi-encoding.html
+- `int`
+- [`typedef int foo`][libc-5066]
+
 [libc-5066]: https://github.com/rust-lang/libc/issues/5066
+
+This RFC proposes that `#[repr(Int)] enum foo` encode the same as
+`enum foo : CEquivalentOfInt` / `enum class foo : CppEquivalentOfInt` when used
+in an `extern "C" fn` signature. As of writing, compatibility with C/C++
+encoding is only attempted for `repr(C)` `enum` in `extern "C" fn`.
+
+Because an `enum` and its backing integer don't share the same encoding, this
+triggers an abort when using CFI:
+
+```rust
+// On x86_64-unknown-linux-gnu:
+#[repr(C)]
+#[derive(Debug)]
+enum Foo {
+    X, Y, Z
+}
+// Also aborts with `extern "C" fn`, `repr(i32)` enum, and reversed conversion.
+let f: fn(Foo) = |x: Foo| println!("{x:?}");
+let g: fn(ffi::c_int) = unsafe { mem::transmute(f) };
+// As of writing, Miri identifies f / g as ABI-incompatible and aborts as well.
+(g)(2);
+```
+
+The [`cfi_encoding`] attribute overrides a type's identifier for CFI. It uses
+[Itanium C++ ABI mangling][itanium-mangle] to name the type. For example,
+`#[repr(C)] enum foo` encodes as `3foo` and `i32` as `u3i32`. To avoid CFI
+aborts, this attribute can be used today to:
+
+- Make a `repr(transparent)` newtype `struct` encode the same as a C/C++ `enum`.
+- Make a `repr(C)` Rust `enum` encode the same as a C/C++ `typedef int foo`
+  as well as a Rust `repr(transparent)` newtype `struct` wrapping `c_int`.
+- Make a `repr(Int)` Rust `enum foo` encode the same as a C/C++ fixed-integer
+  `enum foo : CEquivalentOfInt`.
+
+[`cfi_encoding`]: https://doc.rust-lang.org/nightly/unstable-book/language-features/cfi-encoding.html
+[itanium-mangle]: https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangle.source-name
+
+By default, Clang and Rust do not encode integers of the same size in the same
+way: C `int` and `long` may encode differently even when they're the same size.
+The Clang `-fsanitize-cfi-icall-experimental-normalize-integers` and Rust
+`-Zsanitizer-cfi-normalize-integers` flags normalize integer encoding across the
+languages so that a C `int` encodes the same as the signed Rust integer of the
+same bit width.
 
 #### Applicable lints
 
