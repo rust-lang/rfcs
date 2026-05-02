@@ -1769,7 +1769,7 @@ Like with `Other = ..`, the utility of determining if the discriminant is known
 can be provided [with a macro](#isnamedvariant-derive), and an `as` cast
 accesses the discriminant value.
 
-### Forward compatibility with newtype `struct`s
+### Forward compatibility with all newtype `struct`s
 
 As described in [Compatibility](#compatibility), it is a minor change to replace
 a `repr(transparent)` newtype `struct` wrapping a non-`pub` `Int` with an open
@@ -1875,6 +1875,29 @@ built-ins respectively.
 
 So, in order for that to work, `.0` would be necessary. However, this is too
 confusing of a syntax for an `enum` to access the discriminant.
+
+### Require `repr(C, Int)` for compatibility with fixed-type C/C++ `enum`
+
+This RFC [proposes](#control-flow-integrity) that a `repr(Int)` `enum` be
+compatible with a C/C++ `enum` specifying the same fixed underlying type.
+
+Instead, it could be required that `repr(C)` also be included on a `repr(Int)`
+field-less `enum` in order to guarantee compatibility with an equivalent C/C++
+definition. Specifying `repr(C, Int)` on a field-less `enum` is currently
+rejected.
+
+This approach has these disadvantages:
+
+- `repr(C)` affects the layout of `enum`s with fields; `repr(C, Int)` would mean
+  very different things for field-less and fielded `enum`s.
+- `repr(Int)` on an `enum` with fields is defined as compatible with a
+  `union`-of-`struct`s where each `struct`'s first field is a C++
+  `enum class : CppEquivalentOfInt`. It's inconsistent to have compatibility
+  _without_ spelling `C` for enums with fields and require `C` for compatibility
+  of field-less `repr(Int)` enums with their C/C++ counterparts.
+- It is reasonable for users to expect that `repr(Int)` `enum` be compatible
+  with a C enum using the same fixed underlying type, whereas `repr(C)` `enum`
+  exists to be compatible with a default C definition.
 
 ### Forbid unnamed variants' discriminants from overlapping named ones
 
@@ -1985,25 +2008,6 @@ equivalent to `#[non_exhaustive]`. However, this is confusing for a syntax that
 describes ranges of variants: what does the range `_ = ..` actually cover? Is
 there still ABI compatibility?
 
-### Require `repr(transparent, Int)` on `enum` for ABI compatibility with `Int`
-
-This RFC defines ABI compatibility between `repr(Int/C)` enums and their
-representing integers, which matches the C standard (C23 §6.7.3.3). However,
-[CFI](#control-flow-integrity) may treat these as incompatible types and abort.
-
-`repr(Int)` on an `enum` specifies an explicit discriminant, but does not have
-to imply that it is ABI compatible with `Int`. What if `repr(transparent, Int)`
-could be specified to make it explicit that ABI compatibility with `Int` is
-required, including by CFI?
-
-This could also be inverted: `repr(Int)` is treated as CFI compatible with `Int`
-but `repr(C, Int)` is CFI compatible with a C `enum`. This would be confusing
-for `enum`s with fields, where the `C` also changes the layout of the type.
-
-The reason the RFC does not choose this is because `#[cfi_encoding]` and
-compiler flags can predictably override CFI behavior for cases where the
-distinction between `repr(transparent)` `struct` and open `enum` may matter.
-
 ### Don't introduce a new `as` cast
 
 This RFC introduces new a `as` cast from integer to `enum` that _cannot_ cause
@@ -2103,8 +2107,10 @@ described in the Alternatives section above.
 
 ## Unresolved questions
 
-Is the Control Flow Integrity encoding of types the only blocker for `repr(Int)`
-`enum` to be ABI compatibile with `Int`?
+Is the Control Flow Integrity encoding of types the only [blocker][ucg-489] for
+`repr(Int)` `enum` to be ABI compatibile with `Int`?
+
+[ucg-489]: https://github.com/rust-lang/unsafe-code-guidelines/issues/489
 
 ## Future possibilities
 
@@ -2258,5 +2264,34 @@ let name = match code {
     500..=599 => "server error",
 
     // Exhaustive match, no wildcard branch needed.
+}
+```
+
+### Improved control over CFI encoding
+
+This RFC defines ABI compatibility between `repr(Int/C)` enums and their
+underlying types, which matches the C standard (C23 §6.7.3.3). However,
+[CFI](#control-flow-integrity) treats these as incompatible types and aborts.
+Two `enum`s with the same underlying type are incompatible: compatibility isn't
+transitive.
+
+The [`cfi_encoding`] attribute allows the name of a type for CFI be directly
+controlled, but it has downsides:
+
+- The CFI encoding of integers is dependent on compiler flags, and so a manual
+  override can be valid for one set of flags but not another.
+- It requires extra knowledge of name mangling.
+- The mangling is technically platform dependent: Clang on Windows uses MSVC
+  mangling for CFI.
+
+A `cfi_encoding_of` attribute could instead be used to copy the encoding of
+another type:
+
+```rust
+#[repr(i32)]
+// Compatible with `typedef int32_t Foo` instead of `enum Foo: int32_t`
+#[cfi_encoding_of(i32)]
+enum Foo {
+  X, Y, Z
 }
 ```
