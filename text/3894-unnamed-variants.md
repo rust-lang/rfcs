@@ -2238,6 +2238,80 @@ pub enum Shape {
 }
 ```
 
+### Advanced casting with pattern types
+
+The `as` cast from `enum` to `Int` could implicitly receive the
+[pattern type][pattern types] `Int is P`, where `P` matches every possible
+discriminant for the source expression. For a literal or `const` enum variant
+source, `P` is just that variant's discriminant. For dynamic source values, it
+matches every valid discriminant for the `enum`. The source `enum` may also be a
+pattern type, which constrains `P`.
+
+Conversely, the `as` cast from `Int` to `enum` type that is defined in this RFC
+could be extended to support more situations by requiring the source `Int` type
+be coercible to `Int is P`, where `P` matches every possible discriminant for
+the destination type. The destination may itself be a pattern type of `enum`.
+
+While it could be required that the `enum` type have an explicit `repr(Int)` or
+`repr(C)`, it is not technically necessary nor a breaking change from this RFC's
+more conservative proposal. All valid discriminants for an `enum` have a known
+but possibly different value when cast to the backing integer for the `enum`,
+which can then be integrated into `P` for a static lossless check.
+
+Example syntax:
+
+```rust
+#[derive(Debug, PartialEq)]
+enum Color {
+    Red,
+    Green,
+    Blue,
+    Yellow = 5,
+}
+
+// Compatible with `repr(Rust)` since `1` is statically known to be valid
+// for any type chosen for the `{integer}`.
+let c = 1 as Color;
+assert_eq!(c, Color::Green);
+
+// error: invalid discriminant for `Color::Unknown`
+// help: `Color` has valid discriminants in `0..=2 | 5`
+// let c = 3 as Color::Unknown;
+
+fn some_color() -> Color { Color::Red }
+
+// No check necessary; casts are bidirectionally infallible.
+fn exact_cast(x: u8 is 0..=2 | 5) -> Color {
+    x as Color
+}
+assert_eq!(exact_cast(some_color() as u8), Color::Red);
+
+// No check necessary; only returns `Red` or `Yellow`.
+// Bidirectional casts require a pattern return type.
+fn subset_cast(x: u8 is 0 | 5) -> Color is Color::Red | Color::Yellow {
+    x as Color
+}
+// Compatible because `Color::Red as u8` has the type `u8 is 0`.
+assert_eq!(subset_cast(Color::Red as u8), Color::Red);
+
+// Compatible because `subset_cast(0) as u8` has the type `u8 is 0 | 5`.
+assert_eq!(subset_cast(subset_cast(0) as u8), Color::Red);
+
+// The below *may* be valid if `some_color` is made `const` and keeps returning
+// `Color::Red` or `Color::Yellow`.
+// error: incompatible pattern type coercion
+// help: the source pattern is `0..=2 | 5`
+// help: the destination pattern is `0 | 5`
+// help: `3..=4` is incompatible
+// assert_eq!(subset_cast(some_color() as u8), Color::Red);
+
+// error: incompatible source pattern type for cast
+// help: `Color` has valid discriminants in `0..=2 | 5`
+// help: the source pattern type is `0..=5`
+// help: `Color` is incompatible with `3..=4`
+// fn superset_cast(x: u8 is 0..=5) -> Color { x as Color }
+```
+
 ### `match` on ranges of enums
 
 ```rust
