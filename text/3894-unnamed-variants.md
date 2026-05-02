@@ -1773,8 +1773,8 @@ accesses the discriminant value.
 
 As described in [Compatibility](#compatibility), it is a minor change to replace
 a `repr(transparent)` newtype `struct` wrapping a non-`pub` `Int` with an open
-`enum` using unnamed variants. However, this would require the following
-non-trivial changes to `repr(Int/C)` enums:
+`enum` using unnamed variants. In order to prevent this, it would require the
+following non-trivial changes to `repr(Int/C)` enums:
 
 - The enum name is a constructor `fn(Repr) -> Enum`:
 
@@ -1806,75 +1806,73 @@ non-trivial changes to `repr(Int/C)` enums:
     having closed enums be `unsafe` to mutate through `.0` - it's an
     [unsafe field].
 
-There are some clear benefits:
+  There are some clear benefits:
 
-- It is possible to get a reference directly to the discriminant, which can be
-  useful when performing lifetime-constrained zero-copy serialization.
-- The type of `.0` is exactly the `repr`, and doesn't require the user specify a
-  type to `as` cast to and possibly truncate. Currently, there's no language
-  feature in Rust that does this - it requires a macro or codegen to guarantee.
-  This can cause subtle bugs, especially for `repr(C)`:
+  - It is possible to get a reference directly to the discriminant, which can be
+    useful when performing lifetime-constrained zero-copy serialization.
+  - The type of `.0` is exactly the `repr`, and doesn't require the user specify a
+    type to `as` cast to and possibly truncate. Currently, there's no language
+    feature in Rust that does this - it requires a macro or codegen to guarantee.
+    This can cause subtle bugs, especially for `repr(C)`:
 
-  ```rust
-  #[repr(C)]
-  enum Oops {
-      // On any platform where this is more than `c_int::MAX`.
-      TooBig = 2_147_483_649,
-  }
-  assert_eq!(Oops::TooBig as core::ffi::c_int, -2_147_483_647);
-  ```
+    ```rust
+    #[repr(C)]
+    enum Oops {
+        // On any platform where this is more than `c_int::MAX`.
+        TooBig = 2_147_483_649,
+    }
+    assert_eq!(Oops::TooBig as core::ffi::c_int, -2_147_483_647);
+    ```
 
-  Instead, `.0` accesses the discriminant without fear of truncation:
+    Instead, `.0` accesses the discriminant without fear of truncation:
 
-  ```rust
-  assert_eq!(Oops::TooBig.0, 2_147_483_649);
-  // mismatched types, expected `i32`, got `i64`
-  // let _: c_int = X::V.0;
-  ```
+    ```rust
+    assert_eq!(Oops::TooBig.0, 2_147_483_649);
+    // mismatched types, expected `i32`, got `i64`
+    // let _: c_int = X::V.0;
+    ```
 
-- Some discriminant-manipulating operations are simpler than with `as` casts:
+  - Some discriminant-manipulating operations are simpler than with `as` casts:
 
-  ```rust
-  #[repr(u32)]
-  enum X {
-      A = 0,
-      B = 1,
-  }
-  let mut x = X::A;
-  assert_eq!(x.0, 0);
+    ```rust
+    #[repr(u32)]
+    enum X {
+        A = 0,
+        B = 1,
+    }
+    let mut x = X::A;
+    assert_eq!(x.0, 0);
 
-  // SAFETY: 1 is a valid discriminant for `X`.
-  unsafe { x.0 += 1; }
+    // SAFETY: 1 is a valid discriminant for `X`.
+    unsafe { x.0 += 1; }
 
-  assert!(matches!(x, X::B));
-  ```
+    assert!(matches!(x, X::B));
+    ```
 
-- A fielded enum with `#[repr(Int)]` and/or `#[repr(C)]` is guaranteed to have
-  its discriminant values starting from 0. However, for any given value of that
-  enum, there's no built-in way to extract what the integer value of the
-  discriminant is safely. The `unsafe` mechanism is
-  `(&thenum as *const _ as *const Int).read()`. For open fielded enums, some
-  direct access to the discriminant would be even more valuable, since the
-  discriminant could be entirely unknown and the user may want to know its
-  value.
+  - A fielded enum with `#[repr(Int)]` and/or `#[repr(C)]` is guaranteed to have
+    its discriminant values starting from 0. However, for any given value of that
+    enum, there's no built-in way to extract what the integer value of the
+    discriminant is safely. The `unsafe` mechanism is
+    `(&thenum as *const _ as *const Int).read()`. For open fielded enums, some
+    direct access to the discriminant would be even more valuable, since the
+    discriminant could be entirely unknown and the user may want to know its
+    value.
 
-[unsafe field]: https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html
+  [unsafe field]: https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html
 
-However, this is a subjectively ugly and undiscoverable syntax to access the
-discriminant of an `enum`. One possibility: when introduced, treat these forms
-as deprecated and throw a warning to recommend a better syntax than `.0` but
-still allow the desired migration be a minor change across the ecosystem.
+  However, this is a subjectively ugly and undiscoverable syntax to access the
+  discriminant of an `enum`. Perhaps when introduced, these forms could begin
+  as deprecated and throw a warning to recommend a better syntax than `.0` but
+  still allow the desired forward compatibility for `struct` newtype to open
+  `enum`.
 
-There are also existing proposals to [read][rfc-3607] and [write][rfc-3727] the
-discriminant directly. They propose alternative syntax, with
-`.enum#discriminant` rather than `.0` and `discriminant_of!`/`set_discriminant`
-built-ins respectively.
+  This better syntax could resemble the existing proposals to [read][rfc-3607]
+  and [write][rfc-3727] a discriminant directly. They propose alternative
+  syntax, with an `.enum#discriminant` field rather than `.0` and
+  `discriminant_of!`/`set_discriminant` built-ins respectively.
 
 [rfc-3607]: https://github.com/rust-lang/rfcs/pull/3607
 [rfc-3727]: https://github.com/rust-lang/rfcs/pull/3727
-
-So, in order for that to work, `.0` would be necessary. However, this is too
-confusing of a syntax for an `enum` to access the discriminant.
 
 ### Require `repr(C, Int)` for compatibility with fixed-type C/C++ `enum`
 
