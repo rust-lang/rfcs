@@ -461,10 +461,13 @@ An unnamed variant declaration may be specified more than once on the same enum.
 It is valid to claim multiple ranges of discriminants. Those ranges may be
 discontiguous.
 
-To declare an unnamed variant, the `enum` must have an explicit `repr(Int)`.
-`Int` is one of the primitive integers or `C`. If it is `C`, then `Int` below is
-`isize`. An unnamed variant declaration must specify a discriminant expression
-with one of these types:
+To declare an unnamed variant, the `enum` must have an explicit `repr(Int)` to
+indicate a **backing integer** for the `enum`. `Int` is one of the primitive
+integers or `C`. If it is `C`, then the `Int` for the discriminant expression
+below is `isize` and the declaration has further [nuances](#reprc-behavior).
+
+An unnamed variant declaration must specify a discriminant expression with one
+of these types:
 
 - `Int`
   - Claims a particular discriminant value.
@@ -592,14 +595,15 @@ enums are ordinarily backed by a `ffi::c_int`, but if any of the assigned
 discriminants cannot fit, a larger backing integer is chosen that can represent
 all of them.
 
-> Since this behavior is fraught with ABI mismatches, this is going to change
-> to [forbid enums larger than `c_int` or `c_uint`][enum-size-constrain].
+> Since this behavior is fraught with mismatches on different compiler
+> platforms, allowing enums larger than `c_int` or `c_uint` is currently being
+> [phased out][enum-size-constrain] via a Future Compatibility Warning.
+
+[enum-size-constrain]: https://github.com/rust-lang/rust/pull/147017
 
 Sometimes this is overridden by the system's ABI. On some rarer platforms,
 `repr(C)` enums start as small as 1 byte, smaller than the C `int`. The behavior
 is otherwise the same.
-
-[enum-size-constrain]: https://github.com/rust-lang/rust/pull/147017
 
 The same rules apply for discriminants assigned to unnamed variants:
 
@@ -611,18 +615,21 @@ enum Small {
 }
 
 // Named and unnamed variants can both grow a `repr(C)` enum.
+// Emits FCW `repr_c_enums_larger_than_int` for `Big1` and `Big2`.
+#[repr(C)]
 enum Big1 {
     X = 1,
     _ = isize::MAX,
 }
 
+#[repr(C)]
 enum Big2 {
     X = 1,
     _ = 2,
     Y = isize::MAX,
 }
 
-// On x86_64-unknown-linux-gnu.
+// On x86_64-unknown-linux-gnu:
 const _: () = assert!(
     size_of::<Small>() == 4 &&
     size_of::<Big1>() == 8 &&
@@ -637,6 +644,8 @@ discriminant expression, the effective bound of the claimed range is dependent
 on what the backing integer would be if no unnamed variants were declared.
 
 ```rust
+// On x86_64-unknown-linux-gnu:
+
 #[repr(C)]
 enum SmallNonnegative {
     X = 0,
@@ -658,7 +667,6 @@ enum BigOpen2 {
     _ = 0..=isize::MAX,
 }
 
-// On x86_64-unknown-linux-gnu.
 const _: () = assert!(
     size_of::<SmallNonnegative>() == 4 &&
     size_of::<BigOpen1>() == 8 &&
@@ -679,14 +687,16 @@ enum Foo {
 as this Rust open enum, regardless of the discriminant values assigned:
 
 ```rust
-// `allow` effective when there are 256 variants within the `u8`/`i8` range on
-// a short-enum platform. Only macros/codegen like bindgen bother with this.
-#[allow(taken_discriminant_ranges)]
 #[repr(C)]
 enum Foo {
     Name1 = Value1,
     Name2 = Value2,
     // ...
+
+    // This `allow` is effective when there are 256 variants for `u8`/`i8`
+    // or 65536 variants for `u16`/`i6` on a short-enum platform.
+    // Only macros/codegen like bindgen bother with this.
+    #[allow(taken_discriminant_ranges)]
     _ = ..,
 }
 ```
@@ -1211,10 +1221,12 @@ A `repr(C)` unit-only open enum may be `as` cast from:
     can cast from `c_int` and `c_uint` to most `repr(C)` open enums, while
     preventing unexpected truncations when necessary.
 
+Examples:
+
 ```rust
 const TEN: isize = 10;
 
-// Must be able to represent `u8::MAX`: `u8` or `c_int` or `c_uint`.
+// Must be able to represent `u8::MAX`: backed by `u8` or `c_int` or `c_uint`.
 #[repr(C)]
 enum SmallUnsigned {
     X = 0,
@@ -1231,7 +1243,7 @@ enum Small {
     _ = ..,
 }
 
-// Must be able to represent negative numbers: `i8` or `c_int`.
+// Must be able to represent negative numbers: backed by `i8` or `c_int`.
 #[repr(C)]
 enum SmallSigned {
     X = 0,
@@ -1240,7 +1252,8 @@ enum SmallSigned {
     _ = ..,
 }
 
-// Must be able to hold `isize::MIN..=isize::MAX` which may exceed `c_int`.
+// Must be able to hold `isize::MIN..=isize::MAX` which may exceed `c_int`:
+// may be backed by `isize`, but could be `c_int` if `c_int` is larger.
 #[repr(C)]
 enum Big {
     X = 0,
