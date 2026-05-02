@@ -1219,7 +1219,7 @@ enum NothingYet { _ = .. }
 (10 as NothingYet > 5 as NothingYet)
 ```
 
-### Open enum conversion
+### Open enum casting
 
 An _open enum_ is defined as an `enum` for which every value of its backing
 integer is a valid discriminant.
@@ -1228,6 +1228,8 @@ integer is a valid discriminant.
 - An enum is open if every discriminant value for that integer is associated
   with a named or unnamed variant.
   - For a field-less enum, this means every initialized bit pattern is valid.
+  - `_ = ..` makes any enum open. This should apply for
+    [enums with](#unnamed-variants-on-enums-with-field-data) and without fields.
 - A [unit-only] open enum may be `as` cast from its backing integer _only_:
   `2u8 as Color`. See below for `repr(C)` behavior.
 - If an expression with the `{integer}` inference variable type is used as the
@@ -1246,7 +1248,7 @@ integer is a valid discriminant.
     // let _: u32 = x;
     ```
 
-#### `repr(C)` open enum behavior
+#### `repr(C)` open enum casting
 
 The actual backing integer type for a `repr(C)` enum changes based on the
 variants' numeric discriminant values as described above.
@@ -1762,7 +1764,7 @@ Some concerns:
 - This has the same issue regarding the complexity of `match` as the type
   evolves as the `Other = ..` alternative above.
 - This would introduce a new concept to Rust users: that a tuple variant field
-  can carry a discriminant directly rather than a payload (which can
+  can carry a discriminant directly rather than a payload (which can be used to
   discriminate).
 
 Like with `Other = ..`, the utility of determining if the discriminant is known
@@ -2011,8 +2013,7 @@ there still ABI compatibility?
 This RFC introduces new a `as` cast from integer to `enum` that _cannot_ cause
 data loss. While it would be excellent for Rust to provide a non-`as` mechanism
 to convert from integer to `enum` such as a `TryFrom` `derive`, such a mechanism
-should be provided for all `enum`s, not just those with unnamed fields as
-affected defined by this RFC.
+should be provided for all `enum`s, not just those with unnamed variants.
 
 ## Prior art
 
@@ -2124,7 +2125,7 @@ can be provided by third parties, it may be better for the ecosystem to have a
 standard library solution.
 
 ```rust
-#[repr(transparent, u32)]
+#[repr(u32)]
 #[derive(IsNamedVariant)]
 enum IpProto {
     Tcp = 6,
@@ -2155,9 +2156,12 @@ related Alternatives section above.
 enum Color {
     Red = 0,
     Green = 1,
-    // Must specify a non-overlapping range,
-    // including if `..` is the discriminant.
-    Unknown = 2..=50,
+    // Must specify a non-overlapping range, including with `Unknown = ..`.
+    // Optional: make this variant private, which prevents downstream users
+    // from breaking when a new variant is added and the valid discriminants
+    // for `Unknown` changes.
+    // Also: Should e.g. `Unknown = 2..=50 | 60` be allowed?
+    priv Unknown = 2..=50,
 }
 
 // This is fine.
