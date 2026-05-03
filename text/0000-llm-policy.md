@@ -16,6 +16,7 @@ It proposes an "honesty over purity" policy where maintainers are given broad au
 4. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
 5. If a user is found to be repeatedly lying about LLM usage (using LLMs without disclosing that usage), this is a COC violation that will be moderated accordingly.
 6. Teams are allowed to form their own policies regarding *nontrivial* LLM usage, although as long as users are honest, follow the COC otherwise, and respect boundaries, the worst that will happen is the rejection of a contribution.
+7. Due to the complexities of certain spaces which are shared between teams, additional limitations on *nontrivial* contributions are applied to just these spaces.
 
 In terms of additional tooling for *disclosure*, this RFC encourages the creation of a bot that automatically replies to contributions from new users informing them of the LLM policy and what constitutes sufficient disclosure. As mentioned, in general, going into as much detail as possible (e.g. prompts used, etc.) is preferred, but not always required. The RFC leaves the exact details of such implementation unspecified and up for revision later.
 
@@ -430,6 +431,7 @@ This policy details the requirements for using generative Artificial Intelligenc
 4. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
 5. If a user is found to be repeatedly lying about LLM usage (using LLMs without disclosing that usage), this is a COC violation that will be moderated accordingly.
 6. Teams are allowed to form their own policies regarding *nontrivial* LLM usage, although as long as users are honest, follow the COC otherwise, and respect boundaries, the worst that will happen is the rejection of a contribution.
+7. Due to the complexities of certain spaces which are shared between teams, additional limitations on *nontrivial* contributions are applied to just these spaces.
 
 ### Trivial Usage is Always Allowed
 
@@ -508,7 +510,15 @@ As a result, certain LLM usage is restricted for shared repositories in certain 
 
 RFCs and public communications (e.g. blog posts) are expected to share the same standard as issue descriptions, being free from nontrivial LLM usage at the top level. Disclosed nontrivial usage is still allowed in comments.
 
+While the various websites hosted by the project *are* team-specific, "public communications" is mostly specific to the content of blog posts, prose, images, etc. listed on various public pages. This means that nontrivial usage can still be allowed by these teams for the mechanical/aesthetic parts of websites as long as the actual content of the page does not involve nontrivial usage.
+
 It is always acceptable to *discuss* LLMs and their usage if all other rules are followed. Currently, this extends toward there being no explicit rules against mentioning LLM usage in public communications as long as all other rules are followed. As with all policies, this may change in the future.
+
+#### Decisionmaking
+
+Since there is a potential for bias in models, in general, the "final decision" on any action should come from the conscious decision of a team member, not an LLM. This also includes "filtering" cases where a set of options is narrowed down, e.g. a list of potential grant nominees or features to be implemented. Ultimately, human team members should be making the decision here, not LLMs, although this policy does not forbid team members from using LLMs for advice.
+
+As a particular example of this policy, if an LLM is used for review in a team-specific repository, that review must not be binding, and a team member should have the final say.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -589,6 +599,22 @@ They're uncomfortable problems.
 But I'm not asking you to stop. I'm asking you to be more careful with how you use it, and to limit the cases where there could potentially be issues. I do feel that, in a very real sense, LLM users are directly harmed by the industry that makes the tool they love. Genuinely, every bit of anger toward someone who uses an LLM is better pointed toward the people in charge doing actual harm. But you must understand why it's hard not to be a bit angry at you, too, even if we try to be nicer when we can.
 
 Hopefully, this policy's adoption encourages us to be a little nicer to each other, and to understand, more than anything else.
+
+### Avoiding the vibe of vibecoding
+
+This one actually feels reasonable at first glance, but unfortunately, it falls short.
+
+Essentially, the idea is that instead of limiting nontrivial usage in shared spaces and public communications, we should simply relax the rule and ensure that users don't replicate the "LLM feeling" in their contributions.
+
+The problem with this is that LLMs are designed to replicate humans, and there have already been numerous issues that have cropped up:
+
+* Neurodivergent authors tend to replicate the "terseness" of many LLMs, and often show up as false positives in LLM detection
+* Kenyan authors, many of whom helped filter the data for LLMs, often show up as false positives in LLM detection
+* A lot of "business communication" tends to match the flow of common LLM summaries, since LLMs optimized for that kind of output
+
+Ultimately, "LLM-ness" is a mold that a lot of writing can easily fit into, and the main issue is that knowing whether an LLM is involved tends to influence whether something sounds "LLM-y" to people. The best we can do, really, is to limit the LLM usage to the point where we can confidently tell these people, no, this is a false positive, than to offer the insurmountable and vague task to LLM users to make it sound like they didn't use an LLM.
+
+Again, the openness of the definition of trivial usage should hopefully mean that a lot of the ways that people previously described as "used an LLM, then heavily revised" can be achieved with minimal changes to workflow.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -747,7 +773,6 @@ The following policies exist, but are not final:
 
 * How should tooling be done to inform people of the LLM policy? Ideally, rustbot would inform new contributors or people who haven't made a PR since a recent policy change, but this constitutes work that needs to be figured out.
 * How are teams going to form their own individual policies, and is the inconsistency across the project ultimately going to be acceptable?
-* Should the project adopt a "no final determination" rule similar to Fedora's policy?
 * Should the project adopt a Developer Certificate of Origin?
 
 ## Future possibilities
