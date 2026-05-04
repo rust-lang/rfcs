@@ -700,6 +700,10 @@ Before TC's latest RFC, on the same day, jyn posted a policy specific to `rust-l
 
 * 2026 Apr 17: jyn (@jyn514) opens a Rust Forge PR: [Add an LLM policy for `rust-lang/rust`](https://github.com/rust-lang/rust-forge/pull/1040)
 
+On the same day this RFC was posted (by coincidence), the Rust Foundation adopted its current AI usage policy:
+
+* 2026 May 04: Rust Foundation posts [Internal AI Usage Policy](https://rustfoundation.org/policy/internal-ai-usage-policy/)
+
 ### Existing policies
 
 Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](https://github.com/rust-lang/leadership-council/issues/273#issuecomment-4051188890) initially. A few changes have been made since the initial review, mostly to review the policies and verify they haven't been updated, and to add any potential others.
