@@ -46,11 +46,11 @@ RFCs:**
 [rfcs#3873-history]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#history
 [rfcs#3873-motivation]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#motivation
 
-[rfcs#3875]: https://github.com/rust-lang/rfcs/pull/3875
-[rfcs#3875-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#proposal
-[rfcs#3875-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#rationale-and-alternatives
-[rfcs#3875-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#unresolved-questions
-[rfcs#3875-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#future-possibilities
+[rfcs#3875]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html
+[rfcs#3875-proposal]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#proposal
+[rfcs#3875-rationale-and-alternatives]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#rationale-and-alternatives
+[rfcs#3875-unresolved-questions]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#unresolved-questions
+[rfcs#3875-future-possibilities]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#future-possibilities
 
 ## Motivation
 [motivation]: #motivation

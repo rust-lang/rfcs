@@ -1107,11 +1107,11 @@ standard library.
 [rfcs#3874-unresolved-questions]: https://rust-lang.github.io/rfcs/3874-build-std-always.html#unresolved-questions
 [rfcs#3874-future-possibilities]: https://rust-lang.github.io/rfcs/3874-build-std-always.html#future-possibilities
 [rfcs#3874-summary]: https://rust-lang.github.io/rfcs/3874-build-std-always.html#summary-of-proposed-changes
-[rfcs#3875]: https://github.com/rust-lang/rfcs/pull/3875
-[rfcs#3875-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#proposal
-[rfcs#3875-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#rationale-and-alternatives
-[rfcs#3875-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#unresolved-questions
-[rfcs#3875-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#future-possibilities
+[rfcs#3875]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html
+[rfcs#3875-proposal]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#proposal
+[rfcs#3875-rationale-and-alternatives]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#rationale-and-alternatives
+[rfcs#3875-unresolved-questions]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#unresolved-questions
+[rfcs#3875-future-possibilities]: https://rust-lang.github.io/rfcs/3875-build-std-explicit-dependencies.html#future-possibilities
 
 [davidtwco]: https://github.com/davidtwco
 [adamgemmell]: https://github.com/adamgemmell
