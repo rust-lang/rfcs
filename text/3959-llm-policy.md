@@ -92,7 +92,7 @@ LLMs, largely, have completely disregarded that respect. Respect would be only u
 
 Several people were attempting to find a way to properly obtain licenses for copyrighted material before proceeding. Then, suddenly, the CEO of the company demonstrates his desire to "move this stuff forward," and people just start doing it without permission. Even if the employees responsible for creating the model said "using pirated material should be beyond our ethical threshold," the CEO decided to ignore those concerns. Even though Meta's LLM is not a coding model, their case is not particularly unusual in the industry.
 
-And, it's worth mentioning that the "worst case" scenario of xAI, brought up earlier, *is* supported by GitHub Copilot, showing that at least all of the "good actors" in the AI space are willing to work with all the bad actors on equal footing. This example indicates that Meta's case is likely to be the norm.
+And, it's worth mentioning that the "worst case" scenario of xAI, brought up earlier, *is* supported by GitHub Copilot, showing that at least many of the "good actors" in the AI space are willing to work with the bad actors on equal footing. This example indicates that Meta's case is likely to be the norm.
 
 According to our Code of Conduct, Rust as a project is built upon a foundation of respect. At least in the opinion of the RFC author and several team members, choosing to allow unrestricted LLM usage directly contradicts that foundation of respect.
 
