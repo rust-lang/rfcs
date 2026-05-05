@@ -691,7 +691,7 @@ With that said, here's the timeline:
 Before Jack's post, Jieyou Xu offered a revised version of the compiler MCP to the leadership council to adopt as a project-wide policy, which experienced several versions of revision:
 
 * 2026 Mar 06: Jieyou Xu (@jieyouxu) opens a leadership council issue: [Policy proposal: No low-effort contributions](https://github.com/rust-lang/leadership-council/issues/273)
-* 2020 Mar 20: (Jack's post happens here)
+* 2026 Mar 20: (Jack's post happens here)
 * 2026 Mar 25: TC (@TravisCross) opens an RFC: [Add *no low-effort contributions* policy](https://github.com/rust-lang/rfcs/pull/3936)
 * 2026 Mar 30: TC  renames RFC to "Add *be present* policy"
 * 2026 Apr 17: TC  opens an RFC: [Add contribution policy for AI-generated work](https://github.com/rust-lang/rfcs/pull/3950)
