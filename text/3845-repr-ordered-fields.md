@@ -37,7 +37,7 @@ Currently `repr(C)` serves two roles:
 2. Match the target C compiler's struct/union layout algorithm and ABI
 
 But in some cases, these two roles are in tension due to platform's C layout not matching the [simple, general algorithm](https://doc.rust-lang.org/stable/reference/type-layout.html#r-layout.repr.c.struct.size-field-offset) Rust always uses:
-* On MSVC, a struct with a single field that is a zero-sized array has size 1. (https://github.com/rust-lang/rust/issues/81996)
+* On MSVC, a struct with a single field that is a zero-sized array has non-zero size. (https://github.com/rust-lang/rust/issues/81996)
 * On MSVC, a `repr(C, packed)` with `repr(align)` fields has special behavior: the inner `repr(align)` takes priority, so fields can be highly aligned even in a packed struct. (https://github.com/rust-lang/rust/issues/100743)
   (Rust tries to avoid this by forbidding `repr(align)` fields in `repr(packed)` structs, but that check is easily bypassed with generics.)
 * On MSVC-x32, `u64` fields are 8-aligned in structs, but the type is only 4-aligned when allocated on the stack. (https://github.com/rust-lang/rust/issues/112480)
