@@ -257,8 +257,8 @@ The minimum publish age check applies to the following dependency sources:
   registry mirrors are expected to preserve `pubtime` from the index to be applicable.
   Local registries and directory (vendored) sources typically don't have `pubtime`,
   so the check does not apply.
-* `cargo install` also skips pubtime-incompatible versions
-  as the `[resolver]` table is documented as not applying to `cargo install`.
+* `cargo install` is subject to `min-publish-age` and will not select pubtime-incompatible versions.
+  `resolver.incompatible-publish-age` cannot override this as the `[resolver]` table does not apply to `cargo install`.
 
 [source replacement]: https://doc.rust-lang.org/cargo/reference/source-replacement.html
 
