@@ -297,11 +297,13 @@ drop(y);
 
 ### Partial moves
 
-The proposed behavior of freeing a local variable's allocation on move only applies when the entire variable is moved. This is not the case when only a part of the variable is moved (e.g. only one field of a struct) because a re-initialized field must retain the address it had before, reintroducing the same NB issue.
+The proposed behavior of freeing a local variable's allocation on move only applies when the entire variable is moved. This RFC leaves the exact behavior of partial moves (e.g. only one field of a struct) unspecified. 
 
-Even in the case where all of the fields of a local variable have been moved out one-by-one, the local will not be freed.
+There are 2 reasons for this:
 
-With that said, we would like to keep the door open for potentially switching to operational semantics with NB in the future. So although the proposed opsem does not consider accessing a moved field as UB, we would like users to avoid relying on this behavior since it may change in the future.
+1. Specifying the behavior of partial moves makes the opsem (and by extension Miri) much more complex since we now needs to track which bytes of a local have been moved out and become "inactive" (UB to access). What happens to the padding of a struct if one field is moved out? What happens to the discriminant of an enum like `Option<T>` if the `Some` value has been moved out and the layout is optimized (the discriminant occupied the same bytes as the value)? These are all questions that would have to be answered.
+
+2. The proposed MIR optimization pass can't easily take advantage of this, and even if it could (while respecting address observation rules) then the expected benefit over the existing proposed pass would be minimal. It's just not worth the extra complexity of tracking lifetimes separately for every field of a local.
 
 ## Proposed MIR changes
 
