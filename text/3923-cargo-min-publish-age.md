@@ -275,6 +275,13 @@ Also, even if all users of a crate set a minimum publish age there is still valu
 to review the changes before the new version is pulled in by updates. And in the case of a malicious release made using compromised credentials, it gives the actual developer
 time to realize their credentials have been compromised and yank the version before it is widely used.
 
+On a related note,
+delayed discovery might make authors feel it is "too late" to yank
+because wall-clock time has passed.
+However, the minimum publish age also means most consumers haven't resolved the new version yet,
+so a yank remains low-disruption for longer than elapsed time alone would suggest.
+The practical yank window is shaped more by adoption than by the calendar.
+
 ### Disjoint resolver config values
 
 `resolver.incompatible-publish-age` supports `allow`/`deny`
