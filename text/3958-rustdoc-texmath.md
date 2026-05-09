@@ -266,6 +266,38 @@ Typst is growing in popularity, and is implemented in Rust. It might be an inter
 
 In the future, it might make sense to explore more use of typst in Rust documentation.
 
+### Why use a Rust library, specifically, for the implementation?
+
+If your LaTeX syntax doesn't parse,
+you'll get a warning at Rustdoc compile time,
+just like you do with broken intra-doc links:
+
+    error: unknown command "\frobnicate"
+      --> $DIR/basic.rs:6:5
+       |
+    LL | //! $\frobnicate{2}$
+       |     ^^^^^^^^^^^^^^^^
+       |
+    note: the lint level is defined here
+      --> $DIR/basic.rs:2:9
+       |
+    LL | #![deny(rustdoc::invalid_math)]
+       |         ^^^^^^^^^^^^^^^^^^^^^
+    
+    error: aborting due to 1 previous error
+
+That's harder if the engine is written in a different
+language than the compiler.
+
+### Why target MathML
+
+[MathML Core][] is supported by [most browsers][caniuse mathml],
+but with a [few known bugs][mathml bugs].
+
+[MathML Core]: https://www.w3.org/TR/mathml-core/
+[caniuse mathml]: https://caniuse.com/mathml
+[mathml bugs]: https://github.com/tmke8/math-core/issues/209
+
 ## Prior art
 [prior-art]: #prior-art
 
