@@ -28,7 +28,7 @@ local `cargo doc` and non-Rustdoc doc readers won't see it.
 There is a way to make it work in `cargo doc`,
 but it [seems to be less popular][include hack].
 
-Fixing this bug and making it easier to build self-contained docs is
+Providing an easy way to build self-contained docs that work for non-docs.rs readers is
 the main motivation for adding built-in support for math syntax to Rustdoc,
 but there are a few other quality of life improvements that come with this feature:
 
