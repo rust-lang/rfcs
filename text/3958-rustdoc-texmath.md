@@ -51,11 +51,14 @@ but there are a few other quality of life improvements that come with this featu
 
 To enable `$\TeX$` math syntax in rustdoc, add this line to your crate root.
 
-    #![doc(math_syntax)]
+    #![doc(syntax="+tex_math_dollars")]
 
 In a future edition, we may enable it by default. If you need to turn it off, add this line to your crate root.
 
-    #![doc(no_math_syntax)]
+    #![doc(syntax="-tex_math_dollars")]
+
+The only supported values for `doc(syntax)` are `"+tex_math_dollars"` and `"-tex_math_dollars"`,
+but we left the option open for future extensions.
 
 When this feature is enabled, equations are wrapped in single or double `$` dollar signs.
 
@@ -68,29 +71,69 @@ The result looks like this:
 A detailed comparison between our syntax and KaTeX's can be found
 [here](https://tmke8.github.io/math-core/comparison.html).
 
-You can add custom \commands by supplying key=value pairs to the math syntax attribute:
-
-    #![doc(math_syntax(
-        // usage: $\floor{x}$
-        floor=r##"\delim{\lfloor}{#1}{\rfloor}"##,
-    ))]
-
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ### Disabling and enabling math syntax
 
-The crate-level doc attributes `math_syntax` and `no_math_syntax` enable and disable
+The `doc(syntax="+tex_math_dollars"|"-tex_math_dollars")` attribute enables and disables
 support for parsing `$`-delimited TeX math in Rustdoc's Markdown.
 
-Obviously, you can't set both of them at the same time. If neither of them are set,
+Obviously, you can't set both of them at the same time on a single item.
+If neither of them are set,
 rustdoc will use the edition-specific default (which is currently to disable it).
 
-The `math_syntax` attribute accepts an optional list of `key="value"` pairs for
-custom macros. This is similar to the `macros` parameter that KaTeX accepts,
-but the `key` is an ident that only includes the name of the macro, without the backslash
-or the number of parameters. The `"value"` is a string literal with TeX-like code,
-and, optionally, `#`numbered parameter placeholders.
+This attribute can be set on any item that accepts doc comments.
+The syntax is inherited from the syntactic parent item.
+So, to list a few examples:
+
+```rust
+// lib.rs
+
+//! This is *not* math syntax: $x$
+
+#[doc(syntax="-tex_math_dollars")]
+pub mod bar;
+#[doc(syntax="+tex_math_dollars")]
+pub mod baz;
+
+#[doc(syntax="+tex_math_dollars")]
+/// This *is* math syntax: $x$
+pub struct Foo;
+
+impl Foo {
+    /// This is *not* math syntax: $x$
+    pub fn foo() {}
+}
+
+#[doc(syntax="+tex_math_dollars")]
+impl Foo {
+    /// This *is* math syntax: $x$
+    pub fn bar() {}
+}
+
+#[doc(syntax="+tex_math_dollars")]
+/// <https://github.com/rust-lang/rust/blob/29155a4cd6/src/librustdoc/visit_ast.rs#L454>
+pub fn wizzywig() {
+    #[doc(syntax="-tex_math_dollars")] //~ WARN doc syntax can only be declared on items that actually appear in documentation
+    pub struct WizzyWig;
+
+    impl Foo {
+        /// This *is* math syntax: $x$
+        pub fn baz() {}
+    }
+}
+```
+
+```rust
+// bar.rs
+#![doc(syntax="+tex_math_dollars")] //~ ERROR only one doc syntax can be declared on a single item
+```
+
+```rust
+// baz.rs
+//! This *is* math syntax
+```
 
 ### Writing math code in markdown
 
@@ -268,6 +311,37 @@ This was chosen because it's inoffensive and fine. But it is a sans serif font f
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
+### Extending `doc(syntax)`
+
+The name `tex_math_dollars` is deliberately the same [name and syntax used by Pandoc](https://pandoc.org/MANUAL.ml#extension-tex_math_dollars) for this feature.
+If we add more syntactic features, we can follow the same pattern. An example of how to build on this:
+
+```ebnf
+(* if no language is supplied, the default is "rustdoc_markdown", so "+tex_math_dollars" is synonymous with "rustdoc_markdown+tex_math_dollars" *)
+doc syntax = [ language ], { ( "+" | "-" ), extension } ;
+(* "commonmark" enables no extensions (you can, of course, add them)
+  "rustdoc_markdown" is synonymous with `commonmark+intra_doc_links+doctests+smart+pipe_tables+strikeout+footnotes+task_lists"
+  "gfm" is synonymous with `commonmark+smart+tex_math_dollars+pipe_tables+strikeout+footnotes+task_lists+emoji+tex_math_gfm+alerts+autolink_bare_uris+yaml_metadata_block"
+  "typst" doesn't support any extensions except "intra_doc_links" and "doctests", so, for example, `doc(syntax="typst+pipe_tables")` is an error *)
+language = "commonmark" | "rustdoc_markdown" | "gfm" | "typst" ;
+extension = 
+   "intra_doc_links"
+ | "doctests"
+ | "smart"
+ | "pipe_tables"
+ | "strikeout"
+ | "footnotes"
+ | "task_lists"
+ | "tex_math_dollars"
+ | "emoji"
+ | "tex_math_gfm"
+ | "alerts"
+ | "autolink_bare_uris"
+ | "yaml_metadata_block" ;
+```
+
+If a parent and child element both have `doc(syntax)` attributes, they aren't merged. The child just overrides the parent.
+
 ### Undelimited environments
 
 It's a relatively rare feature, but Jupyter Notebook and a few others support
@@ -290,6 +364,29 @@ we can treat it like a CommonMark block construct and allow blank lines in it.
         }
         result
     }
+
+### Custom macros
+
+Some implementations, such as [Pandoc's `latex_macros` extension][],
+let you write LaTeX macro definitions directly in Markdown.
+For example, these two doc comments are equivalent:
+
+```rust
+#[doc(syntax="+tex_math_dollars+latex_macros")]
+/// \newcommand{\tuple}[1]{\langle #1 \rangle}
+///
+/// $\tuple{a, b, c}$
+fn foo_bar() {}
+
+#[doc(syntax="+tex_math_dollars+latex_macros")]
+/// $\langle a, b, c \rangle$
+fn foo_bar() {}
+```
+
+Existing users of rustdoc and katex already write custom functions.
+This isn't a niche feature.
+
+[Pandoc's `latex_macros` extension]: https://pandoc.org/MANUAL.html#extension-latex_macros
 
 ### Drawing and charting syntax
 
