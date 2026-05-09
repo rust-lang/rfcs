@@ -133,9 +133,6 @@ Commands are used to write things that can't easily be typed on a keyboard,
 and for complex layouts like fractions and matrices. The math-core parser
 that we use implements hundreds of commands.
 
-<I>TODO: Full list is in <https://github.com/tmke8/math-core/blob/main/crates/math-core/src/commands.rs>.
-Do I need to include it all here?</I>
-
 ## Drawbacks
 [drawbacks]: #drawbacks
 
