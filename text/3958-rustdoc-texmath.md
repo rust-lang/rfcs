@@ -256,7 +256,7 @@ That’s not an option with, for example, Typst.
     I would prefer not to do *that*, because it's slow and seems to have poor error reporting,
     but, if we can't achieve good-enough feature support any other way, it's an option.
 
-### `typst`
+#### `typst`
 
 Typst is growing in popularity, and is implemented in Rust. It might be an interesting choice to consider in the future. However:
 - Typst does not yet have strong support for HTML output; it's still a work in progress. Rustdoc is *primarily* oriented around HTML.
