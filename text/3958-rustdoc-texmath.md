@@ -190,21 +190,13 @@ changes the behavior of already-valid documents;
 a *breaking change.*
 
 And, unlike when GitHub redesigned their Markdown as a CommonMark dialect,
-we can't run a [one-time batch converter job][] over old crates.io crates [^ghmath].
+we can't run a [one-time batch converter job][] over old crates.io crates.
 
 This class of problem has come up when [intra-doc links were designed][],
 when [pulldown-cmark was last updated][],
 when [hoedown was replaced with pulldown-cmark in the first place][],
 and when [anyone proposes replacing Markdown with something else][]
 that has a "principled extension" system.
-
-[^ghmath]:
-    Did GitHub run a similar batch job when they added math syntax?
-    I can't think of any reason why they wouldn't, but I also can't find any proof that they did.
-    It seems like it would require running the math-enabled parser over all the issue comments,
-    and, if it detects math, add a backslash in front of the dollar signs.
-    After all, math syntax didn't exist in GitHub Issues until they added it,
-    so any detected math span is, by definition, a false positive.
 
 [CommonMark spec]: https://spec.commonmark.org/0.31.2/#characters-and-lines
 [one-time batch converter job]: https://github.blog/engineering/a-formal-spec-for-github-markdown/#the-migration
