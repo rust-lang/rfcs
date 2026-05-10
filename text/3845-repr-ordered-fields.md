@@ -326,7 +326,7 @@ enum FooEnumUnsigned {
 
 Enums with fields will be laid out as if they were a struct containing the tag and a union of structs containing the data.
 NOTE: This is different from `repr(iN)`/`repr(uN)` which are laid out as a union of structs, where the first field of the struct is the tag.
-These two layouts are *NOT* compatible, and adding `repr(ordered_fields)` to `repr(iN)`/`repr(uN)` changes the layout of the enum!
+These two layouts are *NOT* compatible, and adding `repr(ordered_fields)` to `repr(iN)`/`repr(uN)` changes the layout of the enum! This may be surprising, but it matches precedent -- adding `repr(C)` to `repr(iN)`/`repr(uN)` has a similar effect.
 
 For example, this would be laid out the same as the union below
 ```rust
@@ -450,7 +450,7 @@ fn get_layout_for_enum(
 
 ### `packed`
 
-When `repr(ordered_fields, packed(N))` is applied to a struct, any field who's type has an alignment > `N` has it's alignment capped to `N`. Even if that type has a `repr(align(M))` attribute applied. Otherwise the rules are the same as described above.
+When `repr(ordered_fields, packed(N))` is applied to a struct, any field who's type has an alignment > `N` has its alignment capped to `N`. This applies even if that type has a `repr(align(M))` attribute applied. Otherwise, the rules are the same as described above.
 
 For example, for a struct
 
