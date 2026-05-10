@@ -173,7 +173,7 @@ warning: use of `repr(C)` in type `Foo`
 
 Using `repr(C)`/`repr(C#editionCurr)`/`repr(C#editionNext)` on all editions (including in future editions) when there are no extern blocks or functions in the crate will trigger a allow-by-default lint (`suspicious_repr_c`) suggesting to use `repr(ordered_fields)`.
 
-This is allow by default to reduce noise, since the edition lint should do the heavy lifting. This is still provided as a tool for interested users to reduce their reliance on `repr(C)` (or it's variants) when it is probably not needed. Since the largest difference between `repr(C)` and `repr(ordered_fields)` is calling convention.
+This is allow by default to reduce noise, since the edition lint should do the heavy lifting. This is still provided as a tool for interested users to reduce their reliance on `repr(C)` (or its variants) when it is probably not needed. Since the largest difference between `repr(C)` and `repr(ordered_fields)` is calling convention.
 
 If *any* extern block or function (including `extern "Rust"`) uses the given type in the crate, then the `suspicious_repr_c` lint will not be triggered. This way, we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
 
@@ -450,7 +450,7 @@ fn get_layout_for_enum(
 
 ### `packed`
 
-When `repr(ordered_fields, packed(N))` is applied to a struct, any field who's type has an alignment > `N` has its alignment capped to `N`. This applies even if that type has a `repr(align(M))` attribute applied. Otherwise, the rules are the same as described above.
+When `repr(ordered_fields, packed(N))` is applied to a struct, any field with a type of alignment > `N` has its alignment capped to `N`. This applies even if that type has a `repr(align(M))` attribute applied. Otherwise, the rules are the same as described above.
 
 For example, for a struct
 
