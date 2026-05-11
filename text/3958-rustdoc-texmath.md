@@ -337,7 +337,7 @@ This was chosen because it's inoffensive and fine. But it is a sans serif font f
 
 ### Extending `doc(syntax)`
 
-The name `tex_math_dollars` is deliberately the same [name and syntax used by Pandoc](https://pandoc.org/MANUAL.ml#extension-tex_math_dollars) for this feature.
+The name `tex_math_dollars` is deliberately the same [name and syntax used by Pandoc](https://pandoc.org/MANUAL.html#extension-tex_math_dollars) for this feature.
 If we add more syntactic features, we can follow the same pattern. An example of how to build on this:
 
 ```ebnf
