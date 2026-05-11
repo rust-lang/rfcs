@@ -47,6 +47,7 @@ the `cargo owner` CLI.
 
 Today, crates.io usernames always match the GitHub username of the account used to log in to
 crates.io (with exceptions for renamed or deleted GitHub accounts that will be discussed below).
+The link between a crates.io account and a GitHub account is public information.
 
 After this change, there will be the concept of a crates.io username that may or may not match the
 GitHub username of the associated account. When there are multiple ways of logging in in the
@@ -228,6 +229,19 @@ remove all association with their deadname (if their name was part of their crat
 will update [the privacy policy](https://rustfoundation.org/policy/privacy-policy/) section on
 crates.io to make this retention clear, and we will delete even admin-only viewable information
 from the database on request.
+
+## Crates.io account and GitHub account link privacy
+
+Currently, the knowledge that a crates.io account corresponds to a GitHub account is public
+information. This link is displayed on user pages and is present in the database dumps. This RFC is
+deliberately going to continue this status quo and publicly display the GitHub account that a
+crates.io account is linked with (whether or not the usernames match). We will add documentation in
+the signup process making it clear that knowledge of your GitHub account will be publicly
+associated with your crates.io account, and that you should not make a crates.io account with any
+GitHub account you do not want to have linked with your work on crates.io. See the [Private Linked
+Accounts][private-linked-accounts] section under Future Possibilities for the possibility of adding
+a way to have a private linked account in the future.
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -652,3 +666,14 @@ as:
   enforcement disallows that, and I don't think the decision on avatar resolution is as important
   as username resolution, but it might make implementation/database queries nicer if we make a
   similar decision with avatars as with usernames.
+
+## Private linked accounts
+[private-linked-accounts]: #private-linked-accounts
+
+Currently, the link between a crates.io account and a GitHub account is public information both in
+the web interface and in the database dump. For this RFC, knowing which GitHub account is linked to
+which crates.io username will continue to be public information. In the future, we could implement
+an option to have a crates.io username that uses an authentication service for login but does not
+expose the link publicly. This feature deserves more thought, design, and its own RFC before
+implementation. For now, we are deliberately deciding to continue to have the link between a
+crates.io account and a GitHub account be public information.
