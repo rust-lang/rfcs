@@ -571,12 +571,13 @@ Is this the `carols10cents` you wanted? [y/N]
 - Avatars are also indicators of identities.
   - Once we have multiple authentication services, each possibly providing an avatar, which do we
     display when a crates.io user account has different accounts associated and different avatars?
-  - We currently don't host avatar images; we don't really want to
+  - We currently don't host avatar images; we don't really want to as that would add maintenance,
+    bandwidth, and moderation costs. However, hosting avatars ourselves would be the most
+    privacy-preserving, and preferable to a service such as Gravatar that may unintentionally leak
+    personal information.
   - Could we let the user choose between:
     - Avatar associated with a linked OAuth account, hosted by the linked service (like we do today
       with GitHub avatars)
-    - Gravatar associated with the user's verified crates.io email address (which the user could
-      customize via Gravatar)
     - One placeholder image we provide (ex: Ferris)
   - Again, I think impersonation via avatar is technically possible today with only GitHub unless
     GitHub policy enforcement disallows that, and I don't think the decision on avatar resolution is
