@@ -146,9 +146,17 @@ For more details, see this discussion on [irlo](https://internals.rust-lang.org/
 
 `repr(ordered_fields)` is a new representation that can be applied to `struct`, `enum`, and `union` to give them a consistent, cross-platform, and predictable in-memory layout.
 
-`repr(C)` in current editions is an alias for `repr(C#editionCurr)` and in all other editions, it matches the default C compiler for the given target triple for structs, unions, and field-less enums. Enums with fields are laid out as a struct containing a tag and payload. With the payload being a union of structs of all the variants. This is how they are currently laid out in `repr(C)`. The calling convention of `repr(C)` will also remain the same and all current editions.
+`repr(C#editionCurr)` is the same as `repr(C)` on current editions. It lays out
+* `struct` fields in order, while ensuring that they are well aligned
+* `union` fields at offset 0
+* field-less `enum`s as an implementation defined integer
+* general `enum`s as a struct of a tag and a union. Where each field of the union is a struct containing each field of the variants. (NOTE: this is how they are handled in `repr(C)` in current editions)
 
-`repr(C)` in future editions is an alias for `repr(C#editionNext)`. It will lay out types in the same way as `C` would, and will use the same calling convention as `C`.
+`repr(C#editionNext)` will be defined as the same as what the `C` compiler of the given target would do (both in terms of layout and calling convention).
+
+`repr(C)` has an edition specific definition
+* on current editions, it matches `repr(C#editionCurr)`
+* on future editions, it matches `repr(C#editionNext)`
 
 Using `repr(C)` in all current editions triggers a lint (seen below) as an edition migration compatibility lint with a machine-applicable fix that switches it to `repr(C#editionCurr)`.
 * If you are using `repr(C)` for FFI, then you should switch to `repr(C#editionNext)` or upgrade to the new edition
