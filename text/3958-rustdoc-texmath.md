@@ -331,6 +331,8 @@ Right now, math formulas default to Noto Sans Math.
 
 This was chosen because it's inoffensive and fine. But it is a sans serif font face, that will usually be surrounded by serif text.
 
+We should also look into [subsetting](https://github.com/tmke8/math-core#font-subsetting) the font. 
+
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
