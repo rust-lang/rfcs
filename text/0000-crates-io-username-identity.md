@@ -64,12 +64,14 @@ Questions](#unresolved-questions) about username squatting).
 
 When you visit a user's page at `https://crates.io/users/example_username` or see a user account
 listed as an owner of a crate in the crate's sidebar and the account's crates.io username differs
-from the GitHub username associated with the account, you will see a warning icon similar to ⚠️ and
-text that says something like "username does not match GitHub username". Given that the common
-case, and what people are used to being able to know, will be that the GitHub and crates.io
-usernames will match, this will make it obvious in cases where that assumption does not hold. We
-may decide after some transition period (say, 1-2 years) that the username mismatch warning is no
-longer needed (especially once crates.io supports OAuth services other than GitHub).
+from the GitHub username associated with the account, you will see some sort of icon to indicate
+that something is different (this RFC will use the warning icon ⚠️, but we may decide to use
+something more neutral such as an "information" ℹ️, to be determined during implementation).
+Accompanying text will says something like "username does not match GitHub username". Given that
+the common case, and what people are used to being able to know, will be that the GitHub and
+crates.io usernames will match, this will make it obvious in cases where that assumption does not
+hold. We may decide after some transition period (say, 1-2 years) that the username mismatch
+warning is no longer needed (especially once crates.io supports OAuth services other than GitHub).
 
 If you run `cargo owner --add example_username` and the account's crates.io username differs from
 the GitHub username associated with the account, the command will error with a message similar to:
