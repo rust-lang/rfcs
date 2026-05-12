@@ -577,6 +577,10 @@ Is this the `carols10cents` you wanted? [y/N]
 - How would we define "squatting" of usernames that would be clear cases for admins to make
   available again? Accounts that don't have any crates and that don't have any valid associated
   OAuth logins (that is, all the associated accounts have been deleted)?
+  - Selling names is already prohibited by crates.io's usage policy but transferrability of a
+    username may increase the perceived value and likelihood of username selling attempts. If this
+    becomes a frequent problem, we should explore mitigation mechanisms that will depend on the
+    nature of the incidents and how to avoid false positives that prevent legitimate use.
 - We currently have the concept of a "display name" that is associated with and managed through
   your GitHub "display name" that's currently used on crate pages for owners and user pages. Do we
   want to have an authentication-independent "display name"? Or should we get rid of the "display
