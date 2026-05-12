@@ -206,12 +206,20 @@ impl Runtime for TokioRuntime {
     fn spawn<F: Future<Output = ()> + Self::FutureConstraint>(f: F) { /* ... */ }
 }
 
-// A single-threaded runtime overrides the default.
+// A single-threaded runtime overrides the default with a different value.
 impl Runtime for LocalRuntime {
     trait FutureConstraint = 'static;  // No Send requirement
     fn spawn<F: Future<Output = ()> + Self::FutureConstraint>(f: F) { /* ... */ }
 }
+
+// Another single-threaded runtime overrides with *no* additional bounds.
+impl Runtime for BareRuntime {
+    trait FutureConstraint;  // Explicit empty value — also overrides the default
+    fn spawn<F: Future<Output = ()> + Self::FutureConstraint>(f: F) { /* ... */ }
+}
 ```
+
+**Omission and the explicit empty value are not the same thing.** Omitting the `trait FutureConstraint` line (as in `TokioRuntime`) means "use the default from the declaration." Writing `trait FutureConstraint;` (as in `BareRuntime`) is an explicit value — it just happens to be empty — and *overrides* the default. See [Associated trait implementations](#associated-trait-implementations) for the precise rules.
 
 ### Generic associated traits
 
@@ -271,6 +279,10 @@ where
 ```
 
 This is different from `T: C::Elem + Debug` (which constrains `T` independently). The value constraint `C::Elem: Debug` constrains the *Container's impl* — if the impl provides `trait Elem = Send` (no Debug), the call is rejected even if `T` happens to implement Debug.
+
+Specifically, `C::Elem: Bound` is satisfied when `Bound` is one of the impl's chosen traits or a transitive supertrait of one of them (e.g. an impl with `trait Elem = MyTrait;` with `trait MyTrait: Debug { … }` still satisfies `C::Elem: Debug` because `Debug` is a supertrait of `MyTrait`).
+
+The check considers only the impl's declared bounds list and any transitive supertraits; it does **not** consult blanket impls. For example, a hypothetical `impl<T: Foo> Debug for T` does *not* make `C::Elem: Debug` hold for an impl that chose `trait Elem = Foo;`, even though every concrete `T` that satisfies the bound would also implement `Debug`.
 
 ### Where associated traits *cannot* appear
 
@@ -350,16 +362,66 @@ impl Container for MyVec {
 }
 ```
 
+**Grammar** (in trait impl body):
+
+```
+AssocTraitImpl =
+    "trait" IDENT ("=" Bounds?)? ";"
+  | "trait" IDENT GenericParams ("=" Bounds?)? ";"
+  | "trait" IDENT GenericParams WhereClause ("=" Bounds?)? ";"
+```
+
+The `= Bounds` portion is optional, and `Bounds` itself is also optional. The bare form `trait Elem;` is preferred for readability; the longer form `trait Elem = ;` is also accepted and has identical meaning (it mirrors Rust's existing [`WhereClause`](https://doc.rust-lang.org/reference/items/generics.html#grammar-WhereClause) grammar, which permits empty bound lists like `where T:`).
+
+#### Omission vs. explicit empty value
+
+There are three syntactically distinct cases, with three distinct meanings. **They are not equivalent — in particular, omitting the line and writing an empty value behave differently when the declaration has a default.**
+
+| In the impl...                                     | Constraints imposed              |
+|----------------------------------------------------|----------------------------------|
+| `trait Elem = Send + Clone;`                       | `Send + Clone`                   |
+| `trait Elem;` *(or equivalently `trait Elem = ;`)* | `()`                             |
+| *(line omitted from the impl)*                     | Inherited from trait declaration |
+
+The crucial distinction is that an explicit empty value is *still an explicit value*: it overrides any default, just as `trait Elem = Send + Clone;` would. Only by omitting the line entirely does the impl opt into the declaration's default.
+
+In all cases, the constraints imposed by an impl are required to satisfy any constraints in the trait declaration.
+
+Example:
+
+```rust
+trait Runtime {
+    trait FutureConstraint = Send;  // default is Send
+}
+
+impl Runtime for A {
+    // line omitted → FutureConstraint = Send (inherits default)
+}
+
+impl Runtime for B {
+    trait FutureConstraint;  // explicit empty → FutureConstraint imposes nothing
+                             // (the Send default is overridden, not merged)
+}
+
+impl Runtime for C {
+    trait FutureConstraint = 'static;  // explicit value → FutureConstraint = 'static
+                                       // (the Send default is overridden, not merged)
+}
+```
+
+For impls `B` and `C`, the default `Send` plays no role; only `A` gets `Send` as its `FutureConstraint`.
+
+This matches how default associated types behave (`type Item = i32;` default in the trait; the impl either omits `type Item` to inherit `i32`, or writes `type Item = u32;` to override — there is no "merge" semantics).
+
 The value may be:
+- Empty: `trait Elem;` (or `trait Elem = ;`) — no additional constraints beyond the declaration's supertraits
 - One or more trait bounds: `Send`, `Clone + Debug`
 - Trait bounds with associated type constraints: `IntoIterator<Item = i32>`
 - Lifetime bounds: `'static`, `Send + 'static`
 - Relaxed bounds: `?Sized`, `Send + ?Sized`
 - Any combination of the above: `Debug + Send + 'static`
 
-**Validation**: The compiler checks that the impl's value satisfies the declaration's supertrait bounds. If the declaration says `trait Elem: Clone;`, the impl value must include `Clone` (or a subtrait of `Clone`).
-
-Associated traits are **not permitted in inherent impls** — only in trait impls:
+Associated traits are not permitted in inherent impls — only in trait impls:
 
 ```rust
 impl MyStruct {
@@ -530,15 +592,15 @@ The concrete types used with associated traits participate in auto-trait inferen
 
 ### Comparison with associated types
 
-| Aspect | Associated Type | Associated Trait |
-|--------|----------------|-----------------|
-| Declaration | `type Foo;` | `trait Foo;` |
-| Value | `type Foo = i32;` | `trait Foo = Send;` |
-| Valid positions | Type position | Bound position |
-| Generics | Yes (GATs) | Yes (generic associated traits) |
-| Defaults | Yes | Yes |
-| UFCS | `<T as Trait>::Foo` | `<T as Trait>::Foo` |
-| `dyn` compatible | Yes (with limitations) | No |
+| Aspect           | Associated Type        | Associated Trait                |
+|------------------|------------------------|---------------------------------|
+| Declaration      | `type Foo;`            | `trait Foo;`                    |
+| Value            | `type Foo = i32;`      | `trait Foo = Send;`             |
+| Valid positions  | Type position          | Bound position                  |
+| Generics         | Yes (GATs)             | Yes (generic associated traits) |
+| Defaults         | Yes                    | Yes                             |
+| UFCS             | `<T as Trait>::Foo`    | `<T as Trait>::Foo`             |
+| `dyn` compatible | Yes (with limitations) | No                              |
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -616,3 +678,5 @@ None at this time.
 - **Non-lifetime HRTBs**: Combined with [non-lifetime higher-ranked trait bounds](https://github.com/rust-lang/rust/issues/108185) (`for<T: Foo> Bar<T>: Baz<T>`), associated traits would enable significantly more expressive generic constraint patterns.
 
 - **Const associated traits**: By analogy with const generics, one could imagine associated traits that are const-evaluable, though the motivation for this is unclear.
+
+- **Implication-based bound satisfaction**: Today `C::Elem: Debug` holds only when `Debug` is one of the impl's chosen traits or a transitive supertrait of one of them (see [Call-site value constraints](#call-site-value-constraints)). A possible extension is to admit it whenever the chosen value *implies* `Debug` for every relevant type — e.g., via a blanket `impl<T: Foo> Debug for T` that makes any `T: Foo` also `T: Debug`. This is strictly more expressive but considerably more complex in its interactions, so is left as a future consideration to control the scope of the RFC.
