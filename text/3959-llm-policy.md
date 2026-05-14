@@ -60,7 +60,7 @@ The first is the source of the data itself, without regard to its contents. To o
 
 The second is the data itself, both in content and the means by which that content is filtered. Specifically, the *Large*ness of LLMs requires an amount of data past the point where thorough manual review is possible, and this only becomes a bigger problem as more data is used. The lack of thorough manual review for data leads to a number of issues in the output that will only become more difficult to fix as models increase in size.
 
-Additionally, it's worth clarifying that LLMs' fundamentally are more sensitive to the data used to create them than other modeling methods. Since they have no inherent capacity to perform reasoning, they rely heavily on the contextual relation between terms to achieve accuracy. This means that a lot of topics that are discussed less in general, which therefore show up less in the source data, are substantially less accurate in LLM output.
+Additionally, it's worth clarifying that LLMs fundamentally are more sensitive to the data used to create them than other modeling methods. Since they have no inherent capacity to perform reasoning, they rely heavily on the contextual relation between terms to achieve accuracy. This means that a lot of topics that are discussed less in general, which therefore show up less in the source data, are substantially less accurate in LLM output.
 
 ##### Source
 
