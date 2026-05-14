@@ -78,18 +78,24 @@ options exist to enable `fentry` instrumentation.
   * `fentry`: Instrument function entry with the target's fentry function (if supported).
   * `xray`: Instrument function entry and exit with XRay (if supported).
 
-The options `-Zinstrument-mcount` and `-Zinstrument-xray` will be removed in favor of
-framework specific configuration options described below.
+The options `-Zinstrument-mcount` and `-Zinstrument-xray` shall be removed. The user configurable
+options shall be specified in a comma-separated list following the framework option, separated by
+a colon.
 
-`-Zinstrument-mcount-opts`, `-Zinstrument-fentry-opts`:
-  * `record`, `no-record`: Record each call to the counting function in a separate binary section, or not.
-  * `call`, `no-call`: Insert a call to the counting function or a nop of equal size.
+`-Zinstrument-function=mcount`:
+  * No options are provided. Historically, gcc supports the usage of `-mnop-mcount` and `-mrecord-mcount`
+  for use by the linux kernel. Today, patchable-function-entries and fentry have replaced most or
+  all usage.
 
-`-Zinstrument-xray-opts`:
+`-Zinstrument-function=xray`:
   * `ignore-loops`: Ignore loop behavior when deciding to instrument a function.
   * `instruction-threshold=10`: Set a different instruction threshold for instrumentation.
   * `no-entry`: Do not instrument function entry.
   * `no-exit`: Do not instrument function exit.
+
+`-Zinstrument-function=fentry`:
+  * `record`, `no-record`: Record each call to the counting function in a separate binary section, or not.
+  * `call`, `no-call`: Emit a call to fentry, or emit a nop.
 
 Finally, a single builtin attribute will be added to control the insertion of the counting function. The
 default options for each framework will be documented and stable.
@@ -99,11 +105,11 @@ function. The implementation will apply the correct set of LLVM function attribu
 
 Example usage might be:
 ```shell
-$ RUSTFLAGS="-Zinstrument-function=mcount -Zinstrument-mcount-opts=record,call" cargo build
+$ RUSTFLAGS="-Zinstrument-function=mcount" cargo build
 
-$ RUSTFLAGS="-Zinstrument-function=fentry -Zinstrument-fentry-opts=record,no-call" cargo build
+$ RUSTFLAGS="-Zinstrument-function=fentry:record,no-call" cargo build
 
-$ RUSTFLAGS="-Zinstrument-function=xray -Zinstrument-xray-opts=ignore-loops" cargo build
+$ RUSTFLAGS="-Zinstrument-function=xray:ignore-loops" cargo build
 ```
 
 ### Language additions
@@ -155,7 +161,7 @@ Likewise, there may not be reason to bundle all function instrumentation into a 
 
 Similar features exist in gcc and clang as noted above. This extends those features into Rust.
 
-When using mcount or fentry with recording and nop insertion, this feature can behave similarly
+When using fentry with recording and nop insertion, this feature can behave similarly
 to patchable-function-entries presented in rfc#3543. There are some minor differences in the details
 of how nops are recorded. However, both can be used simultaneously without issue. This is the case
 for some Linux kernel configurations (e.g., x86-64 on fedora at the time of writing).
