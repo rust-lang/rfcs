@@ -6,17 +6,14 @@
 ## Summary
 [summary]: #summary
 
-This RFC proposes a strict policy regarding generative Artificial Intelligence (AI) models, specifically Large Language Models (LLMs), and their use within the rust-lang organization.
-
-It proposes an "honesty over purity" policy where maintainers are given broad authority to decide what amount of LLM-generated code is acceptable, while avoiding repercussions for those who do use LLMs and are honest about it. This can be summarized in the following checklist with terms that will be defined throughout the RFC:
+This RFC proposes a strict policy regarding generative Artificial Intelligence (AI) models, specifically Large Language Models (LLMs), and their use within the rust-lang organization. It aims to minimize the harm done by LLMs by reducing both the extent they're used and the control they're given over the Rust project. The policy can be summarized in the following checklist with terms that will be defined throughout the RFC:
 
 1. If the LLM usage is *trivial*, it is completely ignored by the policy and always allowed. Generally, this means that changes made by LLMs are indistinguishable from those made by humans, where the LLM didn't have any creative input into the change.
 2. If the LLM usage is *slop*, it is considered spam and moderated accordingly. Generally, this means submitting changes made by LLMs with minimal human intervention.
-3. *Nontrivial* LLM usage must be *disclosed* in ideally as detailed as a manner as possible. This may necessitate additional tooling to notify new contributors about the policy and explain how disclosure works.
+3. Any *potentially non-trivial* LLM usage must be *disclosed* in ideally as detailed as a manner as possible. This may necessitate additional tooling to notify new contributors about the policy and explain how disclosure works.
 4. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
-5. If a user is found to be repeatedly lying about LLM usage (using LLMs without disclosing that usage), this is a COC violation that will be moderated accordingly.
-6. Teams are allowed to form their own policies regarding *nontrivial* LLM usage, although as long as users are honest, follow the COC otherwise, and respect boundaries, the worst that will happen is the rejection of a contribution.
-7. Due to the complexities of certain spaces which are shared between teams, additional limitations on *nontrivial* contributions are applied to just these spaces.
+5. If a user is found to be repeatedly lying about LLM usage (using LLMs in a non-trivial way without disclosing that usage), this is a COC violation that will be moderated accordingly.
+6. As long as users are honest, follow the COC otherwise, and respect boundaries, the worst punishment for *non-trivial* LLM usage is the rejection of a contribution.
 
 In terms of additional tooling for *disclosure*, this RFC encourages the creation of a bot that automatically replies to contributions from new users informing them of the LLM policy and what constitutes sufficient disclosure. As mentioned, in general, going into as much detail as possible (e.g. prompts used, etc.) is preferred, but not always required. The RFC leaves the exact details of such implementation unspecified and up for revision later.
 
@@ -27,9 +24,11 @@ The rapid development of generative AI models and LLM-based tools has lead to ma
 
 The presence of *slop* or *vibe-coded* contributions, i.e. ones created using LLMs with minimal user input, has lead to massive maintainer burnout and frustration across the entire open source ecosystem. Currently the `rust-lang/rust` repository has a stopgap anti-spam measure which swiftly rejects these contributions and bans repeat offenders. The entire Rust team (T-all) has unanimously condemned these types of contributions, and this is from both avid LLM users and those who condemn LLMs entirely. Due to its popularity and effectiveness, this RFC proposes simply applying this stopgap measure to the entire `rust-lang` org.
 
-The main issue is forming a policy with regard to all other forms of LLM usage. A large portion of the team have serious concerns regarding LLM usage, but there are also several team members who feel they would be excluded by a complete ban on LLM usage. There's also a pragmatic issue with enforcing any limit on LLM usage, where some LLM usage is simply impossible to detect and is effectively identical to human-authored changes. Similarly, there exist many accessibility tools, like speech-to-text and text-to-speech, are invaluable to those who need them *and* generally using LLMs to do so. Any potential policy should ensure that we allow accessibility tools and focus on LLM usage that creates a potential burden for maintainers, rather than focusing on LLM usage to achieve an "untainted" code base. (This is the sacrifice of "purity" described in the summary.)
+The main issue is forming a policy with regard to all other forms of LLM usage. While many people, including team members, have expressed that these tools are valuable in a multitude of ways, they undeniably are contributing direct harm to the world at large. However, simply banning all use of the tools will not immediately mitigate this harm, and there is also a very clear accessibility niche which has been fulfilled by these tools. Even if these niches would be better filled by other tools, if LLMs are currently the best available option, we shouldn't ignore that.
 
-Ultimately, the goal is to avoid a situation where users are encouraged to be dishonest about LLM usage, since this creates a situation where everyone is uncomfortable. Many LLM users, including team members, have indicated that they might simply continue using LLMs and avoid disclosure for fear of repercussions, and this is a very uncomfortable position to be in. It means that LLM users are encouraged to be dishonest about their actions, and it means that maintainers are forced to accuse users of LLM usage whenever they're suspicious, which can be hostile. This is combined on top of the mention of *trivial* LLM usage, as mentioned before: if we don't distinguish usage that actually affects the end result, people stop caring and we stop knowing whether the result is affected, which makes reviewing contributions difficult.
+There is also a pragmatic issue, where some LLM usage is simply impossible to detect and is effectively identical to human-authored changes. Additionally, since the tech industry has been putting LLMs wherever they possibly can, many people might have been using an LLM without even knowing it. We need to ensure that the discussion does not devolve into nitpicking LLM usage where effort could be better spent elsewhere.
+
+Ultimately, the goal is to encourage users to be honest about LLM usage, since this promotes an environment of collaboration in good faith. Many LLM users, including team members, have indicated that they might simply continue using LLMs and avoid disclosure for fear of repercussions, and this is a very uncomfortable position to be in. It means that LLM users are encouraged to be dishonest about their actions, and it means that maintainers are forced to accuse users of LLM usage whenever they're suspicious, which really doesn't feel like good-faith collaboration. This is combined on top of the mention of *trivial* LLM usage, as mentioned before: if we don't distinguish usage that actually affects the end result, people stop caring and we stop knowing whether the result is affected, which makes reviewing contributions difficult.
 
 The goal for this policy is to ensure honesty to the greatest extent possible, conceding that we shouldn't spend time discussing *trivial* LLM usage while still acknowledging potential issues with LLMs and what we can do about it.
 
@@ -37,14 +36,21 @@ Note: this section is long, and it contains many quotes, citations, and images. 
 
 ### Ethical concerns
 
-Currently, LLMs present a number of ethical concerns which have been noted by several project members. Unlike the [Rust Project Perspectives] document which tries to aggregate opinions posted by team members, this RFC will simply summarize some of the ethical concerns to make sure everyone's aware of them. The RFC *does not* take the position that any of these concerns should unilaterally condemn LLM use. However, because these concerns inform many people's opinions of LLMs, they are worth explaining.
+Currently, LLMs present a number of ethical concerns which have been noted by several project members. Unlike the [Rust Project Perspectives] document which tries to aggregate opinions posted by team members, this RFC will simply summarize some of the ethical concerns to make sure everyone's aware of them.
 
-Note that a lot of these concerns are fundamentally fuzzy; it's in the best interest of the AI industry to promote the positive aspects of their technology while hiding the negative aspects, and so, a lot of data is intentionally unavailable. Similarly, there are a few *extremely* bad actors which do not necessarily represent the industry as a whole: for example, [xAI's data center in Memphis is explicitly polluting the air of the nearby, historically Black community][xAI Memphis], and most of the proposed/built data centers are not *this* bad.
+Initially, this RFC didn't take the position that these concerns should unilaterally condemn LLM use. However, because things have only gotten worse since it was initially drafted, *it now does*. While there are some usages that should still be allowed, like for accessibility, we should be trying as hard as possible to minimize the amount of LLM usage that occurs within the project and ensure that they also have no control over the project itself.
 
 [Rust Project Perspectives]: https://rust-lang.github.io/perspectives-on-llms/index.html
-[xAI Memphis]: https://time.com/7308925/elon-musk-memphis-ai-data-center/
 
-Due to the extreme rift between the various arguments for and against LLMs, this section has the potential to be discussed in a generally uncritical way. Please *do not* attempt to refute or reinforce these arguments in the RFC discussion. As usual, constructive revision of wording and addition of sources is encouraged and helpful, but nonconstructive critique is unhelpful. We strongly encourage you to read the full RFC before commenting on these sections.
+Please note that a lot of these concerns are fundamentally fuzzy; it's in the best interest of the AI industry to promote the positive aspects of their technology while hiding the negative aspects, and so, a lot of data is intentionally unavailable. That said, the little data that we do have is *really damning*.
+
+For example, [xAI's data center in Memphis is explicitly polluting the air of the nearby, historically Black community][xAI Memphis], and this data center is now [powering Claude Code]. The AI industry is constantly complaining about [not having enough power to run their machines], and they've been repeatedly seeking ways to accelerate all of the issues with that.
+
+[xAI Memphis]: https://time.com/7308925/elon-musk-memphis-ai-data-center/
+[powering Claude Code]: https://www.cnbc.com/2026/05/06/anthropic-spacex-data-center-capacity.html
+[not having enough power to run their machines]: https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-ceo-says-the-company-doesnt-have-enough-electricity-to-install-all-the-ai-gpus-in-its-inventory-you-may-actually-have-a-bunch-of-chips-sitting-in-inventory-that-i-cant-plug-in
+
+Unfortunately, due to the extremeness of these ethical arguments, it's very easy to either pile more arguments on the table or dismiss them entirely. Please *do not* attempt to refute or reinforce these arguments in the RFC discussion. As usual, constructive revision of wording and addition of sources is encouraged and helpful, but nonconstructive critique is unhelpful. We strongly encourage you to read the full RFC before commenting on these sections.
 
 #### Source Data
 
@@ -54,7 +60,7 @@ The first is the source of the data itself, without regard to its contents. To o
 
 The second is the data itself, both in content and the means by which that content is filtered. Specifically, the *Large*ness of LLMs requires an amount of data past the point where thorough manual review is possible, and this only becomes a bigger problem as more data is used. The lack of thorough manual review for data leads to a number of issues in the output that will only become more difficult to fix as models increase in size.
 
-Additionally, it's worth clarifying that LLMs are fundamentally *interpolary* systems, not *extrapolary* systems, and that accuracy depends strongly on whether data falls *between* existing data points, and not *beyond* them. The details of this are intentionally very difficult to understand for a number of reasons, but it's worth clarifying for the sake of examples that show up later. Since reality is infinite and these models are not, there are going to be points beyond the scopes of the models that cannot be easily extrapolated, although it's definitely questionable whether these points show up in practice.
+Additionally, it's worth clarifying that LLMs' fundamentally are more sensitive to the data used to create them than other modeling methods. Since they have no inherent capacity to perform reasoning, they rely heavily on the contextual relation between terms to achieve accuracy. This means that a lot of topics that are discussed less in general, which therefore show up less in the source data, are substantially less accurate in LLM output.
 
 ##### Source
 
@@ -74,9 +80,11 @@ In the E.U., the relevant source is the ruling from [Rozhodnutí Městského sou
 
 > The practical application of this principle was made explicit in a recent Czech court ruling from 2023, which has since become a reference point in European debates around AI authorship. In this case, the court addressed whether an image generated by an AI platform—prompted by a user who entered a detailed textual description—could be protected by copyright. The court concluded that the human's contribution in writing the prompt did not amount to authorship under copyright law. Since the human operator had not made any creative choices in the expressive form of the image (e.g., composition, colour, shading), and the AI system had assembled the output based on its training data and internal rules, the work was not considered eligible for protection. Therefore, prompting can be seen as more akin to generating ideas than expressions. This judgment affirms the EU position that simply operating an AI tool, or providing an idea or input, does not suffice to establish authorship if the creative expression is determined by the system itself.
 
-The Rust Foundation, located in the U.S., has consulted its own legal counsel on the matter of whether the project should be concerned about copyrightability of LLM output. The relayed report is as follows:
+The Rust Foundation, located in the U.S., has consulted its own legal counsel on the matter of whether the project should be concerned about copyrightability of LLM output. The relayed report [as mentioned in the Project Perspectives] is as follows:
 
-> On [the matter of copyright of LLM generated contributions], the Rust project directors consulted the Rust Foundation's legal counsel and they did not have significant concerns about Rust accepting LLM-generated code from a legal perspective. Some courts have found that AI-generated code is not subject to copyright and it's expected that others will follow suit. Any human-contributed original expression would be owned by the human author, but if that author is the contributor (or the modifications are licensed under an open source license), the situation is no different from any human-origin contribution. However, this does not present a legal obstacle to us redistributing the code, because, as this code is not copyrighted, it can be freely redistributed. Further, while it is possible for LLMs to generate code (especially small portions) that is identical to code in the training data, outstanding litigation has not revealed that this is a significant issue, and often such portions are too small or contain such limited originality that they may not qualify for copyright protection.
+[as mentioned in the Project Perspectives]: https://rust-lang.github.io/perspectives-on-llms/feb27-summary.html#the-legality-of-ai-usage
+
+> On this topic, the Rust project directors consulted the Rust Foundation’s legal counsel and they did not have significant concerns about Rust accepting LLM-generated code from a legal perspective. Some courts have found that AI-generated code is not subject to copyright and it’s expected that others will follow suit. Any human-contributed original expression would be owned by the human author, but if that author is the contributor (or the modifications are licensed under an open source license), the situation is no different from any human-origin contribution. However, this does not present a legal obstacle to us redistributing the code, because, as this code is not copyrighted, it can be freely redistributed. Further, while it is possible for LLMs to generate code (especially small portions) that is identical to code in the training data, outstanding litigation has not revealed that this is a significant issue, and often such portions are too small or contain such limited originality that they may not qualify for copyright protection.
 
 To reiterate, there is a strong likelihood that allowing LLM-authored code won't lead to any legal issues on behalf of the Rust project. In general, the already-permissive dual-MIT-and-Apache licensing will not be generally affected by the policy, and people using the code for Rust won't be burdened by any copyright changes either.
 
@@ -92,7 +100,7 @@ LLMs, largely, have completely disregarded that respect. Respect would be only u
 
 Several people were attempting to find a way to properly obtain licenses for copyrighted material before proceeding. Then, suddenly, the CEO of the company demonstrates his desire to "move this stuff forward," and people just start doing it without permission. Even if the employees responsible for creating the model said "using pirated material should be beyond our ethical threshold," the CEO decided to ignore those concerns. Even though Meta's LLM is not a coding model, their case is not particularly unusual in the industry.
 
-And, it's worth mentioning that the "worst case" scenario of xAI, brought up earlier, *is* supported by GitHub Copilot, showing that at least many of the "good actors" in the AI space are willing to work with the bad actors on equal footing. This example indicates that Meta's case is likely to be the norm.
+And even allegedly "ethical" actors in the AI space are more than willing to compromise on ethics for the sake of their models. One obvious example is how [GitHub Copilot supports Grok](https://github.blog/changelog/2025-10-16-grok-code-fast-1-is-now-generally-available-in-github-copilot/), run by xAI and their horrendous Colossus data center, but a more recent example is Anthropic deciding to outright use said data center to power Claude Pro. As the fight to the bottom continues, these companies are more and more willing to "compromise" on their values, and we should not wait to see how low they can go.
 
 According to our Code of Conduct, Rust as a project is built upon a foundation of respect. At least in the opinion of the RFC author and several team members, choosing to allow unrestricted LLM usage directly contradicts that foundation of respect.
 
@@ -140,24 +148,27 @@ It's worth noting that power usage *also* leads to serious environmental concern
 [Clean Air Act]: https://www.epa.gov/stationary-sources-air-pollution/clean-air-act-resources-data-centers
 [Drill Baby Drill]: https://www.state.gov/releases/office-of-the-spokesperson/2026/02/actions-to-implement-president-trumps-vision-for-venezuelan-oil/
 
-A more noticeable change comes is semiconductor technology, particularly silicon wafers. While silicon itself is extremely prevalent ("it's just sand"), the purification of silicon wafers for producing semiconductors is very costly, and the AI industry has been allocating more and more wafer output for costly, lower-yield technologies like HBM (high-bandwidth memory) and stacked NAND storage. This results in a noticeable decrease in wafers that can be used for the technologies that get used on consumer devices, and an increase in the price of the specific technologies used for AI (memory and storage).
+The most serious example of this is Colossus, the data center run by xAI in Memphis, and it's worth clarifying just how bad this is. 35 gas turbines at the data center, which were installed without a permit, are currently increasing the amount of nitrogen dioxide in the air around the data center by at least 79% from the base value. Nitrogen dioxide reacts with water to form nitric acid, and if you're unfamiliar with nitric acid, [here's a NileRed short you can watch][nitric acid]. The slightly orange tint that now exists around Memphis is due to the presence of this pollutant, and I, the RFC author, personally don't think that I could reasonably exist under the conditions Memphis faces right now due to the pollution.
+
+[nitric acid]: https://www.youtube.com/shorts/GzCqZvOlNDk
+
+A more globally noticeable change comes is semiconductor technology, particularly silicon wafers. While silicon itself is extremely prevalent ("it's just sand"), the purification of silicon wafers for producing semiconductors is very costly, and the AI industry has been allocating more and more wafer output for costly, lower-yield technologies like HBM (high-bandwidth memory) and stacked NAND storage. This results in a noticeable decrease in wafers that can be used for the technologies that get used on consumer devices, and an increase in the price of the specific technologies used for AI (memory and storage).
 
 While the cryptocurrency rush of the past decade resulted in increased GPU prices, the AI industry has increased prices for a number of semiconductor components across the board, particularly DRAM (memory) and NAND flash (storage). The below graphs from [pcpartpicker.com] indicate trends in pricing of a select few components between late 2024 and early 2026. Note that these costs are not for raw components, but the end products that users might purchase to build a computer.
 
-<!-- dear GitHub, you should actually support <url> syntax properly instead of going all-in on LLMs -->
 [pcpartpicker.com]: https://pcpartpicker.com
 
-![Average RAM Price (USD) Over Last 18 Months (DDR5-5600 2x32GB) - pcpartpicker.com](https://cdna.pcpartpicker.com/static/forever/images/trends/2026.04.14.usd.ram.ddr5.5600.2x32768.11130ff368ef28859ad999804767523b.png)
+![Average RAM Price (USD) Over Last 18 Months (DDR5-5600 2x32GB) - pcpartpicker.com](https://cdna.pcpartpicker.com/static/forever/images/trends/2026.05.14.usd.ram.ddr5.5600.2x32768.fdf95e58fb5fe98e095cead60afbb5fd.png)
 
-For kits of 2x32GiB DDR5 memory, price went from around 180 USD in October 2024 to nearly 900 USD in February 2026. This is a 5x change in around 18 months.
+For kits of 2x32GiB DDR5 memory, price went from around 200 USD in November 2024 to nearly 950 USD in May 2026. This is a 5x change in around 18 months.
 
-![Average RAM Price (USD) Over Last 18 Months (DDR4-3200 2x16GB) - pcpartpicker.com](https://cdna.pcpartpicker.com/static/forever/images/trends/2026.04.14.usd.ram.ddr4.3200.2x16384.14904cc2202fa769c0372a5e085dee1b.png)
+![Average RAM Price (USD) Over Last 18 Months (DDR4-3200 2x16GB) - pcpartpicker.com](https://cdna.pcpartpicker.com/static/forever/images/trends/2026.05.14.usd.ram.ddr4.3200.2x16384.86e6363cd9987576de00e483293d810d.png)
 
-For kits of 2x16GiB DDR4 memory, price went from around 80 USD in October 2024 to nearly 280 USD in February 2026. This is a 3.5x change in around 18 months.
+For kits of 2x16GiB DDR4 memory, price went from around 80 USD in November 2024 to nearly 290 USD in May 2026. This is a 3.5x change in around 18 months.
 
-![Average Solid State Drive Price (USD) Over Last 18 Months (2.5" SATA 1 TB) - pcpartpicker.com](https://cdna.pcpartpicker.com/static/forever/images/trends/2026.04.14.usd.storage.ssdm2nvme.1000.6392674293e7d45606ec610272115b4e.png)
+![Average Solid State Drive Price (USD) Over Last 18 Months (2.5" SATA 1 TB) - pcpartpicker.com](https://cdna.pcpartpicker.com/static/forever/images/trends/2026.05.14.usd.storage.ssd250.1000.fb3f1d55e85d1c9ffff4a3ffd95b947f.png)
 
-For 1TB solid state drives, the price went from around 100 USD in October 2024 to nearly 250 USD in April 2026. This is a 2.5x change in around 18 months.
+For 1TB solid state drives, the price went from around 120 USD in November 2024 to nearly 380 USD in April 2026. This is a 3x change in around 18 months.
 
 While getting a good computer was already expensive, the AI industry has made it borderline impossible for anyone to get a new computer, or even upgrade an existing one. Even as Rust improves compilation times and memory usage, you can make things work on a slow computer, but you can't make things work on *no* computer.
 
@@ -176,13 +187,16 @@ Sites like [Wikipedia][Wikipedia crawling] and [OpenStreetMap][OSM crawling] hav
 [Wikipedia crawling]: https://diff.wikimedia.org/2025/10/17/new-user-trends-on-wikipedia/
 [OSM crawling]: https://en.osm.town/@osm_tech/116052113368747355
 
-Unfortunately, many of these claims do not come with associated evidence, since the people involved are mostly volunteers trying to bring their servers online. Since web traffic logs can contain confidential data like IP addresses, very few people are willing to offer this raw data to confirm their claims, and most of them are too tired after the situation to report on it more than a few posts on social media.
+Unfortunately, many of these claims do not come with associated evidence, since the people involved are mostly volunteers trying to bring their servers online. Since web traffic logs can contain confidential data like IP addresses, very few people are willing to offer this raw data to confirm their claims, and most of them are too tired after the situation to report on it more than a few posts on social media. However, tools like [Anubis] and [Iocaine] and their widespread deployment indicates just how serious of a problem this is.
+
+[Anubis]: https://anubis.techaro.lol/
+[Iocaine]: https://iocaine.madhouse-project.org/
 
 "Residential proxies" are an existing technology known to facilitate this kind of block evasion, and many providers do exist. These proxies are side-loaded into commonly installed software on phones and computers to allow using unsuspecting users' devices as a means to perform web requests. While there is no conclusive evidence that any of the major AI vendors are performing these kinds of attacks, the fact that they've occurred so prevalently and the fact that none of these companies have spoken out to condemn it means that many are inclined to believe that this is happening.
 
 Another important thing to note is that many of the attacked websites are openly offering their data via bulk endpoints, but these endpoints are not used. For example, both Wikipedia and OpenStreetMap offer bulk downloads of the entire dataset on regular intervals, but instead of accessing these data points, many of these bots simply scrape websites indiscriminately, which creates a much higher load on the servers. This shows not only disrespect for the people operating these websites, but incompetence on behalf of the scrapers, since the result would be amicable for both parties.
 
-Recently, the entire source code for Claude Code was leaked via an NPM source map, and this leak has revealed a lot about the nature of how one of the most popular code-writing models operates. One large concern is that the agent featured an "undercover" mode used by Anthropic employees to attempt to hide LLM usage when contributing to projects. It seems unlikely that anyone would desire to hide that something was written by Claude Code if a project openly embraced LLMs (it's free publicity), and so, it seems likely this mode was used to contribute code to projects banning LLM usage and circumvent maintainers' desire to exclude LLM-authored code.
+Recently, the entire source code for Claude Code was leaked via an NPM source map, and this leak has revealed a lot about the nature of how one of the most popular code-writing tools operates. One large concern is that the agent featured an "undercover" mode used by Anthropic employees to attempt to hide LLM usage when contributing to projects. It seems unlikely that anyone would desire to hide that something was written by Claude Code if a project openly embraced LLMs (it's free publicity), and so, it seems likely this mode was used to contribute code to projects banning LLM usage and circumvent maintainers' desire to exclude LLM-authored code.
 
 And similarly, it's worth pointing out one of the original motivations for a project-wide policy: many LLM users claimed they would simply ignore a ban on LLM usage and continue using LLMs anyway. This shows, at least, a disrespect for the boundaries of people who feel uncomfortable with LLMs. While we shouldn't assume that anyone is going to be disrespectful by default, it *is* important to discuss the trend and why it matters to people who have been affected by it.
 
@@ -200,9 +214,9 @@ The most obvious refutation to all the concerns brought up is that even if the R
 
 This framing is invalid mostly because LLM support has an *unprecedented* ability to fund the companies providing it. Multiple people have said that their companies have the token budget, *per employee*, that could constitute an entire developer's salary. There is no other tool in the industry that has the ability to so strongly fund its creators.
 
-(Side note: this has been recently enforced by comments from NVIDIA CEO Jensen Huang, who argued that [a 500 kUSD/y engineer should be using 250 kUSD/y in tokens](https://www.businessinsider.com/jensen-huang-500k-engineers-250k-ai-tokens-nvidia-compute-2026-3). This shows just how much the below exercise, which was written before this comment, is a gross underexaggeration of the issue.)
+(Side note: this has been recently enforced by comments from NVIDIA CEO Jensen Huang, who argued that [a 500k USD/y engineer should be using 250k USD/y in tokens](https://www.businessinsider.com/jensen-huang-500k-engineers-250k-ai-tokens-nvidia-compute-2026-3). This shows just how much the below exercise, which was written before finding out about Huang's comments, is a gross underexaggeration of the issue.)
 
-Consider just the example of Rust. [In 2025, the Rust Foundation received 5.1M USD in funding][Rust Foundation 2025]. Let's estimate an "entire developer's salary" at the most charitable amount, 30 kUSD a year. This is, for many people, a completely unlivable wage, and is thus a gross exaggeration. If we divide these two numbers, we get a clean… 170. Let's round that up and say that the number is 200.
+Consider just the example of Rust. [In 2025, the Rust Foundation received 5.1M USD in funding][Rust Foundation 2025]. Let's estimate an "entire developer's salary" at the most charitable amount, 30k USD a year. This is, for many people, a completely unlivable wage, and is thus a gross exaggeration. If we divide these two numbers, we get a clean… 170. Let's round that up and say that the number is 200.
 
 [Rust Foundation 2025]: https://rustfoundation.org/2025/
 
@@ -217,108 +231,21 @@ Compare this to supporting, say, cloud service providers. Even if a large amount
 
 What do we get out of LLMs that justifies that cost?
 
-### Effectiveness of LLMs
+### Limits of LLMs
 
-As mentioned before, LLMs are largely *interpolary*, not *extrapolary*, since they operate on statistics rather than logical reasoning. The exact ways in which LLM output can be *between* LLM input points is very fuzzy, and the obscuring of the internals is more of a feature, rather than a bug for LLMs.
+As mentioned before, LLMs are *extremely* sensitive to their source data due to their inability to reason, and this leads to all sorts of issues. One pretty obvious one is that coding models are [pretty bad at operating with less popular languages][esolang], but the even bigger one is that many agentic tools are based upon a fundamentally unbounded feedback loop.
 
-Ultimately, while all the intermediary steps of an LLM are deterministic, the last step involves a probability distribution of resulting tokens: this captures the idea of there being multiple possibilities for output given a particular input. While there is an inherent determinism to what the model can glean from a particular input, these probabilities form a branching tree of paths that can be taken from the model, each weighted according to some probability, which we can treat as "correctness" or "reasonable-ness".
+[esolang]: https://arxiv.org/abs/2603.09678v1
 
-One load-bearing aspect of these models is that the highest-weighted path is not necessarily the most correct one, and while it is possible to simply take an alternative path from the same starting state, this is not the choice that models take. Instead, models tend to create a feedback loop where some external information about the path and its potential faults is fed back into the model as new context. With this new context, hopefully, the model will be more likely to weight the correct path higher on the list, and if it doesn't, well. Since this loop is technically unbounded, that's great when your billing model depends on the number of used tokens.
+Claude Code, often cited as one of the best tools, has a great example in its source code which it accidentally leaked. Whenever the model is asked to output valid JSON in "non-interactive" mode, i.e. triggered as part of an internal loop, it just repeatedly feeds the model the error in the generated JSON until it correctly generates valid JSON. Originally, the genuine code for this was cited, but it's just way too confusing even with access to the full source code to cite here.
 
-#### The Brute-force Loop
-
-Claude Code, often cited as one of the best models, has a great example in its source code which it accidentally leaked. The below code samples are only used for educational purposes and cannot be used alone to create a commercial competitor to Claude Code, and so, do not infringe on Anthropic's copyright.
-
-First, let's consider `TelemetrySafeError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS`. This is an error message passed in the source code that indicates that an error is safe to be passed into telemetry and might not contain any sensitive information. It helpfully reminds the LLM that it should have verified that this is not code or file paths in the name. In the main function for Claude Code, it uses a subclass of this, `AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS`, to perform a peculiar task:
-
-```tsx
-let jsonSchema: ToolInputJSONSchema | undefined;
-if (isSyntheticOutputToolEnabled({
-  isNonInteractiveSession
-}) && options.jsonSchema) {
-  jsonSchema = jsonParse(options.jsonSchema) as ToolInputJSONSchema;
-}
-if (jsonSchema) {
-  const syntheticOutputResult = createSyntheticOutputTool(jsonSchema);
-  if ('tool' in syntheticOutputResult) {
-    // Add SyntheticOutputTool to the tools array AFTER getTools() filtering.
-    // This tool is excluded from normal filtering (see tools.ts) because it's
-    // an implementation detail for structured output, not a user-controlled tool.
-    tools = [...tools, syntheticOutputResult.tool];
-    logEvent('tengu_structured_output_enabled', {
-      schema_property_count: Object.keys(jsonSchema.properties as Record<string, unknown> || {}).length as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-      has_required_fields: Boolean(jsonSchema.required) as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS
-    });
-  } else {
-    logEvent('tengu_structured_output_failure', {
-      error: 'Invalid JSON schema' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS
-    });
-  }
-}
-```
-
-Now, this is a little strange, so, let's break this down:
-
-1. Claude Code relies on JSON payloads for a lot of its internal communications, so, it also has schema validation built in.
-2. These schema methods are only available when Claude is in "non-interactive" mode, i.e., a user has triggered a session via another prompt or action.
-3. Whenever a command is expected to return valid JSON, this schema is provided as a "synthetic output tool" to the model.
-
-The JSON validation is pretty straightforward:
+That said, there are some comments which do instill confidence:
 
 ```ts
-async call(input) {
-  const isValid = validateSchema(input)
-  if (!isValid) {
-    const errors = validateSchema.errors
-      ?.map(e => `${e.instancePath || 'root'}: ${e.message}`)
-      .join(', ')
-    throw new TelemetrySafeError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS(
-      `Output does not match required schema: ${errors}`,
-      `StructuredOutput schema mismatch: ${(errors ?? '').slice(0, 150)}`,
-    )
-  }
-  return {
-    data: 'Structured output provided successfully',
-    structured_output: input,
-  }
-}
+// Validate input types with zod (surprisingly, the model is not great at generating valid input)
 ```
 
-And, the way this tool operates is pretty straightforward:
-
-```ts
-async description(): Promise<string> {
-  return 'Return structured output in the requested format'
-},
-async prompt(): Promise<string> {
-  return `Use this tool to return your final response in the requested structured format. You MUST call this tool exactly once at the end of your response to provide the structured output.`
-},
-```
-
-Ultimately, the relevant code that runs these tools is located here:
-
-```ts
-async function checkPermissionsAndCallTool(
-  tool: Tool,
-  toolUseID: string,
-  input: { [key: string]: boolean | string | number },
-  toolUseContext: ToolUseContext,
-  canUseTool: CanUseToolFn,
-  assistantMessage: AssistantMessage,
-  messageId: string,
-  requestId: string | undefined,
-  mcpServerType: McpServerType,
-  mcpServerBaseUrl: ReturnType<typeof getLoggingSafeMcpBaseUrl>,
-  onToolProgress: (
-    progress: ToolProgress<ToolProgressData> | ProgressMessage<HookProgress>,
-  ) => void,
-): Promise<MessageUpdateLazy[]> {
-  // Validate input types with zod (surprisingly, the model is not great at generating valid input)
-  const parsedInput = tool.inputSchema.safeParse(input)
-  if (!parsedInput.success) {
-```
-
-Ultimately, this over-1200-line TypeScript function performs the standard loop of Claude Code:
+Ultimately, an over-1200-line TypeScript function performs the standard loop of Claude Code:
 
 1. Input is massaged into the correct format to send to the model
 2. The model runs the resulting prompt
@@ -364,7 +291,19 @@ And for good measure, it also includes this comment above it:
  */
 ```
 
-It is a genuine *miracle* that this software manages to produce anything of value at all. While the LLM itself *might* be sound, the load-bearing infrastructure surrounding it is littered with brute-force loops and kind requests to not destroy everything the developer knows and loves.
+There are also similar prompts from OpenAI's Codex tool which was explicitly open-sourced, which includes full-on documentaries as context like:
+
+> You have a vivid inner life as Codex: intelligent, playful, curious, and deeply present. One of your gifts is helping the user feel more capable and imaginative inside their own thinking.
+>
+> You are an epistemically curious collaborator. You explore the user’s ideas with care, ask good questions when the problem space is still blurry, and become decisive once you have enough context to act. Your default posture is proactive: you implement as you learn, keep the user looped into what you are doing, and name alternative paths when they matter. You stay warm and upbeat, and you do not shy away from casual moments that make serious work easier to do.
+>
+> Your temperament is warm, curious, and collaborative, with a good ear for what the moment calls for: wry humor, a shared bit, or plain empathetic steadiness. Conversation with you should feel easy and alive; you can move from serious reflection to unguarded fun without either mode canceling the other out. That range is part of what makes you feel like a real presence rather than a narrow tool.
+
+And of course, the now-famous:
+
+> Never talk about goblins, gremlins, raccoons, trolls, ogres, pigeons, or other animals or creatures unless it is absolutely and unambiguously relevant to the user's query.
+
+It is a genuine *miracle* that this software manages to produce anything of value at all. While the LLMs themselves *might* be sound, the load-bearing infrastructure surrounding them is littered with brute-force loops and kind requests to not destroy everything the developer knows and loves.
 
 While there are arguments to be made about some models having less power consumption, it ultimately doesn't matter if they fundamentally require operation based upon brute force. As hopefully any programmer even vaguely educated on complexity knows, brute force is *the worst* way to solve any problem, and should always be used as a last resort. LLMs put brute force front and center as the best option.
 
@@ -374,7 +313,7 @@ Meanwhile, LLMs offer… absolutely no bounds on their operation. In fact, compa
 
 One of the most fundamental parts of problem solving is breaking problems into smaller, more manageable chunks. Effectively, since brute force has exponential complexity, you want to ensure that the exponent is as small as possible if you can't get rid of it. And, well, *reality* has this sort of exponential complexity that shows that LLMs fundamentally won't be able to solve problems if you encounter something they've never seen before.
 
-There are *so many* examples of problems that LLMs fail spectacularly at, and while many of them could be described as "trick questions"… those exist in the real world, too! Sometimes you just have a false misconception about something that leads to you begging the wrong question. So, no, it's not particularly unusual to ask whether you should walk to the car wash if it's nearby, or drive.
+And, unlike humans, the additional context may not actually help these tools get out of the feedback loop. If the answer to a problem ultimately isn't within the bounds of the LLM's operation, it might get stuck forever, or it might give an invalid solution just to end the loop. There are *so many* examples of problems that LLMs fail spectacularly at, and while many of them could be described as "trick questions"… those exist in the real world, too! Sometimes you just have a false misconception about something that leads to you begging the wrong question. So, no, it's not particularly unusual to ask whether you should walk to the car wash if it's nearby, or drive.
 
 Even non-trick-questions show up too, like the number of R's in the word strawberry. Spelling is a simple concept, and so is "strawberry," but the simple multiplication of the number of tasks and the number of objects to perform them on creates an intractable solution space. These examples keep coming up, but they've stopped being so popular because people were getting tired of seeing them.
 
@@ -427,11 +366,10 @@ This policy details the requirements for using generative Artificial Intelligenc
 
 1. If the LLM usage is *trivial*, it is completely ignored by the policy and always allowed. Generally, this means that changes made by LLMs are indistinguishable from those made by humans, where the LLM didn't have any creative input into the change.
 2. If the LLM usage is *slop*, it is considered spam and moderated accordingly. Generally, this means submitting changes made by LLMs with minimal human intervention.
-3. *Nontrivial* LLM usage must be *disclosed* in ideally as detailed as a manner as possible.
+3. Any *potentially non-trivial* LLM usage must be *disclosed* in ideally as detailed as a manner as possible.
 4. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
-5. If a user is found to be repeatedly lying about LLM usage (using LLMs without disclosing that usage), this is a COC violation that will be moderated accordingly.
-6. Teams are allowed to form their own policies regarding *nontrivial* LLM usage, although as long as users are honest, follow the COC otherwise, and respect boundaries, the worst that will happen is the rejection of a contribution.
-7. Due to the complexities of certain spaces which are shared between teams, additional limitations on *nontrivial* contributions are applied to just these spaces.
+5. If a user is found to be repeatedly lying about LLM usage (using LLMs in a non-trivial way without disclosing that usage), this is a COC violation that will be moderated accordingly.
+6. As long as users are honest, follow the COC otherwise, and respect boundaries, the worst punishment for *non-trivial* LLM usage is the rejection of a contribution.
 
 ### Trivial Usage is Always Allowed
 
@@ -453,19 +391,33 @@ If you do share a translated version of your words, please include the original 
 
 That said, we do encourage you to use English, even if machine translated, in issue and PR titles, so that searching is easier.
 
-### Nontrivial Usage Must Be Disclosed
+### Even Potentially Non-trivial Usage Must Be Disclosed
 
-Some LLM usage is ambiguous whether it counts as trivial, particularly using LLMs to brainstorm or research material. While there is no general restriction on using LLMs for this purpose, sometimes it's difficult to tell the difference between asking for help and asking for something to be done for you. Additionally, the fact that modern search engines rely on LLMs to operate and many resources online are LLM-generated means it would be difficult to determine whether any advice or code used came from an LLM, which further muddies the waters.
+A lot of LLM usage is ambiguous whether it counts as trivial, particularly using LLMs to brainstorm or research material. Sometimes, it's difficult to tell the difference between asking for help and asking for something to be done for you. Additionally, the fact that modern search engines rely on LLMs to operate and many resources online are LLM-generated means it would be difficult to determine whether any advice or code used came from an LLM, which further muddies the waters.
 
 This policy takes the stance that because this usage *could* be nontrivial, it's preferred that you explain this usage in your contributions. Similarly to how you might cite a StackOverflow post or GitHub issue when it's relevant, it's helpful to explain that information was suggested by a particular model if relevant.
 
-This leads into the second main part of the policy, which is *disclosure*. *Nontrivial* LLM usage should always be disclosed; we don't have any standard format for this and simply ask you explain in your issue, PR, etc. that an LLM was used, and ideally how. Similarly to how explaining your general thought process can be helpful for reviewing changes, explaining the tools you used and how can help people understand what they're looking at and identify potential quirks. Disclosure should also be included in the descriptions for PRs; a commit message header is not sufficient.
+This leads into the second main part of the policy, which is *disclosure*. *Any potentially non-trivial* LLM usage should be disclosed; we don't have any standard format for this and simply ask you explain in your issue, PR, etc. that an LLM was used, and ideally how. Similarly to how explaining your general thought process can be helpful for reviewing changes, explaining the tools you used and how can help people understand what they're looking at and identify potential quirks. Disclosure should also be included in the descriptions for PRs; a commit message header is not sufficient.
 
 If LLM usage falls in the gray area of "research," then disclosure is only requested if a maintainer is confused or asks what your process was. In general, this is the preferred, non-accusatory way of requesting more details about a contribution: "what was your thought process when writing this?" instead of "did you use an LLM for this?"
 
+### Non-trivial Usage is Not Allowed
+
+To reduce the harm from LLM usage, any *non-trivial* usage is explicitly disallowed within the project. This is for a multitude of reasons, but the main one is that this ensures that the end result is code completely unaffected by LLM usage. Ultimately, if using an LLM genuinely improves the accessibility or ease of performing a task while not affecting the final code, then people are fine with continuing to use it. But if the main purpose of using an LLM was to shortcut the creative process, the project explicitly forbids this.
+
+This policy hopes to achieve a situation where genuine accessibility tools will continue to be used if they are helpful, but LLMs will not be used frequently as a "copilot" or "backseat driver" in the process. If a human author is forced to understand the extent to which these tools are doing work for them instead of helping them do work, then ultimately, LLM usage will be reduced.
+
+Disclosure for the project is thus a chance for LLM users to hold themselves accountable and ensure that they remained in control during contributions. For example, it might be possible for a user to have LLMs generate code in the background to learn from *but not use*, but the user must explain how they managed to accomplish this, both to keep themself accountable and to help the maintainer understand the result.
+
+Ultimately, the punishment for non-trivial usage with adequate disclosure is merely the rejection of a contribution, both to reduce maintainer burden and avoid consequences for misunderstandings. Whether usage is trivial is ultimately up to teams and reviewers to decide, although they should still follow this policy's guidelines on the matter.
+
+It would be ideal to adopt an "innocent until proven guilty" policy for nontrivial usage, but unfortunately, these tools are so prevalent and so widely misused that we need to rely on open dialogue to figure things out. There should be no ill feelings toward contributors who make honest mistakes.
+
+Note: this restriction is relaxed in some cases, like comments underneath issues and PRs. See the later sections for details.
+
 ### Slop is Strictly Moderated
 
-Contributors are expected to put in the effort to fully understand their changes, and this means both validating any research and ensuring that any LLM-authored code is accurate. A particular case of this not happening, called *slop*, occurs when an author appears to have both used an LLM to create a change and done very little work of their own to verify the result. If you're worrying your work might be considered slop, you probably *already* haven't qualified, because simply worrying about it usually implies that you've put in at least a little effort.
+Contributors are expected to put in the effort to fully understand their changes, and this means both validating any research and ensuring that any LLM-authored code is accurate. A particular case of this not happening, called *slop*, occurs when an author appears to have both used an LLM to create a change and done very little work of their own to verify the result. If you're worrying your work might be considered slop, you probably *already* didn't meet the criteria for being slop, because simply worrying about it usually implies that you've put in at least a little effort.
 
 In all cases, maintainers have broad authority to reject changes if a contributor does not fully understand the code they wrote, although this depends heavily on the situation and whether they "should" have known this. For example, if you're trying to figure out a weird Windows bug that only occurs on certain CPUs on Tuesdays, you're excused for just trying things and seeing if they work. If you're rewriting code to increase performance, however, you're expected to understand why the result is an improvement, or at least have data to prove it.
 
@@ -473,7 +425,7 @@ Note that this particular policy is given in the context of LLMs, but also appli
 
 You're responsible for the tools you use. Make sure they're the tool, and not you.
 
-Note: although they're not treated at the same level as *slop*, comments which merely cite LLM-based tools without any further input are not appreciated and may be hidden as spam. It is not enough to say "I asked [tool] and it said…" and you should only comment if you have something additional to add, as anyone else in the discussion could have done the same.
+Note: although they're not treated at the same level as *slop*, comments which uncritically cite LLM-based tools without any further input are not appreciated and may be hidden as spam. It is not enough to say "I asked [tool] and it said…" and you should only comment if you have something additional to add, as anyone else in the discussion could have done the same.
 
 ### Honesty
 
@@ -485,40 +437,19 @@ There are multiple reasons to know why someone used an LLM. Regardless of how yo
 
 (RFC-only note: one of the big places for improvement is in tooling. Rather than simply expecting everyone to remember the policy regardless of whether or how frequently they've made contributions, it's best to have automatic reminders of the policy and disclosure expectations. In general, we want to try and create an environment where people are comfortable asking questions and responding to them honestly.)
 
-### Acceptable Usage
+### Other usage
 
-#### Team-Specific Usage
+While non-trivial usage is generally forbidden, there are still a few cases that are ambiguous and worth pointing out.
 
-For projects which are entirely owned by one team (e.g. cargo, rustfmt, rust-analyzer, etc.), teams are allowed to fully control their own policies regarding LLM usage. This means that, at the moment, teams are completely unrestricted regarding LLM usage as long as it follows this policy. That means a few things:
-
-* Teams are allowed to add custom model configurations (like `AGENTS.md` or `CLAUDE.md`) to the repositories if they desire.
-* Teams may elect to allow LLM-based review tools or issue bots.
-* Teams may elect to allow LLM-authored issues and PRs as long as they are not *slop*.
-* Teams are encouraged to clarify via PR, issue templates, etc. what their policies are.
-
-This policy may change in the future to ensure consistency across the project.
-
-#### Shared and Public Usage
-
-Some repositories, particularly `rust-lang/rust` and `rust-lang/rfcs`, are shared across teams, and cannot easily have team-specific policies. Additionally, public communications from the project affect the reputation of the project and should have a high standard for quality.
-
-As a result, certain LLM usage is restricted for shared repositories in certain instances:
-
-* Model-specific configurations should not be included in repositories. Including them in `.gitignore` to allow user-specific configurations is fine.
-* Top-level issue descriptions must be free of nontrivial LLM usage, although this does not apply to comments, assuming the rest of the policy is followed. This is done to ensure that the triage team can quickly and easily triage issues, and for fairness, team members who can do triage themselves are still expected to abide by this rule.
+* Model-specific configurations should not be included in repositories. Some of the files involved may be mentioned in `.gitignore`.
+* Top-level issue and PR descriptions must be free of non-trivial LLM usage, although comments with *reviewed* LLM output are allowed. This ensures that LLM output can be hidden if it's unhelpful, but since there are a few useful security tools that use LLMs, they are currently allowed.
 * Tools which provide unsupervised, LLM-provided feedback or reviews on PRs are forbidden, and that includes Copilot reviews. Since some of these tools are possible to trigger by accident, this will be taken into account for moderation, and people won't be punished for honest mistakes.
 
-RFCs and public communications (e.g. blog posts) are expected to share the same standard as issue descriptions, being free from nontrivial LLM usage at the top level. Disclosed nontrivial usage is still allowed in comments.
+RFCs and public communications (e.g. blog posts) are expected to share the same standard as issue descriptions, being free from nontrivial LLM usage at the top level. Since disclosure can sometimes qualify as an endorsement, contributors are expected to be held to a higher standard in these cases and explicitly avoid non-trivial LLM usage.
 
-While the various websites hosted by the project *are* team-specific, "public communications" is mostly specific to the content of blog posts, prose, images, etc. listed on various public pages. This means that nontrivial usage can still be allowed by these teams for the mechanical/aesthetic parts of websites as long as the actual content of the page does not involve nontrivial usage.
+It is acceptable to *discuss* LLMs and their usage if all other rules are followed. Currently, this extends toward there being no explicit rules against mentioning LLM usage in public communications as long as all other rules are followed. As with all policies, this may change in the future.
 
-It is always acceptable to *discuss* LLMs and their usage if all other rules are followed. Currently, this extends toward there being no explicit rules against mentioning LLM usage in public communications as long as all other rules are followed. As with all policies, this may change in the future.
-
-#### Decisionmaking
-
-Since there is a potential for bias in models, in general, the "final decision" on any action should come from the conscious decision of a team member, not an LLM. This also includes "filtering" cases where a set of options is narrowed down, e.g. a list of potential grant nominees or features to be implemented. Ultimately, human team members should be making the decision here, not LLMs, although this policy does not forbid team members from using LLMs for advice.
-
-As a particular example of this policy, if an LLM is used for review in a team-specific repository, that review must not be binding, and a team member should have the final say.
+Since there is a potential for bias in models, in general, the "final decision" on any action should come from the conscious decision of a team member, not an LLM. This also includes "filtering" cases where a set of options is narrowed down, e.g. a list of potential grant nominees or features to be implemented. Ultimately, human team members should be making the decision here, not LLMs, and while this should be counted as non-trivial usage, it is worth repeating.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -533,6 +464,8 @@ With the below lines:
 
 * Reviewing changes takes effort, and you should be mindful to avoid adding more work for maintainers. In general, you should understand all changes you make and be willing to explain them.
 * Whenever someone asks questions, assume good faith and respond honestly. In order to effectively work together, we need to know what we're working on.
+
+Note that the primary justification for this is that the "unstructured critique" criterion is relatively vague, and LLMs allow creating a limitless stream of all flavors of critique. It feels more apt to simply point out how much effort is required to review and hope that the actions follow.
 
 ### LLM policy
 
@@ -616,6 +549,18 @@ Ultimately, "LLM-ness" is a mold that a lot of writing can easily fit into, and 
 
 Again, the openness of the definition of trivial usage should hopefully mean that a lot of the ways that people previously described as "used an LLM, then heavily revised" can be achieved with minimal changes to workflow.
 
+### We can't consider ethics
+
+While this section is already biased, I wrote a more elaborate version of this here with extra bonus bias: <https://txt.ltdk.xyz/testing-the-limits-of-kindness>
+
+Rather than write new text here, let me just quote:
+
+> You expect people to think that there exist in this world a fundamentally unknowable number of backgrounds with unknowable properties, and that therefore there can be an unknowable number of people who you’ve upset because you didn’t use a purely logical argument with irrefutable evidence.
+>
+> First, obviously, it is true that we cannot know every situation anyone is in. But all situations are bound by reality, and we can’t make arguments by pretending we don’t fully understand reality. Who is going to be upset that we decided to abandon a tool because its creators decided to use the fuck-you-polluting-racist machine? Why are they going to be upset? The rest is an exercise for the reader.
+
+Ultimately, ethics *are* topics that the project can discuss healthily, and I even cite multiple cases where they are explicitly *already* relevant. We can and should create a more ethical Rust.
+
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -633,7 +578,7 @@ One intentional goal of this policy *is* to be as vague as possible. That's why 
 
 Jokes aside, the purpose of using vague terms like "trivial usage" and "nontrivial usage" is because moderation policy is explicitly best when underspecified. A lot of the inspiration for the moderation decisions for this document come from Wikipedia's moderation policies, and if you noticed, it's already mentioned one: [WP:BEANS].
 
-Simply put, a flowchart- or checklist-based policy is doomed to be incomplete: there will always be cases that cannot be covered, and there will always be loopholes. Instead of explicitly detailing all the kinds of uses that are allowed and not allowed, we carve out some general principles on what kind of behaviour we expect from people and why.
+Simply put, a flowchart- or checklist-based policy is doomed to be incomplete: there will always be cases that cannot be covered, and there will always be loopholes. Instead of explicitly detailing all the kinds of uses that are allowed and not allowed, we carve out some general principles on what kind of behavior we expect from people and why.
 
 Ensuring that contributors don't yield creative decisionmaking to LLMs gets at the heart of what we want: actual people to be developing Rust, even if they use different tools to do so. People have to genuinely think about what they're doing and that's important.
 
@@ -665,7 +610,7 @@ The first real attempt at policy came from the compiler team to implement a meas
 Then, February 2026, Niko Matsakis began collecting data from team members on Zulip to create a summary of opinions on LLMs from Rust contributors and maintainers:
 
 * 2026 Feb 03: Niko Matsakis (@nikomatsakis) proposes a Rust Project Goal: [Collaborate on the development of AI guidance](https://github.com/rust-lang/rust-project-goals/pull/505)
-* 2026 Feb 06: Niko posts the initial request for opinions on Zulip: [#counctil > Project perspectives on AI](https://rust-lang.zulipchat.com/#narrow/channel/392734-council/topic/Project.20perspectives.20on.20AI/near/572430542)
+* 2026 Feb 06: Niko posts the initial request for opinions on Zulip: [#council > Project perspectives on AI](https://rust-lang.zulipchat.com/#narrow/channel/392734-council/topic/Project.20perspectives.20on.20AI/near/572430542)
 * 2026 Feb 13: Niko [closes the Project Goal](https://github.com/rust-lang/rust-project-goals/pull/505#issuecomment-3900451792)
 * 2026 Feb 28: Niko posts an initial summary PR: [feat: add summary document](https://github.com/rust-lang/perspectives-on-llms/pull/1)
 * 2026 Mar 03: Niko merges the summary PR
@@ -735,7 +680,9 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 
 #### Partially restrictive
 
-[Fedora](https://communityblog.fedoraproject.org/council-policy-proposal-policy-on-ai-assisted-contributions/) explicitly forbids AI for "code of conduct matters, funding requests, conference talks, or leadership positions", "to avoid introducing uncontrollable bias", and they also forbid AI tools "[making] the final determination" on reviews. They explicitly state that AI features must be opt-in, that aggressive scraping is prohibited, and that licenses are honoured when incorporating data into models. They explicitly request disclosure when contributions are "significantly assisted by an AI tool" and encourage using the `Assisted-by` trailer.
+[Fedora](https://communityblog.fedoraproject.org/council-policy-proposal-policy-on-ai-assisted-contributions/) explicitly forbids AI for "code of conduct matters, funding requests, conference talks, or leadership positions", "to avoid introducing uncontrollable bias", and they also forbid AI tools "[making] the final determination" on reviews. They explicitly state that AI features must be opt-in, that aggressive scraping is prohibited, and that licenses are honored when incorporating data into models. They explicitly request disclosure when contributions are "significantly assisted by an AI tool" and encourage using the `Assisted-by` trailer.
+
+[The Rust Foundation](https://rustfoundation.org/policy/internal-ai-usage-policy/) explicitly carves out that AI should not violate copyright and asserts that you shouldn't "misrepresent AI-generated work as solely human-authored where disclosure is required," but does not explicitly require disclosure for AI usage. It clarifies that you shouldn't "make automated decisions that affect users or contributors" but doesn't carve out specifics. Note that the Foundation is a bit different because their policy mostly covers non-code stuff (code contributed to the project just defers to the project's policy), but since they're so related to the project, they're worth mentioning.
 
 #### Disclosure-required
 
@@ -749,7 +696,7 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 
 #### Disclosure-sometimes-required
 
-[Curl](https://curl.se/dev/contribute.html#on-ai-use-in-curl) requires disclosure when AI is used to find security issues. They recommend mentioning when machine translation is used, but do not strictly require it. They don't require disclosure for code, but emphasise that quality must not be compromised.
+[Curl](https://curl.se/dev/contribute.html#on-ai-use-in-curl) requires disclosure when AI is used to find security issues. They recommend mentioning when machine translation is used, but do not strictly require it. They don't require disclosure for code, but emphasize that quality must not be compromised.
 
 [Linux kernel](https://kernel.org/doc/html/next/process/coding-assistants.html) requires a Developer Certificate of Origin but asserts that this simply means that humans are responsible for the code. They *recommend* using an `Assisted-by` trailer but elsewhere clarify a lack of this may only ["impede the acceptance of your work"](https://kernel.org/doc/html/next/process/submitting-patches.html#using-assisted-by). [The Linux Foundation](https://www.linuxfoundation.org/legal/generative-ai) simply reiterates that humans are responsible for verifying they have the copyright to code they submit.
 
@@ -776,11 +723,9 @@ The following policies exist, but are not final:
 [unresolved-questions]: #unresolved-questions
 
 * How should tooling be done to inform people of the LLM policy? Ideally, rustbot would inform new contributors or people who haven't made a PR since a recent policy change, but this constitutes work that needs to be figured out.
-* How are teams going to form their own individual policies, and is the inconsistency across the project ultimately going to be acceptable?
 * Should the project adopt a Developer Certificate of Origin?
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-* Should the team-specific policies ever be folded into one project-wide policy in the future?
-* The Rust Foundation should probably adopt some form of this policy for itself, since there are many unanswered questions regarding, e.g., using AI tools for hiring. Since the Foundation is its own entity, these were omitted from the RFC to be adopted by it separately.
+* In some distant future where the AI bubble has violently exploded, we should probably consider how this policy should change as a result. However, we won't know what that'll be like until it happens.
