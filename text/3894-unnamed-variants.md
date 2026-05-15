@@ -939,8 +939,8 @@ declaring crate as well - the enum is "universally non-exhaustive".
 
 ##### Empty discriminant ranges
 
-`empty_discriminant_ranges` is a new `deny`-by-default lint. It should be
-produced if the discriminant range assigned to an unnamed variant is empty.
+`empty_discriminant_ranges` is a new `deny`-by-default lint. It detects when the
+discriminant range assigned to an unnamed variant is empty.
 
 ```rust
 #[repr(u8)]
@@ -975,12 +975,11 @@ enum Bar {
 
 ##### Taken discriminant ranges
 
-`taken_discriminant_ranges` is a new `warn`-by-default lint. It should be
-produced if every discriminant in the range assigned to an unnamed variant is
-already assigned to a named variant. This results in the unnamed variant
-definition having no effect. While an unnamed variant is syntactically present,
-no unnamed variant is introduced to the `enum` as it has no discriminants to
-claim.
+`taken_discriminant_ranges` is a new `warn`-by-default lint. It detects when
+every discriminant in the range assigned to an unnamed variant is already
+assigned to a named variant. This results in the unnamed variant definition
+having no effect. While an unnamed variant is syntactically present, no unnamed
+variant is introduced to the `enum` as it has no discriminants to claim.
 
 ```rust
 #[repr(u8)]
@@ -1019,14 +1018,13 @@ enum NamedU8 {
 
 ##### Truncatable ranges
 
-`overlong_discriminant_ranges` is a new `warn`-by-default lint. It should be
-produced if an unnamed variant's discriminant range can be shortened to avoid
-overlapping with named variants.
+`overlong_discriminant_ranges` is a new `warn`-by-default lint. It detects when
+an unnamed variant's discriminant range can be shortened to avoid overlapping
+with named variants.
 
 Let `start..=end` be the range of discriminants that an unnamed variant
-definition is assigned to, regardless of the actual range type used. An
-`overlong_discriminant_ranges` lint should be produced if all of the below are
-true:
+definition is assigned to, regardless of the actual range type used. The
+`overlong_discriminant_ranges` lint detects when all of the below are true:
 
 - The bound is specified as a range expression in the variant's discriminant
   expression, and not as an identifier or block.
@@ -1039,7 +1037,7 @@ true:
   defined by an unbounded range.
 - The prefix is an overlong side _or_ the following variant, if any, has an
   explicit discriminant.
-- The `taken_discriminant_ranges` lint is not produced for this unnamed variant.
+- The `taken_discriminant_ranges` lint doesn't detect this unnamed variant.
 
 ```rust
 #[repr(u32)]
@@ -1097,7 +1095,7 @@ enum ImplicitNextDiscriminant {
 
 ##### Gap of length one caused by an exclusive range
 
-The existing [`non_contiguous_range_endpoints`] lint should be produced if:
+The existing [`non_contiguous_range_endpoints`] lint also detects when:
 
 [`non_contiguous_range_endpoints`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#non-contiguous-range-endpoints
 
@@ -1133,8 +1131,8 @@ enum Bar {
 
 ##### Forgot to mention a named variant
 
-The unstable [`non_exhaustive_omitted_patterns`] `allow`-by-default lint should
-be produced if a `match` on an enum with unnamed variants mentions some, but not
+The unstable [`non_exhaustive_omitted_patterns`] `allow`-by-default lint also
+detects when a `match` on an enum with unnamed variants mentions some, but not
 all, of the named variants.
 
 [`non_exhaustive_omitted_patterns`]: https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint_defs/builtin/static.NON_EXHAUSTIVE_OMITTED_PATTERNS.html
@@ -1156,9 +1154,9 @@ enum Bar {
 }
 let b = Bar::A;
 
-// warning: some variants are not matched explicitly
+// warning: some named variants are not matched explicitly
 //          pattern `Bar::B` not covered
-// help: ensure that all variants are matched explicitly by adding the
+// help: ensure that all named variants are matched explicitly by adding the
 //       suggested match arms
 // note: the matched value is of type `Bar` and the
 //       `non_exhaustive_omitted_patterns` attribute was found
@@ -2136,7 +2134,7 @@ described in the Alternatives section above.
 ## Unresolved questions
 
 Is the Control Flow Integrity encoding of types the only [blocker][ucg-489] for
-`repr(Int)` `enum` to be ABI compatibile with `Int`?
+`repr(Int)` `enum` to be ABI compatible with `Int`?
 
 [ucg-489]: https://github.com/rust-lang/unsafe-code-guidelines/issues/489
 
