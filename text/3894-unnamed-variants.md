@@ -102,8 +102,8 @@ schema version skew.
 
 Protobuf generates code for target languages from a schema. On C++, it can
 directly generate an `enum` - C++ enums are open since it's valid to
-`static_cast` an `enum` from its backing integer. However, on Rust, the current
-implementation simulates an open enum by using an integer newtype with
+`static_cast` an `enum` from its underlying integer. However, on Rust, the
+current implementation simulates an open enum by using an integer newtype with
 associated constants for each variant.
 
 While this allows Protobuf enums in Rust to be used _mostly_ like enums, this is
@@ -158,9 +158,9 @@ With unnamed variants, interoperating with a C `enum` is very simple: add
 
 `bindgen` has [multiple ways][bindgen-enum-variation] to generate Rust that
 correspond to a C enum, the default being to define a series of `const` items.
-Its best-effort logic to determine the backing integer type for a C enum does
+Its best-effort logic to determine the underlying integer type for a C enum does
 not always match that of `repr(C)` on a Rust `enum`. A future version of
-`bindgen` could use this feature to add a `_ = ..` variant to a Rust `enum`  by
+`bindgen` could use this feature to add a `_ = ..` variant to a Rust `enum` by
 default, instead of a exposing a less-effective `non_exhaustive` attribute.
 
 Today, Rust for Linux configures `bindgen` to generate newtype integers and raw
@@ -462,9 +462,10 @@ It is valid to claim multiple ranges of discriminants. Those ranges may be
 discontiguous.
 
 To declare an unnamed variant, the `enum` must have an explicit `repr(Int)` to
-indicate a **backing integer** for the `enum`. `Int` is one of the primitive
-integers or `C`. If it is `C`, then the `Int` for the discriminant expression
-below is `isize` and the declaration has further [nuances](#reprc-behavior).
+indicate a fixed **underlying integer** for its discriminant. `Int` is one of
+the primitive integers or `C`. If it is `C`, then the `Int` for the discriminant
+expression below is `isize` and the declaration has further
+[nuances](#reprc-behavior).
 
 An unnamed variant declaration must specify a discriminant expression with one
 of these types:
@@ -590,10 +591,10 @@ impl<Int> ClaimDiscriminants<Int> for RangeFull {}
 #### `repr(C)` behavior
 
 `repr(C)` enums have special semantics in Rust because the discriminant
-expression type, `isize`, is not the same as the actual backing integer. These
-enums are ordinarily backed by a `ffi::c_int`, but if any of the assigned
-discriminants cannot fit, a larger backing integer is chosen that can represent
-all of them.
+expression type, `isize`, is not the same as the actual underlying integer.
+These enums ordinarily share a layout with `ffi::c_int`, but if any of the
+assigned discriminants cannot fit, a larger underlying integer is chosen that
+can represent all of them.
 
 > Since this behavior is fraught with mismatches on different compiler
 > platforms, allowing enums larger than `c_int` or `c_uint` is currently being
@@ -637,11 +638,12 @@ const _: () = assert!(
 );
 ```
 
-The unbounded end of a discriminant range **never** affects the backing integer
-of a `repr(C)` enum. For a `repr(C)` enum, when a range with an unbounded end
-(`start..`, `..end`, `..=end`, `..`) is used as an unnamed variant declaration's
-discriminant expression, the effective bound of the claimed range is dependent
-on what the backing integer would be if no unnamed variants were declared.
+The unbounded end of a discriminant range **never** affects the underlying
+integer of a `repr(C)` enum. For a `repr(C)` enum, when a range with an
+unbounded end (`start..`, `..end`, `..=end`, `..`) is used as an unnamed variant
+declaration's discriminant expression, the effective bound of the claimed range
+is dependent on what the underlying integer would be if no unnamed variants were
+declared.
 
 ```rust
 // On x86_64-unknown-linux-gnu:
@@ -861,8 +863,8 @@ when used as parameters or return values in a function using the C ABI
 - `enum class foo { ... }` in C++ global namespace
 - `#[repr(C)] enum foo` in Rust (ignoring modules)
 - `enum foo : uint16_t` in C and `enum class foo : uint16_t` in C++ also share
-  this encoding, since Clang doesn't encode the backing integer for the `enum`.
-  It remains ABI incompatible with the above types.
+  this encoding, since Clang doesn't encode the underlying integer for the
+  `enum`. It remains ABI incompatible with the above types.
 
 These share a different CFI encoding:
 
@@ -876,7 +878,7 @@ This RFC proposes that `#[repr(Int)] enum foo` encode the same as
 in an `extern "C" fn` signature. As of writing, compatibility with C/C++
 encoding is only attempted for `repr(C)` `enum` in `extern "C" fn`.
 
-Because an `enum` and its backing integer don't share the same encoding, this
+Because an `enum` and its underlying integer don't share the same encoding, this
 triggers an abort when using CFI:
 
 ```rust
@@ -1221,20 +1223,21 @@ enum NothingYet { _ = .. }
 
 ### Open enum casting
 
-An _open enum_ is defined as an `enum` for which every value of its backing
+An _open enum_ is defined as an `enum` for which every value of its underlying
 integer is a valid discriminant.
 
-- An open enum always has an explicit `repr` backing integer, or is `repr(C)`.
+- An open enum always has an explicit `repr` underlying integer, or is
+  `repr(C)`.
 - An enum is open if every discriminant value for that integer is associated
   with a named or unnamed variant.
   - For a field-less enum, this means every initialized bit pattern is valid.
   - `_ = ..` makes any enum open. This should apply for
     [enums with](#unnamed-variants-on-enums-with-field-data) and without fields.
-- A [unit-only] open enum may be `as` cast from its backing integer _only_:
+- A [unit-only] open enum may be `as` cast from its underlying integer _only_:
   `2u8 as Color`. See below for `repr(C)` behavior.
 - If an expression with the `{integer}` inference variable type is used as the
   source for an `as` cast to an open enum, it is uniquely constrained to the
-  explicit backing integer type. This excludes `repr(C)`; see below.
+  explicit underlying integer type. This excludes `repr(C)`; see below.
 
     ```rust
     #[repr(u8)]
@@ -1250,7 +1253,7 @@ integer is a valid discriminant.
 
 #### `repr(C)` open enum casting
 
-The actual backing integer type for a `repr(C)` enum changes based on the
+The actual underlying integer type for a `repr(C)` enum changes based on the
 variants' numeric discriminant values as described above.
 
 A `repr(C)` unit-only open enum may be `as` cast from:
@@ -1259,7 +1262,7 @@ A `repr(C)` unit-only open enum may be `as` cast from:
   be `as` cast from the same discriminant expression assigned to a variant.
 - Any primitive explicit-width integer that is capable of representing all
   variants' discriminants and does not exceed the size of the enum for the
-  platform. Thus any signedness cast performed to the backing integer has no
+  platform. Thus any signedness cast performed to the underlying integer has no
   visible effect.
   - This means that authors who don't know or care about short-enum platforms
     can cast from `c_int` and `c_uint` to most `repr(C)` open enums, while
@@ -1397,7 +1400,7 @@ Unnamed variants enable a large range of discriminants to be claimed for an
 enum, whether it's all or some of them. `NonZero`, and an `enum` spelling out
 each discriminant are the only other ways to achieve this in stable Rust today.
 
-The open enum conversion from backing integer is an ergonomic benefit that is
+The open enum conversion from underlying integer is an ergonomic benefit that is
 made possible by unnamed variants.
 
 ### Do nothing
@@ -1664,7 +1667,7 @@ language. Some of the concerns are:
   - The enum author uses an attribute to specify the "default" discriminant for
     an `IpProto::Other` expression.
   - Forbid direct construction of `IpProto::Other`. It can only be constructed
-    via `unsafe` or, for open enums, `as`-cast from the backing integer to
+    via `unsafe` or, for open enums, `as`-cast from the underlying integer to
     `IpProto`. There's no check that the discriminant represents an `Other`
     variant.
   - A discriminant that is valid for `IpProto::Other` must be provided when
@@ -2255,7 +2258,7 @@ the destination type. The destination may itself be a pattern type of `enum`.
 While it could be required that the `enum` type have an explicit `repr(Int)` or
 `repr(C)`, it is not technically necessary nor a breaking change from this RFC's
 more conservative proposal. All valid discriminants for an `enum` have a known
-but possibly different value when cast to the backing integer for the `enum`,
+but possibly different value when cast to the underlying integer for the `enum`,
 which can then be integrated into `P` for a static lossless check.
 
 Example syntax:
