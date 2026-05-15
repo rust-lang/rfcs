@@ -465,6 +465,48 @@ try {
 
 This is much less local, complex to implement and removes control from the user.
 
+### Why not use type annotated variables?
+
+> Why not instead just fix type inference so that `let x: Result<_, B>  = try {}` works, as well as variants like returning the try value, etc.?
+>
+> ~[lyphyser commenting on this RFC](https://github.com/rust-lang/rfcs/pull/3953#issuecomment-4343746748)
+
+Updating type inference to cover these cases is a much more significant undertaking. Leveraging existing type annotation possibilities is not always practical.
+
+1. For cases where this is possible it is not always desirable:
+
+    ```rust
+    let foo: Result<_, Error1> = try { ... };
+    let foo = foo?;
+    ```
+
+    is more verbose, more brittle and less clear than:
+
+    ```rust
+    let foo = try bikeshed Result<_, Error1> { ... }?;
+    ```
+
+1. Other times this is only possible with a more significant amount of extra effort, e.g. an anonymous future created by an `async` block. (Or inside an anonymous closure, e.g. in a call to `.map()`).
+
+    ```rust
+    let run_loop = async {
+        ...
+        try bikeshed TryType { 
+            loop {
+                break_if_this_fails().await?;
+                ...
+            }
+        }
+    }
+    block_on(run_loop)?;
+    ```
+
+#### See also
+
+- [Future Possibilities](#future-possibilities)
+- Could we evolve this in future? (below)
+- Discussion on third-party error types in [motivation](#motivation)
+
 ### Could we evolve this in future?
 
 Once the correct keyword / syntax is identified the remainder is an early desugaring to existing features, this is the easiest kind of thing to change over editions.
@@ -516,4 +558,3 @@ fn heterogeneous_via_return_type() -> Result<(), Error1> {
 ```
 
 where the errors involved all implement `Into<Error1>`
-
