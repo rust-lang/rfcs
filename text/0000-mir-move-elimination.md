@@ -381,32 +381,7 @@ MIR currently treats `copy` and `move` operands identically (meaning a `move` is
 [^5]: [rust-lang/rust#71117](https://github.com/rust-lang/rust/issues/71117)
 [^6]: The exact behavior is still an open question today (which this RFC specifies), but this describes what codegen currently does.
 
-Because this RFC assigns new semantics to `move` operands, a different way is needed to indicate whether a call argument place may be re-used by a callee. This RFC proposes to represent an argument to a MIR function call as a `CallArg`:
-
-```rust
-enum CallArg<'tcx> {
-    /// Argument is evaluated to a value before the call and copied/moved to a
-    /// new allocation in the callee.
-    ByVal(Operand<'tcx>),
-
-    /// The given place is passed directly to the callee which may use it 
-    /// directly as a local (with the same address).
-    /// 
-    /// The place must not overlap with any other `ByRef` place or the return 
-    /// place.
-    /// 
-    /// The callee is not required to use the place directly: it can choose to
-    /// treat the argument as `ByVal` and create a separate allocation for it 
-    /// (for example if the calling convention requires passing by register).
-    /// 
-    /// The place is treated as having been moved at the end of the call.
-    ByRef(Place<'tcx>),
-}
-```
-
-The main difference between `byval move <place>` and `byref <place>` is that the latter is not allowed to overlap with any other `byref` arguments or the return place. This allows MIR optimizations to promote arguments to `byref` when allowed by the aliasing restrictions.
-
-The return place for a call works similarly to a `byref` argument, but with one difference: it starts out as unallocated in the callee, and needs to be initialized before the function returns. This allows MIR optimizations to merge it with other locals in the callee.
+This RFC doesn't change this special meaning of `move` operands in call terminators. Unlike other statements and terminators, move operands of a whole local in call terminators do *not* cause the local to be immediately deallocated. Instead this freeing is deferred until after the call has returned, when the callee has finished using the place.
 
 ## MIR move optimization
 
@@ -449,11 +424,6 @@ A final pass is run over the MIR body which performs the following transformatio
 - New `StorageLive`/`StorageDead` statements are inserted at the points where the lifetime of a local transitions between maybe-live and dead according to the dataflow analysis from phase 2.
     - This takes local unification into account so that if a local is de-allocated and then re-allocated within the same statement, no `StorageLive`/`StorageDead` is emitted.
     - This may involve inserting such statements on block edges, which requires critical edges to be split beforehand.
-- Call arguments are promoted to `byref` where possible.
-    - `byval copy` call arguments are promoted to `byval move` if they do not have `Deref` projections and the underlying local is known to be dead afterwards. This happens at kill points if the address of a local has not been taken.
-    - `byval move` call arguments with an unprojected local[^7] are promoted to `byref` arguments if they do not overlap with any other `byref` argument or the return place of the call. This can easily be checked by looking at whether any of those other places use the same local as a root.
-
-[^7]: This promotion is only legal when moving an unprojected local because partial moves don't free the allocation. There is therefore no opsem which would allow the same address to be observed in both the callee and the caller.
 
 ## Drawbacks
 
