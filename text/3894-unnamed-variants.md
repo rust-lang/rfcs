@@ -719,27 +719,8 @@ EnumVariant ->
 #### No field data
 
 This RFC only defines adding unnamed variants to field-less enums, leaving
-unnamed variants in enums with fields as future work.
-
-#### `non_exhaustive`
-
-The `non_exhaustive` attribute on enums and unnamed variants are mutually
-exclusive:
-
-```rust
-#[non_exhaustive]
-#[repr(u8)]
-enum Color {
-    Red = 0,
-    Green = 1,
-    // error: An `_` variant cannot be specified on a `non_exhaustive` enum.
-    // help: remove the `#[non_exhaustive]`
-    _ = 2,
-}
-```
-
-An unnamed variant is more impactful than `non_exhaustive`, since it affects the
-declaring crate - the enum is "universally non-exhaustive".
+unnamed variants in enums with fields as
+[future work](#unnamed-variants-on-enums-with-field-data).
 
 #### Compatibility
 
@@ -918,6 +899,29 @@ same bit width.
 
 #### Applicable lints
 
+##### Unused `non_exhaustive`
+
+The existing [`unused_attributes`] lint also detects the `#[non_exhaustive]`
+attribute present on an `enum` with unnamed variants.
+
+[`unused_attributes`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#unused-attributes
+
+```rust
+// warning: `non_exhaustive` has no effect on an enum with unnamed variants
+// help: `_ = 2` makes this enum match non-exhaustively in all contexts
+// note: `#[warn(unused_attributes)]` (part of `#[warn(unused)]`) on by default
+#[non_exhaustive]
+#[repr(u8)]
+enum Color {
+    Red = 0,
+    Green = 1,
+    _ = 2,
+}
+```
+
+An unnamed variant is more impactful than `non_exhaustive` since it affects the
+declaring crate as well - the enum is "universally non-exhaustive".
+
 ##### Empty discriminant ranges
 
 `empty_discriminant_ranges` is a new `deny`-by-default lint. It should be
@@ -1080,7 +1084,7 @@ enum ImplicitNextDiscriminant {
 
 The existing [`non_contiguous_range_endpoints`] lint should be produced if:
 
-[`non_contiguous_range_endpoints`]: https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint_defs/builtin/static.NON_CONTIGUOUS_RANGE_ENDPOINTS.html
+[`non_contiguous_range_endpoints`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#non-contiguous-range-endpoints
 
 - There exists some unnamed variant assigned to a `start..end` or `..end`
   discriminant expression, and
@@ -1944,17 +1948,19 @@ to ensure an enum is open, they would need to handle the particular edge case of
 an enum with 256 variants and an 8-bit discriminant and leave out the variant.
 Instead, the lints can be `allow`ed for carefully-considered macros/codegen.
 
-### Require `non_exhaustive`, don't forbid it
+### Require `non_exhaustive` rather than lint if it's there
 
-Perhaps an unnamed variant could _require_ `#[non_exhaustive]`, rather than
-forbid it? This RFC opts against that, with the following considerations:
+An `enum` with unnamed variants [lints](#unused-non_exhaustive) when the
+`#[non_exhaustive]` attribute is present. Perhaps an unnamed variant could
+instead _require_ `#[non_exhaustive]`? This RFC opts against that, with the
+following considerations:
 
 Pros:
 
 - `non_exhaustive` already implies adding another wildcard branch. This could
   make it easier to explain to new users by fitting the idea of "needs wildcard
   branch" into one mental bucket.
-- This would make the unstable allow-by-default
+- This would make the unstable `allow`-by-default
   `non_exhaustive_omitted_patterns` lint more obviously correct to apply to
   enums with unnamed variants.
 
@@ -1965,7 +1971,7 @@ Cons:
   This could make it harder to explain to newer users.
 - The variant name being an underscore _already_ implies that a wildcard branch
   is needed.
-- It always requires two lines to achieve ABI non-exhaustiveness.
+- An author must recite two special lines to make an enum open instead of one.
 - Consider this enum:
 
   ```rust
@@ -1981,10 +1987,15 @@ Cons:
   ```
 
   When adding `X255`, the `non_exhaustive` _should_ also be removed, but as of
-  today, an open enum gives no warning if it is `non_exhaustive`. This is even
-  though it would necessarily be an API and ABI-breaking change to add a new
-  variant by changing the `repr`. This is non-obvious and can be avoided by
-  forbidding `non_exhaustive` when a valid unnamed variant exists.
+  today, a `repr(u8)` enum with 256 variants gives no warning if it is
+  `non_exhaustive`. This is even though it would necessarily be an API and
+  ABI-breaking change to add a new variant by changing the `repr`. This is
+  non-obvious and can be avoided by warning against `non_exhaustive` when an
+  enum has an unnamed variant.
+
+Rust could also reject `non_exhaustive` entirely rather than lint, but this is a
+stricter approach than Rust otherwise takes for attributes that unambiguously
+have no effect.
 
 ### Allow an implicit discriminant expression for unnamed variants
 
