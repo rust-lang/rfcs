@@ -186,7 +186,22 @@ others listed.
 
 [non-exhaustive-ub]: https://github.com/rust-lang/rust-bindgen/issues/1763
 
-### Embedded syscalls
+### Enums with reserved discriminants
+
+Enums designed against specific protocols may have reserved values that
+shouldn't be directly used but must be cleanly handled if encountered. Two
+practical examples:
+
+#### `Ipv6MulticastScope`
+
+The unstable [`Ipv6MulticastScope`] enum defines two `doc(hidden)` and
+perma-unstable attributes to reserve discriminants with unnameable variants. It
+could instead define `_ = 0x0, _ = 0xF` and `#[repr(u8)]` to reserve these
+discriminants.
+
+[`Ipv6MulticastScope`]: https://doc.rust-lang.org/nightly/std/net/enum.Ipv6MulticastScope.html
+
+#### System call interfaces
 
 TockOS is an embedded OS with a separate user space and kernel space. Its
 syscall ABI defines that kernel error codes are between 1 and 1024. It's highly
