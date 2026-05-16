@@ -209,11 +209,11 @@ that has a "principled extension" system.
 
 From the perspective of 99% of doc authors who didn't want to write a math span in the first place,
 false positives that mangle their generated docs are a nasty papercut.
-Failing to escape the dollar signs when you needed to is not as bad as [accidentally triggering a link refdef][],
-since the degraded result might still be [legible][example rendering of a mistake],
-but having to read English text without any spaces sucks.
-Also, the LaTeX math syntax is forgiving enough that normal text is often valid,
-so Rustdoc compiler warnings won't catch every accidental match.
+Having to read English text without any spaces caused by failing to escape the dollar signs sucks
+(though not as bad as [accidentally triggering a link refdef][],
+as [the result][example rendering of a mistake] might still be legible).
+The LaTeX math syntax is forgiving enough that English prose is often syntactically valid LaTeX,
+so Rustdoc invalid LaTeX warnings can't catch every unescaped dollar sign.
 
 But if we assume that every doc author adds the escapes that they need,
 this forces doc comments to have more escaped metacharacters than they used to.
