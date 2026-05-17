@@ -9,14 +9,14 @@ This RFC proposes changes to Rust's operational semantics and MIR representation
 
 ## Motivation
 
-Consider the following idiomatic Rust code which constructs an outer object containing an inner object.
+Consider the following Rust code which constructs an outer object containing an inner object.
 
 <details>
 
 <summary>Rust code</summary>
 
 [Godbolt](https://rust.godbolt.org/z/q5hcWafbK)
-    
+
 ```rust
 struct Inner {
     array: [i32; 5],
@@ -74,7 +74,7 @@ Contrast this with the equivalent code in C++:
 <summary>C++ code</summary>
 
 [Godbolt](https://godbolt.org/z/fKxf5EhY6)
-    
+
 ```c++
 struct Inner {
     int array[5];
@@ -112,7 +112,7 @@ As an example, the `brie-tree` crate needs to use this pattern ([1](https://gith
 
 ## Status quo
 
-```rust=
+```rust
 struct Foo([u8; 100]);
 
 unsafe extern "C" {
@@ -129,7 +129,7 @@ pub fn example() {
 ```
 
 <details>
-    
+
 <summary>MIR</summary>
 
 ```
@@ -179,7 +179,7 @@ fn example() -> () {
 
 </details>
 
-To understand why rustc is unable to perform move optimization, we need to look at the generated MIR in detail. In this example we would like the move on line 11 to be eliminated. This is only possible if `a` and `b` have the same address, which would turn the assignment into a no-op.
+To understand why rustc is unable to perform move optimization, we need to look at the generated MIR in detail. In this example we would like the move from `a` to `b` to be eliminated. This is only possible if `a` and `b` have the same address, which would turn the assignment into a no-op.
 
 `a` and `b` are mapped to locals `_1` and `_4` respectively in the MIR. Each local corresponds to a stack allocation with a certain lifetime. The lifetime of `_4` is specified by a pair of `StorageLive`/`StorageDead` statements, while `_1` has no such statements and its lifetime therefore spans the entire function. Since the lifetimes of the locals overlap, they are forbidden from having the same address.
 
@@ -209,7 +209,7 @@ This RFC proposes to instead only have the allocations of variables be live whil
 - allocated at the point where it is initialized (instead of where it is declared).
 - freed when a variable of a non-`Copy` type is *moved* (or at the end of its scope, whichever is first).
 
-This notably adds a new form of UB: accessing (read or write) a variable after it has been moved is no longer allowed since the allocation has been freed.
+This notably means that some existing code which may have been valid according to Miri would now be UB: accessing (read or write) a variable after it has been moved is no longer allowed since the allocation has been freed.
 
 ```rust
 struct Foo(i32); // Doesn't implement Copy
@@ -218,8 +218,8 @@ fn main() {
     let a = Foo(123);
     let ptr = &raw const a;
     drop(a);
-    
-    // This is fine with the MIR/LLVM IR we 
+
+    // This is fine with the MIR/LLVM IR we
     // generate today: the storage of `a`
     // is valid until the end of the scope.
     //
@@ -242,7 +242,7 @@ fn main() {
     drop(a);
     a = Foo(123);
     let ptr2 = &raw const a;
-    
+
     // This assert always succeeds today.
     // With this RFC, it may fail.
     assert_eq!(ptr1, ptr2);
@@ -256,9 +256,9 @@ Consider what happens if another local `b` needs to be allocated while `a` is un
 While it is possible to specify the operational semantics in terms of "no-behavior" (NB) when selecting the address of a variable, this makes reasoning about program execution very complex, and such reasoning is necessary to justify compiler optimizations.
 
 <details>
-    
+
 <summary>Why NB can be a problem</summary>
-    
+
 With NB semantics we could specify that, starting from the non-deterministic choice of selecting an address for an allocation, any choice that leads to 2 allocations overlapping at the same time has no behavior. The program is well-defined if at least one choice does not result in NB, and the AM is required to make choices that do not result in NB in the future. This is in contrast to UB where if *any* choice can lead to UB then the whole execution is invalid.
 
 NB can lead to surprising "time-traveling" behavior, especially when UB and NB are mixed together. For example:
@@ -275,7 +275,7 @@ assume(xaddr != yaddr);
 drop(x);
 drop(y);
 ```
-    
+
 ```rust
 // This program has UB
 let x = String::new();
@@ -292,12 +292,12 @@ x = String::new();
 drop(x);
 drop(y);
 ```
-    
+
 </details>
 
 ### Partial moves
 
-The proposed behavior of freeing a local variable's allocation on move only applies when the entire variable is moved. This RFC leaves the exact behavior of partial moves (e.g. only one field of a struct) unspecified. 
+The proposed behavior of freeing a local variable's allocation on move only applies when the entire variable is moved. This RFC leaves the exact behavior of partial moves (e.g. only one field of a struct) unspecified.
 
 There are 2 reasons for this:
 
@@ -321,6 +321,8 @@ The `StorageLive` and `StorageDead` are still kept as separate statements in MIR
 1. They indicate where codegen should insert LLVM lifetime intrinsics.
 2. `StorageDead` marks the end of the scope in which a local is defined, which ends any borrows of that local.
 
+The precise semantics of `StorageLive` and `StorageDead` are re-defined in a section [below](#precise-semantics-for-local-lifetimes).
+
 #### Initialization
 
 `StorageLive` no longer allocates the underlying memory for a local. Instead, any MIR statement or terminator which writes to a place that has no `Deref` projections[^2] will implicitly allocate the storage for that local[^3] before writing to it. This has no effect if the storage for that local is already allocated[^4].
@@ -333,38 +335,15 @@ Writes to places that *do* have a `Deref` projection will still require that the
 
 #### De-initialization
 
-The effects of `StorageDead` are now implicitly performed when a local is moved as a MIR operand. This will de-allocate the storage for the local, allowing its address to be re-used by a later allocation. Any use of the local, even taking its address, is UB if the local is unallocated.
+The effects of `StorageDead` are now implicitly performed when a local is moved as a MIR operand. This applies uniformly to any MIR statement or terminator that takes a `move` operand, not just assignments. This will de-allocate the storage for the local, allowing its address to be re-used by a later allocation. Any use of the local, even taking its address, is UB if the local is unallocated.
 
 The separate `StorageDead` statement is still necessary to mark the end of the scope in which a local is defined. However, it has no effect if the local has already been freed.
 
 `move` operands only have the effect of de-allocating the storage of a local when used with a bare, unprojected local. If the local has projections then `move` behaves identically to `copy`.
 
-#### New semantics of `StorageLive` and `StorageDead`
-
-Although `StorageLive` and `StorageDead` no longer directly allocate memory for a local and only serve as an indicator of where to insert LLVM lifetime intrinsics, we still need to specify their behavior in MIR to determine where it is valid to place them. To do this we add a phantom "live" state, in which a local exists but does not yet have an allocation. Locals are always in one of three states: **dead**, **live**, and **initialized**.
-
-State transitions are defined as follows:
-
-| Use of local | Precondition | Postcondition |
-|---|---|---|
-| Function entry (arguments) | N/A | State starts as **initialized** |
-| Function entry (return place) | N/A | State starts as **live**[^ret] |
-| Function entry (other locals) | N/A | State starts as **dead** |
-| `StorageLive` | None | State becomes **live**[^live] |
-| `StorageDead` | None | State becomes **dead** |
-| Destination place with no `Deref` projection | UB if **dead** | State becomes **initialized** |
-| Move operand with no projections | UB if not **initialized** | State becomes **live**[^live2] |
-| Any other place | UB if not **initialized** | State stays **initialized** |
-
-[^ret]: We want the return place to start without an allocation so that it can potentially be merged with a local whose live range doesn't overlap. It starts as **live** instead of **dead** because LLVM lifetime intrinsics don't work on the return place anyways, so there's no point emitting `StorageLive`/`StorageDead` for it.
-
-[^live]: If the state was previously *live*, then any previous allocation is lost and a new one will be created when the local is later re-initialized. This matches the LLVM semantics of `llvm.lifetime.start` which will reset an allocation to `undef` if it is already live.
-
-[^live2]: This frees the allocation since **live** doesn't have an allocation, only **initialized** does. However it can be re-initialized without the need for another `StorageLive`.
-
 ### MIR evaluation order
 
-Since `move` operands now effectively have side-effects, it is necessary to precisely define the order in which the side-effects of a MIR statement occur[^10]. The general rule is that operands are evaluated left to right, except for destination places which are always evaluated last. This differs from the current evaluation order in Miri and MiniRust which evaluates the destination place first.
+Since `move` operands and writes to destination places now effectively have allocation/deallocation side-effects, it is necessary to precisely define the order in which the side-effects of a MIR statement or terminator occur. The general rule is that operands are evaluated left to right, except for destination places which are always evaluated last. This ordering applies uniformly to every kind of MIR statement and terminator, not just plain assignments. This differs from the current evaluation order in Miri and MiniRust which evaluates the destination place first.
 
 The new ordering means that in a MIR assignment with a move like `_1 = move _2`, the source place is deallocated before the destination place is allocated. Since the two places are never allocated at the same time, they are allowed to share the same address.
 
@@ -372,7 +351,36 @@ One consequence of this is that it is illegal for the same local to be moved mul
 
 Changing the evaluation order is not a breaking change for surface Rust because we can still control the final evaluation order during MIR construction.
 
-[^10]: Arguably this was already the case before since projections that read from memory have side effects in the memory model (Stack/tree borrows).
+### Precise semantics for local lifetimes
+
+In this new model, `StorageLive` and `StorageDead` no longer directly allocate memory for a local and instead only serve as an indicator of where to insert LLVM lifetime intrinsics. However this means that we still need to specify their behavior in MIR to determine where it is valid to place them. To do this we add a phantom "live" state, in which a local exists but does not yet have an allocation. Locals are always in one of three states: **dead**, **live**, and **allocated**.
+
+Now, we need to clarify the behavior of evaluating places in MIR[^place-evalution]. The base local of a place is evaluated in one of two modes depending on their syntactic context:
+- **Destination place mode**: the place appears as the destination of a MIR statement or terminator and does not contain any `Deref` projection. Evaluating the base local in this mode allocates it if it is currently **live**.
+- **Non-destination place mode**: every other place, including destination places that contain a `Deref` projection. Evaluating the base local in this mode is UB unless it is already **allocated**.
+
+[^place-evalution]: Place evalution in MIR either produces a pointer inside a valid allocation, or results in UB.
+
+State transitions are defined as follows:
+
+| Use of local | Precondition | Postcondition |
+|---|---|---|
+| Function entry (arguments) | N/A | State starts as **allocated** |
+| Function entry (return place) | N/A | State starts as **live**[^ret] |
+| Function entry (other locals) | N/A | State starts as **dead** |
+| `StorageLive` | None | State becomes **live**[^live] |
+| `StorageDead` | None | State becomes **dead** |
+| Evaluation of a base local in destination place mode | UB if **dead** | State becomes **allocated** |
+| Evaluation of a base local in non-destination place mode | UB if not **allocated** | State stays **allocated** |
+| Evaluation of a move operand with no projections | UB if not **allocated** | State becomes **live**[^live2] |
+
+The goal of these semantics is to ensure that the regions between `StorageLive` and `StorageDead` form an overapproximation of the actual time the variable is allocated and can hold data.
+
+[^ret]: We want the return place to start without an allocation so that it can potentially be merged with a local whose live range doesn't overlap. It starts as **live** instead of **dead** because LLVM lifetime intrinsics don't work on the return place anyways, so there's no point emitting `StorageLive`/`StorageDead` for it.
+
+[^live]: If the state was previously *live*, then any previous allocation is lost and a new one will be created when the local is later re-initialized. This matches the LLVM semantics of `llvm.lifetime.start` which will reset an allocation to `undef` if it is already live.
+
+[^live2]: This frees the allocation since **live** doesn't have an allocation, only **allocated** does. However it can be re-initialized without the need for another `StorageLive`.
 
 ### MIR call terminators
 
@@ -431,7 +439,7 @@ A final pass is run over the MIR body which performs the following transformatio
 
 MIR assignments currently have the constraint that, for types which are not treated as scalars, the source and destination places are [not allowed to overlap](https://github.com/rust-lang/rust/issues/68364). This constraint exists to make codegen easier since such assignments can be lowered to a `memcpy` call. Not having this constraint would require codegen to insert an intermediate allocation to handle cases such as `_1 = (_1.1, _1.0)` where the source and destination may alias.
 
-This kind of MIR does not arise directly from MIR lowering, and MIR optimizations often have to do extra work to avoid generating invalid MIR. This has in the past led to at least one bug in MIR optimizations[^8].
+This kind of MIR does not arise directly from MIR lowering. However, it can arise during optimizations. In fact, MIR optimizations often have to do extra work to avoid generating such invalid MIR. This has in the past led to at least one bug in MIR optimizations[^8].
 
 [^8]: [rust-lang/rust#146383](https://github.com/rust-lang/rust/issues/146383)
 
@@ -454,7 +462,7 @@ fn main() {
     let a = Foo(123);
     let ptr = &raw const a;
     drop(a);
-    
+
     // This is fine today: the storage of `a`
     // is valid until the end of the scope.
     let b = unsafe { ptr.read() };
@@ -475,7 +483,7 @@ fn main() {
     drop(a);
     a = Foo(123);
     let ptr2 = &raw const a;
-    
+
     // This assert always succeeds today.
     // With this RFC, it may fail.
     assert_eq!(ptr1, ptr2);
@@ -509,6 +517,20 @@ In some situations, users may rely on the address of a local as a unique hash ma
 One of the changes made by this RFC is that named local variables may change their address if they are de-initialized and then later re-initialized. The reason for this change is to avoid relying on NB semantics for opsem. However there is another possibility which avoids NB, which is to pre-compute the lifetimes of all locals in pre-optimization MIR and then encode in MIR which locals have overlapping lifetimes and are thus not allowed to be merged together. MIR optimizations would then rely on this data to determine whether two locals can be merged.
 
 The problem with this approach is that the overlap constraints are hard-coded into the MIR and are unable to evolve as optimizations perform constant propagation and eliminate unreachable branches. Specifying lifetimes directly in the opsem is preferable and results in much cleaner semantics for optimizations to work with.
+
+### Performing (de)allocation in bulk instead of during place/operand evaluation
+
+This RFC defines the allocation of locals as a side effect of evaluating destination places and `move` operands. An alternative is to instead make this an explicit step of the enclosing MIR statement or terminator, performed between operand evaluation and destination place evaluation. Under this model, the semantics of an assignment would be:
+
+1. Evaluate the input operands.
+2. Deallocate any locals used as bare `move` operands.
+3. Allocate the base local of the destination place (if no `Deref`).
+4. Evaluate the destination place.
+5. Store the result of the statement/terminator into the destination place.
+
+The advantage of this framing is that place and value expression evaluation has no side-effects, which makes it easier to reason about the order in which subexpressions can be evaluated. The disadvantage is that statement evaluation semantically needs to iterate through operands twice.
+
+MIR building, MIR optimizations and codegen can be adapted to work with either model, the choice between them is largely arbitrary.
 
 ## Unresolved questions
 
