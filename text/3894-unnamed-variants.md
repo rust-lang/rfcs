@@ -916,10 +916,10 @@ same bit width.
 
 ##### Unused `non_exhaustive`
 
-The existing [`unused_attributes`] lint also detects the `#[non_exhaustive]`
+The existing [`unused-attributes`] lint also detects the `#[non_exhaustive]`
 attribute present on an `enum` with unnamed variants.
 
-[`unused_attributes`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#unused-attributes
+[`unused-attributes`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#unused-attributes
 
 ```rust
 // warning: `non_exhaustive` has no effect on an enum with unnamed variants
@@ -939,7 +939,7 @@ declaring crate as well - the enum is "universally non-exhaustive".
 
 ##### Empty discriminant ranges
 
-`empty_discriminant_ranges` is a new `deny`-by-default lint. It detects when the
+`empty-discriminant-ranges` is a new `deny`-by-default lint. It detects when the
 discriminant range assigned to an unnamed variant is empty.
 
 ```rust
@@ -975,7 +975,7 @@ enum Bar {
 
 ##### Taken discriminant ranges
 
-`taken_discriminant_ranges` is a new `warn`-by-default lint. It detects when
+`taken-discriminant-ranges` is a new `warn`-by-default lint. It detects when
 every discriminant in the range assigned to an unnamed variant is already
 assigned to a named variant. This results in the unnamed variant definition
 having no effect. While an unnamed variant is syntactically present, no unnamed
@@ -1018,13 +1018,13 @@ enum NamedU8 {
 
 ##### Truncatable ranges
 
-`overlong_discriminant_ranges` is a new `warn`-by-default lint. It detects when
+`overlong-discriminant-ranges` is a new `warn`-by-default lint. It detects when
 an unnamed variant's discriminant range can be shortened to avoid overlapping
 with named variants.
 
 Let `start..=end` be the range of discriminants that an unnamed variant
 definition is assigned to, regardless of the actual range type used. The
-`overlong_discriminant_ranges` lint detects when all of the below are true:
+`overlong-discriminant-ranges` lint detects when all of the below are true:
 
 - The bound is specified as a range expression in the variant's discriminant
   expression, and not as an identifier or block.
@@ -1037,7 +1037,7 @@ definition is assigned to, regardless of the actual range type used. The
   defined by an unbounded range.
 - The prefix is an overlong side _or_ the following variant, if any, has an
   explicit discriminant.
-- The `taken_discriminant_ranges` lint doesn't detect this unnamed variant.
+- The `taken-discriminant-ranges` lint doesn't detect this unnamed variant.
 
 ```rust
 #[repr(u32)]
@@ -1095,9 +1095,9 @@ enum ImplicitNextDiscriminant {
 
 ##### Gap of length one caused by an exclusive range
 
-The existing [`non_contiguous_range_endpoints`] lint also detects when:
+The existing [`non-contiguous-range-endpoints`] lint also detects when:
 
-[`non_contiguous_range_endpoints`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#non-contiguous-range-endpoints
+[`non-contiguous-range-endpoints`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#non-contiguous-range-endpoints
 
 - There exists some unnamed variant assigned to a `start..end` or `..end`
   discriminant expression, and
@@ -1131,11 +1131,11 @@ enum Bar {
 
 ##### Forgot to mention a named variant
 
-The unstable [`non_exhaustive_omitted_patterns`] `allow`-by-default lint also
+The unstable [`non-exhaustive-omitted-patterns`] `allow`-by-default lint also
 detects when a `match` on an enum with unnamed variants mentions some, but not
 all, of the named variants.
 
-[`non_exhaustive_omitted_patterns`]: https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint_defs/builtin/static.NON_EXHAUSTIVE_OMITTED_PATTERNS.html
+[`non-exhaustive-omitted-patterns`]: https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint_defs/builtin/static.NON_EXHAUSTIVE_OMITTED_PATTERNS.html
 
 This uses the same name as the similar lint for `non_exhaustive` because it is
 burdensome to require developers to remember two different lints for such
