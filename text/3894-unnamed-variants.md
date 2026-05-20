@@ -2,7 +2,7 @@
 - Start Date: 2025-12-09
 - RFC PR: [rust-lang/rfcs#3894](https://github.com/rust-lang/rfcs/pull/3894)
 - Rust Issue:
-  [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+  [rust-lang/rust#156628](https://github.com/rust-lang/rust/issues/156628)
 
 ## Summary
 
