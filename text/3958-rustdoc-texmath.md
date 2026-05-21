@@ -232,12 +232,14 @@ similar to the downside of not offering TeX math: users who *really* want bold t
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-### Why TeX math in markdown, specifically?
+### Why LaTeX math in markdown, specifically?
 
-I would like to avoid the annoying scenario where Rustdoc deploys a complicated, special purpose language, then the community moves on to some new, incompatible language, and we’re stuck maintaining it ourselves because of the stability promise.
+I would like to avoid the annoying scenario where Rustdoc deploys a complicated, special purpose language,
+then the community moves on to some new, incompatible language,
+and we’re stuck maintaining it ourselves because of the stability promise.
 
 There are a lot of special-purpose technical notations that we might theoretically want to support,
-but TeX-math-in-markdown is special, for two reasons:
+but LaTeX-math-in-markdown is special, for two reasons:
 
 - [Lindy effect][]: LaTeX is an established standard that is not going anywhere any time soon.
 - There is more than one implementation of the subset of LaTeX that we need.
@@ -245,7 +247,6 @@ but TeX-math-in-markdown is special, for two reasons:
 The pull request I've been working on uses [math-core][], but, if that implementation turns out
 to be problematic, we could pivot to another one, like [pulldown-latex][],
 or [katex run in quick-js][] [^1].
-That’s not an option with, for example, Typst.
 
 [Lindy effect]: https://en.wikipedia.org/wiki/Lindy_effect
 [math-core]: https://github.com/tmke8/math-core
@@ -256,15 +257,55 @@ That’s not an option with, for example, Typst.
     I would prefer not to do *that*, because it's slow and seems to have poor error reporting,
     but, if we can't achieve good-enough feature support any other way, it's an option.
 
-#### `typst`
-
-Typst is growing in popularity, and is implemented in Rust. It might be an interesting choice to consider in the future. However:
-- Typst does not yet have strong support for HTML output; it's still a work in progress. Rustdoc is *primarily* oriented around HTML.
-- Typst and Markdown are different in critical ways that may introduce confusion.
-- Typst itself is pre-1.0.
-- Because typst is newer, it's less immediately obvious which subset we can consider stable to support in the long term, without relying on specific libraries or on execution of typst code in general.
-
-In the future, it might make sense to explore more use of typst in Rust documentation.
+<table>
+<caption>Comparison with other math equation formats</caption>
+<thead>
+<tr>
+  <th>Name</th>
+  <th>Release date</th>
+  <th>Rust implementation</th>
+  <th>Implementation-agnostic specification</th>
+  <th>Markdown embedding standard</th>
+  <th>Easy to type on a keyboard</th>
+  <th>Popularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <th>LaTeX</th>
+  <td>1984</td>
+  <td>✅</td>
+  <td>❎</td>
+  <td>✅</td>
+  <td>✅</td>
+  <td>High</td>
+</tr><tr>
+  <th>Typst</th>
+  <td>2019</td>
+  <td>✅</td>
+  <td>❎</td>
+  <td>❎</td>
+  <td>✅</td>
+  <td>Moderate</td>
+</tr><tr>
+  <th>AsciiMath</th>
+  <td>2009</td>
+  <td><a href="https://docs.rs/asciimath-rs/latest/asciimath_rs/">✅</a></td>
+  <td><a href="https://asciimath.org/index-mathml.html#syntax">✅</a></td>
+  <td>❎</td>
+  <td>✅</td>
+  <td>Moderate</td>
+</tr><tr>
+  <th>UnicodeMath</th>
+  <td>2006</td>
+  <td><a href="https://murrayiii.github.io/UnicodeMathML/playground/">❎</a></td>
+  <td><a href="https://www.unicode.org/notes/tn28/">✅</a></td>
+  <td>✅</td>
+  <td>❎</td>
+  <td>I would need access to <a href="https://support.microsoft.com/en-us/office/linear-format-equations-using-unicodemath-and-latex-in-word-2e00618d-b1fd-49d8-8cb4-8d17f25754f8">Microsoft Office</a> feature analytics to answer this question.</td>
+</tr>
+</tbody>
+</table>
 
 ### Why use a Rust library, specifically, for the implementation?
 
@@ -292,7 +333,8 @@ language than the compiler.
 ### Why target MathML
 
 [MathML Core][] is supported by [most browsers][caniuse mathml],
-but with a [few known bugs][mathml bugs].
+but with a [few known bugs][mathml bugs] that the math-core library tries to work around.
+It is a strict accessibility improvement over rendering SVG, for example.
 
 [MathML Core]: https://www.w3.org/TR/mathml-core/
 [caniuse mathml]: https://caniuse.com/mathml
