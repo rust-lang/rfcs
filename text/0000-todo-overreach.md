@@ -68,6 +68,7 @@ A proof of concept implementation is in [#149543](https://github.com/rust-lang/r
 - We could do nothing. This leaves the users with the problem stated above.
 - We could make `unreachable_code` ignore `todo!()` without adding a `todo_macros_uses` lint. However, people would need to run clippy (or use a search or other such IDE feature) to get rid of their `todo!()` calls. This is deemed suboptimal from a user experience standpoint.
 - We could only add a `todo_macros_uses` lint without omitting the `todo!()` macro from `unreachable_code` warnings. That would allow people to allow the `unreachable_code` lint while fixing up all `todo!()`s and only then fix the other unreachable code. However, again, the user might forget reactivating the `unreachable_code` lint, potentially leaving their code in a subpar state
+- We could make `allow(unreachable_code)` also suppress `todo_macro_uses`. However, this doesn't seem like a logical parent group.
 
 Please note that this is a language proposal only insofar as that a lint (which is technically part of the language) is changed in accordance with a standard library item. It is not possible to do this without compiler support. There may be a way to implement this so that users could write their own `placeholder!()` macros that do not trip up the `unreachable_code` lint, although at this point the author sees no value in that.
 
