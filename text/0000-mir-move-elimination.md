@@ -443,11 +443,38 @@ After local unification some MIR assignments may end up with overlapping source 
 
 ## Drawbacks
 
-### MIR optimizations
+### Impact on MIR optimizations
 
-MIR optimizations need to be careful not to shorten the live range of a local by moving or eliminating assignments or moves. Doing so could cause the lifetime analysis to conclude that 2 locals could share the same address when this would not be allowed in the source program. Note that this restriction only applies to locals whose address has been taken. Extending the live range of a local is not a problem since it just pessimizes the optimization by forcing locals to have separate addresses.
+MIR optimizations need to be careful not to shorten the live range of a local whose address has been taken by moving or eliminating assignments or moves. Doing so could cause the lifetime analysis to conclude that 2 locals could share the same address when this would not be allowed in the source program. Extending the live range of a local is not a problem since it just pessimizes the optimization by forcing locals to have separate addresses.
 
-In practice this is usually not a problem because most MIR optimizations will avoid touching locals whose address has been taken.
+In practice the only MIR optimization that can shorten the lifetime of a local whose address has been taken is `DeadStoreElimination`: all other optimizations only touch locals whose address is never taken, and are therefore unaffected by this change. This is particularly relevant because `DeadStoreElimination` runs before the move optimization in the MIR pipeline, so any dead stores it removes are gone by the time the liveness analysis in this pass runs.
+
+`DeadStoreElimination` will need to be adjusted to preserve dead stores rather than replacing them with debuginfo statements, so that the liveness analysis still sees them. This could be done by introducing a new `StatementKind::DeadAssign` which the liveness analysis treats as a write but which codegen ignores.
+
+For example, consider the following code:
+
+```rust
+struct Foo([u8; 100]);
+
+unsafe extern "C" {
+    safe fn observe(b: *mut Foo);
+    safe fn foo() -> Foo;
+}
+
+pub fn example() {
+    let mut a;
+    let mut b;
+
+    b = foo(); // dead store
+
+    a = foo();
+    observe(&raw mut a);
+    b = a;
+    observe(&raw mut b);
+}
+```
+
+In this example, `a` and `b` are live at the same time, but eliminating the dead store would allow them to share the same address, which is not allowed by the original program.
 
 ### Potentially breaking change
 
