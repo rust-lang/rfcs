@@ -376,6 +376,8 @@ State transitions are defined as follows:
 
 The goal of these semantics is to ensure that the regions between `StorageLive` and `StorageDead` form an overapproximation of the actual time the variable is allocated and can hold data.
 
+A prototype [MiniRust branch](https://github.com/Amanieu/minirust/compare/mir-move-elimination) implements the new semantics and shows how they interact with the rest of the language specification.
+
 [^ret]: We want the return place to start without an allocation so that it can potentially be merged with a local whose live range doesn't overlap. It starts as **live** instead of **dead** because LLVM lifetime intrinsics don't work on the return place anyways, so there's no point emitting `StorageLive`/`StorageDead` for it.
 
 [^live]: If the state was previously *live*, then any previous allocation is lost and a new one will be created when the local is later re-initialized. This matches the LLVM semantics of `llvm.lifetime.start` which will reset an allocation to `undef` if it is already live.
@@ -395,7 +397,9 @@ This RFC doesn't change this special meaning of `move` operands in call terminat
 
 Rustc currently has a [destination propagation](https://github.com/rust-lang/rust/blob/master/compiler/rustc_mir_transform/src/dest_prop.rs) MIR optimization that attempts to eliminate unnecessary copies between locals. However, it is currently limited to copies between unprojected locals and only supports locals whose addresses are not taken.
 
-This RFC proposes a new optimization pass which replaces the existing destination propagation pass. The pass works in 4 phases.
+This RFC proposes a new optimization pass which replaces the existing destination propagation pass. A [prototype](https://github.com/rust-lang/rust/pull/156046) of this optimization has been implemented. Compiling rustc with itself using the new pass produces a binary that is 2-5% faster on debug/check perf benchmarks.
+
+The following sections describe the different phases of this MIR pass.
 
 ### Phase 1: Liveness computation
 
