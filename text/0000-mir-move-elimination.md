@@ -301,7 +301,7 @@ The proposed behavior of freeing a local variable's allocation on move only appl
 
 There are 2 reasons for this:
 
-1. Specifying the behavior of partial moves makes the opsem (and by extension Miri) much more complex since we now needs to track which bytes of a local have been moved out and become "inactive" (UB to access). What happens to the padding of a struct if one field is moved out? What happens to the discriminant of an enum like `Option<T>` if the `Some` value has been moved out and the layout is optimized (the discriminant occupied the same bytes as the value)? These are all questions that would have to be answered.
+1. Specifying the behavior of partial moves makes the opsem (and by extension Miri) much more complex since we would now need to track which bytes of a local have been moved out and become "inactive" (UB to access). What happens to the padding of a struct if one field is moved out? What happens to the discriminant of an enum like `Option<T>` if the `Some` value has been moved out and the layout is optimized (the discriminant occupied the same bytes as the value)? These are all questions that would have to be answered.
 
 2. The proposed MIR optimization pass can't easily take advantage of this, and even if it could (while respecting address observation rules) then the expected benefit over the existing proposed pass would be minimal. It's just not worth the extra complexity of tracking lifetimes separately for every field of a local.
 
@@ -355,11 +355,11 @@ Changing the evaluation order is not a breaking change for surface Rust because 
 
 In this new model, `StorageLive` and `StorageDead` no longer directly allocate memory for a local and instead only serve as an indicator of where to insert LLVM lifetime intrinsics. However this means that we still need to specify their behavior in MIR to determine where it is valid to place them. To do this we add a phantom "live" state, in which a local exists but does not yet have an allocation. Locals are always in one of three states: **dead**, **live**, and **allocated**.
 
-Now, we need to clarify the behavior of evaluating places in MIR[^place-evalution]. The base local of a place is evaluated in one of two modes depending on their syntactic context:
+Now, we need to clarify the behavior of evaluating places in MIR[^place-evaluation]. The base local of a place is evaluated in one of two modes depending on its syntactic context:
 - **Destination place mode**: the place appears as the destination of a MIR statement or terminator and does not contain any `Deref` projection. Evaluating the base local in this mode allocates it if it is currently **live**.
 - **Non-destination place mode**: every other place, including destination places that contain a `Deref` projection. Evaluating the base local in this mode is UB unless it is already **allocated**.
 
-[^place-evalution]: Place evalution in MIR either produces a pointer inside a valid allocation, or results in UB.
+[^place-evaluation]: Place evaluation in MIR either produces a pointer inside a valid allocation, or results in UB.
 
 State transitions are defined as follows:
 
@@ -503,7 +503,7 @@ The second effect is that users can observe the address of a local changing when
 struct Foo(i32); // Doesn't implement Copy
 
 fn main() {
-    let a = Foo(123);
+    let mut a = Foo(123);
     let ptr1 = &raw const a;
     drop(a);
     a = Foo(123);
@@ -573,7 +573,7 @@ let mut a = 1; // i32 implements Copy
 // This may save the address of a to access later.
 observe(&raw mut a);
 
-// This is a copy, it does *not* invalide the borrow of a.
+// This is a copy, it does *not* invalidate the borrow of a.
 let mut b = a;
 
 // This is allowed to access *both* a and b, so merging these is not allowed.
@@ -587,4 +587,4 @@ let x = 1;
 let y = &x;
 drop(move x);
 let z = *y; // Fails because x was moved. Removing `move` fixes this.
- ```
+```
