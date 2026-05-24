@@ -397,53 +397,51 @@ Rustc currently has a [destination propagation](https://github.com/rust-lang/rus
 
 This RFC proposes a new optimization pass which replaces the existing destination propagation pass. The pass works in 4 phases.
 
-### Phase 1: Backward dataflow pass
+### Phase 1: Liveness computation
 
-A backward dataflow pass is run to compute the estimated liveness of each local. This liveness starts from any point where a local is used as an operand and ends when a local is fully initialized in a destination place without projections. This intentionally ignores borrows, which are handled in phase 2.
+A dataflow analysis is run to produce a `SparseIntervalMatrix` recording, for each local, the set of points in the function at which it must have a distinct allocation. Two locals may have the same address if and only if their rows in this matrix are disjoint.
 
-This is a conservative analysis which may over-estimate the live range when a local is initialized piece-wise. A precise analysis would need to compute the liveness of each move path of a local separately.
+To model the fact that a source operand and a destination place in the same MIR statement may share an address (the source is read before the destination is written), liveness is evaluated at two points per statement: an **early** point at which source operands are read, and a **late** point at which destination places are written. Ranges in the matrix are recorded against these split points, so a local moved out at the early point of a statement does not appear as overlapping with a local written at the late point of the same statement.
 
-The dataflow analysis is used to compute a set of "kill points" at the last uses of a local where it goes from live to dead. There may be multiple such points per local in different control flow branches.
+A local's live range starts and ends according to the following rules:
 
-### Phase 2: Forward dataflow pass
+- **Starts** at the late point of any statement or terminator that writes to it with a place that has no `Deref` projection.
+- **Ends** at the early point of any statement or terminator that:
+    - is a `StorageDead` for the local.
+    - is a `Drop` of the whole local.
+    - contains a move operand of the whole local (operand `move _x` with no projections).
+    - is the last use of the local on this control-flow path, as long as the address of this local is never observed.
 
-A forward dataflow pass is then run to more precisely compute the liveness of each local, as well as whether it has had its address taken at the point. This time the live range starts from any point where the local is initialized as a destination place (with any non-`Deref` projections) and ends when either:
-- A `StorageDead` for that local is reached.
-- A `move` of the whole local (without projections) is reached.
-- A kill point for that local is reached *and* that local has not yet had its address taken.
+`Call` terminators are handled specially: `move` operands of a `Call` are kept live through the late point of the terminator, so they conflict with each other and with the destination place. This matches the runtime behavior of [MIR call terminators](#mir-call-terminators), where the place is donated to the callee for the duration of the call.
 
-This analysis tracks, for each location and each local:
-- Whether the local is dead or *maybe* live (e.g. if only initialized in one branch).
-- Whether the local's address has been taken.
+### Phase 2: Local unification
 
-The analysis results are used to create a `SparseIntervalMatrix` which tracks all the points in a function where a local may be live.
+This phase produces a mapping from each unifiable local to the place it should be replaced with. Once the mapping is complete, a single rewrite pass over the body replaces every use of each remapped local with its mapped place.
 
-### Phase 3: Local unification
+Even though the liveness matrix would let us merge any two locals whose live ranges are disjoint, merging arbitrary unrelated locals is not useful: it is already handled by LLVM. The point of this pass is instead to *eliminate copies*, so the only candidates considered are pairs of locals that appear on opposite sides of an assignment. Merging such a pair turns the assignment into a self-assignment that can be deleted, which is the actual win.
 
-For each MIR assignment of the form `_1 = move _2`, the `SparseIntervalMatrix` is checked to see if the live range of `_1` and `_2` overlap. If they don't then both locals can be unified into one, with all references to `_2` replaced with `_1`, and their live ranges are unioned in the `SparseIntervalMatrix`. The original assignment (now `_1 = move _1`) can then be eliminated as a no-op.
+Concretely, a mapping from `_2` to `_1` is added when a MIR assignment of the form `_1 = move _2` or `_1 = copy _2` is found where the live ranges of `_1` and `_2` in the `SparseIntervalMatrix` are disjoint. The live ranges of the two locals are then unioned in the matrix so that further unification decisions account for the merged lifetime. The original assignment (now `_1 = move _1`) can be eliminated as a no-op.
 
-This also works for MIR assignments of the form `_1 = Aggregate(move _2, move _3, ..)`. Here, `_2` and `_3` can be replaced with `_1.0` and `_1.1` respectively. The resulting assignment (now `_1 = Aggregate(move _1.0, move _1.1, ..)`) still needs to be preserved if there are any fields which were not unified with the destination or if the aggregate assignment involves writing an enum discriminant. However, the copies can be elided in codegen because the source and destination of each field have the same address.
+A local can also be mapped to a *projection* of another local. For MIR assignments of the form `_1 = Aggregate(move _2, move _3, ..)`, each field operand is considered for unification with the corresponding field of the destination: this produces mappings from `_2` to `_1.0`, from `_3` to `_1.1`, and so on. After rewriting, the copies for unified fields become no-ops since the source and destination of each field have the same address.
 
-### Phase 4: Rewrite
+### Phase 3: Storage reconstruction
 
-A final pass is run over the MIR body which performs the following transformations:
-- Any references to a local that has been unified in phase 3 are replaced with the unified local.
-- All original `StorageLive`/`StorageDead` statements are removed.
-- New `StorageLive`/`StorageDead` statements are inserted at the points where the lifetime of a local transitions between maybe-live and dead according to the dataflow analysis from phase 2.
-    - This takes local unification into account so that if a local is de-allocated and then re-allocated within the same statement, no `StorageLive`/`StorageDead` is emitted.
-    - This may involve inserting such statements on block edges, which requires critical edges to be split beforehand.
+The original `StorageLive`/`StorageDead` statements no longer reflect the merged liveness produced by unification, so they are all removed and rebuilt from the liveness matrix. New `StorageLive`/`StorageDead` statements are inserted based on the (now-unified) liveness matrix. For each local, each live interval in the matrix produces:
+- A `StorageLive` at the point where the live range starts. If the range starts at the entry of a block, the `StorageLive` is hoisted into every predecessor in which the local is dead at the terminator. In some cases this requires splitting critical edges so that the storage statement does not extend the live range onto a sibling branch.
+- A `StorageDead` at the point where the live range ends. If the range ends at a terminator, the `StorageDead` is emitted at the start of each successor in which the local is dead on entry. Critical edges do not need to be split in this direction because an extra `StorageDead` on a path where the local is already dead has no effects.
+
+### Phase 4: Aliasing assignment fixup
+
+MIR assignments currently have the constraint that, for types which are not treated as scalars in codegen, the source and destination places are [not allowed to overlap](https://github.com/rust-lang/rust/issues/68364). This constraint exists to make codegen easier since such assignments can be lowered to a `memcpy` call, which would result in incorrect code for assignments like `_1 = (_1.1, _1.0)`.
+
+After local unification some MIR assignments may end up with overlapping source and destination places. A final pass walks the MIR and rewrites any such assignments to restore the no-aliasing invariant. For each assignment:
+- Self-assignments (e.g. `_1 = _1`) are deleted outright.
+- Simple `Use` assignments where source and destination overlap but are not identical are split: the source is read into a fresh temporary first, and the temporary is then moved into the destination.
+- Aggregate assignments where any operand aliases the destination are decomposed into per-field assignments. Per-field self-assignments (where source and destination resolve to the same place) are deleted outright. Other aliasing fields are hoisted into temporaries first, then all destination fields are written in a second pass. For enum aggregates the discriminant is set after fields are written.
+- Other rvalues (e.g. `Repeat`, `Cast`) are hoisted whole into a temporary if any of their operands alias the destination.
+- Rvalues that operate only on scalar types (binary/unary ops, `Discriminant`, `Ref`, `RawPtr`, etc.) are left untouched because their codegen does not rely on the no-aliasing assumption.
 
 ## Drawbacks
-
-### Src/dest aliasing in assignments
-
-MIR assignments currently have the constraint that, for types which are not treated as scalars, the source and destination places are [not allowed to overlap](https://github.com/rust-lang/rust/issues/68364). This constraint exists to make codegen easier since such assignments can be lowered to a `memcpy` call. Not having this constraint would require codegen to insert an intermediate allocation to handle cases such as `_1 = (_1.1, _1.0)` where the source and destination may alias.
-
-This kind of MIR does not arise directly from MIR lowering. However, it can arise during optimizations. In fact, MIR optimizations often have to do extra work to avoid generating such invalid MIR. This has in the past led to at least one bug in MIR optimizations[^8].
-
-[^8]: [rust-lang/rust#146383](https://github.com/rust-lang/rust/issues/146383)
-
-This constraint will have to be removed for this proposal to be implemented since there will no longer be any guarantee that 2 locals don't share the same address. The impact on codegen can be mitigated by applying some basic alias analysis: the extra intermediate allocation in codegen isn't needed if the source or destination is a local whose address hasn't been taken.
 
 ### MIR optimizations
 
