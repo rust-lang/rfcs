@@ -1,7 +1,7 @@
 - Feature Name: crates-io-username-identity
 - Start Date: 2026-04-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Crates.io Issue: [rust-lang/crates.io#0000](https://github.com/rust-lang/crates.io/issues/0000)
+- RFC PR: [rust-lang/rfcs#3946](https://github.com/rust-lang/rfcs/pull/3946)
+- Crates.io Issue: [rust-lang/crates.io#13758](https://github.com/rust-lang/crates.io/issues/13758)
 
 # Summary
 [summary]: #summary
