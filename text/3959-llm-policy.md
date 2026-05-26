@@ -11,9 +11,10 @@ This RFC proposes a strict policy regarding generative Artificial Intelligence (
 1. If the LLM usage is *trivial*, it is completely ignored by the policy and always allowed. Generally, this means that changes made by LLMs are indistinguishable from those made by humans, where the LLM didn't have any creative input into the change.
 2. If the LLM usage is *slop*, it is considered spam and moderated accordingly. Generally, this means submitting changes made by LLMs with minimal human intervention.
 3. Any *potentially non-trivial* LLM usage must be *disclosed* in ideally as detailed as a manner as possible. This may necessitate additional tooling to notify new contributors about the policy and explain how disclosure works.
-4. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
-5. If a user is found to be repeatedly lying about LLM usage (using LLMs in a non-trivial way without disclosing that usage), this is a COC violation that will be moderated accordingly.
-6. As long as users are honest, follow the COC otherwise, and respect boundaries, the worst punishment for *non-trivial* LLM usage is the rejection of a contribution.
+4. If a contributor is found to be using LLMs in a non-trivial way, but correctly discloses this, then a contribution is merely rejected without any additional action.
+5. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
+6. If a user is found to be repeatedly lying about LLM usage (using LLMs in a non-trivial way without disclosing that usage), this is a COC violation that will be moderated accordingly.
+7. In general, as long as users are demonstrating an earnest effort to *reduce* LLM usage, even if said reduction is not total, then they should be commended for that instead of punished, even if the project itself draws the line at *non-trivial* usage for *accepted* contributions
 
 In terms of additional tooling for *disclosure*, this RFC encourages the creation of a bot that automatically replies to contributions from new users informing them of the LLM policy and what constitutes sufficient disclosure. As mentioned, in general, going into as much detail as possible (e.g. prompts used, etc.) is preferred, but not always required. The RFC leaves the exact details of such implementation unspecified and up for revision later.
 
@@ -367,9 +368,10 @@ This policy details the requirements for using generative Artificial Intelligenc
 1. If the LLM usage is *trivial*, it is completely ignored by the policy and always allowed. Generally, this means that changes made by LLMs are indistinguishable from those made by humans, where the LLM didn't have any creative input into the change.
 2. If the LLM usage is *slop*, it is considered spam and moderated accordingly. Generally, this means submitting changes made by LLMs with minimal human intervention.
 3. Any *potentially non-trivial* LLM usage must be *disclosed* in ideally as detailed as a manner as possible.
-4. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
-5. If a user is found to be repeatedly lying about LLM usage (using LLMs in a non-trivial way without disclosing that usage), this is a COC violation that will be moderated accordingly.
-6. As long as users are honest, follow the COC otherwise, and respect boundaries, the worst punishment for *non-trivial* LLM usage is the rejection of a contribution.
+4. If a contributor is found to be using LLMs in a non-trivial way, but correctly discloses this, then a contribution is merely rejected without any additional action.
+5. If a contributor does not fully understand the code they submit, their contribution may be rejected for that reason alone. Note that such usage is not always considered *slop*, and is considered separately. (For example, they may understand a large portion, but not all of it, which shows that they still put in a lot of effort.)
+6. If a user is found to be repeatedly lying about LLM usage (using LLMs in a non-trivial way without disclosing that usage), this is a COC violation that will be moderated accordingly.
+7. In general, as long as users are demonstrating an earnest effort to *reduce* LLM usage, even if said reduction is not total, then they should be commended for that instead of punished, even if the project itself draws the line at *non-trivial* usage for *accepted* contributions
 
 ### Trivial Usage is Always Allowed
 
@@ -541,7 +543,7 @@ Essentially, the idea is that instead of limiting nontrivial usage in shared spa
 
 The problem with this is that LLMs are designed to replicate humans, and there have already been numerous issues that have cropped up:
 
-* Neurodivergent authors tend to replicate the "terseness" of many LLMs, and often show up as false positives in LLM detection
+* Neurodivergent authors tend to replicate some of the quirks of LLMs, and often show up as false positives in LLM detection
 * Kenyan authors, many of whom helped filter the data for LLMs, often show up as false positives in LLM detection
 * A lot of "business communication" tends to match the flow of common LLM summaries, since LLMs optimized for that kind of output
 
