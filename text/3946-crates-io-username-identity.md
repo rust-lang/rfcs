@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3946](https://github.com/rust-lang/rfcs/pull/3946)
 - Crates.io Issue: [rust-lang/crates.io#13758](https://github.com/rust-lang/crates.io/issues/13758)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Someday, we would like to enable people to log in to crates.io with other services in addition to
@@ -21,7 +21,7 @@ The biggest changes to crates.io as a result of this RFC will be:
 - Crates.io will no longer automatically update your crates.io username if you rename your GitHub
   account
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Crates.io's code currently has a one-to-one mapping between crates.io accounts and GitHub accounts.
@@ -39,7 +39,7 @@ one person's usernames across different services are not guaranteed to be the sa
 more services, crates.io's codebase needs to be able to handle these situations and clearly convey
 crates.io user identities to minimize the possibility of confusion or deliberate impersonation.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This section will address changes to what users will experience on the crates.io website and via
@@ -106,7 +106,7 @@ yet been taken on crates.io. The crates.io username field will be prefilled with
 OAuth account's username and an indication of whether that username is available on crates.io or
 not.
 
-## Renamed and deleted GitHub accounts
+### Renamed and deleted GitHub accounts
 
 GitHub allows users to change their username (but keep the same GitHub ID number so that crates.io
 can know it's the same account) or delete their account, which makes the username available for
@@ -164,7 +164,7 @@ user `best_rust_programmer_ever` will need to choose a different crates.io usern
 accounts will have the warning symbol. The latter user may see this as unfair, but this is where
 the first-come-first-serve policy should be enforced.
 
-## Crates.io username requirements
+### Crates.io username requirements
 
 Crates.io usernames will largely use the same rules that GitHub usernames use today. All existing
 crates.io accounts will be valid under whatever rules we decide on.
@@ -196,7 +196,7 @@ protection currently that we'd need to manage ourselves.
 These requirements will be clearly documented on a page on crates.io as well as in the signup form
 when we are requiring the person to pick a crates.io username.
 
-## Crates.io account rename restrictions
+### Crates.io account rename restrictions
 [crates-io-account-rename-restrictions]: #crates-io-account-rename-restrictions
 
 The biggest concerns with allowing crates.io username changes are impersonation and resurrection
@@ -232,7 +232,7 @@ will update [the privacy policy](https://rustfoundation.org/policy/privacy-polic
 crates.io to make this retention clear, and we will delete even admin-only viewable information
 from the database on request.
 
-## Crates.io account and GitHub account link privacy
+### Crates.io account and GitHub account link privacy
 
 Currently, the knowledge that a crates.io account corresponds to a GitHub account is public
 information. This link is displayed on user pages and is present in the database dumps. This RFC is
@@ -245,14 +245,14 @@ Accounts][private-linked-accounts] section under Future Possibilities for the po
 a way to have a private linked account in the future.
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This section will address changes to crates.io's HTTP API. It will not address low-level
 implementation details of the crates.io database schema or backend code changes; those will be
 worked out during implementation of this RFC.
 
-## User API
+### User API
 
 The `find_user` API is currently defined to respond to URLs in the form `/api/v1/users/{user}`,
 where `{user}` is currently the GitHub username that crates.io has been told about for that account.
@@ -354,7 +354,7 @@ over an owner (or tapping on an icon next to the owner that the frontend shows w
 mobile devices), we could request the linked account information then and display a "detail card"
 for that owner showing the information on their linked accounts.
 
-## Owner APIs
+### Owner APIs
 
 The current API request for inviting user owners or adding team owners consists of a `PUT` request
 to `/api/v1/crates/[crate name]/owners` with the following JSON (using a request to add user
@@ -430,7 +430,7 @@ user with the `users.username` of `some_user` and a different account that has t
 request is being made about. If only one account is an owner, that account will be removed as an
 owner.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Impedes signup flow if you have to choose a username or try multiple usernames before finding an
@@ -450,7 +450,7 @@ owner.
   attacks, as discussed (with potential mitigations) in [Crates.io account rename
   restrictions][crates-io-account-rename-restrictions].
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 We could choose to diverge from crates.io's current behavior more than proposed here, such as:
@@ -464,7 +464,7 @@ We could choose to diverge from crates.io's current behavior more than proposed 
 - We could implement the backend changes for this RFC but choose to wait to allow username editing
   until we have multiple ways of logging in.
 
-## "Disambiguation page" alternative
+### "Disambiguation page" alternative
 
 We could choose not to have a `username` field on the `users` table at all. When visiting
 `https://crates.io/users/example`, crates.io would always look up usernames in all available
@@ -514,7 +514,7 @@ with no indication that the GitHub user even exists. We'd need to make the page 
 there was only a GitLab account attached, not a GitHub account attached as most people would expect
 in most cases.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Crates.io appears to be unique among the major OSS package registries in only offering GitHub
@@ -571,7 +571,7 @@ Crates.io account `carols10cents` is associated with:
 Is this the `carols10cents` you wanted? [y/N]
 ```
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - How would we define "squatting" of usernames that would be clear cases for admins to make
@@ -640,10 +640,10 @@ Is this the `carols10cents` you wanted? [y/N]
   added as an owner of a crate for a short holding period (1 day, for example) to potentially slow
   down/prevent impersonation attacks? How often would this be a false positive/annoyance?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Email/password login
+### Email/password login
 
 This functionality change would also enable a way of creating crates.io accounts without any
 associated identity/reputation, only an email address. But this opens more potential for spam and
@@ -652,7 +652,7 @@ standing on services like GitHub. When we choose which services to add as OAuth 
 assess in what ways the candidate services also provide these protections if we want to continue to
 have this benefit.
 
-## Avatars
+### Avatars
 
 Avatars are also indicators of identities; as we evolve crates.io's capabilities with regards to
 authentication services, we should evolve how crates.io handles avatars, considering aspects such
@@ -673,7 +673,7 @@ as:
   as username resolution, but it might make implementation/database queries nicer if we make a
   similar decision with avatars as with usernames.
 
-## Private linked accounts
+### Private linked accounts
 [private-linked-accounts]: #private-linked-accounts
 
 Currently, the link between a crates.io account and a GitHub account is public information both in
