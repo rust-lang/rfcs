@@ -83,6 +83,8 @@ But enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* 
 - rust-analyzer wants to enable `RUSTC_BOOTSTRAP` only for cargo and libtest, but the variable enables features for rustc as well.
   `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
 
+`--allow-unstable-features` extends this to CLI features, allowing projects to opt-in to only the unstability they choose to.
+
 [rustc-bootstrap]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/rustc-bootstrap.html
 
 An important design constraint here is that the "end-user" (whoever is running the build) should always have control over which features are enabled.
