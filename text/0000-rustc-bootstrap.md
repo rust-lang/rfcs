@@ -249,6 +249,10 @@ This cannot be done in a library or macro.
 - Python distributes separate binaries that [disable the GIL by default][free-threaded python]. Python also has [`-X` flags][python-x], which do not have feature gates.
 - Scala allows marking library APIs as [experimental]. Experimental APIs are "infectious" - any code using an experimental API must also be marked as experimental. Additionally, experimental APIs can be upgraded to [preview], meaning that they are guaranteed to exist in the future but might change their exact details. Unlike experimental APIs, preview APIs are not infectious. To enable experimental/preview features for all functions in a module at once, the compiler takes `-experimental`/`-preview` flags.
 - Kubernetes allows [enabling features][kubernetes-features] with `--feature-gates=Feature1=true,Feature2=true`. Additionally, it splits features into "Alpha" (experimental, can be removed altogether) and "Beta" (enabled by default, tested, can be changed but not removed).
+- Nix allows enabling features [in `nix.conf`](https://nix.dev/manual/nix/2.34/command-ref/conf-file.html#conf-accept-flake-config).
+  In practice, this results in people widely using features throughout the ecosystem.
+  We take this as a lesson telling us that an opt-in in `[workspace.unstable]` is not sufficient,
+  that there needs to be a reminder on each command that unstable features are active.
 
 [`goexperiment` module]: https://pkg.go.dev/internal/goexperiment
 [java-x]: https://docs.oracle.com/cd/E13150_01/jrockit_jvm/jrockit/jrdocs/refman/optionX.html
