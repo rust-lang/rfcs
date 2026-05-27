@@ -159,6 +159,8 @@ Unrecognized flag names in `allow-flags` are a hard error.
 
 Stable/beta Rustfmt now errors instead of warning when an unstable option is set without also setting `--allow-flags`.
 
+libtest runners accept `--allow-flags`.
+
 Each non-Cargo flag takes one of the following strings as a value:
 - An empty string, which indicates that no flags are allowed (default on stable)
 - A comma-separated list of flag names.
