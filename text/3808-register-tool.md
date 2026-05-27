@@ -218,8 +218,9 @@ Unknown tool names in lints remain a hard error until the story for proc-macro l
 Tool names are not affected by the current scope,
 but we need to know the current scope in order to give an ambiguity error.
 
-`#![no_implicit_prelude]` does not affect tools,
-i.e. the tool prelude is always present.
+Today, `#![no_implicit_prelude]` suppresses the tool attribute prelude but does not suppress the lint prelude (e.g., `#[allow(clippy::foo)]` continues to work).
+Under this RFC, neither prelude is suppressed by `#![no_implicit_prelude]`.
+This is technically a breaking change since it can produce new ambiguity errors in stable code.
 
 [`--crate-attr`]: https://github.com/rust-lang/rfcs/pull/3791
 [manifest]: https://doc.rust-lang.org/cargo/reference/manifest.html
