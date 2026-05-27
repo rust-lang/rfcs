@@ -93,7 +93,7 @@ But enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* 
 
 [rustc-bootstrap]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/rustc-bootstrap.html
 
-An important design constraint here is that the "end-user" (whoever is running the build) should always have control over which features are enabled.
+An important design constraint here is that each "self-contained build"[^3] should always have control over which features are enabled.
 To the extent that tools act as a "buffer" between feature breakage and the end-user,
 they should only take responsibility for exactly the features whose breakage they know how to handle.
 
@@ -300,3 +300,7 @@ This cannot be done in a library or macro.
   (and gets a hard error if its expected version doesn't match the version implemented in the compiler).
   The syntax for the opt-in would look like `--allow-unstable-flags=output-format@2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
   To encourage project contributors to bump the version, we could remind them (e.g. in a Github comment when a PR is opened) whenever a test that uses the feature is modified.
+
+[^3]: "Self-contained" here means that the project is running in a known environment with control over its own invocations;
+     this is true for whoever runs `cargo build` on a binary, and for Rust for Linux, but not for `cargo build` on a library.
+
