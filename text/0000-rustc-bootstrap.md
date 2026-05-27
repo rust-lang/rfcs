@@ -249,6 +249,10 @@ This cannot be done in a library or macro.
 # Prior art
 [prior-art]: #prior-art
 
+- Clang has `-fexperimental-*` flags. These have no feature gate.
+  I was not able to find information about their policy for breakage, nor whether they've removed these flags in the past.
+  - Clang also has `-fexperimental-library`, which is similar to Rust's library feature gates. That's documented as follows:
+  > Control whether unstable and experimental library features are enabled. This option enables various library features that are either experimental (also known as TSes), or have been but are not stable yet in the selected Standard Library implementation. It is not recommended to use this option in production code, since neither ABI nor API stability are guaranteed. This is intended to provide a preview of features that will ship in the future for experimentation purposes
 - Go has the [`goexperiment` module]. This is enabled at compile time with an environment variable that takes a list of features to enable.
 - Java has implementation-specific [`-X` flags][java-x] (which are roughly equivalent to `-Z` flags in Rust). They do not have feature gates. Java also has [preview features], which are guaranteed to exist in all implementations, but require opting in with `--enable-preview` *both* at compile time (with `javac`) and at runtime (with the `java` binary).
 - Python distributes separate binaries that [disable the GIL by default][free-threaded python]. Python also has [`-X` flags][python-x], which do not have feature gates.
