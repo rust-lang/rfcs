@@ -13,7 +13,6 @@ It does so in two ways:
 1. Extend `-Z unstable-options` to take a list of option names, rather than being a simple boolean.
    Then, rename it to `--allow-flags`. `allow-flags` is always available, even on stable.
 2. Add a new `--allow-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
-3. Change Rustfmt to give a hard error if a feature gate is disabled.
 
 This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
 it's specifically targeted at build systems wrapping cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
@@ -73,14 +72,13 @@ There are some cases where switching to nightly is not realistic.
 
 ## Why this exact mechanism?
 
-Currently, these tools use [`RUSTC_BOOTSTRAP=1`][rustc-bootstrap] as a workaround. But this workaround has many downsides:
+Currently, these tools use [`RUSTC_BOOTSTRAP=1`][rustc-bootstrap] as a workaround.
+But enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* parts of the toolchain; in particular:
+- `proc-macro2` uses `cargo:rerun-on-env-changed=RUSTC_BOOTSTRAP`, causing cache thrashing whenever this env var changes.
+- rust-analyzer wants to enable `RUSTC_BOOTSTRAP` only for cargo and libtest, but the variable enables features for rustc as well.
+  `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
 
 [rustc-bootstrap]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/rustc-bootstrap.html
-
-Enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* parts of the toolchain; in particular:
-- `proc-macro2` uses `cargo:rerun-on-env-changed=RUSTC_BOOTSTRAP`, causing cache thrashing whenever this env var changes.
-- rust-analyzer wants to enable RUSTC_BOOTSTRAP only for cargo and libtest, but the variable enables features for rustc as well.
-  `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
 
 An important design constraint here is that the "end-user" (whoever is running the build) should always have control over which features are enabled.
 To the extent that tools act as a "buffer" between feature breakage and the end-user,
