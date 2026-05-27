@@ -6,18 +6,17 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes decoupling the two components of our stability policy: still requiring feature gates, but allowing feature gates to be enabled on stable.
+This RFC proposes decoupling the two components of our stability policy, for CLI flags only:
+still requiring feature gates, but allowing feature gates to be enabled on stable.
 
-It does so in three ways:
+It does so in two ways:
 1. Extending `-Z unstable-options` to take a list of option names, rather than being a simple boolean.
-2. Add a new `[workspace.unstable.features]` table to Cargo.toml, allowing Cargo to proxy them through with accurate caching.
-   `unstable.features` is ignored unless Cargo is passed `--unstable-features`.
-3. Add a new `--unstable-flags` flag to Cargo, as well as to all other tools in the toolchain.
-   `unstable-flags` does not have a feature gate.
+   Then, renaming it to `--unstable-flags`. `unstable-flags` does not have a feature gate.
+2. Add a new `--unstable-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
 
-This RFC acknowledges that in practice it will be used as a general purpose mechanism for Rust developers to use nightly features on stable.
-However, it's specifically targeted at build systems wrapping cargo,
-such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
+This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
+it's specifically targeted at build systems wrapping cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
+As such, it does not attempt to address unstable lang features, which we consider adequately addressed by `RUSTC_BOOTSTRAP=crate_name`.
 
 # Motivation
 [motivation]: #motivation
@@ -55,6 +54,8 @@ Some examples:
 - `rustc_public`'s entire mission is to wrap unstable APIs with stable ones and therefore needs access to all `rustc_private` features.
 
 Why are these uses ok? Two reasons:
+- Each of these, except for rustc_public, is an external tool, not a library.
+  They do not need unstable language features, only unstable tool output.
 - Each of these tools accept responsibility for breakage.
   `semver-checks` and RfL both explicitly adapt to each new release of rustc, and their feedback on breakage is very useful for improving the features they use.
   rust-analyzer and RustRover don't break at all for `--print=cfg`—they're not using it in code, only in the CLI—and adapt to any changes in libtest json format.
@@ -62,7 +63,8 @@ Why are these uses ok? Two reasons:
   For example, semver-checks hides the breaking changes behind its own interface such that downstream projects are not affected.
   Similar, Rust for Linux backports breakage fixes to stable branches such that old versions of the kernel keep building with new rust toolchains.
 
-One might ask, well, maybe we are being too eager to gate things, but can't people just use nightly? There are some cases where switching to nightly is not realistic.
+One might ask, well, maybe we are being too eager to gate things, but can't people just use nightly?
+There are some cases where switching to nightly is not realistic.
 - When using rustc packaged by a distro (e.g. Fedora or `nixpkgs`), only the stable channel is packaged.
 - Tools that wrap the compiler (e.g. `rust-analyzer` or `cargo expand`) or libraries (e.g. `proc-macro2`) usually do not control the toolchain version being used.
 - Stable with `RUSTC_BOOTSTRAP` is not the same as nightly.
@@ -74,21 +76,18 @@ Currently, these tools use [`RUSTC_BOOTSTRAP=1`][rustc-bootstrap] as a workaroun
 
 [rustc-bootstrap]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/rustc-bootstrap.html
 
-- Enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* parts of the toolchain; in particular:
-    - `proc-macro2` uses `cargo:rerun-on-env-changed=RUSTC_BOOTSTRAP`, causing cache thrashing whenever this env var changes.
-    - rust-analyzer wants to enable RUSTC_BOOTSTRAP only for cargo and libtest, but the variable enables features for rustc as well.
+Enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* parts of the toolchain; in particular:
+  - `proc-macro2` uses `cargo:rerun-on-env-changed=RUSTC_BOOTSTRAP`, causing cache thrashing whenever this env var changes.
+  - rust-analyzer wants to enable RUSTC_BOOTSTRAP only for cargo and libtest, but the variable enables features for rustc as well.
       `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
-- Libraries that detect RUSTC_BOOTSTRAP sometimes do it incorrectly (in particular, `-Zallow-features` often messes things up).
-  To do this correctly, one must compile a full rust program that uses the api the library wants to enable; but in practice doing this is rare.
-  Limiting the opt-in to a specific feature makes it less likely that a single misbehaving library can break the whole build.
 
 An important design constraint here is that the "end-user" (whoever is running the build) should always have control over which features are enabled.
-To the extent that tools act as a "buffer" between feature breakage and the end-user, they should only take responsibility for exactly the features whose breakage they know how to handle.
+To the extent that tools act as a "buffer" between feature breakage and the end-user,
+they should only take responsibility for exactly the features whose breakage they know how to handle.
 
-`[workspace.unstable]` only permits the top-level build to allow feature gates.
-Build scripts cannot modify Cargo.toml files, and Cargo only respects `[workspace]` for the root manifest.
-This allows developers to experiment locally with nightly features on a stable toolchain, but without allowing them to opt-in silently when their library is published to crates.io.
-`[workspace.unstable]`
+We mark language features out of scope, because we expect the new flags to reduce most of the use cases for RUSTC_BOOTSTRAP, and therefore to reduce the amount of needless cache thrashing going on.
+We do not want to decouple our stability policy for language features,
+because there's no possibility there of the library acting as a buffer between other projects and breakage[^2].
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -99,76 +98,22 @@ The following documentation will live in the [unstable book] (or Cargo's [unstab
 [cargo-unstable]: https://doc.rust-lang.org/cargo/reference/unstable.html#allow-features
 [rustc book]: https://doc.rust-lang.org/nightly/rustc/
 
-## For Cargo users
-
-The `[workspace.unstable.flags]` and `[workspace.unstable.features]` tables allow you to use unstable features on the stable and beta channels.
-In particular, they allow you to use `-Z` flags and `#![feature(..)]` attributes, respectively.
-These can *only* be used in a local build of your workspace; they cannot be published to crates.io, nor used in a git/path dependency.
-Cargo will warn you each time you use these features, as a reminder that they are not stable and may break in the future.
-
 **NOTE:** This was previously done using a single `RUSTC_BOOTSTRAP` environment variable.
 **Please** avoid using `RUSTC_BOOTSTRAP`; it causes the Rust Project maintainers many issues.
 These `[workspace.unstable]` features are designed to replace all places where you might need it.
 
-### Enabling features
-
-Each option in the `flags` or `features` table is named after the corresponding flag or feature it enables.
-For example, the following config says "enable `-Z allow-moves` and `#![feature(allocator_internals)]`, but not any other feature":
-```toml
-[workspace.unstable.flags]
-allow-moves = true
-[workspace.unstable.features]
-allocator_internals = true
-```
-That enables unstable features for all packages in your dependency tree.
-You may wish to only enable them for packages in your workspace:
-```toml
-allow-moves = { workspace = true }
-```
-or for specific packages in your dependency tree:
-```toml
-allow-moves = ["cfg-if"]
-```
-
-### Disabling features
-
-So far, we've been assuming that you have a stable toolchain, which disallows all features by default.
-But you might also use a nightly toolchain, which allows all features by default.
-If so, you might wish to ban all features for all packages.
-You can do that by having empty `unstable` tables:
-```toml
-[workspace.unstable.flags]
-[workspace.unstable.features]
-# end of TOML file
-```
-Note that there is no way to change a stable toolchain to allow features by default.
-
-## For alternate build systems, or Cargo implementors
-
-The `--unstable-flags` and `--unstable-features` flags allow you to control precisely which unstable flags/features are used by a given crate.
-They are supported by rustc, and by all tools shipped with the official toolchain.
+The `--unstable-flags` option allow you to control precisely which unstable options are used by a given crate.
+It's supported by rustc, and by all tools shipped with the official toolchain.
 
 Each flag takes one of the following strings as values:
-- An empty string, which indicates that no flags/features are allowed (default on stable)
-- A comma-separated list of flags/features names.
+- An empty string, which indicates that no flags are allowed (default on stable)
+- A comma-separated list of flags names.
 
-These flags are specific to the current crate; you can pass different values to different crates and they will interoperate, similar to the `--edition` flag.
-This should not be construed to imply that a library crate can opt-in once for the whole build; each crate must opt-in to each feature it uses, or it will get a stability error.
+Flags are named after the CLI flag they enable.
+By implication, this means that CLI flags use dashes (`-`).
 
-Flags are named after the feature or CLI flag they enable.
-By implication, this means that features use underscores (`_`) and CLI flags use dashes (`-`).
-
-Unrecognized flags/features are ignored.
-As a quality-of-implementation concern, the tool should warn if an unrecognized flag/feature is passed.
-
-## Build scripts
-
-Build scripts have no mechanism for setting rustc flags (other than `-l` and `-L`) and so cannot use these mechanisms.
-This is a feature, not a bug.
-
-Reading these variables from `CARGO_ENCODED_RUSTFLAGS` and using them to do feature detection is allowed, but strongly discouraged.
-Be sure to read both `unstable-flags` and `unstable-features` and **compile a real crate** to make sure that your expected usage matches up with the version of the feature that's implemented.
-Do *not* simply check whether this is a nightly compiler or not.
+Unrecognized flags are ignored.
+As a quality-of-implementation concern, the tool should warn if an unrecognized flag is passed.
 
 ## Stability policy
 
@@ -192,20 +137,12 @@ but can help us find a alternative solution to your problem or otherwise improve
 
 ## Caching
 
-Currently, changing `RUSTC_BOOTSTRAP` does not invalidate Cargo's build cache.
-With this flag, Cargo will know exactly which crates are affected by each flag,
-and can choose to rebuild only the crates it needs to.
+Currently, changing `RUSTC_BOOTSTRAP` does not invalidate Cargo's build cache by itself, but in practice can cause build scripts deep in the dependency tree to re-run.
+With `--unstable-flags`, we separate the mechanism for enabling flags from the mechanism for enabling lang features,
+greatly decreasing how often build scripts run.
 
-Build scripts do not need to explicitly tell Cargo when they are rebuilt;
-Cargo should rerun them when it rebuilds their package.
-
-We suggest, but do not require, that flag is made part of the fingerprint tracking, not unit cache tracking,
+We suggest, but do not require, that the flag is made part of the fingerprint tracking, not unit cache tracking,
 so that changing the enabled features overwrites the cache rather than adding to it.
-
-## Existing flags
-
-The existing `-Z allow-features` and `-Z unstable-options` flags in Rustc/tools will be removed.
-`cargo -Z allow-features` will remain, but it will only apply to Cargo itself, not to any invoked tools.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -221,6 +158,14 @@ The existing `-Z allow-features` and `-Z unstable-options` flags in Rustc/tools 
 - This may make it less likely that people help stabilize features.
   But stabilizing features is [very very hard](https://medium.com/@ElizAyer/organizational-boundary-problems-too-many-cooks-or-not-enough-kitchens-2ddedc6de26a),
   and in the meantime people have very little recourse when they need to use an unstable feature.
+- This does not address the use case of lang features.
+  Lang features have several drawbacks right now; for example:
+  - It's possible to enable/disable features for individual crates, or for individaul features, but not both at once.
+    We could address this by stabilizing `-Zallow-features`, but still requiring it to be used in combination with `RUSTC_BOOTSTRAP=crate_name` (and possibly removing the `RUSTC_BOOTSTRAP=1` form).
+  - Enabling/disabling lang features causes large parts of the build graph to be rebuilt.
+    I do not have ideas for how to fix this; the closest I got was a `[workspace.unstable]` table in Cargo.toml,
+    which would only be read with `cargo build --unstable-features` and passed through `-Zallow-features` to Rustc,
+    but this seems too corrosive to our stability policy to encourage.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -264,18 +209,19 @@ This cannot be done in a library or macro.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None to my knowledge.
+Will this cause flags to be de-facto stable, even moreso than they are now?
 
 [response files]: https://doc.rust-lang.org/rustc/command-line-arguments.html#path-load-command-line-flags-from-a-path
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Break hard on RUSTC_BOOTSTRAP now that people have an alternative. For example, we could remove the `RUSTC_BOOTSTRAP=crate_name` syntax and instead require `RUSTC_BOOTSTRAP=<commit_hash>` of the commit rustc was built with. The goal here is for no one to use the variable except bootstrap itself.
 - Rename RUSTC_BOOTSTRAP to a name that makes more sense, such as `RUSTC_ALLOW_ALL_FEATURES`.
-- We could split unstable features into "alpha" and "beta", and only allow the latter to be enabled with `--unstable-features`.
-  Additionally, we could enable beta features by default on the beta channel.
-- We could add a version scheme to unstable features, such that the opt-in has to specify exactly which version of the feature it expects
+- We could split unstable flags into "alpha" and "beta", and only allow the latter to be enabled with `--unstable-flags`.
+  Additionally, we could enable beta flags by default on the beta channel.
+- We could add a version scheme to unstable flags, such that the opt-in has to specify exactly which version of the feature it expects
   (and gets a hard error if its expected version doesn't match the version implemented in the compiler).
-  The syntax for the opt-in would look like `--unstable-features=allow-moves=2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
+  The syntax for the opt-in would look like `--unstable-flags=output-format=2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
   To encourage project contributors to bump the version, we could remind them (e.g. in a Github comment when a PR is opened) whenever a test that uses the feature is modified.
+
+[^2]: Theoretically libraries can write a build script that does feature detection, but this slows down the build for everyone, and it's very very hard to write that build script properly.
