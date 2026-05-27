@@ -18,13 +18,20 @@ We know that there's demand for this feature,
 first of all because people have [asked for it][internals thread],
 but mostly because of [crates that did it themselves][] by loading [katex.js][] with inline HTML.
 
-As far as I know, this is the most popular way of doing that:
+As far as I know, the most popular ways of doing that are:
 
+    # Cargo.toml
     [package.metadata.docs.rs]
     rustdoc-args = ["--html-in-header", "katex-header.html", "--cfg", "docsrs"]
 
-Because only docs.rs reads that directive,
-local `cargo doc` and non-Rustdoc doc readers won't see it.
+<!-- -->
+
+    # .cargo/config.toml
+    [build]
+    rustdocflags = [ "--html-in-header", "./src/docs-header.html" 
+
+Because the first one is only read by docs.rs, and the second one is only read when cargo is run from within the project itself, neither of them work when you use `cargo doc` to browse the docs of your dependencies.
+
 There is a way to make it work in `cargo doc`,
 but it [seems to be less popular][include hack].
 
@@ -163,7 +170,7 @@ Other characters are usually rendered literally, except for
 - backslashes, `\`, which are the sigil for commands
 - curly braces, `{` and `}`, which are used for command arguments
 - dollar signs, `$`, which delimit math spans
-- number signs, `#`, which are used to refer to macro parameters
+- number signs, `#`, which are reserved for use in a future macro system
 - ampersands, `&`, which are used for writing matrices and tables
 - circumflex, `^`, which is used for exponents
 - underscore, `_`, which is used for subscript
@@ -473,8 +480,8 @@ and, ideally, have a specification without much churn.
 - If we supported undelimited LaTeX environment blocks, then it would make sense to
   implement a subset of the [LaTeX drawing tools][] on top of SVG.
   The downside is that the only other implementation of these languages that I know of is [LaTeXML][], which is not written in Rust.
-  The upside is that integrating with the math engine lets you
-  directly include equations and `math_syntax` macros in your graphics.
+  The upside is that integrating with the math engine means you can embed equations in your charts,
+  and if ee add support for TeX macros, those should work, too.
 - [Svgbob][] actually has a Rust implementation. Ironic, since Svgbob has no syntax errors,
   it's actually less important to have a Rust implementation than it is for the others,
   which have the possibility of an "invalid document" with errors that we would want
