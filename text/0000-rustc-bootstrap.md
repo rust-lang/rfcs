@@ -17,7 +17,7 @@ It does so in two ways:
 
 This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
 it's specifically targeted at build systems wrapping cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
-As such, it does not attempt to address unstable lang features, which we consider adequately addressed by `RUSTC_BOOTSTRAP=crate_name`.
+As such, it does not attempt to address the use of unstable lang features with a stable Rust compiler version, which we consider adequately addressed by `RUSTC_BOOTSTRAP=crate_name`.
 
 # Motivation
 [motivation]: #motivation
@@ -25,7 +25,7 @@ As such, it does not attempt to address unstable lang features, which we conside
 ## Why allow using unstable features on stable?
 
 Rust's stability policy has two components:
-1. To the extent possible, each unstable feature comes with a feature gate, and is disabled when that feature gate is inactive. [^1]
+1. To the extent possible, each unstable feature comes with its own feature gate, and is disabled when that feature gate is inactive. [^1]
 2. Enabling feature gates is only allowed on the nightly toolchain.
 
 [^1]: There are some exceptions to this, such as https://github.com/rust-lang/rust/issues/139892#issuecomment-2808505610.
@@ -56,13 +56,13 @@ Some examples:
 
 Why are these uses ok? Three reasons:
 - Each of these, except for rustc_public, is an external tool, not a library.
-  They do not need unstable language features, only unstable tool output.
+  They do not need unstable language features, only unstable tool features.
 - Each of these tools accept responsibility for breakage.
   `semver-checks` and RfL both explicitly adapt to each new release of rustc, and their feedback on breakage is very useful for improving the features they use.
   rust-analyzer and RustRover don't break at all for `--print=cfg`—they're not using it in code, only in the CLI—and adapt to any changes in libtest json format.
 - These tools act as a "buffer" between other projects and breakage.
-  For example, semver-checks hides the breaking changes behind its own interface such that downstream projects are not affected.
-  Similar, RfL backports breakage fixes to stable branches such that old versions of the kernel keep building with new rust toolchains.
+  For example, `semver-checks` hides the breaking changes behind its own interface such that downstream projects are not affected.
+  Similarly, RfL backports breakage fixes to stable branches such that old versions of the kernel keep building with new rust toolchains.
 
 One might ask, well, maybe we are being too eager to gate things, but can't people just use nightly?
 There are some cases where switching to nightly is not realistic.
