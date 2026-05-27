@@ -118,6 +118,7 @@ Flag values are not supported, only names.
 
 The `--allow-flags` Cargo option is almost the same, but instructs Cargo which tools need to receive the option.
 For example, `cargo doc --allow-flags=rustdoc=output-format` will run `rustdoc --allow-flags=output-format`.
+You can use `cargo build --allow-flags=cargo=profile-hint-mostly-unused` to allow a flag in Cargo itself.
 
 ## Stability policy
 
@@ -170,9 +171,11 @@ This matters in cases where two parties don't trust each other, such as running 
 Build scripts cannot set these flags; `cargo::rustc-flags` continues to only accept `-l` and `-L` flags.
 
 Each Cargo flag takes a value that starts with a tool name, then the string '=', then a valid value for a non-Cargo flag.
+The tool can be `cargo`, in which case the flag applies to the unstable flags of Cargo itself.
 Tool names are the name of the exact binary that will be spawned: `rustdoc`, `clippy-driver`, etc.
 If `RUSTC` or `RUSTDOC` is set, the tool name is still `rustc`/`rustdoc`, not the overridden value.
 If `RUSTC_WRAPPER` or `RUSTC_WORKSPACE_WRAPPER` is set, the intersection of the flags for `rustc` and the wrapper are passed; this requires additional work from the user but avoids silently passing unstable flags to more tools than intended.
+
 
 If `allow-flags` is passed multiple times, tools are unioned, but values are intersected.
 In other words, `cargo doc --allow-flags=rustc=x --allow-flags=rustdoc=y` will pass `--allow-flags=x` to Rustc and `--allow-flags=y` to Rustdoc.
