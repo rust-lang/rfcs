@@ -16,6 +16,11 @@ It does so in two ways:
 2. Add a new `--allow-unstable-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
    For example: `cargo build --allow-unstable-flags=rustc=annotate-moves --allow-unstable-flags=cargo=build-dir-new-layout`.
 
+The goal of this flag is two-fold:
+1. *Harm reduction*: There are already tools bypassing our stability policy, in a way that's painful for both them and the people using them.
+   We aim to reduce the amount of breakage and unnecessary rebuilds that causes.
+1. *Feedback on unstable features*: By encouraging experimentation on stable, we hope to get bug reports from a wider variety of environments than "developer machines running nightly with rustup".
+
 This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
 it's specifically targeted at build systems wrapping Rustc or Cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
 As such, it does not attempt to address the use of unstable lang features with a stable Rust compiler version, which we consider adequately addressed by `RUSTC_BOOTSTRAP=crate_name`.
@@ -82,6 +87,7 @@ But enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* 
 - `proc-macro2` uses `cargo:rerun-on-env-changed=RUSTC_BOOTSTRAP`, causing cache thrashing whenever this env var changes.
 - rust-analyzer wants to enable `RUSTC_BOOTSTRAP` only for cargo and libtest, but the variable enables features for rustc as well.
   `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
+  It's also common for crates to have broken build scripts which do version detection instead of feature detection; in that case, enabling `RUSTC_BOOTSTRAP` with `allow-features` will break the build.
 
 `--allow-unstable-features` extends this to CLI features, allowing projects to opt-in to only the unstability they choose to.
 
