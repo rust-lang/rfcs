@@ -89,7 +89,7 @@ But enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* 
   `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
   It's also common for crates to have broken build scripts which do version detection instead of feature detection; in that case, enabling `RUSTC_BOOTSTRAP` with `allow-features` will break the build.
 
-`--allow-unstable-features` extends this to CLI features, allowing projects to opt-in to only the unstability they choose to.
+`--allow-unstable-features` extends this to CLI features, allowing projects to opt-in to only the instability they choose to.
 
 [rustc-bootstrap]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/rustc-bootstrap.html
 
@@ -106,9 +106,9 @@ because there's no possibility there of the library acting as a buffer between o
 ## Why change Rustfmt?
 
 Rustfmt is often run automatically by editor plugins, not explicitly.
-Additionally, right now rustfmt warns and continues when a feature gate is enabled on stable, which means the whole codebase gets reformatted.
+Additionally, right now Rustfmt warns and continues when a feature gate is enabled on stable, which means the whole codebase gets reformatted.
 Changing Rustfmt to instead give a hard error when the feature gate is disabled avoids editors accidentally reformatting the whole codebase.
-[The rustfmt team already intends to fix this](https://github.com/rust-lang/rustfmt/issues/5022).
+[The Rustfmt team already intends to fix this](https://github.com/rust-lang/rustfmt/issues/5022).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -299,7 +299,7 @@ This cannot be done in a library or macro.
 - We could add a version scheme to unstable flags, such that the opt-in has to specify exactly which version of the feature it expects
   (and gets a hard error if its expected version doesn't match the version implemented in the compiler).
   The syntax for the opt-in would look like `--allow-unstable-flags=output-format@2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
-  To encourage project contributors to bump the version, we could remind them (e.g. in a Github comment when a PR is opened) whenever a test that uses the feature is modified.
+  To encourage project contributors to bump the version, we could remind them (e.g. in a GitHub comment when a PR is opened) whenever a test that uses the feature is modified.
 
 [^3]: "Self-contained" here means that the project is running in a known environment with control over its own invocations;
      this is true for whoever runs `cargo build` on a binary, and for Rust for Linux, but not for `cargo build` on a library.
