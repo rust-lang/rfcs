@@ -12,10 +12,12 @@ still requiring feature gates, but allowing feature gates to be enabled on stabl
 It does so in two ways:
 1. Extend `-Z unstable-options` to take a list of option names, rather than being a simple boolean.
    Then, rename it to `--allow-unstable-flags`. `allow-unstable-flags` is always available, even on stable.
+   For example: `rustc --allow-unstable-flags=annotate-moves,binary-dep-depinfo`
 2. Add a new `--allow-unstable-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
+   For example: `cargo build --allow-unstable-flags=rustc=annotate-moves --allow-unstable-flags=cargo=build-dir-new-layout`.
 
 This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
-it's specifically targeted at build systems wrapping cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
+it's specifically targeted at build systems wrapping Rustc or Cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
 As such, it does not attempt to address the use of unstable lang features with a stable Rust compiler version, which we consider adequately addressed by `RUSTC_BOOTSTRAP=crate_name`.
 
 # Motivation
@@ -51,7 +53,10 @@ Some examples:
 - `cargo semver-checks` needs `rustdoc --output-format=json` in order to work at all.
 - Rust for Linux (RfL) needs a way to build a custom version of core.
   In particular, they mentioned they need to disable float support, because using float registers can cause unsoundness.
+  They also have a [much larger list][rfl-wishlist] of all unstable features used; they won't get away from unstable any time soon.
 - `rustc_public`'s entire mission is to wrap unstable APIs with stable ones and therefore needs access to all `rustc_private` features.
+
+[rfl-wishlist]: https://github.com/Rust-for-Linux/linux/issues/2
 
 Why are these uses ok? Three reasons:
 - Each of these, except for rustc_public, is an external tool, not a library.
