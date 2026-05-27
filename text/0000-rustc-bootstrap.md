@@ -1,4 +1,4 @@
-- Feature Name: `unstable-on-stable`
+- Feature Name: `unstable-flags`
 - Start Date: 2025-05-18
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -10,8 +10,8 @@ This RFC proposes decoupling the two components of our stability policy, for CLI
 still requiring feature gates, but allowing feature gates to be enabled on stable.
 
 It does so in two ways:
-1. Extending `-Z unstable-options` to take a list of option names, rather than being a simple boolean.
-   Then, renaming it to `--unstable-flags`. `unstable-flags` does not have a feature gate.
+1. Extend `-Z unstable-options` to take a list of option names, rather than being a simple boolean.
+   Then, rename it to `--unstable-flags`. `unstable-flags` is always available, even on stable.
 2. Add a new `--unstable-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
 
 This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
@@ -49,11 +49,11 @@ Some examples:
 - rust-analyzer and RustRover need all values in `rustc --print=cfg` to build the standard library.
   (see [#139892](https://github.com/rust-lang/rust/issues/139892#issuecomment-2808505610) for an explanation of why this is affected by unstable features)
 - `cargo semver-checks` needs `rustdoc --output-format=json` in order to work at all.
-- Rust for Linux needs a way to build a custom version of core.
+- Rust for Linux (RfL) needs a way to build a custom version of core.
   In particular, they mentioned they need to disable float support, because using float registers can cause unsoundness.
 - `rustc_public`'s entire mission is to wrap unstable APIs with stable ones and therefore needs access to all `rustc_private` features.
 
-Why are these uses ok? Two reasons:
+Why are these uses ok? Three reasons:
 - Each of these, except for rustc_public, is an external tool, not a library.
   They do not need unstable language features, only unstable tool output.
 - Each of these tools accept responsibility for breakage.
@@ -61,13 +61,13 @@ Why are these uses ok? Two reasons:
   rust-analyzer and RustRover don't break at all for `--print=cfg`—they're not using it in code, only in the CLI—and adapt to any changes in libtest json format.
 - These tools act as a "buffer" between other projects and breakage.
   For example, semver-checks hides the breaking changes behind its own interface such that downstream projects are not affected.
-  Similar, Rust for Linux backports breakage fixes to stable branches such that old versions of the kernel keep building with new rust toolchains.
+  Similar, RfL backports breakage fixes to stable branches such that old versions of the kernel keep building with new rust toolchains.
 
 One might ask, well, maybe we are being too eager to gate things, but can't people just use nightly?
 There are some cases where switching to nightly is not realistic.
 - When using rustc packaged by a distro (e.g. Fedora or `nixpkgs`), only the stable channel is packaged.
 - Tools that wrap the compiler (e.g. `rust-analyzer` or `cargo expand`) or libraries (e.g. `proc-macro2`) usually do not control the toolchain version being used.
-- Stable with `RUSTC_BOOTSTRAP` is not the same as nightly.
+- Nightly is not the same as stable-with-`RUSTC_BOOTSTRAP`.
   In particular, stable contains backports and nightly does not.
 
 ## Why this exact mechanism?
@@ -77,9 +77,9 @@ Currently, these tools use [`RUSTC_BOOTSTRAP=1`][rustc-bootstrap] as a workaroun
 [rustc-bootstrap]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/rustc-bootstrap.html
 
 Enabling RUSTC_BOOTSTRAP for one part of the toolchain enables it for *all* parts of the toolchain; in particular:
-  - `proc-macro2` uses `cargo:rerun-on-env-changed=RUSTC_BOOTSTRAP`, causing cache thrashing whenever this env var changes.
-  - rust-analyzer wants to enable RUSTC_BOOTSTRAP only for cargo and libtest, but the variable enables features for rustc as well.
-      `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
+- `proc-macro2` uses `cargo:rerun-on-env-changed=RUSTC_BOOTSTRAP`, causing cache thrashing whenever this env var changes.
+- rust-analyzer wants to enable RUSTC_BOOTSTRAP only for cargo and libtest, but the variable enables features for rustc as well.
+  `RUSTFLAGS="-Z allow-features="` fixes this for lang features, but at the price of thrashing the cache; and there is no equivalent way to disable unstable CLI features.
 
 An important design constraint here is that the "end-user" (whoever is running the build) should always have control over which features are enabled.
 To the extent that tools act as a "buffer" between feature breakage and the end-user,
@@ -88,6 +88,8 @@ they should only take responsibility for exactly the features whose breakage the
 We mark language features out of scope, because we expect the new flags to reduce most of the use cases for RUSTC_BOOTSTRAP, and therefore to reduce the amount of needless cache thrashing going on.
 We do not want to decouple our stability policy for language features,
 because there's no possibility there of the library acting as a buffer between other projects and breakage[^2].
+
+[^2]: Theoretically libraries can write a build script that does feature detection, but this slows down the build for everyone, and it's very very hard to write that build script properly.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -98,22 +100,15 @@ The following documentation will live in the [unstable book] (or Cargo's [unstab
 [cargo-unstable]: https://doc.rust-lang.org/cargo/reference/unstable.html#allow-features
 [rustc book]: https://doc.rust-lang.org/nightly/rustc/
 
-**NOTE:** This was previously done using a single `RUSTC_BOOTSTRAP` environment variable.
-**Please** avoid using `RUSTC_BOOTSTRAP`; it causes the Rust Project maintainers many issues.
-These `[workspace.unstable]` features are designed to replace all places where you might need it.
-
-The `--unstable-flags` option allow you to control precisely which unstable options are used by a given crate.
+The `--unstable-flags` option allows you to control precisely which unstable options are used by a given crate.
 It's supported by rustc, and by all tools shipped with the official toolchain.
 
-Each flag takes one of the following strings as values:
+Each flag takes one of the following strings as a value:
 - An empty string, which indicates that no flags are allowed (default on stable)
-- A comma-separated list of flags names.
+- A comma-separated list of flag names.
 
 Flags are named after the CLI flag they enable.
 By implication, this means that CLI flags use dashes (`-`).
-
-Unrecognized flags are ignored.
-As a quality-of-implementation concern, the tool should warn if an unrecognized flag is passed.
 
 ## Stability policy
 
@@ -128,14 +123,31 @@ If you do use this to enable an unstable feature, please contact a member of the
 For example, if you are using `rustdoc --unstable-flags=output-format`, reach out to [Alona Enraght-Moony][alona] (the maintainer of rustdoc-json).
 If you do not know who to contact, ask on [Zulip].
 Contacting a maintainer provides no stability guarantees and does not mean the maintainer will agree to work with you,
-but can help us find a alternative solution to your problem or otherwise improve the unstable feature you are using.
+but can help us find an alternative solution to your problem or otherwise improve the unstable feature you are using.
 
 [alona]: https://github.com/aDotInTheVoid/
 [Zulip]: https://rust-lang.zulipchat.com/
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Caching
+`unstable-flags` is a comma-separated list of CLI flag names.
+Flag values are not supported, only names.
+
+`cargo <cmd> --unstable-flags` applies to both Cargo and all tools it spawns.
+That is, it passes the flag to Rustc when Rustc is spawned.
+This applies to all packages, not just the current workspace.
+In practice, the only tool passing unstable flags to Cargo is `cargo-semver-checks`, which is building all dependencies in any case.
+
+If `unstable-flags` is passed multiple times, the *intersection* of all values is used, not the union.
+This matters in cases where two parties don't trust each other, such as running `cargo build --unstable-flags=x` in a workspace with `build.rustflags=--unstable-flags=x,y`.
+
+Unrecognized flag names in `unstable-flags` are ignored.
+As a quality-of-implementation concern, the tool should warn if an unrecognized flag is passed.
+
+## Implementation notes
+
+### Caching
 
 Currently, changing `RUSTC_BOOTSTRAP` does not invalidate Cargo's build cache by itself, but in practice can cause build scripts deep in the dependency tree to re-run.
 With `--unstable-flags`, we separate the mechanism for enabling flags from the mechanism for enabling lang features,
@@ -160,7 +172,7 @@ so that changing the enabled features overwrites the cache rather than adding to
   and in the meantime people have very little recourse when they need to use an unstable feature.
 - This does not address the use case of lang features.
   Lang features have several drawbacks right now; for example:
-  - It's possible to enable/disable features for individual crates, or for individaul features, but not both at once.
+  - It's possible to enable/disable features for individual crates, or for individual features, but not both at once.
     We could address this by stabilizing `-Zallow-features`, but still requiring it to be used in combination with `RUSTC_BOOTSTRAP=crate_name` (and possibly removing the `RUSTC_BOOTSTRAP=1` form).
   - Enabling/disabling lang features causes large parts of the build graph to be rebuilt.
     I do not have ideas for how to fix this; the closest I got was a `[workspace.unstable]` table in Cargo.toml,
@@ -188,6 +200,7 @@ so that changing the enabled features overwrites the cache rather than adding to
   (for example cargo semver-checks cannot rely on it being installed, and rust-analyzer will still have caching issues).
 
 This cannot be done in a library or macro.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -223,5 +236,3 @@ Will this cause flags to be de-facto stable, even moreso than they are now?
   (and gets a hard error if its expected version doesn't match the version implemented in the compiler).
   The syntax for the opt-in would look like `--unstable-flags=output-format=2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
   To encourage project contributors to bump the version, we could remind them (e.g. in a Github comment when a PR is opened) whenever a test that uses the feature is modified.
-
-[^2]: Theoretically libraries can write a build script that does feature detection, but this slows down the build for everyone, and it's very very hard to write that build script properly.
