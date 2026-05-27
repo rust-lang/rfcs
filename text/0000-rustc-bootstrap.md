@@ -1,4 +1,4 @@
-- Feature Name: `allow-flags`
+- Feature Name: `allow-unstable-flags`
 - Start Date: 2025-05-18
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -11,8 +11,8 @@ still requiring feature gates, but allowing feature gates to be enabled on stabl
 
 It does so in two ways:
 1. Extend `-Z unstable-options` to take a list of option names, rather than being a simple boolean.
-   Then, rename it to `--allow-flags`. `allow-flags` is always available, even on stable.
-2. Add a new `--allow-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
+   Then, rename it to `--allow-unstable-flags`. `allow-unstable-flags` is always available, even on stable.
+2. Add a new `--allow-unstable-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
 
 This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
 it's specifically targeted at build systems wrapping cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
@@ -106,17 +106,17 @@ The following documentation will live in the [unstable book] (or Cargo's [unstab
 [cargo-unstable]: https://doc.rust-lang.org/cargo/reference/unstable.html#allow-features
 [rustc book]: https://doc.rust-lang.org/nightly/rustc/
 
-The `--allow-flags` Rustc option allows you to control precisely which unstable options are used by a given crate.
+The `--allow-unstable-flags` Rustc option allows you to control precisely which unstable options are used by a given crate.
 It's supported by rustc, and by all tools shipped with the official toolchain.
-For example, `rustdoc --allow-flags=output-format --output-format=json` allows you to see Rustdoc's JSON output on stable.
+For example, `rustdoc --allow-unstable-flags=output-format --output-format=json` allows you to see Rustdoc's JSON output on stable.
 
 Flags are named after the CLI flag they enable.
 By implication, this means that CLI flags use dashes (`-`).
 Flag values are not supported, only names.
 
-The `--allow-flags` Cargo option is almost the same, but instructs Cargo which tools need to receive the option.
-For example, `cargo doc --allow-flags=rustdoc=output-format` will run `rustdoc --allow-flags=output-format`.
-You can use `cargo build --allow-flags=cargo=profile-hint-mostly-unused` to allow a flag in Cargo itself.
+The `--allow-unstable-flags` Cargo option is almost the same, but instructs Cargo which tools need to receive the option.
+For example, `cargo doc --allow-unstable-flags=rustdoc=output-format` will run `rustdoc --allow-unstable-flags=output-format`.
+You can use `cargo build --allow-unstable-flags=cargo=profile-hint-mostly-unused` to allow a flag in Cargo itself.
 
 ## Stability policy
 
@@ -128,7 +128,7 @@ Although we do not take technical measures to prevent it from being used, we str
 If at all possible, please contribute to stabilizing the features you care about instead of bypassing the Rust project's stability policy.
 
 If you do use this to enable an unstable feature, please contact a member of the project who works on the feature in question, so that we know who is exposed to breakage.
-For example, if you are using `rustdoc --allow-flags=output-format`, reach out to [Alona Enraght-Moony][alona] (the maintainer of rustdoc-json).
+For example, if you are using `rustdoc --allow-unstable-flags=output-format`, reach out to [Alona Enraght-Moony][alona] (the maintainer of rustdoc-json).
 If you do not know who to contact, ask on [Zulip].
 Contacting a maintainer provides no stability guarantees and does not mean the maintainer will agree to work with you,
 but can help us find an alternative solution to your problem or otherwise improve the unstable feature you are using.
@@ -141,30 +141,30 @@ but can help us find an alternative solution to your problem or otherwise improv
 
 ## Shared rules
 
-`allow-flags` is a comma-separated list of CLI flag names, with the leading `-Z` or `--` (if any) removed.
+`allow-unstable-flags` is a comma-separated list of CLI flag names, with the leading `-Z` or `--` (if any) removed.
 Flag values are not supported, only names.
 
-`allow-flags` does not activate any flag on its own.
+`allow-unstable-flags` does not activate any flag on its own.
 You still need to combine it with the `-Z` or unstable flag that you wish to enable.
 
-`allow-flags` is accepted on all channels.
+`allow-unstable-flags` is accepted on all channels.
 When it's not present, the default on stable/beta is to ban all unstable flags,
 and the default on nightly is to allow all unstable flags.
 
-Unrecognized flag names in `allow-flags` are a hard error.
+Unrecognized flag names in `allow-unstable-flags` are a hard error.
 
 ## Non-cargo rules
 
-Stable/beta Rustfmt now errors instead of warning when an unstable option is set without also setting `--allow-flags`.
+Stable/beta Rustfmt now errors instead of warning when an unstable option is set without also setting `--allow-unstable-flags`.
 
-libtest runners accept `--allow-flags`.
+libtest runners accept `--allow-unstable-flags`.
 
 Each non-Cargo flag takes one of the following strings as a value:
 - An empty string, which indicates that no flags are allowed (default on stable)
 - A comma-separated list of flag names.
 
-If `allow-flags` is passed multiple times, the *intersection* of all values is used, not the union.
-This matters in cases where two parties don't trust each other, such as running `cargo build --allow-flags=rustc=x` in a workspace with `build.rustflags=--allow-flags=x,y`: this should be equivalent to `rustc --allow-flags=x`.
+If `allow-unstable-flags` is passed multiple times, the *intersection* of all values is used, not the union.
+This matters in cases where two parties don't trust each other, such as running `cargo build --allow-unstable-flags=rustc=x` in a workspace with `build.rustflags=--allow-unstable-flags=x,y`: this should be equivalent to `rustc --allow-unstable-flags=x`.
 
 ## Cargo rules
 
@@ -177,10 +177,10 @@ If `RUSTC` or `RUSTDOC` is set, the tool name is still `rustc`/`rustdoc`, not th
 If `RUSTC_WRAPPER` or `RUSTC_WORKSPACE_WRAPPER` is set, the intersection of the flags for `rustc` and the wrapper are passed; this requires additional work from the user but avoids silently passing unstable flags to more tools than intended.
 
 
-If `allow-flags` is passed multiple times, tools are unioned, but values are intersected.
-In other words, `cargo doc --allow-flags=rustc=x --allow-flags=rustdoc=y` will pass `--allow-flags=x` to Rustc and `--allow-flags=y` to Rustdoc.
+If `allow-unstable-flags` is passed multiple times, tools are unioned, but values are intersected.
+In other words, `cargo doc --allow-unstable-flags=rustc=x --allow-unstable-flags=rustdoc=y` will pass `--allow-unstable-flags=x` to Rustc and `--allow-unstable-flags=y` to Rustdoc.
 
-`cargo <cmd> --allow-flags` applies to both Cargo and all tools it spawns.
+`cargo <cmd> --allow-unstable-flags` applies to both Cargo and all tools it spawns.
 That is, it passes the flag to Rustc when Rustc is spawned.
 This applies to all packages, not just the current workspace.
 In practice, the only tool passing unstable flags to Cargo is `cargo-semver-checks`, which is building all dependencies in any case.
@@ -192,7 +192,7 @@ Unrecognized tool names are an error.
 ### Caching
 
 Currently, changing `RUSTC_BOOTSTRAP` does not invalidate Cargo's build cache by itself, but in practice can cause build scripts deep in the dependency tree to re-run.
-With `--allow-flags`, we separate the mechanism for enabling flags from the mechanism for enabling lang features,
+With `--allow-unstable-flags`, we separate the mechanism for enabling flags from the mechanism for enabling lang features,
 greatly decreasing how often build scripts that detect `RUSTC_BOOTSTRAP` rerun.
 
 We suggest, but do not require, that the flag is made part of the fingerprint tracking, not unit cache tracking,
@@ -266,7 +266,7 @@ This cannot be done in a library or macro.
 
 - Will this cause flags to be de-facto stable, even moreso than they are now?
   We could emit a future-compat warning whenever this flag is used; is that sufficient?
-- This RFC frames `--allow-flags` as an unstable feature.
+- This RFC frames `--allow-unstable-flags` as an unstable feature.
   Can we follow through on that in practice?
   How badly will things break if we eventually remove it?
 - Should we allow `name=value` filtering from the start, rather than deferring it to an extension?
@@ -277,9 +277,9 @@ This cannot be done in a library or macro.
 [future-possibilities]: #future-possibilities
 
 - Rename RUSTC_BOOTSTRAP to a name that makes more sense, such as `RUSTC_ALLOW_ALL_FEATURES`.
-- We could split unstable flags into "alpha" and "beta", and only allow the latter to be enabled with `--allow-flags`.
+- We could split unstable flags into "alpha" and "beta", and only allow the latter to be enabled with `--allow-unstable-flags`.
   Additionally, we could enable beta flags by default on the beta channel.
 - We could add a version scheme to unstable flags, such that the opt-in has to specify exactly which version of the feature it expects
   (and gets a hard error if its expected version doesn't match the version implemented in the compiler).
-  The syntax for the opt-in would look like `--allow-flags=output-format@2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
+  The syntax for the opt-in would look like `--allow-unstable-flags=output-format@2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
   To encourage project contributors to bump the version, we could remind them (e.g. in a Github comment when a PR is opened) whenever a test that uses the feature is modified.
