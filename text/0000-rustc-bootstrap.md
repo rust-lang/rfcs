@@ -140,6 +140,8 @@ but can help us find an alternative solution to your problem or otherwise improv
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+## Shared rules
+
 `allow-flags` is a comma-separated list of CLI flag names, with the leading `-Z` or `--` (if any) removed.
 Flag values are not supported, only names.
 
@@ -150,29 +152,37 @@ You still need to combine it with the `-Z` or unstable flag that you wish to ena
 When it's not present, the default on stable/beta is to ban all unstable flags,
 and the default on nightly is to allow all unstable flags.
 
+Unrecognized flag names in `allow-flags` are a hard error.
+
+## Non-cargo rules
+
 Stable/beta Rustfmt now errors instead of warning when an unstable option is set without also setting `--allow-flags`.
+
+Each non-Cargo flag takes one of the following strings as a value:
+- An empty string, which indicates that no flags are allowed (default on stable)
+- A comma-separated list of flag names.
+
+If `allow-flags` is passed multiple times, the *intersection* of all values is used, not the union.
+This matters in cases where two parties don't trust each other, such as running `cargo build --allow-flags=rustc=x` in a workspace with `build.rustflags=--allow-flags=x,y`: this should be equivalent to `rustc --allow-flags=x`.
+
+## Cargo rules
+
+Build scripts cannot set these flags; `cargo::rustc-flags` continues to only accept `-l` and `-L` flags.
+
+Each Cargo flag takes a value that starts with a tool name, then the string '=', then a valid value for a non-Cargo flag.
+Tool names are the name of the exact binary that will be spawned: `rustdoc`, `clippy-driver`, etc.
+If `RUSTC` or `RUSTDOC` is set, the tool name is still `rustc`/`rustdoc`, not the overridden value.
+If `RUSTC_WRAPPER` or `RUSTC_WORKSPACE_WRAPPER` is set, the intersection of the flags for `rustc` and the wrapper are passed; this requires additional work from the user but avoids silently passing unstable flags to more tools than intended.
+
+If `allow-flags` is passed multiple times, tools are unioned, but values are intersected.
+In other words, `cargo doc --allow-flags=rustc=x --allow-flags=rustdoc=y` will pass `--allow-flags=x` to Rustc and `--allow-flags=y` to Rustdoc.
 
 `cargo <cmd> --allow-flags` applies to both Cargo and all tools it spawns.
 That is, it passes the flag to Rustc when Rustc is spawned.
 This applies to all packages, not just the current workspace.
 In practice, the only tool passing unstable flags to Cargo is `cargo-semver-checks`, which is building all dependencies in any case.
 
-Build scripts cannot set these flags; `cargo::rustc-flags` continues to only accept `-l` and `-L` flags.
-
-If `allow-flags` is passed multiple times, the *intersection* of all values is used, not the union.
-This matters in cases where two parties don't trust each other, such as running `cargo build --allow-flags=x` in a workspace with `build.rustflags=--allow-flags=x,y`.
-
-Unrecognized flag names in `allow-flags` are a hard error.
-
-Each non-Cargo flag takes one of the following strings as a value:
-- An empty string, which indicates that no flags are allowed (default on stable)
-- A comma-separated list of flag names.
-
-Each Cargo flag takes a value that starts with a tool name, then the string '=', then a valid value for a non-Cargo flag.
-Tool names are the name of the exact binary that will be spawned: `rustdoc`, `clippy-driver`, etc.
-If `RUSTC` or `RUSTDOC` is set, the tool name is still `rustc`/`rustdoc`, not the overridden value.
-If `RUSTC_WRAPPER` or `RUSTC_WORKSPACE_WRAPPER` is set, the union of the flags for `rustc` and the wrapper are passed.
-
+Unrecognized tool names are an error.
 
 ## Implementation notes
 
@@ -248,7 +258,8 @@ This cannot be done in a library or macro.
 [unresolved-questions]: #unresolved-questions
 
 - Will this cause flags to be de-facto stable, even moreso than they are now?
-- This RFC frames `--unstable-flag` as an unstable feature.
+  We could emit a future-compat warning whenever this flag is used; is that sufficient?
+- This RFC frames `--allow-flags` as an unstable feature.
   Can we follow through on that in practice?
   How badly will things break if we eventually remove it?
 - Should we allow `name=value` filtering from the start, rather than deferring it to an extension?
@@ -263,5 +274,5 @@ This cannot be done in a library or macro.
   Additionally, we could enable beta flags by default on the beta channel.
 - We could add a version scheme to unstable flags, such that the opt-in has to specify exactly which version of the feature it expects
   (and gets a hard error if its expected version doesn't match the version implemented in the compiler).
-  The syntax for the opt-in would look like `--allow-flags=output-format=2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
+  The syntax for the opt-in would look like `--allow-flags=output-format@2` (3, 4, ...), which is backwards-compatible with the current RFC proposal.
   To encourage project contributors to bump the version, we could remind them (e.g. in a Github comment when a PR is opened) whenever a test that uses the feature is modified.
