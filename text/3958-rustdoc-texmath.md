@@ -481,7 +481,7 @@ and, ideally, have a specification without much churn.
   implement a subset of the [LaTeX drawing tools][] on top of SVG.
   The downside is that the only other implementation of these languages that I know of is [LaTeXML][], which is not written in Rust.
   The upside is that integrating with the math engine means you can embed equations in your charts,
-  and if ee add support for TeX macros, those should work, too.
+  and if we add support for TeX macros, those should work, too.
 - [Svgbob][] actually has a Rust implementation. Ironic, since Svgbob has no syntax errors,
   it's actually less important to have a Rust implementation than it is for the others,
   which have the possibility of an "invalid document" with errors that we would want
