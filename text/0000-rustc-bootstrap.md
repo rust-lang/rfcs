@@ -249,6 +249,11 @@ so that changing the enabled features overwrites the cache rather than adding to
 - We can separate the toolchain into "stable" and "unstable" channels, and tell distros to package both.
   This is a big ask from distros, and does not actually help with many of the problems
   (for example cargo semver-checks cannot rely on it being installed, and rust-analyzer will still have caching issues).
+- We could emit a future-compat hard warning whenever this flag is used.
+  This will cause problems for toolchains like Rust-for-Linux where it's non-trivial to parse and post-process JSON output.
+  It also doesn't seem necessary: the thing we want to avoid is people using nightly features without *knowing* it,
+  and preventing them from being automatically set for a library crate is sufficient for that.
+  (`.cargo/config.toml` can set RUSTFLAGS automatically, but it can't do so outside of the current workspace.)
 
 This cannot be done in a library or macro.
 
@@ -282,7 +287,6 @@ This cannot be done in a library or macro.
 [unresolved-questions]: #unresolved-questions
 
 - Will this cause flags to be de-facto stable, even moreso than they are now?
-  We could emit a future-compat warning whenever this flag is used; is that sufficient?
 - This RFC frames `--allow-unstable-flags` as an unstable feature.
   Can we follow through on that in practice?
   How badly will things break if we eventually remove it?
