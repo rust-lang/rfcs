@@ -13,6 +13,7 @@ It does so in two ways:
 1. Extend `-Z unstable-options` to take a list of option names, rather than being a simple boolean.
    Then, rename it to `--unstable-flags`. `unstable-flags` is always available, even on stable.
 2. Add a new `--unstable-flags` flag to Cargo, which propagates it to all invoked commands with proper caching.
+3. Change Rustfmt to give a hard error if a feature gate is disabled.
 
 This RFC is *not* intended as a general purpose mechanism for Rust developers to use nightly features on stable;
 it's specifically targeted at build systems wrapping cargo, such as distro packagers, external tools shipped with the toolchain, and large projects that build a custom Rust toolchain from source.
@@ -91,6 +92,13 @@ because there's no possibility there of the library acting as a buffer between o
 
 [^2]: Theoretically libraries can write a build script that does feature detection, but this slows down the build for everyone, and it's very very hard to write that build script properly.
 
+## Why change Rustfmt?
+
+Rustfmt is often run automatically by editor plugins, not explicitly.
+Additionally, right now rustfmt warns and continues when a feature gate is enabled on stable, which means the whole codebase gets reformatted.
+Changing Rustfmt to instead give a hard error when the feature gate is disabled avoids editors accidentally reformatting the whole codebase.
+[The rustfmt team already intends to fix this](https://github.com/rust-lang/rustfmt/issues/5022).
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -100,15 +108,16 @@ The following documentation will live in the [unstable book] (or Cargo's [unstab
 [cargo-unstable]: https://doc.rust-lang.org/cargo/reference/unstable.html#allow-features
 [rustc book]: https://doc.rust-lang.org/nightly/rustc/
 
-The `--unstable-flags` option allows you to control precisely which unstable options are used by a given crate.
+The `--unstable-flags` Rustc option allows you to control precisely which unstable options are used by a given crate.
 It's supported by rustc, and by all tools shipped with the official toolchain.
-
-Each flag takes one of the following strings as a value:
-- An empty string, which indicates that no flags are allowed (default on stable)
-- A comma-separated list of flag names.
+For example, `rustdoc --unstable-flags=output-format --output-format=json` allows you to see Rustdoc's JSON output on stable.
 
 Flags are named after the CLI flag they enable.
 By implication, this means that CLI flags use dashes (`-`).
+Flag values are not supported, only names.
+
+The `--unstable-flags` Cargo option is almost the same, but instructs Cargo which tools need to receive the option.
+For example, `cargo doc --unstable-flags=rustdoc=output-format` will run `rustdoc --unstable-flags=output-format`.
 
 ## Stability policy
 
@@ -131,19 +140,39 @@ but can help us find an alternative solution to your problem or otherwise improv
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`unstable-flags` is a comma-separated list of CLI flag names.
+`unstable-flags` is a comma-separated list of CLI flag names, with the leading `-Z` or `--` (if any) removed.
 Flag values are not supported, only names.
+
+`unstable-flags` does not activate any flag on its own.
+You still need to combine it with the `-Z` or unstable flag that you wish to enable.
+
+`unstable-flags` is accepted on all channels.
+When it's not present, the default on stable/beta is to ban all unstable flags,
+and the default on nightly is to allow all unstable flags.
+
+Stable/beta Rustfmt now errors instead of warning when an unstable option is set without also setting `--unstable-flags`.
 
 `cargo <cmd> --unstable-flags` applies to both Cargo and all tools it spawns.
 That is, it passes the flag to Rustc when Rustc is spawned.
 This applies to all packages, not just the current workspace.
 In practice, the only tool passing unstable flags to Cargo is `cargo-semver-checks`, which is building all dependencies in any case.
 
+Build scripts cannot set these flags; `cargo::rustc-flags` continues to only accept `-l` and `-L` flags.
+
 If `unstable-flags` is passed multiple times, the *intersection* of all values is used, not the union.
 This matters in cases where two parties don't trust each other, such as running `cargo build --unstable-flags=x` in a workspace with `build.rustflags=--unstable-flags=x,y`.
 
-Unrecognized flag names in `unstable-flags` are ignored.
-As a quality-of-implementation concern, the tool should warn if an unrecognized flag is passed.
+Unrecognized flag names in `unstable-flags` are a hard error.
+
+Each non-Cargo flag takes one of the following strings as a value:
+- An empty string, which indicates that no flags are allowed (default on stable)
+- A comma-separated list of flag names.
+
+Each Cargo flag takes a value that starts with a tool name, then the string '=', then a valid value for a non-Cargo flag.
+Tool names are the name of the exact binary that will be spawned: `rustdoc`, `clippy-driver`, etc.
+If `RUSTC` or `RUSTDOC` is set, the tool name is still `rustc`/`rustdoc`, not the overridden value.
+If `RUSTC_WRAPPER` or `RUSTC_WORKSPACE_WRAPPER` is set, the union of the flags for `rustc` and the wrapper are passed.
+
 
 ## Implementation notes
 
@@ -151,7 +180,7 @@ As a quality-of-implementation concern, the tool should warn if an unrecognized 
 
 Currently, changing `RUSTC_BOOTSTRAP` does not invalidate Cargo's build cache by itself, but in practice can cause build scripts deep in the dependency tree to re-run.
 With `--unstable-flags`, we separate the mechanism for enabling flags from the mechanism for enabling lang features,
-greatly decreasing how often build scripts run.
+greatly decreasing how often build scripts that detect `RUSTC_BOOTSTRAP` rerun.
 
 We suggest, but do not require, that the flag is made part of the fingerprint tracking, not unit cache tracking,
 so that changing the enabled features overwrites the cache rather than adding to it.
@@ -163,10 +192,6 @@ so that changing the enabled features overwrites the cache rather than adding to
   But people are doing that anyway, and keeping the status quo does not help us prevent them, while causing many other issues.
   - Note that while this could be seen as encouragement at the *policy* level, it's actually more restrictive at the *technical* level,
     since it requires people to make an exhaustive list of all features they're using.
-- Rustfmt is often run automatically by editor plugins, not explicitly.
-  Additionally, right now rustfmt warns and continues when a feature gate is enabled on stable, which means the whole codebase gets reformatted.
-  We should make sure rustfmt is changed to instead give a hard error when the feature gate is disabled, which will avoid editors accidentally reformatting the whole codebase.
-  [The rustfmt team intends to fix this](https://github.com/rust-lang/rustfmt/issues/5022).
 - This may make it less likely that people help stabilize features.
   But stabilizing features is [very very hard](https://medium.com/@ElizAyer/organizational-boundary-problems-too-many-cooks-or-not-enough-kitchens-2ddedc6de26a),
   and in the meantime people have very little recourse when they need to use an unstable feature.
@@ -222,7 +247,11 @@ This cannot be done in a library or macro.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Will this cause flags to be de-facto stable, even moreso than they are now?
+- Will this cause flags to be de-facto stable, even moreso than they are now?
+- This RFC frames `--unstable-flag` as an unstable feature.
+  Can we follow through on that in practice?
+  How badly will things break if we eventually remove it?
+- Should we allow `name=value` filtering from the start, rather than deferring it to an extension?
 
 [response files]: https://doc.rust-lang.org/rustc/command-line-arguments.html#path-load-command-line-flags-from-a-path
 
