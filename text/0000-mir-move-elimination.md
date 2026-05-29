@@ -451,9 +451,9 @@ After local unification some MIR assignments may end up with overlapping source 
 
 MIR optimizations need to be careful not to shorten the live range of a local whose address has been taken by moving or eliminating assignments or moves. Doing so could cause the lifetime analysis to conclude that 2 locals could share the same address when this would not be allowed in the source program. Extending the live range of a local is not a problem since it just pessimizes the optimization by forcing locals to have separate addresses.
 
-In practice the only MIR optimization that can shorten the lifetime of a local whose address has been taken is `DeadStoreElimination`: all other optimizations only touch locals whose address is never taken, and are therefore unaffected by this change. This is particularly relevant because `DeadStoreElimination` runs before the move optimization in the MIR pipeline, so any dead stores it removes are gone by the time the liveness analysis in this pass runs.
+This is not a problem today because MIR optimizations only modify locals whose address is never taken. However, that restriction limits future optimizations and extensions to existing ones.
 
-`DeadStoreElimination` will need to be adjusted to preserve dead stores rather than replacing them with debuginfo statements, so that the liveness analysis still sees them. This could be done by introducing a new `StatementKind::DeadAssign` which the liveness analysis treats as a write but which codegen ignores.
+For example, it would be unsound to change `DeadStoreElimination` to look at whether a local is borrowed at a particular program point, rather than whether its address is ever taken. This could cause the pass to remove a dead store in a way that observably shortens the local's live range.
 
 For example, consider the following code:
 
@@ -478,7 +478,7 @@ pub fn example() {
 }
 ```
 
-In this example, `a` and `b` are live at the same time, but eliminating the dead store would allow them to share the same address, which is not allowed by the original program.
+In this example, `a` and `b` are live at the same time. If this hypothetical updated `DeadStoreElimination` removed the initial dead store to `b`, move elimination would no longer see that `b`'s live range starts before `a`'s address is taken, and could incorrectly allow the two locals to share the same address.
 
 ### Potentially breaking change
 
