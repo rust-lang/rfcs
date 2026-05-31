@@ -171,6 +171,8 @@ For kits of 2x16GiB DDR4 memory, price went from around 80 USD in November 2024 
 
 For 1TB solid state drives, the price went from around 120 USD in November 2024 to nearly 380 USD in April 2026. This is a 3x change in around 18 months.
 
+These charts arguably don't show the full picture since the effects of these prices have sent ripples throughout the entire PC industry. Since RAM and storage are critical components of new computers, many people have opted to not upgrade their PCs, which has left a lot of previously well-off companies in very difficult positions. Since the exact details of this are difficult to measure, the best source we can recommend for this is [Gamers Nexus' documentary on the subject](https://www.youtube.com/watch?v=zyQwAhppWj8).
+
 While getting a good computer was already expensive, the AI industry has made it borderline impossible for anyone to get a new computer, or even upgrade an existing one. Even as Rust improves compilation times and memory usage, you can make things work on a slow computer, but you can't make things work on *no* computer.
 
 #### Respect
