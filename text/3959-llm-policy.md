@@ -600,6 +600,12 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 * As of writing (2025-09), [Anubis](https://anubis.techaro.lol/) is being used by the postmarketOS gitlab instance and wiki as well as [many other sites](https://anubis.techaro.lol/docs/user/known-instances/) and Alpine’s gitlab is protected by [go-away](https://git.gammaspectra.live/git/go-away) to fight off scrapers. Many other websites have adopted similar restrictions.
 * “Since the rise of generative AI, many have feared the toll it would take on the livelihood of human workers. Now CEOs are admitting AI’s impact and layoffs are starting to ramp up.” — [Forbes](https://www.forbes.com/sites/richardnieva/2025/07/17/ai-tech-layoffs/), 2025-07-17
 
+[OpenJDK](https://openjdk.org/legal/ai) disallows "content generated, in part or in full, by large language models, diffusion models, or similar deep-learning systems." They cite their ability to create lots of plausible but incorrect code and lack of IP rights. They specifically double down on their definition of generative AI with the below example:
+
+> *Is it okay to continue using the spell-checking, grammar-checking, auto-completion, and refactoring features in my editor or IDE?*
+>
+> Yes, so long as they are not based on large language models or similar deep-learning systems.
+
 [Gentoo](https://wiki.gentoo.org/wiki/Project:Council/AI_policy) forbids anything "created with the assistance of Natural Language Processing artificial intelligence tools". They cite copyright, code quality, and ethical concerns.
 
 [Zig](https://ziglang.org/code-of-conduct/#strict-no-llm-no-ai-policy) offers a similar strict ban, excluding LLMs for issues, PRs, comments, and translation. They cite [Profession by Isaac Asimov](https://en.wikipedia.org/wiki/Profession_(novella)).
