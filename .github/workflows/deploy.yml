@@ -6,7 +6,7 @@ on:
 
 env:
   # renovate: datasource=crate depName=mdbook versioning=semver
-  MDBOOK_VERSION: 0.5.2
+  MDBOOK_VERSION: 0.5.3
 
 jobs:
   build:
