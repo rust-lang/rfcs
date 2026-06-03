@@ -195,3 +195,7 @@ fun log(data: String, logFunction: (msg: String, priority: Int) -> Unit) { }
 
 * We could allow attributes on `impl Fn` parameters in the future.
 
+* We should figure out how this feature interacts with the "named arguments" feature. 
+  One proposal is to mirror whatever solution we come up with for function pointers.
+  For example, if named arguments used the syntax `fn f(pub a: T, pub b: U) -> R`, the function trait should be `Fn(pub a: T, pub b: U) -> R`.
+
