@@ -398,29 +398,33 @@ enum by IDEs and developers.
 
 ### Interaction with `#[non_exhaustive]`
 
-An enum declared both `non_exhaustive` and with an unnamed variant is rejected.
-On a field-less enum, it is not a breaking change to replace a
-`#[non_exhaustive]` declared on the enum with a contained unnamed variant.
-Unnamed variants and `#[non_exhaustive]` both declare that future variants of an
-enum may be added as the type evolves.
+`#[non_exhaustive]` on an `enum` and an unnamed variant in an `enum` similarly
+affect how `match` behaves for that type.
 
-`non_exhaustive` affects API semver compatibility:
+`non_exhaustive` affects source code only:
 
-- It is flexible in how new variants are represented.
+- It is flexible in how new variants are represented. E.g. it allows adding
+  variants with fields.
 - It does _not_ affect what discriminants are currently valid to represent.
 - Crates must be recompiled to use new enum variants.
 - It affects _only_ downstream crates.
 
-By contrast, an unnamed variant affects API _and_ ABI semver compatibility:
+By contrast, an unnamed variant affects what bit patterns are valid for the type:
 
 - It claims specific ranges of discriminants.
 - These claimed discriminants are valid to represent without naming the future
   variants that use them.
 - Crates can manipulate these unnamed enum variants without recompilation.
-- It affects all crates, including the declaring one.
+- It affects _all_ crates, including the declaring one.
 
-For enums that have relevant discriminant values, an unnamed variant may be the
-better choice. This is often the case for enums declaring an explicit `repr`.
+Because of this, declaring `#[non_exhaustive]` on an enum with unnamed variants
+emits a warning that the attribute is unused. An unnamed variant makes an enum
+"universally non-exhaustive" already.
+
+For enums where the discriminant value is important, an unnamed variant may be
+a better choice than `#[non_exhaustive]`. This is often the case for enums
+declaring an explicit `repr`. It's a non-breaking change to replace
+`#[non_exhaustive]` on an `enum` with at least one unnamed variant.
 
 ### Syntax "sugar"
 
