@@ -390,3 +390,175 @@ There are currently no unresolved questions for this RFC.
 [future-possibilities]: #future-possibilities
 
 I believe this change is relatively self-contained, though I also think it's worth continuing to look for additional places where support for cfg-attributes makes sense to add. Conditional compilation is very important, especially in some domains, and requiring workarounds and additional boilerplate to support it is not ideal. A more detailed enumeration of inconsistencies with cfg-attributes and comma-terminated fragments can be found [on this HackMD page](https://hackmd.io/@recatek/S1NO5ZXHT). If this RFC is accepted, only two reasonable use cases for cfg-attributes on comma-terminated fragments would remain uncovered.
+
+# Appendix
+
+## State of comma-terminated fragments and cfg-attributes in Rust
+
+This is, to my current knowledge, an exhaustive list of every comma-terminated fragment type (explicit or implicit) in the language, and whether or not it can be decorated with a cfg-attribute. Note that macros are excluded from this list because they would just try to match on the cfg-attribute syntax, and I don't see a strong reason to try to change that behavior.
+
+### Can be decorated
+
+Function arguments in signatures
+
+```rust
+fn foo(#[cfg(all())] a: u32) {} // OK
+```
+
+Function arguments for invocation
+
+```rust
+foo(#[cfg(all())] 1); // OK
+```
+
+Function arguments in function pointers
+
+```rust
+fn foo(f: fn(i32, #[cfg(all())] i32)) {} // OK
+```
+
+Closure arguments
+
+```rust
+let a = |#[cfg(all())] a: u32| {}; // OK
+```
+
+Generic type arguments in signatures and declarations
+
+```rust
+fn foo<#[cfg(all())] T>(t: T) {} // OK
+
+struct Foo<#[cfg(all())] T> { // OK
+    t: T,
+}
+```
+
+Arguments for `impl` (but oddly not for the struct argument, see below)
+
+```rust
+impl<#[cfg(all())] T> Foo<T> { } // OK
+```
+
+Associated type arguments
+
+```rust
+trait Foo {
+    type Inner<#[cfg(all())] 'a>; // OK
+}
+
+impl Foo for Bar {
+    type Inner<#[cfg(all())] 'a> = &'a u32; // OK
+}
+```
+
+Struct fields (both types) and union fields:
+
+```rust
+struct Foo {
+    #[cfg(all())] t: u32, // OK
+}
+
+struct Foo (
+    #[cfg(all())] u32, // OK
+);
+
+#[repr(C)]
+union Foo {
+    a: u32,
+    #[cfg(all())] b: f32, // OK
+}
+```
+
+Struct initialization (both types) and tuple initialization
+
+```rust
+let x = Foo {
+    #[cfg(all())] t: 1u32, // OK
+};
+
+let x = Foo(
+    #[cfg(all())] 1u32, // OK
+);
+
+let x = (#[cfg(all())] 1u32,); // OK
+```
+
+Enums and match
+
+```rust
+enum Foo {
+    A,
+    #[cfg(all())] B, // OK
+}
+
+fn foo(a: Foo) -> u32 {
+    match a {
+        Foo::A => 1,
+        #[cfg(all())] Foo::B => 2, // OK
+    }
+}
+```
+
+Arrays
+
+```rust
+fn foo() {
+    let x = [0, #[cfg(all())] 1][0]; // OK
+}
+```
+
+Where clauses (in progress, see accepted [RFC 3399](https://rust-lang.github.io/rfcs/3399-cfg-attribute-in-where.html) and tracking issue [#115590](https://github.com/rust-lang/rust/issues/115590)):
+
+```rust
+impl<T> SomeTrait<T> for Foo
+where
+    #[cfg(all())] T: SomeRequirementA, // OK (Eventually)
+{}
+```
+
+### Can not be decorated
+
+Tuple type declaration (proposed in this RFC 3532):
+
+```rust
+type Foo = (#[cfg(all())] u32,); // BAD
+```
+
+Pattern matching (proposed in this RFC 3532):
+
+```rust
+fn bar(v: (u32, u32)) {
+    let (a, #[cfg(all())] b) = v; // BAD
+}
+```
+
+Explicit generic arguments in invocation:
+
+```rust
+foo::<#[cfg(all())] u32>(1); // BAD
+```
+
+Struct generic arguments, including in `impl`
+
+```rust
+struct Bar {
+    f: Foo<#[cfg(all())] u32>, // BAD
+}
+
+impl<#[cfg(all())] T> Foo<#[cfg(all())] T> { }
+//   ^^^^^^^^^^^^^ OK     ^^^^^^^^^^^^^ BAD
+```
+
+Trait(...) syntax (FnOnce, FnMut, etc.)
+
+```rust
+fn foo(f: fn(i32, #[cfg(false)] i32)) {} // OK
+
+fn bar(f: impl FnOnce(i32, #[cfg(false)] i32)) {} // BAD
+```
+
+Braced multi-use statements (this is a little silly)
+
+```rust
+use std::{ptr, #[cfg(all())] mem}; // BAD
+```
