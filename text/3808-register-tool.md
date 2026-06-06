@@ -3,7 +3,7 @@
 - RFC PR: [#3803](https://github.com/rust-lang/rfcs/pull/3808)
 - Rust Issue: [rust-lang/rust#66079](https://github.com/rust-lang/rust/issues/66079)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC adds three new attributes:
@@ -13,7 +13,7 @@ This RFC adds three new attributes:
 
 Note that this does not add any new functionality into the compiler; it only relaxes the current restrictions. While `rustc` verifies that tool attributes and lints are syntactically valid and do not cause ambiguity during name resolution, it does no extra processing.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There are [several tools predefined in the tool namespace][builtin-tools]. These tools are hard-coded, and cannot be extended with user-defined tools. There are many external programs that would benefit from being able to annotate specific portions of a crate or register custom lints without the compiler raising an error.
@@ -32,7 +32,7 @@ Here is a short summary of the built-in tools:
 |`rustc`|✅ (with `-Z unstable-options`)|❌|
 |`diagnostic`|❌|✅|
 
-## Why support custom lints?
+### Why support custom lints?
 
 There are several crates, such as `bevy` and `regex`, that would benefit from API-specific lints that encourage specific styles or warn against potential footguns. While it is possible to create a custom `rustc` driver that registers these lints, any reference to them in code would cause the default compiler to raise an error.
 
@@ -50,7 +50,7 @@ There are also several linting tools that don't make sense to upstream to Clippy
 - [`marker`](https://github.com/rust-marker/marker) (custom, user-extensible lints, but a different approach)
 - [`klint`](https://github.com/Rust-for-Linux/linux/pull/958) (Rust-for-Linux specific linter)
 
-## Why support custom attributes?
+### Why support custom attributes?
 
 There are also some tools that would benefit from using developer-added metadata on portions of source code:
 
@@ -66,10 +66,10 @@ There are also some tools that would benefit from using developer-added metadata
 [c2rust]: https://github.com/immunant/c2rust/blob/d28087df86d7fca8532d8679d35efec66f074f8b/c2rust-refactor/tests/reorganize_definitions/old.rs#L18
 [Source Map]: https://web.dev/articles/source-maps
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## For users of external tools
+### For users of external tools
 
 Several official tools let you configure their behavior on specific parts of your code. For example, Clippy lets you use `#[warn(clippy::as_ptr_cast_mut)]` to warn on that lint for a single item, and Rustfmt lets you use `#[rustfmt::skip]` to avoid formatting a single item. You can also do this for external tools that are not provided in the Rust toolchain. See the documentation of those tools for the lints and attributes they support.
 
@@ -79,7 +79,7 @@ Crate-level lints for external tools can use `#![warn(some_tool::lint_name)]`, l
 Tools may also support a custom configuration format that allows you to control lints for your whole workspace at once.
 Consult the documentation of the tool you use.
 
-### Fixing name resolution errors
+#### Fixing name resolution errors
 
 Note that `register_tool` changes name resolution, and may give errors if you have a crate named `some_tool`.
 The compiler will suggest ways to fix the new errors.
@@ -118,7 +118,7 @@ Overlaps like this are expected to be rare in practice.
 [`bevy_lint`]: https://thebevyflock.github.io/bevy_cli/bevy_lint/
 [Bevy game engine]: https://bevyengine.org/
 
-## For authors of external tools
+### For authors of external tools
 
 The Rust language can be extended and analyzed using external tools. If your tool can parse Rust, you may wish to allow configuring it at sub-crate levels (e.g. individual functions, types, and modules). To reuse the same syntax as the official tools, like Clippy and Rustfmt, instruct your users to add `#![register_lint_tool(your_tool)]` (if your tool only adds new lints) or `#![register_attribute_tool(your_tool)]` (if your tool only adds new attributes). If your tool supports both lints and attributes, use `#![register_tool(your_tool]`. Then, instruct your users to add either `#[warn(your_tool::your_lint)]` or `#[your_tool::your_attribute(your_tokens)]` as appropriate.
 
@@ -133,12 +133,12 @@ Please do *not* suggest using `#[cfg_attr(your_tool, your_attribute)]`. Doing so
 
 Please do *not* use tool attributes for metadata that changes the meaning of the code. At that point you are parsing a dialect of Rust, and there is no indication for your users that their code will be interpreted differently by your tool than by the compiler.  For example, `#[must_use]` and `#[automatically_derived]` would be suitable for tool attributes, but `#[repr]` and `#[panic_handler]` are not, because they change the meaning of the code. For that use case, use proc-macros, generated code, or bare (un-namespaced) attributes instead, all of which will give a hard error if they cannot be understood by the compiler. If absolutely necessary to use bare attributes, use a C-style namespace like `#[rustc_const_stable]`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Language
+### Language
 
-### Background: name resolution of preludes
+#### Background: name resolution of preludes
 
 Currently, names in the type namespace are resolved in [the following order](https://github.com/rust-lang/reference/pull/1765):
 
@@ -159,7 +159,7 @@ extern crate rustfmt; // or --extern rustfmt
 fn foo ( ) { }
 ```
 
-### Semantics
+#### Semantics
 
 The tool prelude is separated into the tool attribute prelude (which is in the type namespace) and the lint prelude (which is only active inside lint controls).
 
@@ -228,7 +228,7 @@ This is technically a breaking change since it can produce new ambiguity errors 
 [`unknown_lints`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#unknown-lints
 [custom-inner-attributes]: https://github.com/rust-lang/rust/issues/54726
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This makes the rules for name resolution even more complicated.
@@ -241,7 +241,7 @@ The lang team [expressed a concern][lang concern] in 2022 that the name `registe
 
 [lang concern]: https://github.com/rust-lang/rust/issues/66079#issuecomment-1010266282
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - We could "just not do this". That makes it harder to write external tools, and in practice just means that people use `cfg_attr` instead of a namespace, which seems strictly worse.
@@ -255,7 +255,7 @@ The lang team [expressed a concern][lang concern] in 2022 that the name `registe
 
 [crate-attr]: https://github.com/rust-lang/rfcs/pull/3791
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [`clang-tidy`], [`pylint`], [`eslint`], and [`review`] (a racket linter) use inline comments. Whether these count as namespacing is debatable; pylint and eslint include their name in the inline comment and clang-tidy does not. `review` allows both `review: ignore` and `lint: ignore`.
@@ -275,12 +275,12 @@ The lang team [expressed a concern][lang concern] in 2022 that the name `registe
 [active]: https://rustc-dev-guide.rust-lang.org/attributes.html#non-builtinactive-attributes
 [`Resyntax`]: https://docs.racket-lang.org/resyntax/Refactoring_Rules_and_Suites.html#(part._.Exercising_.Fine_.Control_.Over_.Comments)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 How does this interact with [proc-macro lints][`proc_macro_lint`]?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - We could allow registering tools in Cargo.toml (with a `package.tools` or `workspace.tools` field). This would avoid duplicating tool registration for each crate in the package/workspace. This depends on [`--crate-attr`] being stabilized.
