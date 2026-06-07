@@ -103,6 +103,8 @@ Several people were attempting to find a way to properly obtain licenses for cop
 
 And even allegedly "ethical" actors in the AI space are more than willing to compromise on ethics for the sake of their models. One obvious example is how [GitHub Copilot supports Grok](https://github.blog/changelog/2025-10-16-grok-code-fast-1-is-now-generally-available-in-github-copilot/), run by xAI and their horrendous Colossus data center, but a more recent example is Anthropic deciding to outright use said data center to power Claude Pro. As the fight to the bottom continues, these companies are more and more willing to "compromise" on their values, and we should not wait to see how low they can go.
 
+(Update: Now [Google has joined in, too](https://techcrunch.com/2026/06/05/google-will-pay-spacex-920m-per-month-for-compute/), and also rents out compute from Colossus.)
+
 According to our Code of Conduct, Rust as a project is built upon a foundation of respect. At least in the opinion of the RFC author and several team members, choosing to allow unrestricted LLM usage directly contradicts that foundation of respect.
 
 ##### Data
