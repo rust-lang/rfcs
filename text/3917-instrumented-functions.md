@@ -20,35 +20,29 @@ partial support in Rust today:
 addresses, and performs interesting things with them. This is historically used with the prof or gprof
 utilities available on GNU/Linux or BSD.
 * fentry, a derivative of mcount with a slightly different ABI. It is meant to intercept function entry
-to inspect or manipulate arguments as well as the traditional mcount features
+to inspect or manipulate arguments as well as the traditional mcount features.
 * [XRay](https://llvm.org/docs/XRay.html), an LLVM project to instrument both entry and exit of functions,
 with dynamic enablement.
 
-These features are very similar, and are effectively mutually exclusive (e.g., mcount and fentry).
-
 mcount deserves a little extra background. This feature has existed on many C toolchains for decades, and
 gcc/clang have developed extensions to support novel features like Linux's [ftrace](https://docs.kernel.org/trace/ftrace.html).
-Those features include tracking the location of instrumentation insertion (`-mrecord-mcount`), and the
-ability to generate nop's in place of the call (`-mnop-mcount`).
-
-Linux's ftrace supports using patchable functions or mcount instrumentation. Kernel maintainers may choose one
-over the other, and may make different choices depending on the architecture. Rust should implement
-function instrumentation which supports mcount.
+This support was further refined into the fentry feature available on s390x and x86. x86 actively uses
+fentry, and there is no interest to convert to patchable entries.
 
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Today, Rust supports experimental disparate options to enable function instrumentation using XRay and mcount,
+Today, Rust supports disparate experimental options to enable function instrumentation using XRay and mcount,
 possibly simultaneously.
 
 This RFC proposes a unified set of options to enable one instrumentation framework, and provide sufficient
 language integration to control individual function instrumentation.
 
 Function instrumentation is generally limited to inserting a counting function into the entry and exit
-of each function. A counting function is one which takes the caller's and callee's address as arguments,
-but may have sufficient visibility to inspect and modify callee arguments, or reroute to an entirely
-different function call.
+of each function. A counting function is one which takes the caller's and callee's address as arguments
+and performs some action. The action could be logging, tracing, intercepting, rerouting a function
+call, or nothing.
 
 For each target, a counting function is inserted into a specific part of a function's entry or exit. For
 targets which support gprof, a specific target defined counting function is expected to be called. For
@@ -56,7 +50,7 @@ example, on x86_64-linux `__fentry__` or `mcount` is the expected counting funct
 functions is expected to be stable despite their lack of documentation (e.g., glibc provides these symbols).
 
 gcc and clang provide the following options which are used to instrument functions for common usages:
-* ftrace: Linux only, `-pg` or `-pg -fentry` with `-mrecord-mcount` and optionally `-mnop-mcount`.
+* ftrace: `-pg` or `-pg -fentry` with `-mrecord-mcount` and optionally `-mnop-mcount`.
 * gprof: `-pg` or `-pg -fentry` with an altered set of crt libraries (see `gcrt1.o` vs `crt1.o` on glibc).
 * XRay: clang/llvm only, `-fxray-instrument` which links a special compiler-rt runtime.
 
@@ -83,19 +77,16 @@ options shall be specified in a comma-separated list following the framework opt
 a colon.
 
 `-Zinstrument-function=mcount`:
-  * No options are provided. Historically, gcc supports the usage of `-mnop-mcount` and `-mrecord-mcount`
-  for use by the linux kernel. Today, patchable-function-entries and fentry have replaced most or
-  all usage.
+  * No options are provided.
+
+`-Zinstrument-function=fentry`:
+  * No options are provided.
 
 `-Zinstrument-function=xray`:
   * `ignore-loops`: Ignore loop behavior when deciding to instrument a function.
   * `instruction-threshold=10`: Set a different instruction threshold for instrumentation.
   * `no-entry`: Do not instrument function entry.
   * `no-exit`: Do not instrument function exit.
-
-`-Zinstrument-function=fentry`:
-  * `record`, `no-record`: Record each call to the counting function in a separate binary section, or not.
-  * `call`, `no-call`: Emit a call to fentry, or emit a nop.
 
 Finally, a single builtin attribute will be added to control the insertion of the counting function. The
 default options for each framework will be documented and stable.
@@ -107,7 +98,7 @@ Example usage might be:
 ```shell
 $ RUSTFLAGS="-Zinstrument-function=mcount" cargo build
 
-$ RUSTFLAGS="-Zinstrument-function=fentry:record,no-call" cargo build
+$ RUSTFLAGS="-Zinstrument-function=fentry" cargo build
 
 $ RUSTFLAGS="-Zinstrument-function=xray:ignore-loops" cargo build
 ```
@@ -159,12 +150,15 @@ Likewise, there may not be reason to bundle all function instrumentation into a 
 ## Prior art
 [prior-art]: #prior-art
 
-Similar features exist in gcc and clang as noted above. This extends those features into Rust.
+Similar features exist in gcc and clang as noted above. Likewise, gcc and clang provide some targets
+with additional options to record or write nops instead of function calls. However, the utility of
+these extensions is limited as the kernel build system contains tooling to implement these features
+outside of gcc/clang.
 
-When using fentry with recording and nop insertion, this feature can behave similarly
-to patchable-function-entries presented in rfc#3543. There are some minor differences in the details
-of how nops are recorded. However, both can be used simultaneously without issue. This is the case
-for some Linux kernel configurations (e.g., x86-64 on fedora at the time of writing).
+patchable-function-entries also serve a similar role. They have mostly replaced mcount/fentry in
+Linux, excepting x86. On x86, patchable entries are used primarily for mitigation of exploits and
+control flow integrity, and fentry for tracing. This gives the ability to toggle tracing support
+without interfering with mitigation.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -174,9 +168,6 @@ for some Linux kernel configurations (e.g., x86-64 on fedora at the time of writ
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
-
-This RFC assumes only one form of instrumentation would ever be needed at any time. It is conceivable
-different parts of a binary could be compiled to use different instrumentation frameworks.
 
 It might be desirable to provide finer control over instrumentation. This could be done by extending the
 attribute with options, e.g.: `#[instrument_fn(xray="off", mcount="on")]`. Similarly, this extension could
