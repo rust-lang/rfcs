@@ -50,7 +50,7 @@ This pattern at least avoids the need to introduce "dummy names" like `_some_a`,
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-We propose to introduce a `move($expr)` expressions that can appear in a closure or a future. The expression `$expr` will execute when the closure is created and then moved into a temporary captured by the closure; `move($expr)` is then replaced with a reference to this temporary. This can be used to capture a clone of a value (`move(vec.clone())`) but also other derived values (e.g., `move(vec.len())`).
+We propose to introduce a `move($expr)` expressions that can appear in a closure or a future. The expression `$expr` will execute when the closure is created and then moved into a temporary captured by the closure; `move($expr)` is then replaced with a place expression consisting of this temporary. This can be used to capture a clone of a value (`move(vec.clone())`) but also other derived values (e.g., `move(vec.len())`).
 
 ### `move($expr)` gives explicit control over captures
 
@@ -91,7 +91,7 @@ When you want to be fully explicit about what a closure captures, you can list a
 || {
     let vec = move(input.vec);
     let data = move(&cx.data);
-    let output_tx = move(output_tx);
+    let mut output_tx = move(output_tx);
 
     process(&vec, &mut output_tx, data)
 }
@@ -143,6 +143,60 @@ data_source_iter
 
 // `tx` is still usable here
 ```
+
+### Common patterns with cloning
+
+Cloning a value into a closure is one of the most common uses of `move($expr)`. The right pattern depends on how the closure uses the cloned value and how many times the closure is called.
+
+**`move(x.clone())` — clone once, consume once (FnOnce)**
+
+When the closure is called exactly once and consumes the value, clone directly into the capture:
+
+```rust
+let handle = tokio::spawn(async {
+    channel.send(move(tx.clone())).await;
+});
+// tx still usable here
+```
+
+**`&move(x.clone())` — clone once, borrow on each call (Fn / FnMut)**
+
+When the closure is called multiple times but only needs a reference to the cloned value, take a reference to the capture. This avoids consuming the captured clone on the first call:
+
+```rust
+let f: Box<dyn Fn()> = Box::new(|| {
+    let data = &move(config.clone());
+    data.validate();
+    data.report();
+});
+f(); // works
+f(); // works again — data is borrowed, not consumed
+```
+
+**`move(x.clone()).clone()` — clone once at creation, clone again per call (Fn / FnMut)**
+
+When the closure is called multiple times and each call needs an owned value, clone the captured value on each invocation:
+
+```rust
+fn processed_items(
+    shared_config: &Rc<SharedConfig>,
+    items: Vec<Item>,
+) -> impl Iterator<Item = ProcessedItem> + 'static {
+    data_source_iter
+        .map(|item| {
+            process(item, move(shared_config.clone()).clone())
+            //            --------------------------- -------
+            //                      |                     |
+            //            clone shared_config once        |
+            //            when the closure is created     |
+            //                                            |
+            //                                  clone from the captured
+            //                                  value on each call
+        })
+}
+```
+
+This is useful when you need a fresh owned copy per call but wish to have the closure own the value (in this example, the closure needs to own the `Rc<SharedConfig>` so it can satisfy the `'static` bound).
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -263,9 +317,36 @@ If a closure is created but never called, the captured temporaries are still dro
 
 ### Parsing
 
-`move` is already a keyword in Rust. The parser recognizes `move(` inside a closure body as the start of a move expression rather than a call expression (since `move` is not a valid identifier).
+`move` is already a keyword in Rust. The token sequence `move(` is unambiguous: since `move` is not a valid identifier, it cannot be a function call, and since it is not followed by `||` or `|`, it is not a closure.
 
-One ambiguity worth noting: at the statement level, `move(x) || y` could parse as either a move expression followed by a logical-OR, or as part of a closure. This is resolved by context: `move($expr)` is only valid inside a closure/async/generator body, and the parser does not produce a `move` expression in other positions. Within a closure body, `move(x) || y` is parsed as a move expression (`move(x)`) followed by `|| y` (which begins a nested closure literal).
+A move expression is an _ExpressionWithoutBlock_. Its grammar is:
+
+> _MoveExpression_ :\
+> &nbsp;&nbsp; `move` `(` _Expression_ `)`
+
+The parser accepts `move($expr)` in any expression position. The restriction to closure, async block, and generator bodies is enforced as a semantic check, not a grammar restriction.
+
+Because `move($expr)` uses parentheses and is an _ExpressionWithoutBlock_, there is no ambiguity with closures: `move(x) || y` always parses as the binary logical-OR of `move(x)` and `y`.
+
+For example, the following is a semantic error because `move(x)` appears outside a closure:
+
+```rust
+fn main() {
+    let y = move(x) || 22; // ERROR: `move(...)` outside of a closure
+}
+```
+
+And `move($expr)` is parsed as a single expression, so it matches `$x:expr` in macros:
+
+```rust
+macro_rules! parse_as_expr {
+    ($x:expr) => { 0 }
+}
+
+fn main() {
+    println!("{}", parse_as_expr!(move(x))); // prints 0
+}
+```
 
 ### Feature gate
 
@@ -310,7 +391,7 @@ Move expressions solve the same problems with less syntax: you write `move($expr
 
 ### Why not RFC #3680's `.use` / `use ||`?
 
-RFC #3680 proposed a `Use` trait and `use ||` closures that automatically clone captures. This was implemented experimentally but received feedback that implicit cloning hides costs. Move expressions take the opposite approach: every clone is written explicitly, but the boilerplate of shuttling it into the closure is eliminated.
+RFC #3680 proposed a `Use` trait and `use ||` closures that automatically "used" captures, with the goal of having a "DWIM" closure where it is not required to explicitly clone each value you use. This is a worthy goal but it is not the goal pursued by this RFC.  We chose not to pursue this goal first because there are substantial use cases that do not want it. This includes low-level Rust, but also, even in higher-level frameworks, cases like a `Sender` on a channel or a `Bytes` buffer, where knowing exactly how many clones exist can be important for avoiding deadlocks or controlling memory usage. Therefore, we are first targeting the version where all clones are explicit. This does not prevent adding a more ergonomic, implicit option later (such as `.use` or `use ||` closures) to handle the remaining cases more succinctly.
 
 ### Why not postfix syntax (`expr.move`)?
 
@@ -355,6 +436,77 @@ move || foo(&vec)
     move || foo(tmp0, tmp1)
 }
 ```
+
+### Does `move($expr)` change evaluation order away from source order?
+
+Arguably not more so than closures already do. The body of a closure is already deferred — none of it executes at the point where the closure expression appears in the source. A `move($expr)` extracts a sub-expression from that deferred body and evaluates it at the point where the closure is created, which *is* source order for the enclosing scope. This is exactly what the let-before-closure pattern does today:
+
+```rust
+// Today: `expr` evaluates here, in source order
+let tmp = expr;
+|| use(tmp)
+
+// With this RFC: same semantics, just written inline
+|| use(move(expr))
+```
+
+In both cases, `expr` executes at the closure-creation site. The `move($expr)` form simply avoids introducing a named temporary in the enclosing scope.
+
+### If I write `move(x.clone())` twice, will `x` be cloned twice?
+
+Yes. Each `move($expr)` is independently evaluated at closure-creation time:
+
+```rust
+|| {
+    move(x.clone()).method1();
+    move(x.clone()).method2(); // x is cloned a second time
+}
+```
+
+If you want to clone once and use the result multiple times, bind it with `let`:
+
+```rust
+|| {
+    let x = &move(x.clone());
+    x.method1();
+    x.method2();
+}
+```
+
+Note the `&` — in a non-`FnOnce` closure, you typically don't want each call to take ownership of the captured clone. Taking a reference lets you use it repeatedly. Alternatively, if you need owned values on each call, you can clone the captured value:
+
+```rust
+|| {
+    move(x.clone()).clone().consume();
+    //   ----------  ------
+    //       |          |
+    //  cloned once    cloned from the
+    //  at creation    captured value
+    //                 on each call
+}
+```
+
+### Isn't there a kind of "cliff" going from a cloned variable used once to a cloned variable used twice?
+
+Somewhat. Under this design, if you have
+
+```rust
+|| {
+    move(foobar.clone()).method();
+}
+```
+
+and then you with to invoke two methods, you likely want to change to
+
+```rust
+|| {
+    let foobar = move(foobar.clone());
+    foobar.method();
+    foobar.method2();
+}
+```
+
+which means you wind up writing `foobar` a total of 4 times. We consider this acceptable if not necessarily *optimal*. It does have the upside that the execution semantics are quite clear.
 
 ## Prior art
 [prior-art]: #prior-art
@@ -438,6 +590,7 @@ tokio::spawn(async {
 ```
 
 This is out of scope for this RFC.
+
 
 ### `move($expr)` outside closures
 
