@@ -50,7 +50,7 @@ This pattern at least avoids the need to introduce "dummy names" like `_some_a`,
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-We propose to introduce a `move($expr)` expressions that can appear in a closure or a future. The expression `$expr` will execute when the closure is created and then moved into a temporary captured by the closure; `move($expr)` is then replaced with a place expression consisting of this temporary. This can be used to capture a clone of a value (`move(vec.clone())`) but also other derived values (e.g., `move(vec.len())`).
+We propose to introduce a `move($expr)` expressions that can appear in a closure or a future. The expression `$expr` will execute when the closure is created and then moved into a temporary captured by the closure; `move($expr)` is then replaced with a place expression referring to this temporary. This can be used to capture a clone of a value (`move(vec.clone())`) but also other derived values (e.g., `move(vec.len())`).
 
 ### `move($expr)` gives explicit control over captures
 
@@ -311,6 +311,17 @@ The temporary introduced by `move($expr)` is dropped when the closure is dropped
 
 The type of a `move($expr)` expression within the closure body is the type of `$expr`. Type inference works as normal. The temporary's type is inferred from the expression, and the use sites within the closure see that type.
 
+### Place expression semantics
+
+Syntactically, `move($expr)` parses as a value expression. However, like other value expressions (e.g., function calls), it can be promoted to a place expression by the compiler when used in a place context (e.g., `&move(...)` or `&mut move(...)`). The temporary that is introduced is declared as mutable, so `&mut move(x)` is always valid without the parent binding of `x` being declared `mut`.
+
+```rust
+|| {
+    // Valid: the captured temporary is declared mutable
+    process(&mut move(output_tx));
+}
+```
+
 ### Closures that are never called
 
 If a closure is created but never called, the captured temporaries are still dropped when the closure is dropped. This is the same behavior as any other captured value.
@@ -537,6 +548,20 @@ This idea has been discussed multiple times in the Rust community:
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+### Choice of syntax
+
+I'm not convinced that `move($expr)` is the right syntax. Here are some alternatives keywords I've considered:
+
+* `capture($expr)` (new keyword, though)
+* `super($expr)` (heavily overloaded keyword, I generally prefer `move` as it is already associated with closure capture rules, but open to others' takes)
+
+And then there is the question of `()` vs `{}` (thanks @juntyr for [raising it](https://github.com/rust-lang/rfcs/pull/3968/changes#r3356222419) earlier!)
+
+* `move($expr)`
+* `move { $expr }`
+
+[See discussion on github](https://github.com/rust-lang/rfcs/pull/3968#pullrequestreview-4435393221).
 
 ### Should there be a syntax for moving specific variables?
 
