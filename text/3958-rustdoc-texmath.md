@@ -505,7 +505,9 @@ sequenceDiagram
 ```
 
 ```svgbob
-[Actor1] [Actor2] [Actor3]
++------+ +------+ +------+
+|Actor1| |Actor2| |Actor3|
++------+ +------+ +------+
     :        :        :
     :------->:        : Start
     :        :        :
