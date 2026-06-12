@@ -473,22 +473,80 @@ and, ideally, have a specification without much churn.
 - [PlantUML][] is pretty much exactly what we would want.
   But we don't want to bundle a JRE.
 - The other obvious choice is [Mermaid][], because GitHub supports it.
-  The upside is that it's popular and terse. The downside is that the only existing
-  implementation is a JavaScript library. We could copy in the JS library and embed
-  the source code into our HTML, but we wouldn't be able to give syntax errors at
-  Rustdoc compile time that way.
-- If we supported undelimited LaTeX environment blocks, then it would make sense to
-  implement a subset of the [LaTeX drawing tools][] on top of SVG.
-  The downside is that the only other implementation of these languages that I know of is [LaTeXML][], which is not written in Rust.
-  The upside is that integrating with the math engine means you can embed equations in your charts,
-  and if we add support for TeX macros, those should work, too.
+  It implements special notations and layout algorithms for commonplace chart notations,
+  so Mermaid syntax is terse and easy to edit.
+  There is also [Merman][], which implements the same language in Rust.
+  Like Typst, the biggest downside is that they're new and unproven:
+  Mermaid 11.0.0, the most recent breaking change, came out in [August 2024][mermaid@v11.0.0].
 - [Svgbob][] actually has a Rust implementation. Ironic, since Svgbob has no syntax errors,
   it's actually less important to have a Rust implementation than it is for the others,
   which have the possibility of an "invalid document" with errors that we would want
-  to report at compile time.
+  to report at compile time. We could fall back to displaying the original ASCII, and the result
+  would still be legible.
+- [GraphViz DOT][] has a Rust [implementation][layout-rs], too.
+  Like LaTeX, DOT is popular, stable, and has multiple third-party reimplementations.
+  However, it is *not* terse unless its layout algorithm does what you need.
+
+#### A simple sequence diagram, in each language
+
+```plantuml
+@startuml
+Actor1 -> Actor2: Start
+Actor2 -> Actor3: Do something
+Actor3 -> Actor1: Return
+@enduml
+```
+
+```mermaidjs
+sequenceDiagram
+  Actor1 ->> Actor2: Start
+  Actor2 ->> Actor3: Do something
+  Actor3 ->> Actor1: Return
+```
+
+```svgbob
+[Actor1] [Actor2] [Actor3]
+    :        :        :
+    :------->:        : Start
+    :        :        :
+    :        :------->: Do something
+    :        :        :
+    :<----------------: Return
+```
+
+```graphviz
+digraph SEQ_DIAGRAM {
+    graph [overlap=true, splines=line, nodesep=1.0, ordering=out];
+    node [shape=none, width=0, height=0, label=""];
+
+    // Draw actors
+    {
+        rank=same;
+        node[shape=rectangle, height=0.7, width=2];
+        Actor1 [label="Actor1"];
+        Actor2 [label="Actor1"];
+        Actor3 [label="Actor1"];
+    }
+    // Draw vertical lines
+    {
+        edge [style=dashed, weight=6, arrowhead=none];
+        Actor1 -> a1 -> a2 -> a3;
+        Actor2 -> b1 -> b2 -> b3;
+        Actor3 -> c1 -> c2 -> c3;
+    }
+    // Draws activations
+    { rank=same; a1 -> b1 [label="Start", arrowhead=normal]; b1 -> c1 [style=invis]; }
+    { rank=same; a2 -> b2 [style=invis]; b2 -> c2 [label="Do something", arrowhead=normal]; }
+    { rank=same; a3 -> b3 [arrowhead=normal, dir=back, label="Return"]; b3 -> c3; }
+}
+```
 
 [PlantUML]: https://github.com/plantuml/plantuml
 [LaTeX drawing tools]: https://en.wikibooks.org/wiki/LaTeX/Introducing_Procedural_Graphics
 [LaTeXML]: https://en.wikipedia.org/wiki/LaTeXML
 [Mermaid]: https://github.com/mermaid-js/mermaid
+[Merman]: https://github.com/Latias94/merman
+[mermaid@v11.0.0]: https://github.com/mermaid-js/mermaid/releases/tag/v11.0.0
 [Svgbob]: https://github.com/ivanceras/svgbob
+[GraphViz DOT]: https://en.wikipedia.org/wiki/DOT_(graph_description_language)
+[layout-rs]: https://docs.rs/layout-rs/latest/layout/
