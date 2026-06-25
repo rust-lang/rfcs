@@ -28,7 +28,7 @@ As far as I know, the most popular ways of doing that are:
 
     # .cargo/config.toml
     [build]
-    rustdocflags = [ "--html-in-header", "./src/docs-header.html" 
+    rustdocflags = [ "--html-in-header", "./src/docs-header.html" ]
 
 Because the first one is only read by docs.rs, and the second one is only read when cargo is run from within the project itself, neither of them work when you use `cargo doc` to browse the docs of your dependencies.
 
