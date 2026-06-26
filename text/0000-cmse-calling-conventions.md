@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Support for the `cmse-nonsecure-entry` and `cmse-nonsecure-call` calling conventions on   Armv8-M (`thumbv8m*`) targets, and a lint preventing (partially) uninitialized values from crossing the security boundary.
+Support for the `cmse-nonsecure-entry` and `cmse-nonsecure-call` calling conventions on   Armv8-M (`thumbv8m*`) targets, and a lint preventing values with stale secure data from crossing the security boundary.
 
 The implementation is tracked in:
 
@@ -19,15 +19,15 @@ The implementation is tracked in:
 
 Rust and Trustzone form an excellent pairing for developing embedded projects that are secure and robust.
 
-Trustzone creates a security boundary between a secure and non-secure application. The secure application can work with secure information (e.g. encryption keys). By limiting the interactions between the secure and non-secure applications, large classes of security bugs are statically prevented.
+Trustzone creates a security boundary between a secure and non-secure application, analogous to kernel and user space. The secure application can work with secure information (e.g. encryption keys) that must not leak into the non-secure application. By limiting the interactions between the secure and non-secure applications, large classes of security bugs are statically prevented.
 
 In embedded systems it is common to have an extra physical chip, a secure enclave, to handle secure information. With Trustzone, this additional chip is not needed: a secure enclave is simulated on the main chip instead.
 
 The secure and non-secure applications communicate over an FFI boundary: the two applications run on the same chip and use the same address space, but are not linked together.  The cmse calling conventions are used to cross this FFI boundary, and apply restrictions on how it can be crossed.
 
-Functions that use these ABIs must be reviewed carefully because they mark where secure data might be leaked. This is analogous to `unsafe` limiting  where UB might be introduced in a program. The calling conventions automatically handle the clearing of registers before the secure boundary is crossed, so that a malicious non-secure application cannot read lingering secure data.
+Functions that use these ABIs must be reviewed carefully because they mark where secure data might be leaked. This is analogous to `unsafe` limiting  where UB might be introduced in a program. The calling conventions automatically handle the clearing of unused registers before the secure boundary is crossed, so that a malicious non-secure application cannot read lingering secure data.
 
-Without compiler support it is much harder to know where to focus review effort, and every call that crosses the secure boundary requires inline assembly, which is inconvenient and error-prone.
+Without compiler support for these calling conventions it is much harder to know where to focus review effort, and every call that crosses the secure boundary requires inline assembly, which is inconvenient and error-prone.
 
 A specific use case is encapsulating C APIs. Providing a C interface is still the standard way for a hardware vendor to provide access to system components. Libraries for networking (LTE, Bluetooth) are notorious for their bugs. Running such code in non-secure mode significantly reduces the risk of bugs leaking secure information.
 
@@ -46,6 +46,12 @@ The `cmse-nonsecure-entry` calling convention is used in the secure executable t
 The `cmse-nonsecure-call` calling convention is used in the other direction, when the secure executable wants to call into the non-secure executable. This calling convention can only occur on function pointers, not on definitions or extern blocks. The secure executable can acquire a non-secure function pointer via shared memory, or a non-secure callback can be passed to an entry function.
 
 Both calling conventions are based on the platform's C calling convention, but will not use the stack to pass arguments or the return value. In practice that means that the arguments must fit in the 4 available argument registers, and the return value must fit in a single 32-bit register, or be abi-compatible with a 64-bit integer or float. The compiler checks that the signature is valid.
+
+The calling conventions will clear any unused registers before crossing the secure boundary, so that lingering secure data in those registers is not leaked. However, arguments and return values can also contain stale secure data in their padding. We differentiate between two kinds of padding.
+
+When a particular byte is padding for all valid values of a type, this is *guaranteed padding*. Like `clang`, `rustc` will zero guaranteed padding in values that cross the secure boudary.
+
+Enum and union types may also have variant-dependent padding: bytes that are padding for some but not all valid values of the type. For instance for `Option<u8>` the payload byte is padding when `None` but data when `Some(_)`. Similarly `MaybeUninit<T>` may or may not contain padding. The `cmse_uninitialized_leak` lint warns when a type with variant-dependent padding crosses the secure boundary.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -160,9 +166,34 @@ Evaluating entry functions during constant evaluation is valid. The context swit
 The `cmse-nonsecure-call` calling convention can only be used on function pointers, which cannot be evaluated during constant evaluation.
 
 Miri is not a register machine, so the clearing of registers is not relevant. The context switching also does not need to be considered, because a Miri input program cannot use FFI and therefore cannot cross the secure boundary. Any attempt to do so would rely on a transmute or similar and would for that reason be unsound.
+## Preventing information leaking via padding bytes
+
+Values that cross the secure boundary may have stale secure data in their padding bytes. Padding can be either variant-dependent or variant-independent. 
+
+A byte is variant-independent padding when the byte is padding for all valid values of a given type. For example `S` has three trailing guaranteed padding bytes:
+
+```rust
+#[repr(C, align(4))]
+struct S {
+	a: u8,
+}
+```
+
+In contrast, a byte is variant-dependent padding when it is padding for some, but not all, valid values of a type. For instance the payload in `Option<u8>` (the payload is padding when `None`, data when `Some(_)`) or all bytes of a `MaybeUninit<T>`.
+
+### Clear variant-independent padding
+
+The backend will clear the variant-independent padding bytes before passing the value over the boundary.
+#### Implementation
+
+https://github.com/rust-lang/rust/pull/157397
+
+The implementation finds the data ranges of the type: the ranges of bytes that are data for some variant. It then takes the complement to find all ranges that are padding for all variants. The backend then writes `0u8` into those ranges.
 ### Warn on partially uninitialized values crossing the secure boundary
 
-Unions and types with padding or niches can contain uninitialized memory, and this uninitialized memory can contain stale secure information. Clang warns when union values cross the security boundary (see https://godbolt.org/z/vq9xnrnEs), and rust does the same.
+When a type has variant-dependent padding, the `cmse_uninitialized_leak` lint fires.
+
+Clang warns when union values cross the security boundary (see https://godbolt.org/z/vq9xnrnEs), and rust does the same.
 
 ```
 warning: passing a (partially) uninitialized value across the secure boundary may leak information
@@ -176,28 +207,19 @@ LL |     f4: extern "cmse-nonsecure-call" fn(MaybeUninit<u64>),
 
 Like clang, the lint is emitted at the use site. That means that in the case where passing such a value is deliberate, each use site can be annotated with `#[allow(cmse_uninitialized_leak)]`. In most cases this lint should be considered an error, and an alternative way of returning/passing the value should be found that does not run the risk of leaking secure information.
 
-Unlike clang, the rust lint also warns on other instances where a value may be (partially) uninitialized based on its type. For instance, clang does not warn when a struct crossing the secure boundary contains padding (e.g. https://godbolt.org/z/rcM65YG1s).
-
-The lint is implemented in https://github.com/rust-lang/rust/pull/147697, and checks whether transmuting a type `T` to `[u8; size_of::<T>]` is valid. The transmute is only valid when all bytes of `T` are guaranteed to be initialized.
-
-```rust
-#[repr(C)]
-struct PaddedStruct {
-    a: u8,
-	// There is a byte of padding here.
-    b: u16,
-}
-
-#[no_mangle]
-extern "cmse-nonsecure-entry" fn padded_struct() -> PaddedStruct {
-    PaddedStruct { a: 0, b: 1 }
-    //~^ WARN passing a (partially) uninitialized value across the security boundary may leak information
-}
-```
-
 A `cmse-nonsecure-call` function call will emit a warning when any of its arguments has a partially uninitialized type, and a `cmse-nonsecure-entry` function warns at any (implicit) return when the return type may be partially uninitialized.
 
 Ultimately guaranteeing the security properties of the system is up to the programmer, but warning on types with potentially uninitialized memory is a helpful signal that the compiler can provide.
+
+#### Implementation
+
+https://github.com/rust-lang/rust/pull/147697
+
+Much like for variant-independent padding, the implementation walks over a type, but instead of using the union to combine the data bytes of the variants, the intersection is used. That gives a map of bytes that are data in all variants. 
+
+We then take the difference with the map of bytes that are data in any variant, and are left with the set of ranges that is sometimes, but not always, data: the variant-dependent padding.
+
+If this set is non-empty, the lint is triggered.
 ## Background
 
 Additional background on what these calling conventions do, and how they are meant to be used. This information is not strictly required to understand the RFC, but has informed the design and may explain certain design choices.
@@ -339,12 +361,10 @@ A suggestion that was floated is to provide some mechanism to ensure that a valu
 
 One potential method is to extend the`repr` attribute with an option that adds fields where padding is needed internally. These user-hidden padding fields would be zeroed upon creation.
 ```rust
-#[repr(C, align(8), initialized)]
-struct Foo {
-	a: u8,
-	// implicit _padding0: [u8; 1],
-	b: u16,
-	// implicit _padding1: [u8; 4],
+#[repr(C, initialized)]
+struct FfiOption<T> {
+	Some(T),
+	None,
 }
 ```
 
