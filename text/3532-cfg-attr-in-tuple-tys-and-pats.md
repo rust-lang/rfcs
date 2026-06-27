@@ -338,6 +338,19 @@ match my_tuple {
 }
 ```
 
+## What about other attributes?
+
+While this RFC is focused on `#[cfg]`, for the sake of clarification, the following attributes are also allowed in these new positions:
+
+- `cfg_attr` (in addition to `cfg`)
+- Lint-level attributes (because they are allowed in all attribute positions)
+- `diagnostic` attributes (because they are allowed in all attribute positions, but generate a warning)
+- Tool attributes (which are not restricted by rustc)
+
+On the other hand, the following attributes are *not* allowed in these new positions:
+
+- The `doc` attribute and doc comments
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
