@@ -6,9 +6,14 @@
 # Summary
 [summary]: #summary
 
-An `extern "custom" fn` is a function with a custom ABI that is unknown to rust. Often these are low-level functions that pass arguments in different registers than any standard calling convention. 
+An `extern "custom" fn` is a function with a custom ABI that is unknown to rust. Often these are low-level functions that pass arguments in different registers than any standard calling convention, so using this helps rustc block you from using this in any place where rustc would need to understand that calling convention.
+
 
 ```rust
+/// # SAFETY
+///
+/// - Expects the dividend and the divisor in r0 and r1.
+/// - Returns the quotient in r0 and the remainder in r1.
 #[unsafe(naked)]
 pub unsafe extern "custom" fn __aeabi_uidivmod() {
     core::arch::naked_asm!(
