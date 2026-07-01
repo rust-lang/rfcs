@@ -51,7 +51,8 @@ The calling conventions will clear any unused registers before crossing the secu
 
 When a particular byte is padding for all valid values of a type, this is *guaranteed padding*. Like `clang`, `rustc` will zero guaranteed padding in values that cross the secure boudary.
 
-Enum and union types may also have variant-dependent padding: bytes that are padding for some but not all valid values of the type. For instance for `Option<u8>` the payload byte is padding when `None` but data when `Some(_)`. Similarly `MaybeUninit<T>` may or may not contain padding. The `cmse_uninitialized_leak` lint warns when a type with variant-dependent padding crosses the secure boundary.
+Enum and union types may also have variant-dependent padding: bytes that are padding for some but not all valid values of the type. For instance for `Option<u8>` the payload byte is padding when `None` but data when `Some(_)`. Similarly `MaybeUninit<T>` may or may not contain padding. The `cmse_uninitialized_leak` lint warns when a type containing an `enum` or `union` crosses the FFI boundary. That is a very coarse filter, but a more accurate approach runs the risk of exposing (unstable!) layout details.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -191,7 +192,7 @@ https://github.com/rust-lang/rust/pull/157397
 The implementation finds the data ranges of the type: the ranges of bytes that are data for some variant. It then takes the complement to find all ranges that are padding for all variants. The backend then writes `0u8` into those ranges.
 ### Warn on partially uninitialized values crossing the secure boundary
 
-When a type has variant-dependent padding, the `cmse_uninitialized_leak` lint fires.
+When a type may have variant-dependent padding, i.e. when it is or contains any `enum` or `union` without indirection, the `cmse_uninitialized_leak` lint fires.
 
 Clang warns when union values cross the security boundary (see https://godbolt.org/z/vq9xnrnEs), and rust does the same.
 
@@ -215,11 +216,8 @@ Ultimately guaranteeing the security properties of the system is up to the progr
 
 https://github.com/rust-lang/rust/pull/147697
 
-Much like for variant-independent padding, the implementation walks over a type, but instead of using the union to combine the data bytes of the variants, the intersection is used. That gives a map of bytes that are data in all variants. 
+Traverses a type to find any occurences of `enum` or `union` that are not behind some sort of indirection.
 
-We then take the difference with the map of bytes that are data in any variant, and are left with the set of ranges that is sometimes, but not always, data: the variant-dependent padding.
-
-If this set is non-empty, the lint is triggered.
 ## Background
 
 Additional background on what these calling conventions do, and how they are meant to be used. This information is not strictly required to understand the RFC, but has informed the design and may explain certain design choices.
@@ -332,8 +330,6 @@ The [`cortex_m`](https://docs.rs/cortex-m/latest/cortex_m/cmse/index.html) crate
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-- is the lint relying on the (unstable) internals of safe transmute a problem. I believe this is fine because it's just a lint.
 
 ## A type changing (e.g. due to `repr(Rust)` changing) can cause a program to stop compiling
 
