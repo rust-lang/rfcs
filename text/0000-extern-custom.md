@@ -35,10 +35,10 @@ unsafe extern "custom" {
 
 ### History
 
-* https://github.com/rust-lang/rust/issues/140566
-* https://github.com/rust-lang/rust/issues/140829
-* https://github.com/rust-lang/rust/pull/140770
-* https://github.com/rust-lang/rust/pull/158504
+* Proposal: https://github.com/rust-lang/rust/issues/140566
+* Tracking issue: https://github.com/rust-lang/rust/issues/140829
+* Implementation: https://github.com/rust-lang/rust/pull/140770
+* Stabilization PR: https://github.com/rust-lang/rust/pull/158504
 
 # Motivation
 [motivation]: #motivation
@@ -142,6 +142,7 @@ https://github.com/rust-lang/rust/issues/140566
 
 The name has already been debated. The name `unknown` has been mentioned, but to write the implementation you really do need to know the ABI. It is custom in the sense that rustc does not know about it, but the author definitely does.
 
+Arguments and return types are forbidden because they are not consumed in any way. The compiler has no way of validating them against the function body, similar to other naked functions, but the functions can never be invoked directly so they serve no purpose when calling. The intent is that correct parameter passing and returning will be covered in documentation.
 # Prior art
 [prior-art]: #prior-art
 
