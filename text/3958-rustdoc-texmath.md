@@ -120,9 +120,10 @@ impl Foo {
 }
 
 #[doc(syntax="+tex_math_dollars")]
-/// <https://github.com/rust-lang/rust/blob/29155a4cd6/src/librustdoc/visit_ast.rs#L454>
+/// <https://github.com/rust-lang/rust/pull/158514#issuecomment-4825510621>
 pub fn wizzywig() {
-    #[doc(syntax="-tex_math_dollars")] //~ WARN doc syntax can only be declared on items that actually appear in documentation
+    #[doc(syntax="-tex_math_dollars")]
+    /// This is *not* math syntax: $x$
     pub struct WizzyWig;
 
     impl Foo {
