@@ -229,8 +229,7 @@ The offset returned for a nested path is relative to the root carrier type,
 
 On BPF targets with BTF-capable backend support and debug info enabled, these
 queries lower to CO-RE relocations. On targets or backends without BTF
-relocation support, they fall back to the current compilation unit's ordinary
-layout information.
+relocation support, they emit a compile error.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -258,9 +257,7 @@ kinds.
 
 A `#[repr(Btf)]` type uses C-compatible field layout. In compiler terms,
 `repr(Btf)` implies the layout constraints of `repr(C)` and also marks the type
-as BTF-relocatable. This gives the backend stable field ordering and offsets for
-the compile-time fallback while preserving a distinct marker for type checking
-and codegen.
+as BTF-relocatable.
 
 Direct field projection from a `#[repr(Btf)]` ADT is rejected. This includes
 projections reached through autoderef:
@@ -334,18 +331,10 @@ The result of the LLVM intrinsic is an integer value. Offset and size queries
 are zero-extended to `usize`. Existence queries are compared against zero and
 return `bool`.
 
-If the target, backend, or codegen mode cannot emit BTF field relocations, the
-field-info queries fall back to ordinary layout-computed values:
-
-* `field_byte_offset!` returns the complete field-path offset from the
-  current compilation layout.
-* `field_byte_size!` returns the field size from the current compilation
-  layout.
-* `field_exists!` returns `true` for a field path present in the current
-  compilation layout.
-
 BTF CO-RE relocation emission is only meaningful for BPF targets, and it
-requires the debug metadata used to describe the relevant types.
+requires the debug metadata used to describe the relevant types. If the target,
+backend, or codegen mode cannot emit BTF field relocations, a compile error
+should be emitted.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
