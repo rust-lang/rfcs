@@ -412,9 +412,10 @@ Clang and LLVM support BPF CO-RE through builtins and LLVM intrinsics such as
 `llvm.bpf.preserve.field.info`. C BPF programs commonly use libbpf macros such
 as `BPF_CORE_READ` and `bpf_core_field_exists` to generate these relocations.
 
-Rust BPF projects such as [Aya][aya] need access to the same relocation
-model. Today, they generally rely on generated bindings, helper macros, or
-backend behavior outside Rust's stable language surface.
+Rust BPF projects need to run on different kernels. Today, they usually achieve
+that either by re-generating the types and compiling separately for each
+kernel, or by linking a C module that is used only for interacting with kernel
+types.
 
 This RFC follows the same underlying CO-RE model as C/Clang while avoiding a
 direct dependency on C syntax or LLVM-specific frontend intrinsics.
