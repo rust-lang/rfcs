@@ -351,13 +351,6 @@ which is a bitcode linker used exclusively for BPF targets. However, it
 prevents us from supporting ld type of linkers (e.g. binutils, lld) for BPF
 targets in future.
 
-### Use `offset_of!`
-
-`offset_of!` is intentionally a constant layout query. It does not preserve the
-field identity needed to emit a BTF relocation. Reusing it would either silently
-produce non-relocatable code or require changing the meaning of an existing
-stable API in target-specific ways.
-
 ### Make ordinary field access relocatable
 [relocatable-field-access]: #relocatable-field-access
 
@@ -379,6 +372,13 @@ Providing the field-info queries proposed in this RFC does not rule out
 exploring this alternative in the future. On the contrary, Clang provides both
 explicit field-info builtins and field projection. It makes sense to treat these
 as separate RFCs.
+
+### Use `offset_of!`
+
+Currently `offset_of!` is intentionally a constant layout query. Making it work
+with BTF-relocatable types depends on the [`Sized` hierarchy RFC][sized-hierarchy].
+Therefore, this RFC does not include this idea, but does not rule it out for
+the future.
 
 ### Use a separate `#[relocatable]` attribute
 
