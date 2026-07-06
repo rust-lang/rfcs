@@ -331,10 +331,10 @@ targets in future.
 The compiler could try to make `task.pid` on selected types emit relocatable
 accesses automatically. This is what Clang currently does for CO-RE field
 accesses: ordinary C field projection can be preserved and lowered to BTF
-relocations. This is attractive ergonomically, but it requires a more intrusive
-change to MIR and the design of a proper abstract machine with operational
-semantics. It also has some similarities to the [`Sized` hierarchy
-RFC][sized-hierarchy], which has not yet been accepted.
+relocations. This is attractive ergonomically, but it requires a more
+intrusive change to MIR and the design of a proper operational semantics for
+these relocatable accesses. It also has some similarities to the [`Sized`
+hierarchy RFC][sized-hierarchy], which has not yet been accepted.
 
 This overlaps with the accepted [Field Projections project goal][field-projections],
 which is exploring virtual places as a general mechanism for custom field
