@@ -238,6 +238,88 @@ The exact algorithm is deferred to whatever the default target `C` compiler does
 
 If any bugs are found (i.e. differences between the target C compiler's layout/ABI and `repr(C)`) then the Rust team reserves the right to change the behavior of `repr(C)` to conform with the target C compiler.
 
+### Flexible Array Members
+
+Given that all major `C` compilers (at the time of writing) put `T field[N];` and `T field[];` at the same offset. `repr(C#editionNext)` will make a guarantee for the last field of a `repr(C#editionNext)` struct.
+* If the only difference between two `repr(C#editionNext)` structs is the type of their last field
+* If the fields' types are `[T]` or `[T; N]`
+* Then the exact offset will also be the same as the equivalent `C` type that has the field type as a flexible array member, i.e. `T field[];`
+* Then the exact offset will also be the same as the equivalent `C` type that has the field type as an array member, i.e. `T field[N];` (of any `N`)
+* Then the offset of that field only depends on `T` (and cannot depend on the length of the array/slice)
+
+If a generic `repr(C#editionNext)` type has an generic unsized final field (see `Coercable<T>`  below), then the obvious unsizing coercion from `Coercable<[T; N]>` to `Coercable<[T]>` is allowed. i.e. `Coercable<[T; N]>: Unsize<Coercable<[T]>>`.
+
+```rust
+#[repr(C#editionNext)]
+struct Coercable<T: ?Sized> {
+    len: usize,
+    data: T,
+}
+```
+
+This means that the following four types have `data_array` and `data_slice` at the same offset.
+
+```rust
+// in Rust
+#[repr(C#editionNext)]
+struct DataWithArray {
+    header: i32,
+    len: usize,
+    data_array: [T; N],
+}
+
+#[repr(C#editionNext)]
+struct DataWithSlice {
+    header: i32,
+    len: usize,
+    data_slice: [T],
+}
+```
+
+```C
+// in C
+struct DataWithArray {
+    int32_t header;
+    uintptr_t len;
+    T data_array[N];
+};
+
+struct DataWithSlice {
+    int32_t header;
+    uintptr_t len;
+    T data_slice[N];
+};
+```
+
+If there exists a target where the `C` compiler doesn't put `T field[N];` and `T field[];` at the same offset, then these rules may be revised on those targets. Currently, allow known `C` compiler put array members and flexible array members at the same offset.
+
+### Trait objects
+
+If field of a `repr(C#editionNext)` has the type of a trait object, then the layout of the type is unspecified. If this came from a generic instantiation, then coercions form a concrete type to the trait object are disabled. For example
+* you could not derive `Coercable<i32>: Unsize<Coercable<dyn Debug>>`
+* you could not cast from `*const Coercable<i32>` to `*const Coercable<dyn Debug>`
+* the layout of `Coercable<dyn Debug>` is unspecified
+
+```rust
+#[repr(C#editionNext)]
+struct Coercable<T: ?Sized> {
+    len: usize,
+    data: T,
+}
+```
+
+If the type of a field is always a trait object, then a hard error is reported.
+
+```rust
+#[repr(C#editionNext)]
+struct BadReprC {
+    len: usize,
+    data: dyn Debug, // ERROR: `repr(C#editionNext)` types cannot contain trait objects
+}
+```
+
+Note: the layout is unspecified to avoid adding a new post-mono error. By making the coercion impossible, it becomes impossible to safely construct a valid pointer to a `*const Coercable<dyn Debug>`. When using `feature(ptr_metadata)`, it may be possible to construct a pointer to `*const Coercable<dyn Debug>` using `core::ptr::from_raw_parts`, but it is not safe to use.
+
 ## `repr(C)`
 
 Note: This preserves the nice name of `repr(C)`, and gives it the intended meaning.
@@ -605,6 +687,7 @@ See Rationale and Alternatives as well
 * ~~Should this `repr` be versioned?~~
     * This way we can evolve the repr (for example, by adding new niches)
     * no need to for now, this can be done as a future proposal
+* Should a generic `repr(C#editionNext)` struct instantiated with a trait object as it's trailing field be a post-mono error?
 * Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033 or some other later edition? Yes, it's a breaking change. But at that point, it will likely only be breaking code no one uses.
     * Leaning towards no
 * ~~Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?~~ Not in this RFC
