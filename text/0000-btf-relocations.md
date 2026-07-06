@@ -14,7 +14,6 @@ the fields:
 
 * `core::btf::field_byte_offset!`
 * `core::btf::field_byte_size!`
-* `core::btf::field_exists!`
 
 The user-facing feature is gated by `#![feature(btf_relocations)]`.
 
@@ -112,28 +111,18 @@ pub struct task_struct {
 
 impl task_struct {
     #[inline]
-    pub fn has_pid(&self) -> bool {
-        core::btf::field_exists!(task_struct, pid)
-    }
-
-    #[inline]
     pub fn pid_offset(&self) -> Option<usize> {
-        self.has_pid().then(|| {
-            Some(core::btf::field_byte_offset!(task_struct, pid))
-        })
+        core::btf::field_byte_offset!(task_struct, pid)
     }
 
     #[inline]
     pub fn pid_size(&self) -> Option<usize> {
-        self.has_pid().then(|| {
-            Some(core::btf::field_byte_size!(task_struct, pid))
-        })
+        core::btf::field_byte_size!(task_struct, pid)
     }
 
     #[inline]
     pub fn pid(&self) -> Option<&i32> {
-        self.has_pid().then(|| {
-            let offset = core::btf::field_byte_offset!(task_struct, pid);
+        core::btf::field_byte_offset!(task_struct, pid).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.vruntime` exists in the
@@ -143,28 +132,18 @@ impl task_struct {
     }
 
     #[inline]
-    pub fn has_tgid(&self) -> bool {
-        core::btf::field_exists!(task_struct, tgid)
-    }
-
-    #[inline]
     pub fn tgid_offset(&self) -> Option<usize> {
-        self.has_tgid().then(|| {
-            Some(core::btf::field_byte_offset!(task_struct, tgid))
-        })
+        core::btf::field_byte_offset!(task_struct, tgid)
     }
 
     #[inline]
     pub fn tgid_size(&self) -> Option<usize> {
-        self.has_tgid().then(|| {
-            Some(core::btf::field_byte_size!(task_struct, tgid))
-        })
+        core::btf::field_byte_size!(task_struct, tgid)
     }
 
     #[inline]
     pub fn tgid(&self) -> Option<&i32> {
-        self.has_tgid().then(|| {
-            let offset = core::btf::field_byte_offset!(task_struct, tgid);
+        core::btf::field_byte_offset!(task_struct, tgid).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.vruntime` exists in the
@@ -200,8 +179,7 @@ pub struct task_struct {
 impl task_struct {
     #[inline]
     pub fn sched_vruntime(&self) -> Option<&u64> {
-        core::btf::field_exists!(task_struct, se.vruntime).then(|| {
-            let offset = core::btf::field_byte_offset!(task_struct, se.vruntime);
+        core::btf::field_byte_offset!(task_struct, se.vruntime).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.vruntime` exists in the
@@ -212,8 +190,7 @@ impl task_struct {
 
     #[inline]
     pub fn sched_load_weight(&self) -> Option<&usize> {
-        core::btf::field_exists!(task_struct, se.load.weight).then(|| {
-            let offset = core::btf::field_byte_offset!(task_struct, se.load.weight);
+        core::btf::field_byte_offset!(task_struct, se.load.weight).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.load.weight` exists in the
@@ -278,9 +255,8 @@ non-relocatable Rust type should not use `#[repr(Btf)]`.
 The following macros are added under `core::btf`:
 
 ```rust
-core::btf::field_byte_offset!(Carrier, field.path) -> usize
-core::btf::field_byte_size!(Carrier, field.path) -> usize
-core::btf::field_exists!(Carrier, field.path) -> bool
+core::btf::field_byte_offset!(Carrier, field.path) -> Option<usize>
+core::btf::field_byte_size!(Carrier, field.path) -> Option<usize>
 ```
 
 `Carrier` is the root local Rust type whose BTF graph describes the access.
@@ -295,8 +271,6 @@ The macros have the following meanings:
   complete field path from the root carrier.
 * `field_byte_size!(Carrier, field.path)` returns the byte size of the terminal
   field.
-* `field_exists!(Carrier, field.path)` returns whether the complete field path
-  exists in the target BTF type.
 
 These macros do not perform memory access. They are metadata queries and do not
 require the caller to uphold memory-safety invariants.
