@@ -103,6 +103,12 @@ Note that a hint provided by a given library crate only applies to that
 specific crate, not that package's dependencies. If the code that needs
 optimizing is in a dependency, that dependency would need to add the hint.
 
+There are two primary reasons to use this hint:
+- The typical full build (not just an incremental build) will be *sped up* by
+  optimizing the crate.
+- The crate is disproportionately affected by optimization, such that it may be
+  unusably slow (many *times* slower) without optimization.
+
 ## Drawbacks
 [drawbacks]: #drawbacks
 
