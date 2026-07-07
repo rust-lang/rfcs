@@ -8,9 +8,9 @@
 
 Add experimental Rust support for [Compile Once, Run Everywhere (CO-RE)][co-re]
 relocations based on the [BPF Type Format (BTF)][btf]. The feature introduces a
-`#[repr(Btf)]` representation for structs and unions whose field layout must be
-queried through BTF-aware operations, and adds BTF-aware macros for accessing
-the fields:
+`#[btf_relocatable]` attribute for structs and unions whose field layout must
+be queried through BTF-aware operations, and adds BTF-aware macros for
+accessing the fields:
 
 * `core::btf::field_byte_offset!`
 * `core::btf::field_byte_size!`
@@ -52,27 +52,28 @@ The `btf_relocations` feature is for Rust code that models external BTF
 types, primarily Linux kernel types used by eBPF programs.
 
 A type that should participate in BTF relocation is written with
-`#[repr(Btf)]`:
+`#[btf_relocatable]`:
 
 ```rust
 #![feature(btf_relocations)]
 
-#[repr(Btf)]
+#[btf_relocatable]
+#[repr(C)]
 pub struct task_struct {
     pub pid: i32,
     pub tgid: i32,
 }
 ```
 
-`#[repr(Btf)]` is intentionally not just a layout hint. It marks a type as one
-whose fields should not be accessed through ordinary Rust field projection for
-accesses that are meant to be relocatable. For such types, direct field access
-is rejected:
+`#[btf_relocatable]` marks a type as one whose fields should not be accessed
+through ordinary Rust field projection for accesses that are meant to be
+relocatable. For such types, direct field access is rejected:
 
 ```rust
 #![feature(btf_relocations)]
 
-#[repr(Btf)]
+#[btf_relocatable]
+#[repr(C)]
 pub struct task_struct {
     pub pid: i32,
 }
@@ -88,7 +89,8 @@ The same restriction applies to `offset_of!`:
 ```rust
 #![feature(btf_relocations)]
 
-#[repr(Btf)]
+#[btf_relocatable]
+#[repr(C)]
 pub struct task_struct {
     pub pid: i32,
 }
@@ -103,7 +105,8 @@ take a root carrier type and a field path:
 ```rust
 #![feature(btf_relocations)]
 
-#[repr(Btf)]
+#[btf_relocatable]
+#[repr(C)]
 pub struct task_struct {
     pub pid: i32,
     pub tgid: i32,
@@ -160,18 +163,21 @@ Nested field paths are supported. For example, access to the fields of
 ```rust
 #![feature(btf_relocations)]
 
-#[repr(Btf)]
+#[btf_relocatable]
+#[repr(C)]
 pub struct load_weight {
     pub weight: usize,
 }
 
-#[repr(Btf)]
+#[btf_relocatable]
+#[repr(C)]
 pub struct sched_entity {
     pub load: load_weight,
     pub vruntime: u64,
 }
 
-#[repr(Btf)]
+#[btf_relocatable]
+#[repr(C)]
 pub struct task_struct {
     pub se: sched_entity,
 }
@@ -216,39 +222,26 @@ relocation support, they emit a compile error.
 The language feature is named `btf_relocations`.
 
 The feature gate controls the user-facing BTF relocation surface, including
-`#[repr(Btf)]` and the `core::btf` field-info macros.
+`#[btf_relocatable]` attribute and the `core::btf` field-info macros.
 
-### `#[repr(Btf)]`
+### `#[btf_relocatable]` attribute
 
-The `repr` attribute accepts a new representation hint:
+`#[btf_relocatable]` is accepted on structs and unions. It is rejected on other
+item kinds.
 
-```rust
-#[repr(Btf)]
-struct S {
-    field: u32,
-}
-```
-
-`#[repr(Btf)]` is accepted on structs and unions. It is rejected on other item
-kinds.
-
-A `#[repr(Btf)]` type uses C-compatible field layout. In compiler terms,
-`repr(Btf)` implies the layout constraints of `repr(C)` and also marks the type
-as BTF-relocatable.
-
-Direct field projection from a `#[repr(Btf)]` ADT is rejected. This includes
-projections reached through autoderef:
+Direct field projection from a `#[btf_relocatable]` ADT is rejected. This
+includes projections reached through autoderef:
 
 ```rust
 task.pid
 ```
 
-The `offset_of!` macro is also rejected when any container in the queried path is
-a `#[repr(Btf)]` ADT.
+The `offset_of!` macro is also rejected when any container in the queried path
+is a `#[btf_relocatable]` ADT.
 
 These restrictions avoid silently producing non-relocatable code for operations
 that appear to query a relocatable type. Code that genuinely wants a normal
-non-relocatable Rust type should not use `#[repr(Btf)]`.
+non-relocatable Rust type should not use `#[btf_relocatable]`.
 
 ### Field-info macros
 
@@ -262,8 +255,8 @@ core::btf::field_byte_size!(Carrier, field.path) -> Option<usize>
 `Carrier` is the root local Rust type whose BTF graph describes the access.
 The second argument is a dot-separated Rust field path starting from `Carrier`.
 The compiler type checks this path using the same field lookup rules as
-`offset_of!`, except that `#[repr(Btf)]` containers are accepted for these
-BTF-aware queries.
+`offset_of!`, except that `#[btf_relocatable]` containers are accepted for
+these BTF-aware queries.
 
 The macros have the following meanings:
 
@@ -354,12 +347,24 @@ with BTF-relocatable types depends on the [`Sized` hierarchy RFC][sized-hierarch
 Therefore, this RFC does not include this idea, but does not rule it out for
 the future.
 
-### Use a separate `#[relocatable]` attribute
+### Use a more generic `#[relocatable]` attribute
 
-A standalone `#[relocatable]` attribute was considered. `#[repr(Btf)]` is more
-specific about the external format and makes clear that the marker affects
-representation-related compiler behavior. It also groups the feature with other
-layout and representation attributes.
+A standalone `#[relocatable]` attribute was considered because BTF relocations
+share conceptual similarities with [Swift's library evolution feature]
+[swift-library-evolution]. A unified attribute would be attractive as a
+long-term direction.
+
+However, the field-info macros proposed in this RFC are inherently BTF-specific:
+they lower to LLVM's `llvm.bpf.preserve.field.info` intrinsic and emit BTF CO-RE
+relocations. Introducing a generic `#[relocatable]` now would either overpromise
+— supporting only BTF today while implying broader relocation support — or leave
+the generic API underspecified. Naming the attribute `#[btf_relocatable]` makes
+the scope explicit and avoids confusion about what relocation mechanism is in
+play.
+
+That said, the similarities with Swift's library evolution may prove useful when
+designing a broader field projection mechanism for relocatable types in the
+future, particularly for relocatable field access and `offset_of!` support.
 
 ### Expose LLVM intrinsics directly
 
@@ -412,3 +417,4 @@ Once the [`Sized` hierarchy RFC][sized-hierarchy] is accepted,
 [bpf-linker]: https://github.com/aya-rs/bpf-linker
 [field-projections]: https://github.com/rust-lang/rust-project-goals/issues/390
 [sized-hierarchy]: https://github.com/rust-lang/rfcs/pull/3729
+[swift-library-evolution]: https://github.com/swiftlang/swift/blob/main/docs/LibraryEvolution.rst
