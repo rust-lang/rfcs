@@ -80,7 +80,7 @@ pub struct task_struct {
 
 fn pid(task: &task_struct) -> i32 {
     task.pid
-    // error: cannot access fields of a `#[repr(Btf)]` type directly
+    // error: cannot access fields of a `#[btf_relocatable]` type directly
 }
 ```
 
@@ -96,7 +96,7 @@ pub struct task_struct {
 }
 
 const PID_OFFSET: usize = core::mem::offset_of!(task_struct, pid);
-// error: cannot use `offset_of!` with a `#[repr(Btf)]` type
+// error: cannot use `offset_of!` with a `#[btf_relocatable]` type
 ```
 
 Instead, code that needs field metadata uses BTF-aware queries. These macros
