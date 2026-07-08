@@ -229,15 +229,9 @@ The feature gate controls the user-facing BTF relocation surface, including
 `#[btf_relocatable]` is accepted on structs and unions. It is rejected on other
 item kinds.
 
-Direct field projection from a `#[btf_relocatable]` ADT is rejected. This
-includes projections reached through autoderef:
-
-```rust
-task.pid
-```
-
-The `offset_of!` macro is also rejected when any container in the queried path
-is a `#[btf_relocatable]` ADT.
+Direct field projection from a `#[btf_relocatable]` ADT is rejected. The
+`offset_of!` macro is also rejected when any container in the queried path is a
+`#[btf_relocatable]` ADT.
 
 These restrictions avoid silently producing non-relocatable code for operations
 that appear to query a relocatable type. Code that genuinely wants a normal
