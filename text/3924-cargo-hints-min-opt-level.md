@@ -229,3 +229,6 @@ depends heavily on their dependencies to optimize those dependencies.
 We may want to provide a mechanism for libraries to optimize code inlined or
 monomorphized by a user's crate. That would likely require compiler
 enhancements.
+
+We may want to surface this in a visible way for users to see that it has been
+applied to their dependencies. For instance, we could note it in `--timings`.
