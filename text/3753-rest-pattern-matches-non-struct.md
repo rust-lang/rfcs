@@ -12,6 +12,10 @@ structs (e.g., it could match an `enum Foo` value). This is done so that structs
 containing only private fields can be changed to other types without breaking
 backwards compatibility.
 
+This RFC does not endorse code containing such patterns as idiomatic. Instead,
+the purpose of this RFC is for library authors to be able to evolve the library's
+public API without breaking users who have written such code.
+
 # Motivation
 [motivation]: #motivation
 
