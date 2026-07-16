@@ -13,8 +13,9 @@ Change `i686-pc-windows-msvc` from a Tier 1 target with `std` support, and Tier 
 
 ## Background
 
-Rust has, since 1.0, supported every architecture for which Microsoft has supported an official build of the Windows operating system.
-This has included x86, x86-64, AArch32, and AArch64. We have supported its use with both official MSVC-based toolchains as well as libre GNU-based toolchains.
+Rust has, since 1.0, supported almost every architecture for which Microsoft has supported an official build of the Windows operating system.
+This has included x86, x86-64, AArch32, and AArch64, with the notable exception of Itanium.
+We have supported its use with both official MSVC-based toolchains as well as libre GNU-based toolchains.
 
 Even in 2026, Rust continues to support 32-bit x86 Windows hosts and supply toolchains for them.
 We build a toolchain and run all compiler tests for the `i686-pc-windows-msvc` target.
