@@ -13,11 +13,16 @@ Change `i686-pc-windows-msvc` from a Tier 1 target with `std` support, and Tier 
 
 ## Background
 
-Rust has, since 1.0, supported every architecture for which Microsoft has supported an official build of the Windows operating system. This has included x86, x86-64, AArch32, and AArch64. We have supported its use with both official MSVC-based toolchains as well as libre GNU-based toolchains.
+Rust has, since 1.0, supported every architecture for which Microsoft has supported an official build of the Windows operating system.
+This has included x86, x86-64, AArch32, and AArch64. We have supported its use with both official MSVC-based toolchains as well as libre GNU-based toolchains.
 
-Even in 2026, Rust continues to support 32-bit x86 Windows hosts and supply toolchains for them. We build a toolchain and run all compiler tests for the `i686-pc-windows-msvc` target. However, this increasingly seems like a strange decision, as it does not comport with either the support for 32-bit Windows that Microsoft offers, nor does it match actual ongoing usage of `i686-pc-windows-msvc` as a target.
+Even in 2026, Rust continues to support 32-bit x86 Windows hosts and supply toolchains for them.
+We build a toolchain and run all compiler tests for the `i686-pc-windows-msvc` target.
+However, this increasingly seems like a strange decision, as it does not comport with the support for 32-bit Windows that Microsoft offers,
+nor does it match actual ongoing usage of `i686-pc-windows-msvc` as a target.
 
-In October of 2025, Microsoft's general support for Windows 10 concluded. That was the last version of Windows that distributed a 32-bit version. Further, the distance between now and the availability of 64-bit x86 CPUs is over 20 years, starting from the Athlon 64 in 2003.
+In October of 2025, Microsoft's general support for Windows 10 concluded. That was the last version of Windows that distributed a 32-bit version.
+Further, the distance between now and the availability of 64-bit x86 CPUs is over 20 years, starting from the Athlon 64 in 2003.
 
 Rust currently supports the following major Windows targets.
 Download counts for the host toolchain and `std` were extracted from the public dashboard [covering the period from 2026-06-01 to 2026-06-30][static-rlo-dl-counts].
@@ -54,14 +59,16 @@ There are many benefits to using `i686-pc-windows-msvc` as a target.
 In particular, it is supported via means compatibility layers such as Windows 32-bit on Windows 64-bit ("WoW64"),
 across almost all supported (and most unsupported) versions of Windows, including 10 and 11.
 For Windows Server, WoW64 remains available as an optional component.
-Thus there are many practical reasons to compile an executable for this target.
+For applications with lower memory use, being able to build an executable that runs on almost every Windows, and sometimes even Linux, is fairly desirable.
 
 These reasons do not apply as neatly to rustc, however. 64-bit hosts are simply more capable of running a compiler.
 For many builds, rustc's resident set size remains well under 1GiB, and thus within a 32-bit address space, but "many builds" is not "all".
-When builds wish to use more advanced features such as link-time optimization, this easily can exceed 4GiB.
+When builds wish to use more advanced features such as link-time optimization, the requirements can often exceed 4GiB.
 Due to the hard limit for addressing, a 32-bit host toolchain is already in danger of not having first-class support for rustc's capabilities.
 
-Further, it is unclear whether the duty of tier 1 host testing is even being met. The 32-bit x86 host toolchains are tested by executing them on a 64-bit host. This is a deliberately supported feature of x86 and the operating systems that support this execution mode, but it is not the same as running them under a 32-bit kernel. To the extent that they are run, they have been incurring increasing maintenance issues.
+Further, it is unclear whether the duty of tier 1 host testing is even being met. The 32-bit x86 host toolchains are tested by executing them on a 64-bit host.
+This is a deliberate feature of x86 and the operating systems that support this execution mode, but it is not the same as running them under a 32-bit kernel.
+To the extent that these tests have been run, they have incurred increasing maintenance issues.
 
 ### Maintenance Problems
 
@@ -71,7 +78,7 @@ Rust has many outstanding issues related to `i686-pc-windows-msvc`:
 - https://github.com/rust-lang/rust/issues/73527 - An undiagnosed problem with building Rust code on 32-bit Windows.
 - https://github.com/rust-lang/rust/issues/72212 - An undiagnosed problem with building Rust code on 32-bit Windows.
 - https://github.com/rust-lang/rust/issues/110290 - An undiagnosed issue in LLVM's code on 32-bit Windows.
-- https://github.com/rust-lang/rust/issues/112480 - A seemingly-unfixable problem involving i686-pc-windows using self-contradictory layout rules.
+- https://github.com/rust-lang/rust/issues/112480 - A seemingly-unfixable problem involving 32-bit Windows using self-contradictory layout rules for C code.
 - https://github.com/rust-lang/rust/issues/134683 - A 32-bit test issue "temporarily" marked 64-bit only to unblock the tree's continuous integration.
 - https://github.com/rust-lang/rust/issues/158378 - A hang while building documentation. We have stopped building some of our documentation for this target.
 - https://github.com/rust-lang/rust/issues/159076 - An issue with creating processes on Windows that incurs additional limitations on `i686-pc-windows-msvc`.
@@ -100,7 +107,8 @@ We have recently had to disable building rustc's documentation for this target p
 
 > The target must not disable an excessive number of tests or pieces of tests in the testsuite in order to do so. This is a subjective requirement.
 
-We ignore it in 1 run-make test due to not being able to fully symbolicate its backtraces and 10 UI or codegen tests due to issues with the target's ABI alignment. While we may be able to overcome the backtrace problem if someone invests technical effort, so far the ABI alignment issue seems to be fundamental and unfixable, making it so we cannot test some of our functionality for the platform anyways.
+We ignore it in 1 run-make test due to not being able to fully symbolicate its backtraces and 10 UI or codegen tests due to issues with the target's ABI alignment.
+While we may be able to overcome the backtrace problem if someone invests technical effort, so far the ABI alignment issue seems to be fundamental and unfixable, so we cannot test some of our functionality for the platform.
 
 > The target must provide as much of the Rust standard library as is feasible and appropriate to provide [...].
 
@@ -110,7 +118,9 @@ Windows is well-supported in the standard library, but we have found quirks in t
 
 > Building the target and running the testsuite for the target must not take substantially longer than other targets
 
-The jobs which implement building and testing our toolchain for `i686-pc-windows-msvc` are not the slowest. That peculiar distinction currently goes to the aarch64-apple jobs. They are, however, near the top, despite being already split across multiple runners.
+The jobs which implement building and testing our toolchain for `i686-pc-windows-msvc` are not the slowest.
+That peculiar distinction currently goes to our aarch64-apple jobs.
+The i686-msvc jobs are, however, near the top, despite being already split across multiple runners.
 
 > If running the testsuite requires additional infrastructure
 
@@ -135,7 +145,7 @@ Given the lower usage count, lack of maintenance, and diminishing upstream suppo
 
 `i686-pc-windows-msvc` is now a [Tier 1] target that implements `std`, instead of a [Tier 1 With Host Tools][Tier 1] target.
 
-Official builds of the standard library **will continue to be distributed** for this target, and it will receive some testing, notably including `std`'s library testing.
+Official builds of the standard library **will continue to be distributed** for this target, and it will continue to receive some testing, notably including `std`'s library testing.
 
 We will no longer build or test the target *as a compiler host*.
 
@@ -168,7 +178,7 @@ For these reasons, we should not expect this userbase to grow significantly.
 # Prior art
 [prior-art]: #prior-art
 
-The `i686-pc-windows-gnu` target was demoted according to the Target Tier Policy ([RFC#2803][targettp-rfc] with its latest version [in the rustc book][targettp-v1.97.1]]).
+The `i686-pc-windows-gnu` target was demoted according to the Target Tier Policy ([RFC#2803][ttp-rfc], latest version [in the rustc book][ttp-v1.97]]).
 It was demoted wholesale to tier 2 as it had more severe test failures and lacked the same usage for its standard library.
 The `windows-gnu` target however did retain its host tools, but these may prove to be difficult to maintain for much longer, for similar reasons.
 
@@ -176,13 +186,13 @@ Before that, there has been the [demotion of `i686-apple-darwin` from Tier 1 to 
 
 The [promotion of `aarch64-apple-darwin` to Tier 1](https://github.com/rust-lang/rfcs/pull/3671) cited popularity as the major motivation, matching unpopularity as one of the motivations here.
 
-[targettp-rfc]: https://rust-lang.github.io/rfcs/2803-target-tier-policy.html
-[targettp-v1.97.1]: https://doc.rust-lang.org/1.97.1/rustc/target-tier-policy.html
+[ttp-rfc]: https://rust-lang.github.io/rfcs/2803-target-tier-policy.html
+[ttp-v1.97]: https://doc.rust-lang.org/1.97.1/rustc/target-tier-policy.html
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None so far.
+What is the minimum bound we expect for tier 1 target testing, and can `i686-pc-windows-msvc` meet it?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
