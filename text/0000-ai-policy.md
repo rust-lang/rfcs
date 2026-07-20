@@ -48,9 +48,9 @@ It is allowed to include raw AI output in an attachment, for example, in a secur
 ## Enforcement and extension
 [meta-policy]: #enforcement-and-extension
 
-Rust teams may extend the [guidelines] above for the repositories (or the subsets of those repositories) and other spaces that they maintain, provided that all relevant teams that also maintain those same spaces agree to the extension.  But teams may not relax the restrictions concerning [communication].
+Teams may not change the policies in this section.
 
-Teams may not change the policies in the rest of this section.
+Rust teams may extend the [guidelines] above for the repositories (or the subsets of those repositories) and other spaces that they maintain, provided that all relevant teams that also maintain those same spaces agree to the extension.  But teams may not relax the restrictions concerning [communication].
 
 The *must* and *must not* items are the normative parts of the guidelines.  If someone has been told about these items and still repeatedly fails to follow them, that is disruptive behavior.  It is also a form of the "other attention-stealing behavior" described in our [Code of Conduct].  When this causes conflict or tension, consider reporting it to the moderation team.
 
