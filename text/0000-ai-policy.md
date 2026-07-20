@@ -22,17 +22,9 @@ This RFC aims to adopt an intersection of agreement: the points on which we agre
 ## Reference-level and guide-level explanation
 [reference-level explanation]: #reference-level-explanation
 
-The [guidelines] below are Rust's policy on using AI tools when contributing to the Rust Project.  Teams may extend the guidelines in their own spaces.  Teams may also relax restrictions in the guidelines, except for the restrictions about [comments].
+The [guidelines] below form Rust's policy on the use of AI tools, and applies to all contributors to the Rust Project. The guidelines may be cited or copied in any place where we guide contributors on what we expect.
 
-Teams may not change the policies in this section.
-
-The guidelines may be cited or copied in any place where we guide contributors on what we expect.
-
-The *must* and *must not* items are the normative part of the guidelines.  If someone has been told about these items and still repeatedly fails to follow them, that is disruptive.  It is also a form of the "other attention-stealing behavior" described in our [Code of Conduct].  When this causes conflict or tension, consider reporting it to the moderation team.
-
-A maintainer may decline to review a contribution for any reason.  For example, a maintainer might decline because the contribution appears to have been made with an AI tool and the maintainer does not want to review such work.
-
-[Code of Conduct]: https://rust-lang.org/policies/code-of-conduct/
+The [enforcement and modifications][meta-policy] section describes how will the policy be enforced and how it can be extended in specific Project places. It is most relevant to Project members.
 
 ## Guidelines for using AI tools
 [guidelines]: #guidelines-for-using-ai-tools
@@ -40,32 +32,45 @@ A maintainer may decline to review a contribution for any reason.  For example, 
 ### Be in the loop
 [be in the loop]: #be-in-the-loop
 
-As the author, you're fully responsible for anything you send us (for example, code, documentation, descriptions, reports, proposals, or comments).  Before you submit something, you *must* review it, understand it, and be able to explain it.  You *must* be the human in the loop.  You *must not* send us fully autonomous contributions (that is, contributions made by an AI tool alone, with no human in the loop).  Consider describing how the work was produced; this helps reviewers give better feedback.
+As the author, you are fully responsible for anything you send us (for example, code, documentation, pull requests, issues, reports, proposals, or comments).  Before you submit something, you *must* review it, understand it, and be able to explain it.  You *must* be the human in the loop.  You *must not* send us fully autonomous contributions (that is, contributions made by an AI tool alone, with no human in the loop).
 
-### Comments
-[comments]: #comments
+Consider describing how your contribution was produced and disclosing usage of AI; this helps reviewers give better feedback.
 
-In comments (and messages, posts, etc.), we want to hear from *you*.  You *must not* just copy AI output when you comment or reply.
+### Communication
+[communication]: #communication
 
-It's OK to use AI tools for translation.  Consider including your original message, or saying that you used automated translation.
+In comments (and messages, posts, etc.) on platforms such as GitHub or Zulip, we want to hear from *you*.  You *must not* let AI communicate on your behalf or just copy AI output when you comment or reply.
 
-It's OK to include raw AI output in an attachment, for example in a security report.  But you *must* discuss, in your own words, that output and how it was produced.  Consider saying why it's useful and how much you've reviewed it.
+It is allowed to use AI tools for translating comments.  In that case consider including your original message, or saying that you used automated translation.
+
+It is allowed to include raw AI output in an attachment, for example in a security report, if you disclose that it was produced by AI.  But you *must* discuss, in your own words, that output and how it was produced.  Consider saying why it is useful and how much you have reviewed it.
+
+## Enforcement and modifications
+[meta-policy]: #meta-policy
+
+Rust teams may extend the [guidelines] above for the repositories (or their subsets) that they maintain, provided that all relevant teams who also maintain that same area agree with it. However, teams may not relax the restrictions concerning [communication].
+
+Teams may not alter the policies cited in the rest of this section below.
+
+The *must* and *must not* items are the normative part of the guidelines.  If someone has been told about these items and still repeatedly fails to follow them, that is disruptive behavior.  It is also a form of the "other attention-stealing behavior" described in our [Code of Conduct].  When this causes conflict or tension, consider reporting it to the moderation team.
+
+A maintainer may decline to review a contribution for any reason.  That includes declining to review a contribution because it appears to have been made with an AI tool and the maintainer does not want to review such work.
+
+[Code of Conduct]: https://rust-lang.org/policies/code-of-conduct/
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
 When we adopt any policy for contributions, we ask more from our contributors.  On the other hand, this policy might help those contributors by making it clear what we expect.
 
-This policy does not ban the use of AI tools.  Some people may see that as an implicit endorsement of these tools.  This policy is not an endorsement, but it's not always possible to stop people from getting the wrong idea.
+This policy does not completely ban the use of AI tools.  Some people may see that as an implicit endorsement of these tools.  This policy is not an endorsement, but it's not always possible to stop people from getting the wrong idea.
 
 ## Rationale and alternatives
 [rationale and alternatives]: #rationale-and-alternatives
 
-This policy encourages disclosure (saying that you used AI tools), but it does not *demand* disclosure.  Some feel strongly that disclosure should be demanded.  Others feel strongly that demanding it causes [harms].  This RFC adopts the intersection of agreement.
+This policy encourages disclosure (saying that you used AI tools), but it does not *demand* disclosure.  Some feel strongly that disclosure should be demanded.  Others feel strongly that demanding it causes harms.  This RFC adopts the intersection of agreement.
 
 This policy reduces the autonomy of teams in some places and preserves it in others.  Where teams keep their autonomy, they can fit their practices to their own unique work and circumstances, but the Project can feel more uneven.  Where the policy restricts autonomy, the Project becomes more uniform, but the policy may interfere with teams that have unique needs.  This RFC tries to balance the two.
-
-[harms]: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5205850
 
 ## Prior art
 [prior art]: #prior-art
