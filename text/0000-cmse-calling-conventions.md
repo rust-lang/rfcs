@@ -92,17 +92,20 @@ type T2 = extern "cmse-nonsecure-call" fn() -> U64;
 // Invalid: too many argument registers used
 type T3 = extern "cmse-nonsecure-call" fn(_: i64, _: u8, _: u8, _: u8) -> i64;
 
+// Invalid: too many argument registers used (due to the alignment of `i64`).
+type T4 = extern "cmse-nonsecure-call" fn(_: i32, _: i64, _: ui32) -> i64;
+
 // Invalid: return type too large
-type T4 = extern "cmse-nonsecure-call" fn() -> i128;
+type T5 = extern "cmse-nonsecure-call" fn() -> i128;
 
 // Invalid: return type does not fit in one 32-bit register, and is not a (optionally transparently wrapped) 64-bit scalar.
 #[repr(C)] struct WrappedI64(i64);
-type T5 = extern "cmse-nonsecure-call" fn(_: i64, _: i64) -> WrappedI64;
+type T6 = extern "cmse-nonsecure-call" fn(_: i64, _: i64) -> WrappedI64;
 ```
 
 The arguments fit if:
 
-- the sum of their sizes, each rounded up to the next multiple of 4, is 16 bytes or less
+- the sum of their sizes, each rounded up to the next multiple of `max(4, align)`, is 16 bytes or less
 
 A return value fits if either:
 
@@ -338,11 +341,11 @@ This works because the secure and non-secure applications share their address sp
 
 The `cmse-nonsecure-call` calling convention is used for *non-secure function calls*: function calls that switch from secure to non-secure mode. Because secure and non-secure code are separated into different executables, the only way to perform a non-secure function call is via function pointers. Hence, the `cmse-function-call` calling convention is only allowed on function pointers, not in function definitions or `extern` blocks.
 
-To ensure that the non-secure executable cannot read any lingering secret values from those registers, a call to a `cmse-nonsecure-call` function will clear all registers except those used to pass arguments.
+To ensure that the non-secure executable cannot read any lingering secret values from unused registers, a call to a `cmse-nonsecure-call` function will clear all registers except those used to pass arguments.
 
 A *non-secure function pointer*, i.e. a function pointer using the `cmse-nonsecure-call` calling convention, has its least significant bit (LSB) unset. Checking for whether this bit is set provides a way to test at runtime which security state is targeted by the function.
 
-The secure executable can get its hands on a non-secure function pointer in two ways: the function address can be an argument to an entry function, or it can be in memory at a statically-known address.
+The secure executable can get its hands on a non-secure function pointer in two ways: a function pointer or address can be an argument to an entry function, or it can be in memory at a statically-known address.
 
 # Drawbacks
 [drawbacks]: #drawbacks
