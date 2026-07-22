@@ -27,7 +27,7 @@ The secure and non-secure applications communicate over an FFI boundary: the two
 
 Functions that use these ABIs must be reviewed carefully because they mark where secure data might be leaked. This is analogous to `unsafe` limiting  where UB might be introduced in a program. The calling conventions automatically handle the clearing of unused registers before the secure boundary is crossed, so that a malicious non-secure application cannot read lingering secure data.
 
-Without compiler support for these calling conventions it is much harder to know where to focus review effort, and every call that crosses the secure boundary requires inline assembly, which is inconvenient and error-prone.
+Without compiler support for these calling conventions it is much harder to know where to focus review effort, and every call that crosses the secure boundary would require inline assembly, which is inconvenient and error-prone.
 
 A specific use case is encapsulating C APIs. Providing a C interface is still the standard way for a hardware vendor to provide access to system components. Libraries for networking (LTE, Bluetooth) are notorious for their bugs. Running such code in non-secure mode significantly reduces the risk of bugs leaking secure information.
 
@@ -37,7 +37,7 @@ Trustzone is growing in availability and use. More and more of the new medium an
 
 The cmse calling conventions are part of the *Cortex-M Security Extension* that are available on Armv8-M systems (the relevant targets start with `thumbv8m`). They are used together with Trustzone (hardware isolation) to create more secure embedded applications.
 
-The main idea of Trustzone  is to split an embedded application into two executables. The secure executable has access to secrets (e.g. encryption keys), and must be careful not to leak those secrets. The non-secure executable cannot access these secrets or any memory that is marked as secure: the system will raise a SecureFault when a program dereferences a pointer to memory that it does not have access to. In this way a whole class of security issues is prevented in the non-secure app.
+The main idea of Trustzone  is to split an embedded application into two executables. The secure executable has access to secrets (e.g. encryption keys), and must be careful not to leak those secrets. The non-secure executable cannot access these secrets or any memory that is marked as secure: the system will raise a SecureFault when a non-secure program dereferences a pointer to secure memory. This mechanism statically prevents a whole class of security issues.
 
 The cmse calling conventions facilitate interactions between the secure and non-secure executables. To ensure that secrets do not leak, these calling conventions impose some custom restrictions on top of the system's standard AAPCS calling convention.
 
@@ -45,13 +45,11 @@ The `cmse-nonsecure-entry` calling convention is used in the secure executable t
 
 The `cmse-nonsecure-call` calling convention is used in the other direction, when the secure executable wants to call into the non-secure executable. This calling convention can only occur on function pointers, not on definitions or extern blocks. The secure executable can acquire a non-secure function pointer via shared memory, or a non-secure callback can be passed to an entry function.
 
-Both calling conventions are based on the platform's C calling convention, but will not use the stack to pass arguments or the return value. In practice that means that the arguments must fit in the 4 available argument registers, and the return value must fit in a single 32-bit register, or be abi-compatible with a 64-bit integer or float. The compiler checks that the signature is valid.
+Both calling conventions are based on the platform's C calling convention, but will not use the stack to pass arguments or the return value. In practice that means that the arguments must fit in the 4 available 32-bit argument registers, and the return value must fit in a single 32-bit register, or be abi-compatible with a 64-bit integer or float. The compiler checks that the signature is valid and emits an error if not. LLVM would error on invalid signatures, but we catch such cases early and provide a nicer error message.
 
-The calling conventions will clear any unused registers before crossing the secure boundary, so that lingering secure data in those registers is not leaked. However, arguments and return values can also contain stale secure data in their padding. We differentiate between two kinds of padding.
+The calling conventions will clear any unused registers before crossing the secure boundary, so that lingering secure data in those registers is not leaked. However, arguments and return values can also contain stale secure data in their padding. These padding bytes are cleared, sometimes reading and branching on the discriminant to know what bytes are padding for the actual runtime value.
 
-When a particular byte is padding for all valid values of a type, this is *guaranteed padding*. Like `clang`, `rustc` will zero guaranteed padding in values that cross the secure boudary.
-
-Enum and union types may also have variant-dependent padding: bytes that are padding for some but not all valid values of the type. For instance for `Option<u8>` the payload byte is padding when `None` but data when `Some(_)`. Similarly `MaybeUninit<T>` may or may not contain padding. The `cmse_uninitialized_leak` lint warns when a type containing an `enum` or `union` crosses the FFI boundary. That is a very coarse filter, but a more accurate approach runs the risk of exposing (unstable!) layout details.
+Unions like `MaybeUninit<T>` may or may not contain padding. The `cmse_uninitialized_leak` lint warns when a type containing a `union` crosses the FFI boundary.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -65,7 +63,7 @@ The foundation of the cmse ABIs is the platform's standard AAPCS calling convent
 
 The `cmse-nonsecure-call` ABI can only be used on function pointers. Using it in for a function definition or extern block emits an error. It is invalid to cast to or from `extern "aapcs"`.
 
-The `cmse-nonsecure-entry` ABI is allowed on function definitions, extern blocks and function pointers. It is sound and valid (in some cases even encouraged) to convert such a function to `extern "aapcs"`, particularly in the non-secure application.
+The `cmse-nonsecure-entry` ABI is allowed on function definitions, extern blocks and function pointers. It is sound and valid (in some cases even encouraged) to convert such a function to `extern "aapcs"`, particularly in the non-secure application. The following is allowed:
 
 ```rust
 #[unsafe(no_mangle)]
@@ -123,7 +121,11 @@ LL | pub extern "cmse-nonsecure-entry" fn f1(_: u32, _: u32, _: u32, _: u32, _: 
    = note: functions with the `"cmse-nonsecure-entry"` ABI must pass all their arguments via the 4 32-bit available argument registers
 ```
 
-The error is generated after type checking but before monomorphization, meaning that even a `cargo check` will emit these errors, and the errors are emitted even for unused functions. Note that LLVM will also check the ABI constraints, but it generates poor error messages late in the compilation process.
+The error is generated after type checking but before monomorphization, meaning that even a `cargo check` will emit these errors, and the errors are emitted even for unused functions.
+
+Note that LLVM will also check the ABI constraints, but it generates poor error messages late in the compilation process.
+
+The signature check leaks implementation details of `repr(Rust)`: it is possible that a change to the rust layout algorithm causes `extern "cmse-*` functions to stop compiling. In practice it seems unlikely that this will cause issues because the api surface will be small and this is an FFI boundary where using `repr(C)` is encouraged. Rejecting (nested) `repr(Rust)` types from crossing the secure boundary is extremely prohibitive, because most ecosystem types are `repr(Rust)`.
 
 Because Rust is not C, we impose a couple additional restrictions, based on how these ABIs are (meant to be) used.
 
@@ -139,7 +141,8 @@ LL | extern "cmse-nonsecure-entry" fn return_impl_trait(_: impl Copy) -> impl Co
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-The `cmse-nonsecure-call` calling convention can only be used on function pointers, which already disallows generics. For `cmse-nonsecure-entry`,  it is standard to add a `#[no_mangle]` or similar attribute, which also disallows generics. Explicitly disallowing generics enables the pre-monomorphization layout calculation that is required for good error messages for signatures that use too many registers.
+The `cmse-nonsecure-call` calling convention can only be used on function pointers, which already disallows generics. For `cmse-nonsecure-entry`,  it is standard to add a `#[no_mangle]` or a similar attribute, which also disallows generics. Explicitly disallowing generics enables the pre-monomorphization layout calculation that is required for good error messages for signatures that use too many registers.
+
 ### No C-variadics (currently)
 
 Currently both ABIs disallow the use of c-variadics. For `cmse-nonsecure-entry`, the toolchain actually does not support c-variadic signatures (likely because of how they interact with shim that switches to secure mode, though the specification does not say that explicitly).
@@ -155,7 +158,7 @@ Neither cmse ABI can tail call another function, per the LLVM source:
 
 > For both the non-secure calls and the returns from a CMSE entry function, the function needs to do some extra work after the call, or before the return, respectively, thus it cannot end with a tail call
 
-The unstable implementation of guaranteed tail calls in rust requires the caller and callee to have the same ABI. That means that calls to `cmse-nonsecure-call` are never eligible for a tail call (there are no definitions with this ABI). For tail calls to a `cmse-nonsecure-entry` function we emit an explicit error.
+The unstable implementation of guaranteed tail calls in rust requires the caller and callee to have the same ABI. That means that calls to `cmse-nonsecure-call` are never eligible for a tail call (there are no definitions with this ABI).
 
 Clang does allow `cmse_nonsecure_entry` functions to be tail-called, for example:
 
@@ -209,7 +212,7 @@ In contrast, a byte is variant-dependent padding when it is padding for some, bu
 These three PRs implement our logic:
 
 - [clear variant-independent padding](https://github.com/rust-lang/rust/pull/157397)
-- [clear variant-dependent padding](https://github.com/rust-lang/rust/pull/159466)
+- [clear variant-dependent padding in enums](https://github.com/rust-lang/rust/pull/159466)
 - [lint on unions crossing the secure boundary](https://github.com/rust-lang/rust/pull/147697)
 
 We statically find all byte ranges that are variant-independent padding, and clear them. When a value contains a (nested) enum, we generate code to read the discriminant at runtime and clear the variant-dependent padding of that enum.
@@ -319,6 +322,8 @@ The secure executable can get its hands on a non-secure function pointer in two 
 [drawbacks]: #drawbacks
 
 The usual reasons: this is a niche feature (although it is requested by large industry players) with a fair amount of complexity that must be maintained. However to be fair, these calling conventions have been in the compiler for around 5 years and so far the maintenance burden has been acceptable.
+
+As mentioned, the signature check exposes `repr(Rust)` implementation details.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
