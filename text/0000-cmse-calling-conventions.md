@@ -272,7 +272,7 @@ An entry function has two ELF symbols labeling it:
 - the standard rust symbol name
 - A special symbol that prefixes the standard name with `__acle_se_`
 
-The presence of the prefixed name is used by the linker to generate a *secure gateway veneer*: a shim that uses the *secure gate* (`sg`) instruction to switch security modes and then branches to the real definition. The non-secure executable must call this shim, not the real definition. Calling the read definition from the non-secure executable would cause a SecureFault.
+The presence of the prefixed name is used by the linker to generate a *secure gateway veneer*: a shim that uses the *secure gate* (`sg`) instruction to switch security modes and then branches to the real definition. The non-secure executable must call this shim, not the real definition. Calling the standard rust symbol from the non-secure executable would cause a SecureFault.
 
 It is customary for entry functions to use `no_mangle`, `export_name` or similar so that the symbol is not mangled. The use of the `cmse-nonsecure-entry` calling convention makes LLVM emit the additional prefixed symbol. For instance this function:
 
