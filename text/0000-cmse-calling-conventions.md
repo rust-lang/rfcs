@@ -121,6 +121,32 @@ LL | pub extern "cmse-nonsecure-entry" fn f1(_: u32, _: u32, _: u32, _: u32, _: 
    = note: functions with the `"cmse-nonsecure-entry"` ABI must pass all their arguments via the 4 32-bit available argument registers
 ```
 
+We also catch this in `extern "cmse-nonsecure-entry"` blocks:
+
+```
+error[E0798]: arguments for `"cmse-nonsecure-entry"` function too large to pass via registers
+  --> <source>:18:35
+   |
+18 |     fn foo(_:i32, _:i32, _:i32, _:i64);
+   |                                   ^^^ does not fit in the available registers
+   |
+   = note: functions with the `"cmse-nonsecure-entry"` ABI must pass all their arguments via the 4 32-bit argument registers
+
+```
+
+And in `"cmse-nonsecure-call"` function pointer types:
+
+```
+error[E0798]: arguments for `"cmse-nonsecure-call"` function too large to pass via registers
+  --> <source>:21:58
+   |
+21 | fn foo(f: extern "cmse-nonsecure-call" fn(i32, i32, i32, i64)) {
+   |                                                          ^^^ does not fit in the available registers
+   |
+   = note: functions with the `"cmse-nonsecure-call"` ABI must pass all their arguments via the 4 32-bit argument registers
+
+```
+
 The error is generated after type checking but before monomorphization, meaning that even a `cargo check` will emit these errors, and the errors are emitted even for unused functions.
 
 Note that LLVM will also check the ABI constraints, but it generates poor error messages late in the compilation process.
