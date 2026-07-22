@@ -129,7 +129,7 @@ Because Rust is not C, we impose a couple additional restrictions, based on how 
 
 ### No Generics
 
-No generics are allowed. That includes both standard generics, const generics, and any `impl Trait` in argument or return position. By extension, `async` cannot be used in combination with the cmse ABIs.
+No monomorphized generics are allowed. That includes both standard generics, const generics, and any `impl Trait` in argument or return position. By extension, `async` cannot be used in combination with the cmse ABIs.
 
 ```
 error[E0798]: functions with the `"cmse-nonsecure-entry"` ABI cannot contain generics in their type
@@ -157,7 +157,28 @@ Neither cmse ABI can tail call another function, per the LLVM source:
 
 The unstable implementation of guaranteed tail calls in rust requires the caller and callee to have the same ABI. That means that calls to `cmse-nonsecure-call` are never eligible for a tail call (there are no definitions with this ABI). For tail calls to a `cmse-nonsecure-entry` function we emit an explicit error.
 
-Functions with the `extern "cmse-nonsecure-entry"` ABI may themselves be tail-called, though this is only possible when the function is first cast to `extern "C"` to satisfy the restriction that caller and callee have the same ABI.
+Clang does allow `cmse_nonsecure_entry` functions to be tail-called, for example:
+
+https://godbolt.org/z/P3ToKTW94
+
+```c
+__attribute__((noinline))
+__attribute__((cmse_nonsecure_entry))
+int callee(int x)
+{
+    return x + 1;
+}
+
+// NOTE: no cmse attribute, this is a normal C function.
+int caller(int x)
+{
+    __attribute__((musttail))
+    return callee(x);
+}
+```
+
+In Rust the equivalent code runs into the same-signature restriction: the calling conventions are different, and the tail call is rejected. It is however possible to cast a `extern "cmse-nonsecure-entry"` function to `extern "C"` and then tail call it.
+
 ### Support for `const fn`
 
 No special support for calling cmse functions is needed.
@@ -167,9 +188,10 @@ Evaluating entry functions during constant evaluation is valid. The context swit
 The `cmse-nonsecure-call` calling convention can only be used on function pointers, which cannot be evaluated during constant evaluation.
 
 Miri is not a register machine, so the clearing of registers is not relevant. The context switching also does not need to be considered, because a Miri input program cannot use FFI and therefore cannot cross the secure boundary. Any attempt to do so would rely on a transmute or similar and would for that reason be unsound.
+
 ## Preventing information leaking via padding bytes
 
-Values that cross the secure boundary may have stale secure data in their padding bytes. Padding can be either variant-dependent or variant-independent. 
+Values that cross the secure boundary may have stale secure data in their padding bytes. Padding can be either variant-dependent or variant-independent.
 
 A byte is variant-independent padding when the byte is padding for all valid values of a given type. For example `S` has three trailing guaranteed padding bytes:
 
@@ -180,21 +202,19 @@ struct S {
 }
 ```
 
-In contrast, a byte is variant-dependent padding when it is padding for some, but not all, valid values of a type. For instance the payload in `Option<u8>` (the payload is padding when `None`, data when `Some(_)`) or all bytes of a `MaybeUninit<T>`.
+In contrast, a byte is variant-dependent padding when it is padding for some, but not all, valid values of a type. For instance the payload in `Option<u8>`: the payload is padding when `None`, data when `Some(_)`. All bytes of a union like `MaybeUninit<T>` are considered variant-dependent padding.
 
-### Clear variant-independent padding
+### Implementation
 
-The backend will clear the variant-independent padding bytes before passing the value over the boundary.
-#### Implementation
+These three PRs implement our logic:
 
-https://github.com/rust-lang/rust/pull/157397
+- [clear variant-independent padding](https://github.com/rust-lang/rust/pull/157397)
+- [clear variant-dependent padding](https://github.com/rust-lang/rust/pull/159466)
+- [lint on unions crossing the secure boundary](https://github.com/rust-lang/rust/pull/147697)
 
-The implementation finds the data ranges of the type: the ranges of bytes that are data for some variant. It then takes the complement to find all ranges that are padding for all variants. The backend then writes `0u8` into those ranges.
-### Warn on partially uninitialized values crossing the secure boundary
+We statically find all byte ranges that are variant-independent padding, and clear them. When a value contains a (nested) enum, we generate code to read the discriminant at runtime and clear the variant-dependent padding of that enum.
 
-When a type may have variant-dependent padding, i.e. when it is or contains any `enum` or `union` without indirection, the `cmse_uninitialized_leak` lint fires.
-
-Clang warns when union values cross the security boundary (see https://godbolt.org/z/vq9xnrnEs), and rust does the same.
+When a type crossing the secure boundary contains a (nested) `union` without indirection, the `cmse_uninitialized_leak` lint fires:
 
 ```
 warning: passing a (partially) uninitialized value across the secure boundary may leak information
@@ -206,17 +226,9 @@ LL |     f4: extern "cmse-nonsecure-call" fn(MaybeUninit<u64>),
    = note: the bytes not used by the current variant may contain stale secure data
 ```
 
-Like clang, the lint is emitted at the use site. That means that in the case where passing such a value is deliberate, each use site can be annotated with `#[allow(cmse_uninitialized_leak)]`. In most cases this lint should be considered an error, and an alternative way of returning/passing the value should be found that does not run the risk of leaking secure information.
-
-A `cmse-nonsecure-call` function call will emit a warning when any of its arguments has a partially uninitialized type, and a `cmse-nonsecure-entry` function warns at any (implicit) return when the return type may be partially uninitialized.
+Like clang (see https://godbolt.org/z/vq9xnrnEs), the lint is emitted at the use site. That means that in the case where passing such a value is deliberate, each use site can be annotated with `#[allow(cmse_uninitialized_leak)]`. In most cases this lint should be considered an error, and an alternative way of returning/passing the value should be found that does not run the risk of leaking secure information.
 
 Ultimately guaranteeing the security properties of the system is up to the programmer, but warning on types with potentially uninitialized memory is a helpful signal that the compiler can provide.
-
-#### Implementation
-
-https://github.com/rust-lang/rust/pull/147697
-
-Traverses a type to find any occurences of `enum` or `union` that are not behind some sort of indirection.
 
 ## Background
 
