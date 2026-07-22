@@ -328,6 +328,24 @@ The straightforward alternative is to have users emulate these calling conventio
 For users, these calling conventions should not come up unless someone seeks them out. Interactions with other language features are similarly only relevant to this niche group of users.
 
 For a true ergonomic experience more work is needed, but we believe this can all be done in the package ecosystem.
+
+## Error on unions
+
+Instead of linting on `union` values crossing the secure boundary, we could emit a hard error.
+
+Using custom `union`s, let alone passing them over a secure boundary, is extremely rare. But a hard error might bite in subtle ways.
+
+The `MaybeUninit<T>` union (it uses `repr(transparent)`) is often used in storage abstractions, e.g. [`heapless::vec::OwnedVecStorage`](https://docs.rs/heapless/latest/heapless/vec/type.OwnedVecStorage.html). To guarantee that secure information does not leak you can assert that e.g. all elements of a `heapless` vector are filled.
+
+The `ManuallyDrop<T>` type is useful in an FFI context, you can require (e.g. via a SAFETY comment) that the `ManuallyDrop` value is still live (and hence initialized) when it is passed over the secure boundary.
+
+
+## Error on `repr(Rust)`
+
+The current proposal leaks implementation details about `repr(Rust)`: changing its algorithm could cause a cmse function to stop compiling, because now a value no longer fits in the available registes. So, we could disallow (nested) `repr(Rust)` types from crossing the boundary.
+
+This is extremely limiting in practice. The rust embedded ecosystem uses zero-sized types as tokens that represent abilities. It also uses `Option`, `Result`, and custom `enum`s and other types: an application author has no control over what representation is used on library types, and often the default, `repr(Rust)`, is used.
+
 # Prior art
 [prior-art]: #prior-art
 
