@@ -1,4 +1,4 @@
-- Feature Name: `abi_custom` 
+- Feature Name: `abi_custom`
 - Start Date: 2026-07-01)
 - RFC PR: [rust-lang/rfcs#3980](https://github.com/rust-lang/rfcs/pull/3980)
 - Rust Issue: [rust-lang/rust#140829)](https://github.com/rust-lang/rust/issues/140829)
@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-An `extern "custom" fn` is a function with a custom ABI that is unknown to rust. Often these are low-level functions that pass arguments in different registers than any standard calling convention, so using this helps rustc block you from using this in any place where rustc would need to understand that calling convention.
+An `extern "custom" fn` is a function with a custom ABI that is unknown to rust. Often these are low-level functions that pass arguments in different registers than any standard calling convention, so using `extern "custom"` helps rustc block you from using a function in a place where rustc would need to understand that calling convention.
 
 
 ```rust
@@ -38,6 +38,7 @@ unsafe extern "custom" {
 * Proposal: https://github.com/rust-lang/rust/issues/140566
 * Tracking issue: https://github.com/rust-lang/rust/issues/140829
 * Implementation: https://github.com/rust-lang/rust/pull/140770
+* Restrictions on function pointer types: https://github.com/rust-lang/rust/pull/159780
 * Stabilization PR: https://github.com/rust-lang/rust/pull/158504
 
 ## Motivation
@@ -50,7 +51,7 @@ The current solution is often to use `extern "C"`, but that is misleading: the f
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Because rust doesn't know what calling convention to use, an `extern "custom"` function can only be called via inline assembly or FFI. 
+Because rust doesn't know what calling convention to use, an `extern "custom"` function can only be called via inline assembly or FFI.
 
 ```
 error: functions with the "custom" ABI cannot be called
@@ -78,7 +79,7 @@ help: convert this to an `#[unsafe(naked)]` function
    |
 ```
 
-An `extern "custom"` function definition must be unsafe. The intent here is that a safety comment is written on how this function may be called. 
+An `extern "custom"` function definition must be unsafe. The intent here is that a safety comment is written on how this function may be called.
 
 ```
 error: functions with the "custom" ABI must be unsafe
@@ -125,6 +126,23 @@ help: remove the parameters and return type
   |
 ```
 
+We also error on missing `unsafe` or presence of argument and return types in `extern` blocks and function pointer types.
+
+```
+error: invalid signature for `extern "custom"` function
+  --> $DIR/bad-custom.rs:13:40
+   |
+LL | type MustbeUnsafe = extern "custom" fn(i64) -> i64;
+   |                                        ^^^     ^^^
+   |
+   = note: functions with the "custom" ABI cannot have any parameters or return type
+help: remove the parameters and return type
+   |
+LL - type MustbeUnsafe = extern "custom" fn(i64) -> i64;
+LL + type MustbeUnsafe = extern "custom" fn();
+   |
+```
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -145,7 +163,6 @@ The name has already been debated. The name `unknown` has been mentioned, but to
 Arguments and return types are forbidden because they are not consumed in any way. The compiler has no way of validating them against the function body, similar to other naked functions, but the functions can never be invoked directly so they serve no purpose when calling. The intent is that correct parameter passing and returning will be covered in documentation.
 
 ## Prior art
-=======
 [prior-art]: #prior-art
 
 https://github.com/rust-lang/rust/issues/140566#issuecomment-2846205457
@@ -165,4 +182,30 @@ None currently.
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-None currently.
+### Support `Never` as a return type
+
+A return type of `-> !` indicates that the function diverges.
+
+That a function diverges is useful to know, and relevant for the very low-level use cases for `extern "custom"`. However, like
+arbirary argument and return types (see below), the type is never actually validated, and the signature might go out of sync with
+the implementation.
+
+So far, no actual use of `-> !` has come up, so we leave it as a future possibility.
+
+### Support argument and return types
+
+Argument and return types are not validated by the compiler whatsoever
+
+- like any other `#[naked]` function, argument/return types are not validated against the body
+- argument/return types are not validated at the call site (because inline assembly is used)
+
+For those reasons, argument and return types are omitted in the current RFC.
+
+The only place where the argument/return types would be checked is when an `extern "custom"` function pointer
+is unified again another function pointer type. A newtype wrapper can be used to differentiate different
+`extern "custom"` function pointers that carry a particular semantic meaning.
+
+However, the point has been raised that the argument and return types can serve as documentation. On the other hand, the
+signature can be misleading: the whole point of `extern "custom"` is that no known ABI is followed.
+
+In summary, we leave space for argument and return types to be supported in the future when a compelling use case presents itself.
