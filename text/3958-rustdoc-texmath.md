@@ -487,6 +487,8 @@ and, ideally, have a specification without much churn.
 - [GraphViz DOT][] has a Rust [implementation][layout-rs], too.
   Like LaTeX, DOT is popular, stable, and has multiple third-party reimplementations.
   However, it is *not* terse unless its layout algorithm does what you need.
+- [PIC][] is a generic diagram language invented at AT&T Bell Labs in the 80's. The example below
+  was tested in [dpic][] and [pikchr][], both maintained implementations of this language.
 
 #### A simple sequence diagram, in each language
 
@@ -544,6 +546,28 @@ digraph SEQ_DIAGRAM {
 }
 ```
 
+```pic
+# dpic requires `.PS` here
+# pikchr doesn't
+Actor1: box "Actor 1"; move
+Actor2: box "Actor 2"; move
+Actor3: box "Actor 3"
+move to Actor1 down 0.3
+Line1a: line dotted down 1; Line1b: line same; Line1c: line same
+move to Actor2 down 0.3
+Line2a: line dotted down 1; Line2b: line same; Line2c: line same
+move to Actor3 down 0.3
+Line3a: line dotted down 1; Line3b: line same; Line3c: line same
+
+arrow "Start" above from Line1a to Line2a
+arrow "Do something" above from Line2b to Line3b
+arrow "Return" above from Line3c to Line1c
+# dpic requires `.PE` here
+```
+
+[PIC]: <https://en.wikipedia.org/wiki/PIC_(markup_language)>
+[dpic]: <https://gitlab.com/aplevich/dpic>
+[pikchr]: https://pikchr.org/
 [PlantUML]: https://github.com/plantuml/plantuml
 [LaTeX drawing tools]: https://en.wikibooks.org/wiki/LaTeX/Introducing_Procedural_Graphics
 [LaTeXML]: https://en.wikipedia.org/wiki/LaTeXML
