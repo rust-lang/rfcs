@@ -552,16 +552,14 @@ digraph SEQ_DIAGRAM {
 Actor1: box "Actor 1"; move
 Actor2: box "Actor 2"; move
 Actor3: box "Actor 3"
-move to Actor1 down 0.3
-Line1a: line dotted down 1; Line1b: line same; Line1c: line same
-move to Actor2 down 0.3
-Line2a: line dotted down 1; Line2b: line same; Line2c: line same
-move to Actor3 down 0.3
-Line3a: line dotted down 1; Line3b: line same; Line3c: line same
 
-arrow "Start" above from Line1a to Line2a
-arrow "Do something" above from Line2b to Line3b
-arrow "Return" above from Line3c to Line1c
+line dotted from Actor1.s down 3
+line dotted from Actor2.s down 3
+line dotted from Actor3.s down 3
+
+arrow "Start" above from Actor1.s - (0, 1) to Actor2.s - (0, 1)
+arrow "Do something" above from Actor2.s - (0, 2) to Actor3.s - (0, 2)
+arrow "Return" above from Actor3.s - (0, 3) to Actor1.s - (0, 3)
 # dpic requires `.PE` here
 ```
 
