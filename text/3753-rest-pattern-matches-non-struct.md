@@ -16,6 +16,8 @@ This RFC does not endorse code containing such patterns as idiomatic. Instead,
 the purpose of this RFC is for library authors to be able to evolve the library's
 public API without breaking users who have written such code.
 
+We may also want to lint against the use of this pattern. See the future possibilities section.
+
 # Motivation
 [motivation]: #motivation
 
@@ -149,4 +151,4 @@ different type.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-N/A
+We may also want to lint against the use of this pattern. That might or might not be enough for people to feel like they can change opaque library types to be non-structs without considering that a breaking change, but it would help discourage the use of this pattern.
