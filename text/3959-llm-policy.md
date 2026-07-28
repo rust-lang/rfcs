@@ -398,6 +398,18 @@ There are many [existing policies] pointed out in the prior art section and this
 
 Due to the harm reduction mentioned in the [motivation], the choice to reduce LLM usage in the policy is justified. However, the carving-out of "trivial usage" should also help leave space for using LLMs when they're genuinely required for accessibility or similar reasons.
 
+### Prioritising project members
+
+This policy explicitly *does not* prioritise project members over non-members; it is enforced equally regardless of position in the project.
+
+Treating project members as inherently more able to "properly" use LLMs, by any definition, is both unsustainable and unfair. Nearly every current member of the project (T-all) has joined the project due to their contributions as a volunteer contributor, judged by the changes they made without the privileges of being on T-all. If we give new privileges for LLM usage to project members, we run into several issues, particularly that the contributions made by non-members don't necessarily reflect those that would be made by members, making onboarding new members harder.
+
+Plus, one of Rust's goals is being welcoming for new people, and the more asymmetric our rules are, the less welcoming the project is to new people.
+
+Additionally, LLM contributions generally require stricter scrutiny than manually authored contributions, but by only accepting LLM contributions from trusted members, we risk inverting this scrutiny and applying it less to LLM-involved contributions. Any policy that allows only project members to use LLMs has the chance to substantially worsen the effects that LLM usage can have on the code, which is explicitly the thing this policy is trying to prevent.
+
+Whatever policy is adopted, it should be symmetric between project members and new contributors.
+
 ## Prior art
 [prior art]: #prior-art
 
