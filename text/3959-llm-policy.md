@@ -48,7 +48,7 @@ Limiting LLM usage in the Rust project directly counters this:
 * Reduced usage in industry can lead to fewer companies purchasing fewer LLM licenses, funneling less money into this harmful industry
 * Reduced usage from individuals can reduce individual spending on LLMs, as companies purchase smaller capacity and plans
 
-And crucially, these limits on LLM usage are *specifically* targetted toward cases which comprise the most expensive LLM usage. If LLM usage is explicitly needed for accessibility reasons or it explicitly helps users despite its inability to *creatively synthesize* output, this usage is *still allowed*, even though the harms of LLMs still need to be acknowledged.
+And crucially, these limits on LLM usage are *specifically* targeted toward cases which comprise the most expensive LLM usage. If LLM usage is explicitly needed for accessibility reasons or it explicitly helps users despite its inability to *creatively synthesize* output, this usage is *still allowed*, even though the harms of LLMs still need to be acknowledged.
 
 ### Harms
 
@@ -240,7 +240,7 @@ This section is included here mostly because this is a specific point of content
 
 <ol><li>
 
-Relevent U.S. federal case law from [Thaler v. Permutter](https://media.cadc.uscourts.gov/opinions/docs/2025/03/23-5233.pdf):
+Relevant U.S. federal case law from [Thaler v. Permutter](https://media.cadc.uscourts.gov/opinions/docs/2025/03/23-5233.pdf):
 
 In this case, a computer scientist attributes authorship of an artwork to the operation of software. Dr. Stephen Thaler created a generative artificial intelligence named the "Creativity Machine." The Creativity Machine made a picture that Dr. Thaler titled "A Recent Entrance to Paradise." Dr. Thaler submitted a copyright registration application for "A Recent Entrance to Paradise" to the United States Copyright Office. On the application, Dr. Thaler listed the Creativity Machine as the work's sole author and himself as just the work's owner.
 
@@ -393,14 +393,14 @@ The unfortunate reality is that this friction already existed; vibe-coded slop h
 
 There are many [existing policies] pointed out in the prior art section and this should give a decent summary of the various options people have chosen. Overall, there are a few commonalities reflected in the RFC:
 
-* *Elaborate* policies (i.e. more than a few lines) appear to always require disclosure, regardless of whether a project supports LLM usage or not. This project chooses to prefer disclosure as a means of keeping people honest even if such disclosure reveals that a contribution cannot be accepted under the current policy; people can always change their behaviour, after all, and this ensures an honest discussion of the project's values.
+* *Elaborate* policies (i.e. more than a few lines) appear to always require disclosure, regardless of whether a project supports LLM usage or not. This project chooses to prefer disclosure as a means of keeping people honest even if such disclosure reveals that a contribution cannot be accepted under the current policy; people can always change their behavior, after all, and this ensures an honest discussion of the project's values.
 * All policies seem to reinforce the idea that users are responsible for their own contributions regardless of what tools they use, and this policy ensures that as well.
 
 Due to the harm reduction mentioned in the [motivation], the choice to reduce LLM usage in the policy is justified. However, the carving-out of "trivial usage" should also help leave space for using LLMs when they're genuinely required for accessibility or similar reasons.
 
-### Prioritising project members
+### Prioritizing project members
 
-This policy explicitly *does not* prioritise project members over non-members; it is enforced equally regardless of position in the project.
+This policy explicitly *does not* prioritize project members over non-members; it is enforced equally regardless of position in the project.
 
 Treating project members as inherently more able to "properly" use LLMs, by any definition, is both unsustainable and unfair. Nearly every current member of the project (T-all) has joined the project due to their contributions as a volunteer contributor, judged by the changes they made without the privileges of being on T-all. If we give new privileges for LLM usage to project members, we run into several issues, particularly that the contributions made by non-members don't necessarily reflect those that would be made by members, making onboarding new members harder.
 
