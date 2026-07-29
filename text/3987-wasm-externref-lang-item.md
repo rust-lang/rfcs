@@ -48,9 +48,9 @@ unsafe extern "C" {
 pub fn run() {
     unsafe {
         let r = create_ref(); // a live host reference in a local
-        let copy = r; // Copy: refs may be duplicated freely
-        use_ref(copy);
-        use_ref(r);
+        let copy = r;         // moves like any non-Copy value
+        use_ref(copy);        // each value has one consumer
+        use_ref(r);           // to use another ref, obtain another ref
     }
 }
 ```
@@ -94,14 +94,13 @@ To store references in structs, collections, or across calls, libraries build ow
 ```rust
 #[lang = "externref"]
 #[non_exhaustive]
-#[derive(Copy, Clone)]
 pub struct externref;
 
 impl !Send for externref {}
 impl !Sync for externref {}
 ```
 
-It is `Copy` (duplicating a reference is a wasm-level no-op), `!Send`/`!Sync` (host references are not portable across threads/instances), and implements `Debug` (`"externref"` output). No other trait implementations are provided.
+It is `Copy` (duplicating a reference is a wasm-level no-op), `!Send`/`!Sync` (host references are not portable across threads/instances). No other trait implementations are provided.
 
 ### Position rules
 
@@ -147,14 +146,14 @@ In `extern "C"` (and other ABIs), `externref` passes as a single Wasm externref 
 [unresolved-questions]: #unresolved-questions
 
 - `core::arch::wasm32::externref` or another location for the type?
-- Exact trait story for the bare type - is a `Debug` impl (whose fmt takes `&self`) acceptable as a Self-impl carve-out to the no-references rule, or should the type implement nothing?
 - Supporting async functions with liveness checks: `externref` locals that are dead before every suspension point never enter the coroutine state and are sound to permit. This could be supported as an extension of existing liveness checks, while surfacing a spanned type-check-time diagnostic rather than the current monomorphization-time rejection.
 - Should `extern "C"` variadics, unions, and #[repr(transparent)] wrappers be diagnosed with dedicated messages (all currently rejected by the general rules)?
+- Whether a `core::arch::wasm32::dup` intrinsic is necessary (by-value, non-consuming - MIR's `Operand::Copy` of a reference-typed local) could provide explicit duplication without `Copy: Clone: Sized` being a requirement.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-- If a future `Addressable` trait were introduced as a new default-bound axis alongside `Sized` and relaxable via `?Addressable` similarly to `?Sized`, then `externref` could layer with that as the first `Sized + !Addressable` language type, enabling pass-through generics correctly without aggregate containment (`Option<T>`, collections, etc), which requires memory layout.
+- Integration with [RFC 3729](https://github.com/rust-lang/rfcs/pull/3729): In future possibilities, it describes a `Value` trait extending the Sized hierarchy below `Pointee` (`Sized: SizeOfVal: Pointee: Value`), designated specifically for Wasm's externref. Under this proposal, `externref` would no longer be the 'unobservable' `Sized` with as implemented here, but `Value` only. This would then allow relaxation of the type checking to support generic positions, with generic bounds excluding all invalid positions in the default handling including aggregate containment (`Option<T>`, collections), statics, `size_of` and reference/pointer formation via `Pointee`. Because this RFC does not implement `Copy`, this layering is non-breaking.
 - Alternatively, if addressability were even to be supported in future say as a first-class externref table in Clang (like a function table), then we could add `&externref` support where `&externref: Sized` holds and supports storage cases.
 
 While the above future directions remain unclear, the minimal proposal here layers with any of the above outcomes.
