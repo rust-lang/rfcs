@@ -1,6 +1,6 @@
 - Feature Name: `wasm_externref`
 - Start Date: 2026-07-28
-- RFC PR: (TBD)
+- RFC PR: (https://github.com/rust-lang/rfcs/pull/3987)
 - Tracking Issue: (TBD)
 
 ## Summary
