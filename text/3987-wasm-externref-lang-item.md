@@ -48,14 +48,15 @@ unsafe extern "C" {
 pub fn run() {
     unsafe {
         let r = create_ref(); // a live host reference in a local
-        let copy = r;         // moves like any non-Copy value
-        use_ref(copy);        // each value has one consumer
-        use_ref(r);           // to use another ref, obtain another ref
+        let a = r;            // moves like any non-Copy value
+        use_ref(a);           // each value has one consumer
     }
 }
 ```
 
-Exported functions may also use it, and the host calls them with values directly:
+`externref` values are move-only - each value is consumed exactly once by a move or a call.
+
+Exported functions may use it, and the host calls them with values directly:
 
 ```rust
 #[unsafe(no_mangle)]
@@ -100,7 +101,7 @@ impl !Send for externref {}
 impl !Sync for externref {}
 ```
 
-It is `Copy` (duplicating a reference is a wasm-level no-op), `!Send`/`!Sync` (host references are not portable across threads/instances). No other trait implementations are provided.
+It has no provided trait implementations. It is `!Send`/`!Sync` (host references are not portable across threads/instances) and implements `Sized` unobservable by not participating in generics.
 
 ### Position rules
 
@@ -148,12 +149,12 @@ In `extern "C"` (and other ABIs), `externref` passes as a single Wasm externref 
 - `core::arch::wasm32::externref` or another location for the type?
 - Supporting async functions with liveness checks: `externref` locals that are dead before every suspension point never enter the coroutine state and are sound to permit. This could be supported as an extension of existing liveness checks, while surfacing a spanned type-check-time diagnostic rather than the current monomorphization-time rejection.
 - Should `extern "C"` variadics, unions, and #[repr(transparent)] wrappers be diagnosed with dedicated messages (all currently rejected by the general rules)?
-- Whether a `core::arch::wasm32::dup` intrinsic is necessary (by-value, non-consuming - MIR's `Operand::Copy` of a reference-typed local) could provide explicit duplication without `Copy: Clone: Sized` being a requirement.
+- Whether a `core::arch::wasm32::dup` intrinsic (by-value, non-consuming - MIR's `Operand::Copy` of a reference-typed local) could provide explicit duplication without `Copy: Clone: Sized` being a requirement.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Integration with [RFC 3729](https://github.com/rust-lang/rfcs/pull/3729): In future possibilities, it describes a `Value` trait extending the Sized hierarchy below `Pointee` (`Sized: SizeOfVal: Pointee: Value`), designated specifically for Wasm's externref. Under this proposal, `externref` would no longer be the 'unobservable' `Sized` with as implemented here, but `Value` only. This would then allow relaxation of the type checking to support generic positions, with generic bounds excluding all invalid positions in the default handling including aggregate containment (`Option<T>`, collections), statics, `size_of` and reference/pointer formation via `Pointee`. Because this RFC does not implement `Copy`, this layering is non-breaking.
+- Integration with [RFC 3729](https://github.com/rust-lang/rfcs/pull/3729): In future possibilities, it describes a `Value` trait extending the Sized hierarchy below `Pointee` (`Sized: SizeOfVal: Pointee: Value`), designated specifically for Wasm's externref. Under this proposal, `externref` would no longer be the 'unobservable' `Sized` as implemented here, but `Value` only. This would then allow relaxation of the type checking to support generic positions, with generic bounds excluding all invalid positions in the default handling including aggregate containment (`Option<T>`, collections), statics, `size_of` and reference/pointer formation via `Pointee`. Because this RFC does not implement `Copy`, this layering is non-breaking.
 - Alternatively, if addressability were even to be supported in future say as a first-class externref table in Clang (like a function table), then we could add `&externref` support where `&externref: Sized` holds and supports storage cases.
 
 While the above future directions remain unclear, the minimal proposal here layers with any of the above outcomes.
