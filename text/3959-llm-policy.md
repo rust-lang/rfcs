@@ -537,6 +537,8 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 
 [Codeberg](https://blog.codeberg.org/protecting-our-floss-commons-from-llms.html) forbids "vibe-coded" projects and cites frequent attacks from AI crawlers, increasing hardware costs, environmental cost, etc.
 
+[GCC](https://gcc.gnu.org/ai-policy.html) forbids [legally significant](https://www.gnu.org/prep/maintain/maintain.html#Legally-Significant) changes made by LLMs but explicitly allows LLM-authored test cases. They also require `Assisted-By` tags and assert that only humans are allowed to certify with a DCO.
+
 #### Disclosure-required
 
 [SciPy](https://github.com/j-bowhay/scipy/blob/main/doc/source/dev/conduct/ai_policy.rst) requires disclosure of "which tool(s) have been used, how they were used", rejects slop, disallows communicating with LLMs, but allows machine translation.
