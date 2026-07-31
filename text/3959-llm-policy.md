@@ -551,11 +551,15 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 
 [Ghostty](https://github.com/ghostty-org/ghostty/blob/main/AI_POLICY.md) states requires disclosure for "all AI usage in any form" detailing what tool was used and "the extent that the work was AI-assisted". They require a "human in the loop" but openly state that "AI is welcome here".
 
+[Nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy) forbids "vibe-coding" and requires `Assisted-By` headers for LLMs specifically.
+
 #### Disclosure-sometimes-required
 
 [Curl](https://curl.se/dev/contribute.html#on-ai-use-in-curl) requires disclosure when AI is used to find security issues. They recommend mentioning when machine translation is used, but do not strictly require it. They don't require disclosure for code, but emphasize that quality must not be compromised.
 
 [Linux kernel](https://kernel.org/doc/html/next/process/coding-assistants.html) requires a Developer Certificate of Origin but asserts that this simply means that humans are responsible for the code. They *recommend* using an `Assisted-by` trailer but elsewhere clarify a lack of this may only ["impede the acceptance of your work"](https://kernel.org/doc/html/next/process/submitting-patches.html#using-assisted-by). [The Linux Foundation](https://www.linuxfoundation.org/legal/generative-ai) simply reiterates that humans are responsible for verifying they have the copyright to code they submit.
+
+[Blender](https://developer.blender.org/docs/handbook/contributing/ai_contributions/) requires disclosure and explanation for large changes, forbids solving "Good First Issues" with AI, and forbids `Co-Authored-By` trailers.
 
 #### Permissive
 
@@ -569,13 +573,12 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 
 The following projects are currently discussing policy, but have not yet adopted it:
 
-* [NixOS](https://github.com/NixOS/nixpkgs/issues/410741)
 * [Emacs](https://human-emacs.org)
+* [Debian](https://www.debian.org/vote/2026/vote_002)
 
 The following policies exist, but are not final:
 
-* [Blender](https://devtalk.blender.org/t/ai-contributions-policy-proposal/44202) (disclosure-sometimes-required)
-* [Debian](https://www.debian.org/vote/2026/vote_002) (restrictive)
+* (everything here has been decided since initial mention)
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
