@@ -173,8 +173,9 @@ The proposed convention for a field `foo: T` is:
   here may take `&T` or some other type, depending on the context.)
 
 Note that this convention is about getters/setters on ordinary data types, *not*
-on [builder objects](http://aturon.github.io/ownership/builders.html). The
-naming conventions for builder methods are still open.
+on [builder objects][]. The naming conventions for builder methods are still open.
+
+[builder objects]: https://web.archive.org/web/20170701044756/http://aturon.github.io/ownership/builders.html
 
 ### Associated types
 
