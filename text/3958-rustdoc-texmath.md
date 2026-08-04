@@ -58,13 +58,13 @@ but there are a few other quality of life improvements that come with this featu
 
 To enable `$\TeX$` math syntax in rustdoc, add this line to your crate root.
 
-    #![doc(syntax="+tex_math_dollars")]
+    #![doc(syntax(enable(tex_math_dollars)))]
 
 In a future edition, we may enable it by default. If you need to turn it off, add this line to your crate root.
 
-    #![doc(syntax="-tex_math_dollars")]
+    #![doc(syntax(disable(tex_math_dollars)))]
 
-The only supported values for `doc(syntax)` are `"+tex_math_dollars"` and `"-tex_math_dollars"`,
+The only supported params for `doc(syntax)` are `enable(tex_math_dollars)` and `disable(tex_math_dollars)`,
 but we left the option open for future extensions.
 
 When this feature is enabled, equations are wrapped in single or double `$` dollar signs.
@@ -83,7 +83,7 @@ A detailed comparison between our syntax and KaTeX's can be found
 
 ### Disabling and enabling math syntax
 
-The `doc(syntax="+tex_math_dollars"|"-tex_math_dollars")` attribute enables and disables
+The `doc(syntax(enable|disable(tex_math_dollars)))` attribute enables and disables
 support for parsing `$`-delimited TeX math in Rustdoc's Markdown.
 
 Obviously, you can't set both of them at the same time on a single item.
@@ -99,12 +99,12 @@ So, to list a few examples:
 
 //! This is *not* math syntax: $x$
 
-#[doc(syntax="-tex_math_dollars")]
+#[doc(syntax(disable(tex_math_dollars)))]
 pub mod bar;
-#[doc(syntax="+tex_math_dollars")]
+#[doc(syntax(enable(tex_math_dollars)))]
 pub mod baz;
 
-#[doc(syntax="+tex_math_dollars")]
+#[doc(syntax(enable(tex_math_dollars)))]
 /// This *is* math syntax: $x$
 pub struct Foo;
 
@@ -113,16 +113,16 @@ impl Foo {
     pub fn foo() {}
 }
 
-#[doc(syntax="+tex_math_dollars")]
+#[doc(syntax(enable(tex_math_dollars)))]
 impl Foo {
     /// This *is* math syntax: $x$
     pub fn bar() {}
 }
 
-#[doc(syntax="+tex_math_dollars")]
+#[doc(syntax(enable(tex_math_dollars)))]
 /// <https://github.com/rust-lang/rust/pull/158514#issuecomment-4825510621>
 pub fn wizzywig() {
-    #[doc(syntax="-tex_math_dollars")]
+    #[doc(syntax(disable(tex_math_dollars)))]
     /// This is *not* math syntax: $x$
     pub struct WizzyWig;
 
@@ -135,7 +135,7 @@ pub fn wizzywig() {
 
 ```rust
 // bar.rs
-#![doc(syntax="+tex_math_dollars")] //~ ERROR only one doc syntax can be declared on a single item
+#![doc(syntax(enable(tex_math_dollars)))] //~ ERROR only one doc syntax can be declared on a single item
 ```
 
 ```rust
@@ -393,8 +393,9 @@ The name `tex_math_dollars` is deliberately the same [name and syntax used by Pa
 If we add more syntactic features, we can follow the same pattern. An example of how to build on this:
 
 ```ebnf
-(* if no language is supplied, the default is "rustdoc_markdown", so "+tex_math_dollars" is synonymous with "rustdoc_markdown+tex_math_dollars" *)
-doc syntax = [ language ], { ( "+" | "-" ), extension } ;
+(* if no language is supplied, the default is "rustdoc_markdown", so "enable(tex_math_dollars)" is synonymous with "rustdoc_markdown, enable(tex_math_dollars)" *)
+doc syntax = [ language ], {",", extension list }, [ "," ];
+extension list = ("enable" | "disable"), "(", [ extension ], { ",", extension }, [ "," ], ")" ;
 (* "commonmark" enables no extensions (you can, of course, add them)
   "rustdoc_markdown" is synonymous with `commonmark+intra_doc_links+doctests+smart+pipe_tables+strikeout+footnotes+task_lists"
   "gfm" is synonymous with `commonmark+smart+tex_math_dollars+pipe_tables+strikeout+footnotes+task_lists+emoji+tex_math_gfm+alerts+autolink_bare_uris+yaml_metadata_block"
@@ -448,13 +449,13 @@ let you write LaTeX macro definitions directly in Markdown.
 For example, these two doc comments are equivalent:
 
 ```rust
-#[doc(syntax="+tex_math_dollars+latex_macros")]
+#[doc(syntax(enable(tex_math_dollars, latex_macros)))]
 /// \newcommand{\tuple}[1]{\langle #1 \rangle}
 ///
 /// $\tuple{a, b, c}$
 fn foo_bar() {}
 
-#[doc(syntax="+tex_math_dollars+latex_macros")]
+#[doc(syntax(enable(tex_math_dollars, latex_macros)))]
 /// $\langle a, b, c \rangle$
 fn foo_bar() {}
 ```
