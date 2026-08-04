@@ -1,7 +1,7 @@
 - Feature Name: support_external_linkers
 - Start Date: 2026-08-04
 - RFC PR: [rust-lang/rfcs#3993](https://github.com/rust-lang/rfcs/pull/3993)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/73632)
+- Rust Issue: [rust-lang/rust#73632](https://github.com/rust-lang/rust/issues/73632)
 
 ## Summary
 [summary]: #summary
