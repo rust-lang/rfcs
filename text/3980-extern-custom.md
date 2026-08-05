@@ -29,7 +29,7 @@ pub unsafe extern "custom" fn __aeabi_uidivmod() {
 }
 
 unsafe extern "custom" {
-	fn __fentry__();
+    fn __fentry__();
 }
 ```
 
