@@ -1,7 +1,7 @@
 - Feature Name: `abi_custom`
-- Start Date: 2026-07-01)
+- Start Date: 2026-07-01
 - RFC PR: [rust-lang/rfcs#3980](https://github.com/rust-lang/rfcs/pull/3980)
-- Rust Issue: [rust-lang/rust#140829)](https://github.com/rust-lang/rust/issues/140829)
+- Rust Issue: [rust-lang/rust#140829](https://github.com/rust-lang/rust/issues/140829)
 
 ## Summary
 [summary]: #summary
