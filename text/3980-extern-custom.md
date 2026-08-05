@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-An `extern "custom" fn` is a function with a custom ABI that is unknown to rust. Often these are low-level functions that pass arguments in different registers than any standard calling convention, so using `extern "custom"` helps rustc block you from using a function in a place where rustc would need to understand that calling convention.
+An `extern "custom" fn` is a function with a custom ABI that is unknown to Rust. Often these are low-level functions that pass arguments in different registers than any standard calling convention, so using `extern "custom"` helps rustc block you from using a function in a place where rustc would need to understand that calling convention.
 
 
 ```rust
@@ -51,7 +51,7 @@ The current solution is often to use `extern "C"`, but that is misleading: the f
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Because rust doesn't know what calling convention to use, an `extern "custom"` function can only be called via inline assembly or FFI.
+Because Rust doesn't know what calling convention to use, an `extern "custom"` function can only be called via inline assembly or FFI.
 
 ```
 error: functions with the "custom" ABI cannot be called
@@ -167,12 +167,12 @@ Arguments and return types are forbidden because they are not consumed in any wa
 
 https://github.com/rust-lang/rust/issues/140566#issuecomment-2846205457
 
-We do have some other calling conventions that cannot be called using rust's function calling syntax:
+We do have some other calling conventions that cannot be called using Rust's function calling syntax:
 
 - extern "*-interrupt`
 - extern "gpu-kernel"
 
-Those however do have a known ABI, it's just that semantically it does not make sense to call them from a rust program.
+Those however do have a known ABI, it's just that semantically it does not make sense to call them from a Rust program.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
