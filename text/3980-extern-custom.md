@@ -169,7 +169,7 @@ https://github.com/rust-lang/rust/issues/140566#issuecomment-2846205457
 
 We do have some other calling conventions that cannot be called using Rust's function calling syntax:
 
-- extern "*-interrupt`
+- extern "*-interrupt"
 - extern "gpu-kernel"
 
 Those however do have a known ABI, it's just that semantically it does not make sense to call them from a Rust program.
@@ -194,10 +194,10 @@ So far, no actual use of `-> !` has come up, so we leave it as a future possibil
 
 ### Support argument and return types
 
-Argument and return types are not validated by the compiler whatsoever
+Argument and return types are not validated by the compiler whatsoever:
 
-- like any other `#[naked]` function, argument/return types are not validated against the body
-- argument/return types are not validated at the call site (because inline assembly is used)
+- Like any other `#[naked]` function, argument/return types are not validated against the body.
+- Argument/return types are not validated at the call site (because inline assembly is used).
 
 For those reasons, argument and return types are omitted in the current RFC.
 
