@@ -88,7 +88,7 @@ versions of Rust:
 ### Version 0 rlibs
 A *version 0 rlib* is an archive file in the *native format* of the target, with
 the usual extension (.lib or .a) replaced by .rlib. The native format is the usual
-file format for statically-linked libraries on the target, which for all targets is
+file format for statically-linked libraries on the target, which for all supported targets is
 some variation of the [common ar archive format][wikipedia-ar].
 
 Inside the rlib file, any number of object files may be present that provide code
@@ -124,7 +124,7 @@ way to link to the Rust standard library is needed. This RFC specifies a simple 
 for doing so: simply compile an empty crate (an empty lib.rs file is fine) as a staticlib
 with a flag `-C emit-std-bundle=yes`. Any desired crate-level metadata and/or compiler
 flags can be supplied in the process of compiling this *standard library bundle*, for
-example `#![no_std]` to omit the standard library, or `-C target-feature` to enable
+example `#![no_std]` to omit the standard library (and only link the core library), or `-C target-feature` to enable
 specific CPU features. The resulting artifact will be a linkable version of the standard
 library.
 
@@ -141,7 +141,7 @@ The resulting libstdrust.a may be installed into the library search path, at whi
 point `-lstdrust` may be added to the link line in order to link Rust executables.
 
 ### Supported Platforms
-This technique is supported on `x86_64-unknown-linux-gnu`. This may function on non-windows
+This technique is supported on `x86_64-unknown-linux-gnu`. This may function on non-Windows
 Tier 1 platforms. Other platforms are not supported.
 
 ### Complete Workflow
@@ -216,7 +216,7 @@ RFC Note: This works today by removing the `-C emit-std-bundle=yes` and `-C rlib
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
-interpreted as described in RFC 2119. They are not capitalized, for clarity.
+interpreted as described in [IETF RFC 2119](https://tools.ietf.org/html/rfc2119). They are not capitalized, for clarity.
 
 ### rlib versioning
 
@@ -284,7 +284,7 @@ exported such that the following three conditions are fulfilled:
 
 There are two exceptions to this rule:
 
-(i) Multiple crates that define the same *language item* may not be linkable together.
+(i) Multiple crates that define the same [*language item*](https://rustc-dev-guide.rust-lang.org/lang-items.html) may not be linkable together.
 
 (ii) Multiple crates that define identically-named items marked with `#[no_mangle]`
      may not be linkable together.
@@ -362,7 +362,7 @@ link an executable containing Rust code if:
 
 The exact symbols that are exposed in a standard library bundle is unspecified by this
 RFC. In general, they are expected to change with every Rust release and may change
-depending on the manner in which the standard library channel was compiled.
+depending on the manner in which the standard library bundle was compiled.
 
 *Note (non-normative):* The standard library bundle approach allows this RFC to
 avoid specifying details like the behavior of allocator shims, raw-dylib, bundled
