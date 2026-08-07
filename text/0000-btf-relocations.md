@@ -12,8 +12,8 @@ relocations based on the [BPF Type Format (BTF)][btf]. The feature introduces a
 be queried through BTF-aware operations, and adds BTF-aware macros for
 accessing the fields:
 
-* `core::btf::field_byte_offset!`
-* `core::btf::field_byte_size!`
+* `core::arch::bpf::field_byte_offset!`
+* `core::arch::bpf::field_byte_size!`
 
 The user-facing feature is gated by `#![feature(btf_relocations)]`.
 
@@ -115,17 +115,17 @@ pub struct task_struct {
 impl task_struct {
     #[inline]
     pub fn pid_offset(&self) -> Option<usize> {
-        core::btf::field_byte_offset!(task_struct, pid)
+        core::arch::bpf::field_byte_offset!(task_struct, pid)
     }
 
     #[inline]
     pub fn pid_size(&self) -> Option<usize> {
-        core::btf::field_byte_size!(task_struct, pid)
+        core::arch::bpf::field_byte_size!(task_struct, pid)
     }
 
     #[inline]
     pub fn pid(&self) -> Option<&i32> {
-        core::btf::field_byte_offset!(task_struct, pid).map(|offset| {
+        core::arch::bpf::field_byte_offset!(task_struct, pid).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.vruntime` exists in the
@@ -136,17 +136,17 @@ impl task_struct {
 
     #[inline]
     pub fn tgid_offset(&self) -> Option<usize> {
-        core::btf::field_byte_offset!(task_struct, tgid)
+        core::arch::bpf::field_byte_offset!(task_struct, tgid)
     }
 
     #[inline]
     pub fn tgid_size(&self) -> Option<usize> {
-        core::btf::field_byte_size!(task_struct, tgid)
+        core::arch::bpf::field_byte_size!(task_struct, tgid)
     }
 
     #[inline]
     pub fn tgid(&self) -> Option<&i32> {
-        core::btf::field_byte_offset!(task_struct, tgid).map(|offset| {
+        core::arch::bpf::field_byte_offset!(task_struct, tgid).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.vruntime` exists in the
@@ -185,7 +185,7 @@ pub struct task_struct {
 impl task_struct {
     #[inline]
     pub fn sched_vruntime(&self) -> Option<&u64> {
-        core::btf::field_byte_offset!(task_struct, se.vruntime).map(|offset| {
+        core::arch::bpf::field_byte_offset!(task_struct, se.vruntime).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.vruntime` exists in the
@@ -196,7 +196,7 @@ impl task_struct {
 
     #[inline]
     pub fn sched_load_weight(&self) -> Option<&usize> {
-        core::btf::field_byte_offset!(task_struct, se.load.weight).map(|offset| {
+        core::arch::bpf::field_byte_offset!(task_struct, se.load.weight).map(|offset| {
             let ptr = self as *const task_struct as *const u8;
 
             // SAFETY: the BTF relocation says that `se.load.weight` exists in the
@@ -222,7 +222,7 @@ relocation support, they emit a compile error.
 The language feature is named `btf_relocations`.
 
 The feature gate controls the user-facing BTF relocation surface, including
-`#[btf_relocatable]` attribute and the `core::btf` field-info macros.
+`#[btf_relocatable]` attribute and the `core::arch::bpf` field-info macros.
 
 ### `#[btf_relocatable]` attribute
 
@@ -239,11 +239,11 @@ non-relocatable Rust type should not use `#[btf_relocatable]`.
 
 ### Field-info macros
 
-The following macros are added under `core::btf`:
+The following macros are added under `core::arch::bpf`:
 
 ```rust
-core::btf::field_byte_offset!(Carrier, field.path) -> Option<usize>
-core::btf::field_byte_size!(Carrier, field.path) -> Option<usize>
+core::arch::bpf::field_byte_offset!(Carrier, field.path) -> Option<usize>
+core::arch::bpf::field_byte_size!(Carrier, field.path) -> Option<usize>
 ```
 
 `Carrier` is the root local Rust type whose BTF graph describes the access.
@@ -265,7 +265,7 @@ require the caller to uphold memory-safety invariants.
 Nested paths are supported:
 
 ```rust
-core::btf::field_byte_offset!(task_struct, se.load.weight)
+core::arch::bpf::field_byte_offset!(task_struct, se.load.weight)
 ```
 
 These macros are the only user-facing API for BTF field-info queries.
