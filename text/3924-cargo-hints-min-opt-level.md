@@ -1,7 +1,7 @@
 - Feature Name: `cargo-hints-min-opt-level`
 - Start Date: 2026-02-22
 - RFC PR: [rust-lang/rfcs#3924](https://github.com/rust-lang/rfcs/pull/3924)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/cargo#17334](https://github.com/rust-lang/cargo/issues/17334)
 
 ## Summary
 [summary]: #summary
@@ -209,7 +209,7 @@ whether crates in the ecosystem know the right optimization level for their
 crate better than their users do.
 
 We could in particular have a `max-opt-level`, for crates that don't benefit
-from `opt-level = 3` to lower the optimiation level to 2.
+from `opt-level = 3` to lower the optimization level to 2.
 
 The mechanism to override a dependency's opt-level using `profile.dev.package`
 forces a given opt-level whether the dependency asks for higher or lower. Users
