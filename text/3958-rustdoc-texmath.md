@@ -283,7 +283,7 @@ or [katex run in quick-js][] [^1].
   <th>LaTeX</th>
   <td>1984</td>
   <td>✅</td>
-  <td>❎</td>
+  <td>❌</td>
   <td>✅</td>
   <td>✅</td>
   <td>High</td>
@@ -291,8 +291,8 @@ or [katex run in quick-js][] [^1].
   <th>Typst</th>
   <td>2019</td>
   <td>✅</td>
-  <td>❎</td>
-  <td>❎</td>
+  <td>❌</td>
+  <td>❌</td>
   <td>✅</td>
   <td>Moderate</td>
 </tr><tr>
@@ -300,7 +300,7 @@ or [katex run in quick-js][] [^1].
   <td>2009</td>
   <td><a href="https://docs.rs/asciimath-rs/latest/asciimath_rs/">✅</a></td>
   <td><a href="https://asciimath.org/index-mathml.html#syntax">✅</a></td>
-  <td>❎</td>
+  <td>❌</td>
   <td>✅</td>
   <td>Moderate</td>
 </tr><tr>
@@ -309,7 +309,7 @@ or [katex run in quick-js][] [^1].
   <td><a href="https://murrayiii.github.io/UnicodeMathML/playground/">❎</a></td>
   <td><a href="https://www.unicode.org/notes/tn28/">✅</a></td>
   <td>✅</td>
-  <td>❎</td>
+  <td>❌</td>
   <td>I would need access to <a href="https://support.microsoft.com/en-us/office/linear-format-equations-using-unicodemath-and-latex-in-word-2e00618d-b1fd-49d8-8cb4-8d17f25754f8">Microsoft Office</a> feature analytics to answer this question.</td>
 </tr>
 </tbody>
@@ -473,7 +473,8 @@ give error messages at compile time (if the language has a concept of errors),
 and, ideally, have a specification without much churn.
 
 - [PlantUML][] is pretty much exactly what we would want.
-  But we don't want to bundle a JRE.
+  But we can't run it (and show error messages) at compile time
+  without bundling a JRE or a JS engine.
 - The other obvious choice is [Mermaid][], because GitHub supports it.
   It implements special notations and layout algorithms for commonplace chart notations,
   so Mermaid syntax is terse and easy to edit.
