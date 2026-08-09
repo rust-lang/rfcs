@@ -86,7 +86,7 @@ The expected outcomes are as follows:
 
  * Libraries currently relying on drop doing memory zeroing (i.e.
    libraries that check whether content is zero to decide whether its
-   `fn drop` has been invoked will need to be revised, since we will
+   `fn drop` has been invoked) will need to be revised, since we will
    not have implicit memory zeroing anymore.
 
  * In the common case, most libraries using `Drop` will not need to
