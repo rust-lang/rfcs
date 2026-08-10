@@ -93,7 +93,7 @@ type T2 = extern "cmse-nonsecure-call" fn() -> U64;
 type T3 = extern "cmse-nonsecure-call" fn(_: i64, _: u8, _: u8, _: u8) -> i64;
 
 // Invalid: too many argument registers used (due to the alignment of `i64`).
-type T4 = extern "cmse-nonsecure-call" fn(_: i32, _: i64, _: ui32) -> i64;
+type T4 = extern "cmse-nonsecure-call" fn(_: i32, _: i64, _: u32) -> i64;
 
 // Invalid: return type too large
 type T5 = extern "cmse-nonsecure-call" fn() -> i128;
