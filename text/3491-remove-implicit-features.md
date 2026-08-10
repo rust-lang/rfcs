@@ -21,7 +21,7 @@ implicitly, requiring users to add `foo = ["dep:foo"]` if they still want it exp
 While implicit features offer a low overhead way of defining features,
 - It is easy to overlook using `dep:` when the optional dependency is not intended to be exposed
   - Making it easy for crate authors to use the wrong syntax and be met with errors ([rust-lang/cargo#10125](https://github.com/rust-lang/cargo/issues/10125))
-  - Potentially breaking people if they are later removed ([rust-lang/cargo#12687)](https://github.com/rust-lang/cargo/pull/12687))
+  - Potentially breaking people if they are later removed ([rust-lang/cargo#12687](https://github.com/rust-lang/cargo/pull/12687))
   - Leading to confusing choices when `cargo add` lists features that look the same (e.g. `cargo add serde` showing `derive` and `serde_derive`)
   - Leading to confusing errors for callers when they reference the dependency, instead of the feature, and things don't work right
 - Tying feature names to dependency names is a code smell because it ties the API to the implementation
