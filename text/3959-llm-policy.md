@@ -345,7 +345,7 @@ Note: LLMs may add headers such as `Co-Authored-By` or `Assisted-By` to commits,
 
 While non-trivial usage is generally forbidden, there are still a few cases that are ambiguous and worth pointing out.
 
-* Model-specific configurations should not be included in repositories. Some of the files involved may be mentioned in `.gitignore`.
+* Model-specific configurations should not be included in repositories, unless to request agents to follow the policy. (See later for details.)
 * Top-level issue and PR descriptions must be free of non-trivial LLM usage, although comments with *reviewed* LLM output are allowed. This ensures that LLM output can be hidden if it's unhelpful, but since there are a few useful security tools that use LLMs, they are currently allowed.
 * Tools which provide unsupervised, LLM-provided feedback or reviews on PRs are forbidden, and that includes Copilot reviews. Since some of these tools are possible to trigger by accident, this will be taken into account for moderation, and people won't be punished for honest mistakes.
 
@@ -356,6 +356,15 @@ It is acceptable to share LLM output in *separate comments* from top-level PR de
 It is acceptable to *discuss* LLMs and their usage if all other rules are followed. Currently, this extends toward there being no explicit rules against mentioning LLM usage in public communications as long as all other rules are followed. As with all policies, this may change in the future.
 
 Since there is a potential for bias in models, in general, the "final decision" on any action should come from the conscious decision of a team member, not an LLM. This also includes "filtering" cases where a set of options is narrowed down, e.g. a list of potential grant nominees or features to be implemented. Ultimately, human team members should be making the decision here, not LLMs, and while this should be counted as non-trivial usage, it is worth repeating.
+
+#### Model configuration
+
+[Empirical evidence][AGENTS.md PR] shows that targeted model configuration can be used to help ensure that users who unknowingly use LLMs in repositories can be pushed to disclose and potentially reduce the extent of their usage. For this reason, these configurations are allowed in project repositories specifically for this use case.
+
+Due to the fact that these configurations are used by these models, they also constitute an accepted nontrivial usage of them; you cannot reasonably make these configurations in a way that will be successful without thorough testing, and [evidence shows][AI AI Bias] that models also prefer their own generated text over manually-written text.
+
+[AGENTS.md PR]: https://github.com/rust-lang/rust/pull/160997
+[AI AI Bias]: https://arxiv.org/abs/2407.12856v1
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
