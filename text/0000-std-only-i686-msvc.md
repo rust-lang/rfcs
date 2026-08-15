@@ -6,7 +6,15 @@
 # Summary
 [summary]: #summary
 
-Change `i686-pc-windows-msvc` from a Tier 1 target with `std` support, and Tier 1 host tools, into *only* a Tier 1 target with `std support`.
+Change `i686-pc-windows-msvc` from
+
+* Tier 1 target with `std` support and host tools
+
+into *only*
+
+* Tier 1 target with `std` support,
+
+dropping host tools.
 
 # Motivation
 [motivation]: #motivation
@@ -49,7 +57,7 @@ To put the download numbers into perspective, some other targets:
 | `x86_64-unknown-netbsd`    | 2 | 63.75k | 3.28M |
 
 From this we can see that `i686-pc-windows-msvc`'s `std` receives far more downloads than its toolchain, because it is primarily used by cross-compiling.
-Its only peer in host usage at tier 1 is i686-unknown-linux-gnu, which is also a 32-bit host.
+Its only peer in host usage at tier 1 is `i686-unknown-linux-gnu`, which is also a 32-bit host.
 Many 64-bit hosts at tier 2 see significantly more usage, and not for no reason.
 
 [static-rlo-dl-counts]: https://p.datadoghq.com/sb/3a172e20-e9e1-11ed-80e3-da7ad0900002-60425c7cb1b7beb2e8959a305a301c0c?fromUser=false&refresh_mode=sliding&from_ts=1736618152507&to_ts=1739210152507&live=true
@@ -144,7 +152,7 @@ Given the lower usage count, lack of maintenance, and diminishing upstream suppo
 # Explanation
 [explanation]: #explanation
 
-`i686-pc-windows-msvc` is now a [Tier 1] target that implements `std`, instead of a [Tier 1 With Host Tools][Tier 1] target.
+`i686-pc-windows-msvc` is now a [Tier 1] target that implements `std` but does not provide host tools, instead of a [Tier 1 With Host Tools][Tier 1] target.
 
 Official builds of the standard library **will continue to be distributed** for this target, and it will continue to receive some testing, notably including `std`'s library testing.
 
@@ -169,17 +177,17 @@ which would allow us to answer questions like "Are most users of the `i686-pc-wi
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 During the drafting of this RFC, the windows-msvc maintainers and the Rust compiler team as a whole were consulted about what should be the fate of this target. All that responded at the time of writing this RFC unanimously agreed on some form of demotion.
-Thus, in order to fill the maintenance requirement of a tier 1 host, we can infer we would need more maintainers that commit additional time.
+Thus, in order to fill the maintenance requirement of a tier 1 host, we can infer we would need more maintainers that commit additional time for the 32-bit target specifically.
 
 The popularity requirement could be fulfilled by more people using the host tools, but this seems unlikely due to the RAM limitations and new Windows kernels moving exclusively towards 64-bit implementations.
 It simply does not make sense to use a host compiler that has access to less RAM than the computer has available if the compiler may ever make use of such space.
 It is also difficult to argue that the functionality is equal, even when address limits are not exceeded, if 32-bit x86 Windows APIs can react differently.
-For these reasons, we should not expect this userbase to grow significantly.
+For these reasons, we should not expect this user base to grow significantly.
 
 # Prior art
 [prior-art]: #prior-art
 
-The `i686-pc-windows-gnu` target was demoted according to the Target Tier Policy ([RFC#2803][ttp-rfc], latest version [in the rustc book][ttp-v1.97]]).
+The `i686-pc-windows-gnu` target was demoted according to the Target Tier Policy ([RFC#2803][ttp-rfc], latest version [in the rustc book][ttp-v1.97]).
 It was demoted wholesale to tier 2 as it had more severe test failures and lacked the same usage for its standard library.
 The `windows-gnu` target however did retain its host tools, but these may prove to be difficult to maintain for much longer, for similar reasons.
 
