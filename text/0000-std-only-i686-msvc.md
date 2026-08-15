@@ -1,6 +1,6 @@
 - Feature Name: none
 - Start Date: 2026-07-02
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3999](https://github.com/rust-lang/rfcs/pull/3999)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
