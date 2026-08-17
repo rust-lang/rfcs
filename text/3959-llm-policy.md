@@ -487,11 +487,16 @@ On the same day this RFC was posted (by coincidence), the Rust Foundation adopte
 
 * 2026 May 04: Rust Foundation posts [Internal AI Usage Policy](https://rustfoundation.org/policy/internal-ai-usage-policy/)
 
-Since the RFC was posted, multiple team-specific AI policies have been posted, namely:
+Since the RFC was posted, multiple team-specific AI policies have been adopted, namely:
 
 * 2026 Jun 01: [`rust-analyzer` team adopts its policy](https://github.com/rust-lang/rust-analyzer/pull/22505)
 * 2026 Jun 05: [`crates.io` team adopts its policy](https://github.com/rust-lang/crates.io/pull/13726)
 * 2026 Jun 29: [`regex` repository adopts its policy](https://github.com/rust-lang/regex/pull/1369)
+* 2026 Jul 18: [`miri` repository adopts its policy](https://github.com/rust-lang/miri/pull/5208)
+* 2026 Jul 23: [`rustup` team adopts its policy](https://github.com/rust-lang/rustup/pull/4970)
+* 2026 Aug 05: [`rust-lang/rust` repository adopts its policy](https://blog.rust-lang.org/inside-rust/2026/08/05/rust-langrust-is-adopting-an-llm-policy/)
+* 2026 Aug 11: [`rustlings` repository adopts the `rust-lang/rust` policy](https://github.com/rust-lang/rustlings/pull/2434)
+* 2026 Aug 13: [`cargo` team adopts the `rust-lang/rust` policy](https://github.com/rust-lang/cargo/pull/17330)
 
 Additionally, since this policy was posted, the Leadership Council opened two issues regarding the state of LLM policy:
 
@@ -536,7 +541,7 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 
 #### Partially restrictive
 
-[Astral (`uv` maintainers)](https://github.com/astral-sh/.github/blob/main/AI_POLICY.md) explicitly forbids AI-generated comments and autonomous contributions, and requires that any AI output in comments be explicitly labeled. They also recommend this for machine translation as well; include your native language first, then add the translation as an explicitly labeled bit.
+[Astral (OpenAI-owned)](https://github.com/astral-sh/.github/blob/main/AI_POLICY.md) explicitly forbids AI-generated comments and autonomous contributions, and requires that any AI output in comments be explicitly labeled. They also recommend this for machine translation as well; include your native language first, then add the translation as an explicitly labeled bit.
 
 [Fedora](https://communityblog.fedoraproject.org/council-policy-proposal-policy-on-ai-assisted-contributions/) explicitly forbids AI for "code of conduct matters, funding requests, conference talks, or leadership positions", "to avoid introducing uncontrollable bias", and they also forbid AI tools "[making] the final determination" on reviews. They explicitly state that AI features must be opt-in, that aggressive scraping is prohibited, and that licenses are honored when incorporating data into models. They explicitly request disclosure when contributions are "significantly assisted by an AI tool" and encourage using the `Assisted-by` trailer.
 
