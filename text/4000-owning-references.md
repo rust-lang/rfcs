@@ -1,6 +1,6 @@
 - Feature Name: `own_ref`
 - Start Date: 2026-07-22
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/4000)
+- RFC PR: [rust-lang/rfcs#4000](https://github.com/rust-lang/rfcs/pull/4000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 ## Summary
