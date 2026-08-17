@@ -174,8 +174,8 @@ fn consume_by_ref(x: &own dyn FnOnce()) {
 <details><summary><h4 style="display:inline">Example: Owned slices</h4></summary>
 
 Probably the most commonly used unsized types are slices `[T]`.
-Since they cannot be pased by value, they are always passed with indirection.
-We use `&[T]` for read-only slices, `&mut T` for mutable slices.
+Since they cannot be passed by value, they are always passed with indirection.
+We use `&[T]` for read-only slices, `&mut [T]` for mutable slices.
 Slices are well built into the language and support some convenient features, such as slice pattern matching.
 Currently, there exists no way to use slice pattern matching for owned values.
 Boxed slices `Box<[T]>` are often used to fill this gap, but they cannot be used in slice patterns.
@@ -206,10 +206,10 @@ fn foo(owned: &own [String]) {
         _ => { }
     }
 }
+```
 
 > Even without pattern matching, a `<[T]>::split_at_owned(&own self, usize) -> (&own [T], &own [T])` supports this behavior in a way that neither `Box` nor `Vec` can.
 
-```
 </details>
 
 <details><summary><h4 style="display:inline">Example: Owned <code>self</code> in trait methods</h4></summary>
@@ -274,7 +274,7 @@ Owning references behave like mutable references, except that they own the value
 
 Owning references should be used when we want to transfer ownership and either do not want to or can not move the value.
 For example, you might want to write a function that prints a list of values.
-For efficiency, we will use a homogenous list of trait objects.
+For efficiency, we will use a homogeneous list of trait objects.
 Note that this function accepts a list of trait objects, but does not require putting them on the heap!
 Additionally, we can consume both the slice and its elements, which is not possible with other reference types.
 
@@ -330,7 +330,7 @@ The following expressions can be owned place expression contexts:
 * Variables which are not currently borrowed.
 * Temporary values.
   * This must perform lifetime extension.
-* Fields: this evaluates the subexpression in an owned place expression context.
+* Fields: this evaluates the sub-expression in an owned place expression context.
 * Dereference of a `*mut T` pointer.
 * Dereference of a place, or field of a place, with type `Box<T>`.
 * Dereference of a place, or field of a place, with type `&own T`.
@@ -363,7 +363,7 @@ Unfortunately, the [alternative](#Alternative-Add-remote-drop-flags-to-support-p
 As Rust users, we are used to APIs of the form `fn into_foo(&own Self) -> &own Foo`.
 However, these APIs are often difficult or impossible to write.
 For example, we cannot write a function `Box<T>::into_inner(&own self) -> &own T` without leaking the allocation.
-In general, we cannot write such an API if `Self` requires droping (and the dropping involves the returned value).
+In general, we cannot write such an API if `Self` requires dropping (and the dropping involves the returned value).
 This is the same problem as providing a `DerefOwn` trait ([see below](#Introduce-DerefOwn)).
 
 ### Teaching
@@ -375,7 +375,7 @@ After a borrow expires, you can keep using the original value.
 But with owning references, once the borrow expires, the original value is gone.
 
 On the one hand, we believe that we do not need to bother Rust beginners with owning references.
-[The Rust Book](https://doc.rust-lang.org/book/ch15-00-smart-pointers.html), adresses the current primary alternative `Box` only in chapter 15, and owning references would be considered similar advanced usage.
+[The Rust Book](https://doc.rust-lang.org/book/ch15-00-smart-pointers.html), addresses the current primary alternative `Box` only in chapter 15, and owning references would be considered similar advanced usage.
 However, we would still need to adjust teaching to mention a third reference type, to be explained later.
 
 ### Documentation
@@ -401,7 +401,7 @@ This is the current situation, and Rust users found a number of ways to work aro
 Primarily, users will use `Box` if they can and it isn't performance critical.
 If boxing is not available (too expensive, or no heap present), alternatives include using a `&mut Option<T>` to pass runtime-checked ownership of `T`, or use a crate like [stackbox](https://docs.rs/stackbox/latest/stackbox/struct.StackBox.html).
 
-However, as stated by [the `stackbox` maintaner themselves](https://internals.rust-lang.org/t/a-sketch-for-move-semantics/18632/19), there are some ergonimic challenges with a library implementation:
+However, as stated by [the `stackbox` maintaner themselves](https://internals.rust-lang.org/t/a-sketch-for-move-semantics/18632/19), there are some ergonomic challenges with a library implementation:
 
 - Creating a stack box is cumbersome.
 - Especially lifetime extension is missing.
@@ -450,12 +450,10 @@ However, there are a number of downsides to this approach:
 
 Additionally, it might just be *too weird*.
 By its own docs:
-> `Box<T>`, casually referred to as a ‘box’, provides the simplest form of
-heap allocation in Rust.
-> Boxes provide ownership for this allocation, and
-drop their contents when they go out of scope.
+> `Box<T>`, casually referred to as a ‘box’, provides the simplest form of heap allocation in Rust.
+> Boxes provide ownership for this allocation, and drop their contents when they go out of scope.
 
-A `Box<T, Noop<'a>>` is neither a heap allocation, nor does it provide opwnership for its allocation.
+A `Box<T, Noop<'a>>` is neither a heap allocation, nor does it provide ownership for its allocation.
 
 ### Alternative: Add remote drop flags to support pinning
 
@@ -463,7 +461,7 @@ Unfortunately, `Pin<&own T>` is unsound with regards to the drop guarantee.
 This is because forgetting `Pin<&own T>` avoids running the drop implementation of `T`, but we have no control over the backing memory or the reference.
 
 If we'd want to fix this design to allow for pinning, we would have to change `&own` to track and possibly modify the drop flags of its allocation.
-In this scenario, `Pin<&own T>` would behave similarly to an `Pin<&mut Option<T>>`, which is already expressable today.
+In this scenario, `Pin<&own T>` would behave similarly to an `Pin<&mut Option<T>>`, which is already expressible today.
 
 While this could be an interesting design approach, we believe that remote drop flags would make the language design much more complicated.
 Instead, we proposed this much simpler design, even if that forbids pinning.
@@ -476,7 +474,7 @@ Instead, we proposed this much simpler design, even if that forbids pinning.
 
 This RFC proposes a single new reference type, `&own`.
 There may be additional reference types we may want to add in the future, such as `&pin`, `&uninit`, `&out`, or `&init`.
-It may be advantageous to increase the scope of this RFC to include other references, to avoid short-sighted desicions in this design space.
+It may be advantageous to increase the scope of this RFC to include other references, to avoid short-sighted decisions in this design space.
 
 Besides the complexity in the language, we believe that major point of contention is the syntax space.
 Contextual keywords, as suggested here with `&own` work well, but might become annoying when there are too many.
@@ -504,7 +502,7 @@ The `Bump::alloc<T>(&self, val: T) -> &mut T` method allocates a `T` in the aren
 Since the arena does not keep track of the types of all of its allocations, it cannot drop `T`, and the mutable reference does not allow dropping the value either (without unsafe code).
 
 As a solution, it provides its own `Box` type, which drops its pointee when dropped.
-This `Box` is effectively the same as `&own`, except for missing ergonimics.
+This `Box` is effectively the same as `&own`, except for missing ergonomics.
 
 > Note that `bumpalo:box:Box` provides a pinning API, which is an known to be unsound.
 
@@ -520,7 +518,7 @@ This could allow us, for example, to use `&own` as an initialization prove for c
 ### Should is be allowed to borrow through pointers?
 
 The unsafe operation `&own *ptr` would allow effectively casting the pointer to an owning reference.
-This is allowed with other references, so it seems reaonable to allow this here too.
+This is allowed with other references, so it seems reasonable to allow this here too.
 However, this operation additionally causes a deferred drop of the pointee as a side-effect.
 
 As an alternative, we could disallow this behavior (for now), and instead introduce some more explicitly named function `unsafe fn assume_owned<'a, T>'(ptr: *mut T) -> &own T`.
@@ -594,7 +592,7 @@ fn consume_slice<T>(elements: &own [T]) {
 }
 ```
 
-Syntactically, this is slightly more challenging since a contextual keyword is more tricky in this position (compred to, e.g., `ref(own)`).
+Syntactically, this is slightly more challenging since a contextual keyword is more tricky in this position (compared to, e.g., `ref(own)`).
     
 ### Introduce `DerefOwn` (see [#997](https://github.com/rust-lang/rfcs/issues/997))
 
@@ -636,7 +634,7 @@ The "Immobile types and guaranteed destructors" project goal aims to introduce t
 
 A type `T: !Move` cannot be moved by value.
 However, due to the indirection, `&own T: Move` regardless of `T`.
-This makes `&own` essential for transfering ownership of immovable types.
+This makes `&own` essential for transferring ownership of immovable types.
 
 A type `T: !Forget` must be dropped before its backing allocation may be reused.
 This trivially makes `&own T: !Forget`, since forgetting the reference is equivalent to forgetting the value.
