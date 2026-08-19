@@ -57,9 +57,10 @@ impl Copy for f80x87 {}
 impl PartialEq for f80x87 { /* ... */ }
 impl PartialOrd for f80x87 { /* ... */ }
 
+impl Debug for f80x87 { /* ... */ } // using feature(float_format_hex)
+
 // Etc.
 From<f64> for f80x87 { /* ... */ }
-TryFrom<f80x87> for f64 { /* ... */ }
 
 impl f80x87 {
     // etc.
@@ -68,19 +69,27 @@ impl f80x87 {
     // And BE and NE.
     fn from_le_bytes(bytes: [u8; 10]) -> Self { /* ... */ }
     fn to_le_bytes(self) -> [u8; 10] { /* ... */ }
+
+    // Conversion methods from feature(float_conversions)
+    fn cast<Flt>(self) -> Flt where Self: FloatToFloat<Flt>;
+    fn to_int_saturating<Int>(self) -> Int where Self: FloatToInt<Int>;
+    fn to_int_checked<Int>(self) -> Option<Int> where Self: FloatToInt<Int>;
+    fn to_int_strict<Int>(self) -> Int where Self: FloatToInt<Int>;
 }
 ```
 
 - on x86 the alignment is 4 bytes and the size is 12 bytes
 - on x86_64 the alignment is 8 bytes and the size is 16 bytes.
 
-This type deliberately does not support any arithmetic, because the precision on floating point operations for this type is not guaranteed.
+This RFC deliberately does not propose support for arithmetic.
 
 ### Conversions
 
 See https://godbolt.org/z/9o1Mf8x1P.
 
 Conversions to and from `f32` and `f64` have hardware support, for `f16` and `f128` libcalls are needed.
+
+This functionality can be exposed with the functions from [`feature(float_conversions)`](https://github.com/rust-lang/rust/issues/159913).
 
 ## `f128ppc`
 
@@ -95,11 +104,13 @@ struct f128ppc {}
 impl Clone for f128ppc { /* ... */ }
 impl Copy for f128ppc {}
 
-// And PartialEq, PartialOrd
+impl PartialEq for f80x87 { /* ... */ }
+impl PartialOrd for f80x87 { /* ... */ }
+
+impl Debug for f80x87 { /* ... */ } // using feature(float_format_hex)
 
 // Etc.
 From<f64> for f128ppc { /* ... */ }
-TryFrom<f128> for f128ppc { /* ... */ }
 
 impl f128ppc {
     // etc.
@@ -109,22 +120,28 @@ impl f128ppc {
     fn from_le_bytes(bytes: [u8; 16]) -> Self { /* ... */ }
     fn to_le_bytes(self) -> [u8; 16] { /* ... */ }
 
-    // Maybe.
-    fn from_ne_components(components: [f64; 2]) -> Self { /* ... */ }
-    fn to_ne_components(self) -> [f64; 2] { /* ... */ }
+    fn from_components(large: f64, small: f64) -> Self { /* ... */ }
+    fn to_components(self) -> (f64, f64) { /* ... */ }
+
+    // Conversion methods from feature(float_conversions)
+    fn cast<Flt>(self) -> Flt where Self: FloatToFloat<Flt>;
+    fn to_int_saturating<Int>(self) -> Int where Self: FloatToInt<Int>;
+    fn to_int_checked<Int>(self) -> Option<Int> where Self: FloatToInt<Int>;
+    fn to_int_strict<Int>(self) -> Int where Self: FloatToInt<Int>;
 }
 ```
-
-This type is unfortunately plagued by several serious LLVM bugs, for which (partial) fixes at the time of writing have been submitted by the author, but these have not yet been merged:
-
-- [fix `ppc_fp128` FABS miscompile](https://github.com/llvm/llvm-project/pull/208969) on little-endian 64-bit powerpc
-- [fix bitcast on ppc_f128 swapping the two halves](https://github.com/llvm/llvm-project/pull/208969) on 32-bit powerpc
 
 Supporting floating point operations on this type is not in scope.
 
 There are some libcalls for this type, but they appear to pass float arguments separately and hence the signature is independent of target features:
 
 https://godbolt.org/z/rEa551eEq
+
+### Normalization
+
+Operations on `f128ppc` assume that the value is normalized: the high component is assumed to be at least as large was the low component. Hence whether a value is positive or negative can only look at the sign bit of the high component.
+
+When creating a `f128ppc` value from bytes (using `transmute`, `from_le_bytes`, etc) this invariant can be broken. That can cause nonsensical results, but cannot cause UB.
 
 ### Conversions
 
@@ -142,11 +159,13 @@ For `f128` there are:
 - `declare ppc_fp128 @llvm.ppc.convert.f128.to.f128ppc(fp128)`
 - `declare fp128 @llvm.ppc.convert.f128ppc.to.f128(ppc_fp128)`
 
+This functionality can be exposed with the functions from [`feature(float_conversions)`](https://github.com/rust-lang/rust/issues/159913).
+
 ## Conversions from and to `String`
 
 For conversion to `String` we can make use of the accepted, but currently unimplemented, [`feature(float_from_hex)`](https://github.com/rust-lang/rust/issues/160626). For conversion from string we can use [`feature(float_format_hex)`](https://github.com/rust-lang/rust/issues/160626), part of the same tracking issue. The `FromStr` and `ToString` implementations for `f64` don't easily extend to wider floats, and doing so would have a relatively large binary size penalty.
 
-Down the line we plan to use [Zmij](https://github.com/vitaut/zmij) for the `Display` implementation of `f128` and the other float types. The C++ library recently gained support for `long double`, the [Rust port](https://github.com/dtolnay/zmij) hasn't added support yet.
+The `Debug` implementations can use the hex format for now. See also [notes] on future plans for `Display`.
 
 ## `core::ffi::c_longdouble`
 
@@ -167,7 +186,7 @@ LLVM now defines what `long double` resolves to for each target triple ([source]
 
 An implication of `f80x87` and `f128ppc` not supporting any arithmetic is that code attempting e.g. to add two `c_longdouble` values is not portable. However, the same is often already true for other `core::ffi` types, e.g. `c_char` may be signed or unsigned, and `c_long` may or may not transmute to `[u8; 8]`. This limitation is unsatisfying, but the tradeoff seems better than not having `c_longdouble` at all.
 
-We should nevertheless try to match the APIs of `f64` and `f128`, e.g. by defining constants (e.g. `BITS`, `MIN`, `INF`) and methods that operate only on the bits (e.g. `is_nan`, `is_inf`, `abs`, `copysign`).
+We should nevertheless try to match the APIs of `f64` and `f128`, e.g. by defining constants (e.g. `BITS`, `MIN`, `INFINITY`) and methods that operate only on the bits (e.g. `is_nan`, `is_infinite`, `abs`, `copysign`).
 
 ## variadic arguments
 
@@ -227,12 +246,28 @@ There is no dedicated register class for `f128ppc`. We provide methods like `to_
 
 Why should we *not* do this?
 
+## `c_longdouble` is niche
+
+This type is uncommon. Most of its original use cases are better served by `f128` today.
+
+## Distributions configure `long double`
+
+See [unresolved-questions]. We may be forcing a split of powerpc targets with this type.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+## Rationale: why `c_longdouble` must be a builtin type
+
+The reason `c_longdouble` can't be defined in user space is that `f80x87` and `f128ppc` have special ABI requirements. Therefore compiler support is required.
+
+## Alternative: make `c_longdouble` an opaque type
+
+Rather than an alias for existing types, `c_longdouble` could be a custom type that matches C `long double`. This type can have a more consistent interface across targets (e.g. addition or `.sqrt()` don't work at all, rather than only sometimes).
+
+There is some similarity with `usize` being a distinc type rather than an alias for `u16`/`u32`/`u64`.
+
+A downside of this approach is that it breaks the existing pattern of `core::ffi::c_*` types being aliases.
 
 # Prior art
 [prior-art]: #prior-art
@@ -267,6 +302,8 @@ Exactly what type `long double` corresponds to depends on the target, but can be
 
 What flags are available is target-specific.
 
+Some distributions configure the default in their system C compiler. See [unresolved-questions].
+
 ## LLVM
 
 In LLVM these types are defined as `x86_fp80` and `ppc_fp128`. LLVM provides conversion and arithmetic operations like for any other primitive type.
@@ -281,14 +318,15 @@ Everyone's favorite thing to talk about, no technical knowledge required. And bo
 **X87 F80**
 
 - `f80x87`, consistent with the recent `f16b`
-- `f80` (rejected because it suggests this is a first-class type like f32 and f128, it is not)
-- `x86f80` or `x86_f80`
-- `x87f80` or `x87_f80`
-- `f80x87`
+- `f80`, rejected because it suggests this is a first-class type like f32 and f128, it is not
+- `__float80`, similar to `__m256i` and similar platform-specific types in stdarch
+- `x86f80` or `x86_f80` or `X86F80`
+- `x87f80` or `x87_f80` or `X87F80`
 
 **IBM F128**
 
 - `f128ppc`, consistent with the recent `f16b`
+- `__ibm128`, similar to `__m256i` and similar platform-specific types in stdarch
 - `ppcf128` or `ppc_f128`
 - `ibmf128` or `ibm_f128`
 - `doubledouble` or `DoubleDouble`
@@ -321,14 +359,51 @@ Should `f80x87` and `f128ppc` be available on targets where they do not correspo
     return LongDoubleFormat::X87DoubleExtended;
 ```
 
+Clang does accept `__ibm128` when compiling for target triples where it is not `long double`, see https://godbolt.org/z/3jKch7db1.
+
+## Distributions configuring `long double`
+
+Some distributions (e.g. RHEL8 and Fedora 44 powerpc) configure a non-standard `long double` in their system C compiler. This is a problem when
+C code compiled with those compilers is combined with Rust code compiled with a compiler downloaded via `rustup`: Rust will use the inferred
+alias based on the target triple, which does not match the `long double` used by the system C compiler.
+
+As a concrete example RHEL8 and Fedora 44 configure IEEE f128 where `f128ppc` is expected based on the target triple.
+Because `rustup` downloads a pre-built `core`, we can't detect the right type. Fundamentally, picking a different `long double` type is a different ABI.
+
+We can solve this problem with special target tuples, e.g. by having the standard target use IEEE f128 and introducing a legacy target tuple for IBM f128 compatibility.
+Most distributions for big-endian `powerpc{64}` have a baseline without vector registers (specifically, without the `vsx` target feature) and hence don't define an IEEE f128 ABI.
+
+See [this thread](https://github.com/folkertdev/rust-rfcs/pull/3#discussion_r3807256613) for more context.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
 - We could add more (arithmetic) operations to make Rust code using `c_longdouble` more portable.
 - We could allow user control over x87 registers
+- We could implement `Display`, see also [notes].
+
+## `f80` on M68k
+
+The rust `m68k` target is currently very tier 3. For `m68k-unknown-linux-gnu`, `std` does not even build (due to https://github.com/llvm/llvm-project/issues/217135). But `rustc_codegen_gcc` is experimenting with this target, so it may become relevant in the future.
+
+Some m68k targets use a variant of `f80` that stores the same bits, but layed out in memory in a slightly different way.
 
 # History
 
 - RFC 3456 ["add `bf16`, `f64f64` and `f80 types"](https://github.com/rust-lang/rfcs/pull/3456)
 - [#t-libs > &#96;f80&#96;, &#96;f128&#96; and &#96;c_longdouble&#96;](#narrow/channel/219381-t-libs/topic/.60f80.60.2C.20.60f128.60.20and.20.60c_longdouble.60)
 - [#t-compiler > &#96;x87_f80&#96; is weird](#narrow/channel/131828-t-compiler/topic/.60x87_f80.60.20is.20weird)
+
+# Notes
+[notes]: #notes
+
+## LLVM `ppc_fp128` bugs
+
+This type is unfortunately plagued by several serious LLVM bugs, for which (partial) fixes at the time of writing have been submitted by the author, but these have not yet been merged:
+
+- [fix `ppc_fp128` FABS miscompile](https://github.com/llvm/llvm-project/pull/208969) on little-endian 64-bit powerpc
+- [fix bitcast on ppc_f128 swapping the two halves](https://github.com/llvm/llvm-project/pull/208969) on 32-bit powerpc
+
+## Implementing `Display`
+
+The current plan is to use [Zmij](https://github.com/vitaut/zmij) for the `Display` implementation of `f128` and the other float types. The C++ library recently gained support for `long double`, the [Rust port](https://github.com/dtolnay/zmij) hasn't added support yet.
