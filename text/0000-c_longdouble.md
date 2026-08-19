@@ -371,7 +371,7 @@ As a concrete example RHEL8 and Fedora 44 configure IEEE f128 where `f128ppc` is
 
 We can solve this problem with special target tuples, e.g. by having the standard target use IEEE f128 and introducing a legacy target tuple for IBM f128 compatibility.
 
-Picking IEEE as the default is only an option when the target baseline includes the `vsx` target feature, because Clang and GCC only support `_Float128` when `vsx` is enabled. For big-endian `powerpc{64}` the baseline only includes `altivec`, which has the required vector registers but not the C compiler support for IEEE f128. The little-endian `powerpc64le` baseline does enable `vsx` by default.
+Picking IEEE as the default is only an option when the target baseline includes the `vsx` target feature, because Clang and GCC only support `_Float128` when `vsx` is enabled. For 32-bit big-endian `powerpc` the baseline has no vector registers. On 64-bit big-endian `powerpc64` the baseline only includes `altivec`, which has the required vector registers but not the C compiler support for IEEE f128. The little-endian `powerpc64le` baseline does enable `vsx` by default.
 
 See [this thread](https://github.com/folkertdev/rust-rfcs/pull/3#discussion_r3807256613) for more context.
 
