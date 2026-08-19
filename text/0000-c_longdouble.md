@@ -371,7 +371,7 @@ As a concrete example RHEL8 and Fedora 44 configure IEEE f128 where `f128ppc` is
 Because `rustup` downloads a pre-built `core`, we can't detect the right type. Fundamentally, picking a different `long double` type is a different ABI.
 
 We can solve this problem with special target tuples, e.g. by having the standard target use IEEE f128 and introducing a legacy target tuple for IBM f128 compatibility.
-Most distributions for big-endian `powerpc{64}` have a baseline without vector registers (specifically, without the `vsx` target feature) and hence don't define an IEEE f128 ABI.
+Most distributions for big-endian `powerpc{64}` have a baseline without vector registers. Even though the `altivec` feature adds vector registers, Clang and GCC only support `_Float128` with the later `vsx` target feature. Hence picking IEEE f128 as `long double` is only a viable option with a baseline that includes `vsx`. The `powerpc64le` baseline does enable `vsx` by default.
 
 See [this thread](https://github.com/folkertdev/rust-rfcs/pull/3#discussion_r3807256613) for more context.
 
