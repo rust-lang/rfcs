@@ -2069,7 +2069,7 @@ _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
   required when [`switch`ing on a _nonfrozen enumeration_][swift-open-enums],
   and an `@unknown default` emits a warning if there are named enumeration cases
   that utilize that branch. This achieves the same goal as the
-  `non_exhaustive_omitted_range_patterns` lint in a different manner.
+  `non-exhaustive-omitted-patterns` lint in a different manner.
 
 [acord-xml]: https://docs.oracle.com/cd/B40099_02/books/ConnACORDFINS/ConnACORDFINSApp_DataType10.html
 [cpp-scoped-enums]: https://en.cppreference.com/w/cpp/language/enum#Scoped_enumerations
