@@ -461,6 +461,7 @@ pseudo-random values, to help uncover bugs in programs that use `freeze()`.
 > key, depending on what is worse.
 >
 > -- [Ralf Jung][ralfj-saying]
+
 [ralfj-saying]: https://github.com/rust-lang/rfcs/pull/3605#issuecomment-2050472692
 
 The biggest disadvantage of adding the `freeze` operation is that **a Rust
