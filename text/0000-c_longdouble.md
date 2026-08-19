@@ -367,11 +367,11 @@ Some distributions (e.g. RHEL8 and Fedora 44 powerpc) configure a non-standard `
 C code compiled with those compilers is combined with Rust code compiled with a compiler downloaded via `rustup`: Rust will use the inferred
 alias based on the target triple, which does not match the `long double` used by the system C compiler.
 
-As a concrete example RHEL8 and Fedora 44 configure IEEE f128 where `f128ppc` is expected based on the target triple.
-Because `rustup` downloads a pre-built `core`, we can't detect the right type. Fundamentally, picking a different `long double` type is a different ABI.
+As a concrete example RHEL8 and Fedora 44 configure IEEE f128 where `f128ppc` is expected based on the target triple. Because `rustup` downloads a pre-built `core`, we can't detect the right type. Fundamentally, picking a different `long double` type is a different ABI.
 
 We can solve this problem with special target tuples, e.g. by having the standard target use IEEE f128 and introducing a legacy target tuple for IBM f128 compatibility.
-Most distributions for big-endian `powerpc{64}` have a baseline without vector registers. Even though the `altivec` feature adds vector registers, Clang and GCC only support `_Float128` with the later `vsx` target feature. Hence picking IEEE f128 as `long double` is only a viable option with a baseline that includes `vsx`. The `powerpc64le` baseline does enable `vsx` by default.
+
+Picking IEEE as the default is only an option when the target baseline includes the `vsx` target feature, because Clang and GCC only support `_Float128` when `vsx` is enabled. For big-endian `powerpc{64}` the baseline only includes `altivec`, which has the required vector registers but not the C compiler support for IEEE f128. The little-endian `powerpc64le` baseline does enable `vsx` by default.
 
 See [this thread](https://github.com/folkertdev/rust-rfcs/pull/3#discussion_r3807256613) for more context.
 
