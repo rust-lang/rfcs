@@ -2052,15 +2052,18 @@ _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
 
 ### Enum openness in other languages
 
-- C++'s [scoped enumerations][cpp-scoped-enums] and C enums are both open
-  enums.
+- C uses open enums.
+- C++ enums, including [scoped enumerations][cpp-scoped-enums], are open enums
+  _within_ the range of enumeration values, and
+  [not the entire underlying integer][cwg-1766].
 - C♯ uses [open enums][cs-open-enums], with a [proposal][cs-closed-enums] to
   add closed enums for guaranteed exhaustiveness.
 - Java uses closed enums.
 - [Protobuf][protobuf-enum] uses closed enums with the `proto2` syntax, treating
   unlisted enum values as unknown fields, and changed the semantics to open
-  enums with the `proto3` syntax. This was in part because of lessons learned
-  from protocol evolution and service deployment as described above.
+  enums when the `proto3` syntax was released. This was in part because of
+  lessons learned from protocol evolution and service deployment as described
+  above.
 - Swift uses both closed and open enums for enums with data, based on if it's
   compiled in library evolution mode and marked `@frozen`. A `default` branch is
   required when [`switch`ing on a _nonfrozen enumeration_][swift-open-enums],
@@ -2070,8 +2073,9 @@ _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
 
 [acord-xml]: https://docs.oracle.com/cd/B40099_02/books/ConnACORDFINS/ConnACORDFINSApp_DataType10.html
 [cpp-scoped-enums]: https://en.cppreference.com/w/cpp/language/enum#Scoped_enumerations
-[cs-open-enums]: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/enum#conversions
+[cs-open-enums]: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/enums#206-enum-values-and-operations
 [cs-closed-enums]: https://github.com/dotnet/csharplang/issues/3179
+[cwg-1766]: https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#1766
 [swift-open-enums]: https://docs.swift.org/swift-book/documentation/the-swift-programming-language/statements/#Switching-Over-Future-Enumeration-Cases
 [protobuf-enum]: https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#enum
 
