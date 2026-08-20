@@ -402,6 +402,12 @@ Some m68k targets use a variant of `f80` that stores the same bits, but layed ou
 # Notes
 [notes]: #notes
 
+## LLVM `x86_fp80` bugs
+
+On windows the rounding mode is configured for fast `f64` math, meaning it has a lower precision. LLVM miscompiles based on assuming the higher precision:
+
+- https://github.com/folkertdev/rust-rfcs/pull/3/changes#r3813935264
+
 ## LLVM `ppc_fp128` bugs
 
 This type is unfortunately plagued by several serious LLVM bugs, for which (partial) fixes at the time of writing have been submitted by the author, but these have not yet been merged:
