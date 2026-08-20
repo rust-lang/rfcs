@@ -413,7 +413,7 @@ However, as stated by [the `stackbox` maintaner themselves](https://internals.ru
 While many prior discussions use the `&own` notation, other options are available:
 
 - `&move` has been used in the past, indicating the "movement of ownership".
-    - We believe that this syntax isn't as clear in the implied semantics.
+    - We believe that this syntax isn't as clear in the implied semantics, as reference types, including this one, do very much not move the referee when they are themselves moved.
     - This could re-use the existing `move` keyword
         - However, there is ambiguity with closures: `&move || { }`
 - `&ref(own)` does not require a contextual keyword
@@ -513,15 +513,15 @@ This `Box` is effectively the same as `&own`, except for missing ergonomics.
 
 While it is undisputed that it is *possible* to enable this property, there are concerns about its usefulness.
 If it is not necessary to be covariant, we could alternatively be invariant in `'a`.
-This could allow us, for example, to use `&own` as an initialization prove for certain in-place-init proposals.
+This could allow us, for example, to use `&own` as an initialization proof for certain in-place-init proposals.
 
-### Should is be allowed to borrow through pointers?
+### Should it be allowed to borrow through pointers?
 
 The unsafe operation `&own *ptr` would allow effectively casting the pointer to an owning reference.
 This is allowed with other references, so it seems reasonable to allow this here too.
 However, this operation additionally causes a deferred drop of the pointee as a side-effect.
 
-As an alternative, we could disallow this behavior (for now), and instead introduce some more explicitly named function `unsafe fn assume_owned<'a, T>'(ptr: *mut T) -> &own T`.
+As an alternative, we could disallow this behavior (for now), and instead introduce some more explicitly named function `unsafe fn assume_owned<'a, T>(ptr: *mut T) -> &own T`.
 
 ### How does `&own place` work if `place: Copy`?
 
@@ -689,7 +689,7 @@ Vec<T>::pop_own(&mut self) -> &own T { ... }
 
 // Extract an owning slice from the `Vec`, without dropping the allocation.
 // This way the allocation can be reused, and the slice processed further
-// via pattern amtching or slice methods (e.g., splitting).
+// via pattern matching or slice methods (e.g., splitting).
 Vec<T>::take_all(&mut self) -> &own [T] { ... }
 
 // Allows the return value of `Vec::drain` to be converted to an owned slice.
