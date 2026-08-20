@@ -60,7 +60,7 @@ impl PartialOrd for f80x87 { /* ... */ }
 impl Debug for f80x87 { /* ... */ } // using feature(float_format_hex)
 
 // Etc.
-From<f64> for f80x87 { /* ... */ }
+impl From<f64> for f80x87 { /* ... */ }
 
 impl f80x87 {
     // etc.
@@ -110,7 +110,7 @@ impl PartialOrd for f80x87 { /* ... */ }
 impl Debug for f80x87 { /* ... */ } // using feature(float_format_hex)
 
 // Etc.
-From<f64> for f128ppc { /* ... */ }
+impl From<f64> for f128ppc { /* ... */ }
 
 impl f128ppc {
     // etc.
