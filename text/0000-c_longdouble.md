@@ -367,7 +367,12 @@ Some distributions (e.g. RHEL8 and Fedora 44 powerpc) configure a non-standard `
 C code compiled with those compilers is combined with Rust code compiled with a compiler downloaded via `rustup`: Rust will use the inferred
 alias based on the target triple, which does not match the `long double` used by the system C compiler.
 
-As a concrete example RHEL8 and Fedora 44 configure IEEE f128 where `f128ppc` is expected based on the target triple. Because `rustup` downloads a pre-built `core`, we can't detect the right type. Fundamentally, picking a different `long double` type is a different ABI.
+As a concrete example:
+
+- RHEL8 (based on Fedorea 28) uses the default IBM f128
+- Fedora 44 and Ubuntu 26.04 configure IEEE f128
+
+These today use the same target tuple, but are not actually ABI-compatible. It is impossible for `rustup` to download a pre-built `core` that is correct in both cases.
 
 We can solve this problem with special target tuples, e.g. by having the standard target use IEEE f128 and introducing a legacy target tuple for IBM f128 compatibility.
 
