@@ -244,6 +244,9 @@ There are a handful of alternatives for metadata design:
   eventually replace `features`. By making `features_v2` contain all information
   that `features` does, this transition will be easier for metadata consumers,
   and the (small) complexity of object merging is avoided.
+* `features_v2` could be called something else such as, from an informal
+  proposal, `features_metadata`. `features_v2` was selected to clearly convey
+  that it will be the form of `features` in a future metadata version.
 
 ## Prior art
 
