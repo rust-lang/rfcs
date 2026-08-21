@@ -277,23 +277,26 @@ impl<T> MaybeUninit<T> {
 }
 ```
 
-The `freeze()` function replaces all uninitialized bits in `self` with arbitrary
-but initialized values, and it keeps initialized bits unchanged. The return
-value of `freeze` is also a `MaybeUninit<T>`, because even if all the bits are
+The `freeze()` function replaces all uninitialized bytes in `self` with arbitrary
+but initialized bytes, and it keeps initialized bytes unchanged. The return
+value of `freeze` is also a `MaybeUninit<T>`, because even if all the bytes are
 initialized, it does not mean that the bit pattern can be interpreted as a valid
 value of type `T`.
 
 In practice, the `MaybeUninit::freeze()` call will usually be immediately
-followed by `MaybeUninit::assume_init()`, which will reinterpret the bits as a
+followed by `MaybeUninit::assume_init()`, which will reinterpret the bytes as a
 value of type `T`. For integers and floats this is always safe, because every
 bit pattern is a valid value of these types.
 
 Multiple calls of the `freeze()` function on the same value may return different
-values of the uninitialized bits, the argument to this function is not modified
+values of the uninitialized bytes, the argument to this function is not modified
 and continues to be uninitialized. This means that we can't use this function to
 turn a slice of uninitialized memory `&[MaybeUninit<u8>]` into a slice of
 initialized memory `&[u8]` without actually writing initialized values into the
 memory.
+
+`freeze()` keeps the provenance associated with the initialized bytes, and the
+arbitrary bytes that are created from uninitialized bytes are provenance-free.
 
 If `T` contains any padding bytes, they are immediately turned into
 uninitialized bytes when the `MaybeUninit<T>` is returned from `freeze()`.
@@ -421,7 +424,7 @@ To be determined.
 #### Const eval/Miri
 
 The `freeze` intrinsic also needs to be implemented for constant evaluation and
-inside Miri. It might be useful to replace the uninitialized bits with
+inside Miri. It might be useful to replace the uninitialized bytes with
 pseudo-random values, to help uncover bugs in programs that use `freeze()`.
 
 ## Drawbacks
@@ -568,7 +571,7 @@ even if the caller knows that they were initialized in the input.
 ### In-place freeze
 
 Finally, there have been many proposals for an in-place freeze operation, which
-replaces any possibly uninitialized bits in memory with arbitrary but
+replaces any possibly uninitialized bytes in memory with arbitrary but
 initialized values.
 
 ```rust
@@ -587,7 +590,7 @@ those bytes and immediately rewrites them with the bytes produced by the reader.
 [read-read]: https://doc.rust-lang.org/std/io/trait.Read.html#tymethod.read
 
 The problem with this approach is that, as we will show in the next sections,
-replacing uninitialized bits with initialized bits in memory needs to actually
+replacing uninitialized bytes with initialized bytes in memory needs to actually
 overwrite the memory, both on the level of the Rust and LLVM Abstract Machines,
 and on the level of actual hardware.
 
@@ -716,10 +719,10 @@ case above][use-case-c-bitfields]). This means that a Rust program that is
 compiled with LTO can observe partially uninitialized bytes, even if Rust can
 never produce them.
 
-For this reason, the `freeze` operation is defined to freeze the values of
-individual bits, not bytes. This distinction does not matter for Rust programs
-(in the Rust Abstract Machine, initializedness continues to be tracked on a byte
-level), but it does matter for programs that link with non-Rust code.
+For this reason, we should guarantee that the `freeze()` function will be
+lowered into the `freeze` instruction in LLVM, at least for scalar types, so
+that code that interacts with C bitfields can rely on `freeze()` preserving
+values of initialized bits in partly uninitialized bits.
 
 ## Prior art
 [prior-art]: #prior-art
