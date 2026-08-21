@@ -475,6 +475,16 @@ like Valgrind won't see that an uninitialized value that the program loaded from
 memory has been frozen, so they will report an error if the value is then used.
 This may cause a large number of false positives in sound Rust programs.
 
+It is possible to ask Valgrind to treat a range of memory as initialized by
+using the [`VALGRIND_MAKE_MEM_DEFINED`][valgrind-mmd] client request; these
+requests are encoded as a specific sequence of instructions which does nothing
+on a real CPU, but which is recognized by Valgrind and handled as "magic". It
+would be possible to include these instructions inside the `freeze()` function
+if the standard library is compiled with a certain flag, however it is not clear
+whether Rust should include support for Valgrind inside the standard library.
+
+[valgrind-mmd]: https://valgrind.org/docs/manual/mc-manual.html#mc-manual.clientreqs
+
 ## Rationale and alternative designs
 [rationale-and-alternative-designs]: #rationale-and-alternative-designs
 
