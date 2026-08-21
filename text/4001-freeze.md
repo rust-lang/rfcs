@@ -454,12 +454,14 @@ behavior. That RFC is in direct contradiction to this proposal.
 #### Why `freeze` makes this problem worse
 
 It is of course already possible to leak secrets by reading uninitialized memory
-by using `unsafe`, inline assembly or FFI. However, at the moment this is always
-UB, and there is a strong community norm against causing UB (at least in
-libraries), and powerful tools for detecting it (Miri, Valgrind, ...).
+by using `unsafe`. However, at the moment this either requires inline assembly
+or FFI, or it triggers UB if done from `unsafe` Rust, and there is a strong
+community norm against causing UB (at least in libraries), and powerful tools
+for detecting it (Miri, Valgrind, ...).
 
-Once the `freeze` operation is added to the language, leaking contents of
-uninitialized memory will not be UB, so neither the norm nor the tooling will
+Once the `freeze` operation is added to the language, sound Rust code can leak
+contents of uninitialized memory without using inline assembly or FFI and
+without triggering UB, so neither the norm against UB nor the tooling will
 protect against it. This is especially insiduous, because any `freeze` in the
 whole program can realistically leak any secret processed by the program.
 
