@@ -586,15 +586,10 @@ those bytes and immediately rewrites them with the bytes produced by the reader.
 
 [read-read]: https://doc.rust-lang.org/std/io/trait.Read.html#tymethod.read
 
-The first problem is that replacing uninitialized bits with initialized bits in
-memory has to be modeled as a write in both Rust semantics and in LLVM
-semantics, which rules out any variants that freeze by a shared reference, a
-`&mut` reference is required.
-
-The second problem is that this actually has to perform writes on the hardware
-level, and a robust and future-proof implementation of this operation should
-write to every byte in the frozen memory. This means that this operation would
-be as expensive as actually initializing the array.
+The problem with this approach is that, as we will show in the next sections,
+replacing uninitialized bits with initialized bits in memory needs to actually
+overwrite the memory, both on the level of the Rust and LLVM Abstract Machines,
+and on the level of actual hardware.
 
 #### Rust semantics
 
@@ -609,8 +604,9 @@ in-place freeze operation needs a `&mut` reference.
 
 #### LLVM semantics
 
-LLVM does not expose any instruction or instrinsic for in-place freezing. Even
-if such operation was introduced in a future LLVM release, it would need to be
+LLVM does not expose any instruction or instrinsic for in-place freezing, so the
+in-place freeze would need to overwrite each byte in memory with the frozen
+value. Even if LLVM had an in-place freeze intrinsic, it would need to be
 modelled as a write in the LLVM semantics, for the same reasons as in Rust.
 
 #### Real hardware
