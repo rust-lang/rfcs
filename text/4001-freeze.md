@@ -295,35 +295,8 @@ turn a slice of uninitialized memory `&[MaybeUninit<u8>]` into a slice of
 initialized memory `&[u8]` without actually writing initialized values into the
 memory.
 
-`MaybeUninit<T>::freeze()` also freezes any padding bytes inside `T` and copying
-the frozen `MaybeUninit<T>` will preserve their values. However, the values of
-the padding bytes are lost when the `MaybeUninit<T>` is converted to `T`, for
-example by using `MaybeUninit::assume_init()`.
-
-### Effect on formalizing Rust
-
-Introducing the `freeze()` operation into the language should not cause any
-difficulties in formalizing the semantics of Rust. `MaybeUninit<T>` is defined
-as an union, and according to the [Rust Specification][spec-union], unions are
-already treated as sequences of bytes, with some bits possibly being
-uninitialized.
-
-[spec-union]: https://doc.rust-lang.org/reference/items/unions.html#r-items.union.fields.intro
-
-Treating `MaybeUninit<T>` as a sequence of possibly uninitialized bytes means
-that the notions of partially initialized `MaybeUninit<T>` and initialized
-padding bytes of `T` inside `MaybeUninit<T>` are well defined.
-
-(This is not obvious: another reasonable choice for union semantics in Rust
-would have been to model the value of union as the value of its "active field".
-With this semantics, a `MaybeUninit<u32>`, which is defined as `union { uninit:
-(), value: u32 }`, would _not_ be modelled as a sequence of 32 bits, but as
-either a `()` or a `u32`. In this case it would not have been possible to
-express a partly initialized `MaybeUninit<u32>`. More details can be found [in
-this discussion][unsafe-guidelines-union] about the validity invariant of
-union.)
-
-[unsafe-guidelines-union]: https://github.com/rust-lang/unsafe-code-guidelines/issues/438
+If `T` contains any padding bytes, they are immediately turned into
+uninitialized bytes when the `MaybeUninit<T>` is returned from `freeze()`.
 
 ### Implementation
 
