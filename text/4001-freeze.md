@@ -174,6 +174,27 @@ fn level_as_u64(level: &Level) -> u64 {
 }
 ```
 
+#### Solution without `freeze`
+
+There is an alternative safe solution that does not use `freeze`, but overwrites
+the padding bytes with zeros:
+
+```rust
+fn level_as_u64(level: &Level) -> u64 {
+    let ptr = (level as *const Level).cast::<MaybeUninit<u64>>();
+    // load the value of the `Level` structure as a `MaybeUninit<u64>`
+    let mut loaded = unsafe { ptr.read() };
+    // overwrite the padding bytes with zeros
+    unsafe { (&raw mut loaded).cast::<u8>().add(1).write_bytes(0, 3) }
+    // this is now safe because all bytes are initialized
+    unsafe { loaded.assume_init() }
+```
+
+LLVM is able to [optimize this][godbolt-masked-reads-alt] into the same
+efficient code as with `freeze()`.
+
+[godbolt-masked-reads-alt]: https://godbolt.org/z/nExa6xYzb
+
 ### Use case 3: safe access to C bitfields
 
 Suppose that we have a C library that defines a struct with bitfields:
@@ -265,6 +286,12 @@ uninitialized memory can contain an arbitrary value, but we currently can't use
 them in safe Rust, because uninitialized memory can't be read at all.
 
 [sparse]: https://research.swtch.com/sparse
+
+However, it might already be possible to implement some of these data structures
+safely by using inline assembly. For example, with the sparse set, the "story"
+for the inline assembly can be that we check that an element is present by a
+linear scan of the dense array, without accessing the sparse, possibly
+uninitialized array.
 
 ## Detailed design
 [detailed-design]: #detailed-design
