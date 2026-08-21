@@ -651,6 +651,15 @@ For this reason, a cautious and future-proof implementation of in-place freeze
 should read and write back each byte to guarantee that the uninitialized memory
 is properly initialized.
 
+However, once the `freeze()` operation is added to the language, users will be
+able to safely write in-place freeze that does not overwrite every byte in the
+frozen range, if they can guarantee that a smaller number of writes is
+sufficient to turn the memory into arbitrary but initialized state. For example,
+on a Linux system, they may write inline assembly that reads and writes just a
+single byte per page (to account for `MADV_FREE` and other page-level
+mechanisms), and the "story" of this inline assembly can be a loop that
+reads, `freeze`-s and writes every byte in the range.
+
 ### Naming: `freeze` vs `frozen`
 
 The method name `MaybeUninit<T>::freeze()` can look like it mutates the
