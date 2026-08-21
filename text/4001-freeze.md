@@ -566,7 +566,7 @@ additional complexity and may lead to worse generated code.
 
 The second disadvantage is that using const expressions like
 `mem::size_if::<T>()` in function signatures is [unstable and
-incomplete][feature-generic-const-exprs], so it is [not
+incomplete][generic-const-exprs], so it is [not
 possible][ralfj-should-not-be-used] to use it in the standard library at the
 moment (let alone in the signature of an exported function).
 
@@ -809,7 +809,7 @@ Other related discussions were:
     impl<T> MaybeUninit<T> {
         const fn freeze_init(self) -> T where T: AnyBitPattern {
             // SAFETY: this is safe because the `T: AnyBitPattern` ensures that
-            the result of `self.freeze()` is a valid `T`
+            // the result of `self.freeze()` is a valid `T`
             unsafe { self.freeze().assume_init() }
         }
     }
