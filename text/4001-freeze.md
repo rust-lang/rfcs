@@ -657,7 +657,7 @@ Valgrind.
 [userfaultfd]: https://docs.kernel.org/admin-guide/mm/userfaultfd.html
 [arm-mma]: https://support.arm.com/documentation/ddi0487/mb/-Part-B-The-AArch64-Application-Level-Architecture/-Chapter-B2-The-AArch64-Application-Level-Memory-Model/-B2-11-Mismatched-memory-attributes
 
-For this reason, a cautious and future-proof implementation of in-place freeze
+This means that a cautious and future-proof implementation of in-place freeze
 should read and write back each byte to guarantee that the uninitialized memory
 is properly initialized.
 
@@ -738,10 +738,12 @@ case above][use-case-c-bitfields]). This means that a Rust program that is
 compiled with LTO can observe partially uninitialized bytes, even if Rust can
 never produce them.
 
-For this reason, we should guarantee that the `freeze()` function will be
-lowered into the `freeze` instruction in LLVM, at least for scalar types, so
-that code that interacts with C bitfields can rely on `freeze()` preserving
-values of initialized bits in partly uninitialized bits.
+For this reason, we should document that the `freeze()` function will be lowered
+into the `freeze` instruction in LLVM, at least for scalar types, so that code
+that interacts with C bitfields can use `freeze()` to preserve values of
+initialized bits in partly uninitialized bytes. However, the documentation
+should make it clear that this is not a stability promise, Rust currently does
+not make any guarantees about the LLVM IR that the compiler produces.
 
 ## Prior art
 [prior-art]: #prior-art
