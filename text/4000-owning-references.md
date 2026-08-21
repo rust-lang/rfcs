@@ -269,7 +269,7 @@ However, in a possible future where Rust splits immovability from the drop guara
 
 An *owning reference* type is written `&own T` or `&'a own T` for any type `T`.
 Owning references behave like mutable references, except that they own the value behind the reference, which means that:
-- It is possible to move out of an `&own T`.
+- It is possible to move out of an `&own T` (including partial moves).
 - Dropping an `&own T` drops the inner `T`.
 
 Owning references should be used when we want to transfer ownership and either do not want to or can not move the value.
@@ -291,6 +291,20 @@ print_all(&own [
     &own || "World".to_string(),
     &own || format!("{}", 42),
 ]);
+```
+
+Due to thier owning nature, in some cases a `&own T` behaves more like a `Box<T>` than a `&mut T`.
+For example, in order to mutate value inside an owned reference, the reference itself must be mutable:
+```rust
+let value = 42;
+// We can move out of an immutable place with an owning borrow.
+let own_ref = &own value;
+// ERROR: We cannot mutate the value of a non-mutable owned reference
+// *own_ref += 20;
+// But we can move out of it
+let mut own_ref = &own *own_ref;
+// With a mutable binding, we may mutate the value
+*own_ref += 5;
 ```
 
 ## Reference-level explanation
@@ -343,7 +357,7 @@ The type `&'a own T` behaves similar like other references, except it owns the v
 
 - It is **covariant** in both `'a` and `T`.
 - It is an **exclusive** borrow.
-- It may be reborrowed as a shared or mutable reference.
+- It may be borrowed as a shared or mutable reference via the `Deref` and `DerefMut` traits.
 - It must be aligned, non-null, point to a valid `T`, and be "dereferencable".
 - When dereferenced, it produces an *owned* place (instead of a mutable one), which may be (partially) moved out of (like `Box`).
 - When dropped, it also drops its pointee (but does not free the allocation).
@@ -356,7 +370,7 @@ The type `&'a own T` behaves similar like other references, except it owns the v
 This simple approach to owning references cannot support pinning.
 A `Pin<&'a own T>` is unsound, since forgetting the reference violates the drop guarantee (unless `'a: 'static`).
 This may be confusing to users, since they often only consider the immovability guarantee of `Pin`.
-Unfortunately, the [alternative](#Alternative-Add-remote-drop-flags-to-support-pinning) is more complex, and we believe that it is not worth it.
+Unfortunately, the [alternative](#Alternative-Add-remote-drop-flags-to-support-pinning) is more complex, and we believe that it is not worth it, since it makes owning references more expensive and complicated than their syntax would suggest.
 
 ### Some easy APIs are actually hard
 
@@ -408,6 +422,9 @@ However, as stated by [the `stackbox` maintaner themselves](https://internals.ru
 - `&own self` receivers are not (currently) possible.
 - It is non-straightforward to write functions are "allocation-agnostic", i.e., work with both `Box` and `StackBox`.
 
+Additionally, a library type cannot directly benefit from compiler optimizations such as `noalias` and `dereferencable`.
+This can't currently be done soundly with a `Box`, since `noalias` does not work with custom allocators.
+
 ### Alternative: Syntax options
 
 While many prior discussions use the `&own` notation, other options are available:
@@ -421,7 +438,7 @@ While many prior discussions use the `&own` notation, other options are availabl
     - Doubles the amount of typing and adds visual clutter
 - `Own<'_, T>` could use normal type syntax, avoiding additional parsing complexity.
     - This would visually more closely resemble `Box` rather than other reference types
-    - This would likely need a macro to perform (re-)borrowing
+    - It is unclear how the borrow syntax would work in this case
 
 ### Alternative: Wait for custom references
 
@@ -442,7 +459,8 @@ On the upside, this would allow functions accepting an allocator-generic `Box` w
 However, there are a number of downsides to this approach:
 
 - The `Box` API is too general.
-  For example, it would mean that `Own<'a, T>: Clone` if `T: Clone`. However, calling this method would have to panic with the `Noop` allocator.
+  For example, `Box::allocator` would have to return the `Noop` allocator, which cannot allocate memory and therefore will have to panic on most methods.
+  This would be a hazard for allocator agnostic code.
 - There might be subtle differences in the types that are currently unknown. 
   For example, we might want different aliasing rules for the types.
 - `Box` is (currently) not available in `no_std` (unless `alloc` is enabled), so APIs compatible with `no_std` cannot take `Box` as an argument.
@@ -457,13 +475,14 @@ A `Box<T, Noop<'a>>` is neither a heap allocation, nor does it provide ownership
 
 ### Alternative: Add remote drop flags to support pinning
 
-Unfortunately, `Pin<&own T>` is unsound with regards to the drop guarantee.
+Unfortunately, `Pin<&'a own T>` is unsound with regards to the drop guarantee (unless `'a: 'static`).
 This is because forgetting `Pin<&own T>` avoids running the drop implementation of `T`, but we have no control over the backing memory or the reference.
 
 If we'd want to fix this design to allow for pinning, we would have to change `&own` to track and possibly modify the drop flags of its allocation.
 In this scenario, `Pin<&own T>` would behave similarly to an `Pin<&mut Option<T>>`, which is already expressible today.
 
 While this could be an interesting design approach, we believe that remote drop flags would make the language design much more complicated.
+Additionally, it would come at a non-zero runtime overhead one would not expect from fundamental reference types.
 Instead, we proposed this much simpler design, even if that forbids pinning.
 
 > See the [`own-ref` crate](https://docs.rs/own-ref/0.1.0-alpha/own_ref/pin/index.html), which allows adding drop-flags via a generic on the reference, and how that helps with pinning.
@@ -511,9 +530,13 @@ This `Box` is effectively the same as `&own`, except for missing ergonomics.
 
 ### Does `&'a own T` need to be covariant in `'a`?
 
-While it is undisputed that it is *possible* to enable this property, there are concerns about its usefulness.
-If it is not necessary to be covariant, we could alternatively be invariant in `'a`.
-This could allow us, for example, to use `&own` as an initialization proof for certain in-place-init proposals.
+While it is undisputed that covariance is a useful and ergonomic property, it is not truly necessary.
+An invariant lifetime may allow to, e.g., use `&own` as a initialization proof for certain in-place-init proposals.
+
+However, it is unclear whether such an invariant `&own` is sufficient or necessary as an initialization proof.
+Lifetime branding requires additional care to avoid duplicating or transferring the brand, and in some scenarios a zero-sized proof may be preferable.
+
+If we in the future decide to attach a branding to owning references, we could introduce a second lifetime in a backwards compatible way, e.g., `&'a own<'brand> T`, or provide a separate branded type, e.g., `Init<'a, 'brand, T>(&'a own T, PhantomBranded<'brand>)`.
 
 ### Should it be allowed to borrow through pointers?
 
@@ -533,7 +556,7 @@ So this behavior is consistent, but might be surprising (and new in the Rust lan
 ```rs
 let x = 5u32;
 {
-    let owned = &own x;
+    let mut owned = &own x;
     *owned += 2;
 }
 assert_eq!(x, 5); // Error: Use of moved value
@@ -543,26 +566,23 @@ If we consider the place not moved out, the referee may be modified after the bo
 ```rs
 let mut x = 5u32;
 {
-    let owned = &own x;
+    let mut owned = &own x;
     *owned += 2;
 }
 assert_eq!(x, 5); // Assertion failed; 7 != 5
 ```
 
-The final option is to use the "trivial copy" property of `Copy` types, and simply restore the value after the borrow.
-
+However, if we want to avoid moving out of a `Copy` place, we can borrow a (lifetime extended) temporary instead:
 ```rs
 let x = 5u32;
 {
-    let temp = x; // Compiler generated
-    let owned = &own x;
+    let mut owned = &own { x };
     *owned += 2;
-    x = temp; // Compiler generated
 }
 assert_eq!(x, 5); // Now the assertion passes
 ```
 
-We suggest the first option, one of the others could also be added later.
+We suggest that an owning borrow should move out of a place, regardless of its type, since it is likely the simpler implementation, and strinctly more powerful.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
@@ -581,13 +601,10 @@ Analog to other reference types, we could introduce a new binding mode `own`.
 As an example, this enables an ergonomic way to recursively consume a slice:
 
 ```rust
-fn consume_slice<T>(elements: &own [T]) {    
-    match *elements {
-        [entry, ref own rest @ ..] => {
-            consume_entry(entry);
-            consume_slice(elements);
-        },
-        [] => { }
+fn consume_slice<T>(mut elements: &own [T]) {
+    while let [head, ref own tail @ ..] = *elements {
+        consume_entry(head);
+        elements = tail;
     }
 }
 ```
@@ -624,9 +641,12 @@ fn foo(func: Box<dyn FnOnce()>) {
 ```
 
 However, implementing such a trait is difficult, since it is unclear when the "shell" of a type (e.g., the allocation of `Box`) will be freed.
-Therefore, the design of such a trait is left for a future RFC, especially since it may involve additional missing Rust features (e.g., self-referential types);
+Therefore, the design of such a trait is left for a future RFC, especially since it may involve additional missing Rust features (e.g., self-referential types).
+Some relevant prior discussion during the lead-up for this RFC can be found on Zulip:
+[#t-lang > &#96;&amp;own&#96; tangent: &#96;DerefOwned&#96; musings](https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/.60.26own.60.20tangent.3A.20.60DerefOwned.60.20musings/near/614756248)
 
-There is ongoing work in the "field projections" project goal[^field-projections] that attempts to allow equivalent behavior via a more generic `DerefPlace`.
+
+There is also ongoing work in the "field projections" project goal[^field-projections] that attempts to allow equivalent behavior via a more generic `DerefPlace`.
 
 ### Interactions with `Move` and `Forget`
 
@@ -638,7 +658,7 @@ This makes `&own` essential for transferring ownership of immovable types.
 
 A type `T: !Forget` must be dropped before its backing allocation may be reused.
 This trivially makes `&own T: !Forget`, since forgetting the reference is equivalent to forgetting the value.
-However, we would additionally require that `&own T: !Leak`, since leaking the reference would allow reusing the backing allocation without ever dropping `T`.
+However, we would additionally require that `&'a own T: !Leak` (unless `'a: 'static`), since leaking the reference would allow reusing the backing allocation without ever dropping `T`.
 
 #### Statically-fused futures 
 
@@ -697,6 +717,10 @@ Vec<T>::take_all(&mut self) -> &own [T] { ... }
 // Also note that we can reuse the backing allocation, even though we consume the elements.
 // `vec.drain().as_owned()` is similar to `vec.take_all()` (with temporary lifetime extension)
 Drain<'a, T, A>::as_owned(&mut self) -> &own [T] { ... }
+
+// Convert an owned reference `usize` into a `NonZeroUsize`, returning the original reference in case of a failure.
+// This is a toy example for how APIs can "change" the type of their target.
+NonZeroUsize::try_from_own(value: &own usize) -> Result<&own Self, &own usize>
 ```
 
 
