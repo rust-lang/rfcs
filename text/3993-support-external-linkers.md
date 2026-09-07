@@ -354,6 +354,7 @@ link an executable containing Rust code if:
 * Exactly one of the core or std standard library bundles is supplied to the system
   linker. This standard library bundle must have been built in a *compatible manner*
   with all rlibs to be linked.
+  * All used [*language items*](https://rustc-dev-guide.rust-lang.org/lang-items.html) are supplied by exactly one rlib. Ordinarily, the standard library supplies these language items. But in `no_std` builds, some may be supplied by other rlibs.
 
 *Note (non-normative):* At the time of writing, the `-C emit-std-bundle=yes` flag can
   simply be a no-op, as the Rust compiler can successfully create such staticlibs
