@@ -70,7 +70,7 @@ There is a new crate-level attribute that takes a name and a `cfg` predicate:
 ```
 
 `predicate` can be anything that usually works within `#[cfg(...)]`, including
-`all`, `any`, and `not`.
+(but not limited to) combining operators such as `all`, `any`, and `not`.
 
 Once an alias is defined, `name` can be used as if it had been passed via
 `--cfg`:
