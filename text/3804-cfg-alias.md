@@ -92,9 +92,9 @@ fn bar() { /* ... */ }
 
 The new crate-level attribute is introduced:
 
-```text
-CfgAliasAttribute:
-    cfg_alias(IDENTIFIER `,` ConfigurationPredicate)
+```grammar
+CfgAliasAttribute ->
+    `cfg_alias` `(` IDENTIFIER `,` ConfigurationPredicate `)`
 ```
 
 The identifier is added to the `cfg` namespace. It must not conflict with:
