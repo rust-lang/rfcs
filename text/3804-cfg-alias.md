@@ -187,8 +187,6 @@ stabilization.
   `cfg_attr(predicate, attributes)`. Alternatives include:
   - `cfg_attr(predicate = attributes)`. This tends to look a bit unusual with
     setup such as `cfg_attr(foo = target_os = "bar")`.
-- It may be possible to have `#[cfg_alias(...)]` work as an outer macro and only
-  apply to a specific scope. This likely is not worth the complexity.
 
 # Prior art
 
@@ -214,7 +212,7 @@ Questions to resolve before this RFC could merge:
 
 - Which syntax should be used?
 - Substitution vs. evaluation at define time (the question under the
-  reference-level explanation)
+  reference-level explanation).
 
 # Future possibilities
 
@@ -223,3 +221,4 @@ Questions to resolve before this RFC could merge:
 - A `--cfg-alias` CLI option would provide a way for Cargo to interact with this
   feature, such as defining config aliases in the workspace `Cargo.toml` for
   reuse in multiple crates.
+- We could add a visibility to the syntax, allowing a crate to export a cfg alias for use by other crates.
