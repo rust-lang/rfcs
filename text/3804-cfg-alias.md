@@ -12,7 +12,7 @@ This RFC introduces a way to name configuration predicates for easy reuse
 throughout a crate.
 
 ```rust
-#![cfg_alias(x86_linux = all(
+#![cfg_alias(x86_linux, all(
     any(target_arch = "x86", target_arch = "x86_64"), target_os = "linux"
 ))]
 
@@ -48,7 +48,7 @@ areas of code at once. A simple example is gating unfinished code that can be
 toggled together:
 
 ```rust
-#![cfg_alias(todo = false)] // change `false` to `true` to enable WIP code
+#![cfg_alias(todo, false)] // change `false` to `true` to enable WIP code
 
 #[cfg(todo)]
 fn to_be_tested() { /* ... */ }
@@ -66,7 +66,7 @@ fn test_to_be_tested() { /* ... */ }
 There is a new crate-level attribute that takes a name and a `cfg` predicate:
 
 ```rust
-#![cfg_alias(some_alias = predicate)]
+#![cfg_alias(some_alias, predicate)]
 ```
 
 `predicate` can be anything that usually works within `#[cfg(...)]`, including
@@ -94,7 +94,7 @@ The new crate-level attribute is introduced:
 
 ```text
 CfgAliasAttribute:
-    cfg_alias(IDENTIFIER `=` ConfigurationPredicate)
+    cfg_alias(IDENTIFIER `,` ConfigurationPredicate)
 ```
 
 The identifier is added to the `cfg` namespace. It must not conflict with:
@@ -117,7 +117,7 @@ will emit an unknown configuration lint:
 // The lint could mention that `some_alias` was found in the
 // crate but is not available here.
 
-#![cfg_alias(some_alias =  true)]
+#![cfg_alias(some_alias,  true)]
 ```
 
 _RFC question: "usable only after definition" is mentioned here to retain the
@@ -139,14 +139,14 @@ recursing (as is done for `#define` in C)._
 crate-level:
 
 ```rust
-#[cfg_alias(foo = bar)]
+#[cfg_alias(foo, bar)]
 mod uses_bar {
     // Enabled/disabled based on `cfg(bar)`
     #[cfg(foo)]
     fn qux() { /* ... */ }
 }
 
-#[cfg_alias(foo = baz)]
+#[cfg_alias(foo, baz)]
 mod uses_baz {
     // Enabled/disabled based on `cfg(baz)`
     #[cfg(foo)]
@@ -174,7 +174,7 @@ stabilization.
 [drawbacks]: #drawbacks
 
 - This does not support more general attribute aliases, such as
-  `#![alias(foo = derive(Clone, Copy, Debug, Default)`. This seems better suited
+  `#![alias(foo, derive(Clone, Copy, Debug, Default)`. This seems better suited
   for something like `declarative_attribute_macros` in [RFC3697].
 
 [RFC3697]: https://github.com/rust-lang/rfcs/pull/3697
@@ -183,10 +183,10 @@ stabilization.
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- The syntax `cfg_alias(name =  predicate)` was chosen to mimic assignment in
-  Rust and key-value mappings in attributes. Alternatives include:
-  - `cfg_alias(name, predicate)`, which is more similar to
-    `cfg_attr(predicate, attributes)`.
+- The syntax `cfg_alias(name,  predicate)` was chosen to be consistent with
+  `cfg_attr(predicate, attributes)`. Alternatives include:
+  - `cfg_attr(predicate = attributes)`. This tends to look a bit unusual with
+    setup such as `cfg_attr(foo = target_os = "bar")`.
 - It may be possible to have `#[cfg_alias(...)]` work as an outer macro and only
   apply to a specific scope. This likely is not worth the complexity.
 
