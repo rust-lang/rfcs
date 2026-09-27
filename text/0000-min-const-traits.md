@@ -472,27 +472,6 @@ Even non-const versions of these are not currently allowed within `const impl` a
 
 There could also be a bound `T: const Trait` that allows calling `T`'s methods within a const block (unlike `const fn`, a `const` block would always be evaluated in compile time, so it would be a stricter bound). However that is orthogonal to the feature we're proposing, and I intend this proposal to be as minimal as possible.
 
-<!--
-
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
--->
-
 ## Credits
 
 Huge thanks to [oli](https://github.com/oli-obk) for pushing this proposal and sticking around for 7 years, laying out the basis for much of the language design and compiler implementation.
