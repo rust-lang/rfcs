@@ -151,9 +151,25 @@ const impl Foo {
 const _: () = assert!(Foo::equals_self(&1u32);
 ```
 
+Because existing semantics don't allow free `const fn`s to call trait methods on trait bounds, an `#[const_bounds]` attribute is
+necessary for opting in to using them:
+
+```rust
+const fn equals_self_bad<T: PartialEq>(a: &T) -> bool {
+    a == a
+    //^ ERROR: cannot call non-const operator in constant functions
+}
+
+#[const_bounds]
+const fn equals_self<T: PartialEq>(a: &T) -> bool {
+    a == a
+    //^ ok!
+}
+```
+
 ### Generic bounds
 
-When inside a `const impl` or `const trait`, bounds such as `T: PartialEq` will require `T` to provide a `const impl` for `PartialEq`, if called from compile time:
+When calling a method on a `const impl` or `const trait` or `#[const_bounds] const fn`, bounds such as `T: PartialEq` will require `T` to provide a `const impl` for `PartialEq`, if called from compile time:
 
 ```rust
 struct MyBadType {}
@@ -180,19 +196,18 @@ fn main() {
 }
 ```
 
-This _only_ applies to `const impl` and `const trait`, as `const fn` is not affected and retains the behavior before this RFC:
+`const fn` without the `#[const_bounds]` attribute is not affected and retains the behavior before this RFC:
 
 ```rust
 const fn welp<T: PartialEq>(_x: &T) {
     // assert!(_x == _x);
-    // ^ this would error, as `const fn` does not allow usage of
-    //   trait methods on generic types
+    // ^ this would error, as `const fn` (without `#[const_bounds]`) does not
+    //   allow usage of trait methods on generic types
 }
 
 const _: () = welp(&MyBadType {});
 // ^ this is fine, because `welp` does not have a const impl requirement
 ```
-
 
 
 ### Destructors and rules for ensuring const destructors
@@ -207,7 +222,7 @@ impl Drop for MyBadType {
 }
 ```
 
-This gets caught by static analysis and any code that attempts to run non-const destructors will be promptly rejected. However, that also means rejecting any generic types:
+Attempting to drop these types gets caught by static analysis and will be promptly rejected. However, that also means rejecting any generic types:
 
 ```rust
 const fn drop_it<T>(x: T) {
@@ -215,56 +230,49 @@ const fn drop_it<T>(x: T) {
 } 
 ```
 
-Because const traits enables more powerful generic const functions, they will inevitably require running destructors on generic types. To enable that, we use the following two rules:
-
-1. No `const impl`, `const trait` methods, or `const` items/blocks that call them are allowed to create any value that has a non-const destructor.
-2. `const fn`s are not allowed to call `const impl` or `const trait` methods. (see [#Allowing-const-fn-to-call-const-impls](#Allowing-const-fn-to-call-const-impls) for the rationale)
-
+Because const traits enables more powerful generic const functions, they will inevitably require running destructors on generic types. To enable that, all `const impl`, `const trait`, and `#[const_bounds] const fn` will require all parameters types provided to have a destructor callable in compile time:
 
 ```rust
-const impl Foo {
-    fn new() -> Foo {
-        std::mem::forget(MyBadType {}); // *not* ok! ..
-        // ^ ..since the `Drop` impl for `MyBadType` isn't `const`.
-        Foo {}
-    }
-}
-const fn new_foo() -> Foo {
-    Foo::new(); // *not* ok! `const fn` cannot call `const impl`.
+#[const_bounds]
+const fn drop_it<T>(x: T) {
+    // ^ fine, `#[const_bounds]` will insert a requirement for `T` droppable in compile time
 }
 ```
 
-To remain backwards compatible with existing const items, only bodies that call `const impl` methods or `const trait` methods will be subject to this rule. (This may change at a later edition)
-```rust
-struct NonConstDrop;
+This includes associated types for all traits bounded in scope, as well as `Self`:
 
-impl Drop for NonConstDrop {
-    fn drop(&mut self) {
-        println!("some non-const operation")
+```rust
+#[const_bounds]
+const fn drop_iterator<T: IntoIterator>(x: T) {
+    let iter = x.into_iter();
+    drop(iter.next());
+    // ^ fine, `T::Item` is required to be const-droppable.
+    drop(iter);
+    // ^ fine, `T::IntoIter` is required to be const-droppable.
+}
+
+const trait MyTrait {
+    fn drops_self(self) {
+        // ^ fine, `Self` is required to be const-droppable.
     }
 }
-
-const _: () = {
-    std::mem::forget(NonConstDrop);
-};
-// ^ OK: doesn't call any `const impl` or `const trait` methods.
-
-const _: () = {
-    let _ = Foo::new();
-    std::mem::forget(NonConstDrop);
-    // ^ *not* okay!
-};
 ```
 
-Combining the two rules allows us to assume that all types (even generic ones) have a destructor that can be run in compile time, inside `const impl`s:
+This requirement can be satisfied when providing a parameter type in a `#[const_bounds] const fn`, `const trait`, or `const impl` as the requirement is carried over, or when providing a concrete type that is known to be droppable in compile time.
 
 ```rust
-const impl Foo {
-    fn drops_generic<T>(_x: T) {}
-    // ^ OK: we're in a `const impl`
+#[const_bounds]
+const fn drop_iterator_forwarded<T: IntoIterator>(x: T) {
+    drop_iterator(x) // <- fine, we share the same requirements as `drop_iterator`
 }
-const fn drops_generic<T>(_x: T) {}
-// ^ *not* okay!
+
+const fn drop_wrong<T>(x: T) {
+    drop_it(x) // <- ERROR, we don't have the requirements as we are not `#[const_bounds]`
+}
+
+const fn drop_concrete() {
+    drop_it(()) // <- fine, we know `()` to be droppable in compile time
+}
 ```
 
 ## Reference-level explanation
@@ -354,23 +362,34 @@ Conditions the compiler uses to prove a type can be dropped in compile time:
 1. Any type `T` that has a clause guaranteeing `T: Copy` can be dropped in compile time.
 1. ADTs can be dropped in compile time if all its fields can be dropped in compile time (unless it has `impl Drop`).
 1. Compound types can be dropped in compile time if the types they are made out of can be dropped in compile time. e.g., `(A, B)` can be dropped in compile time if and only if both `A` and `B` can be dropped in compile time.
-1. Parameter types (`T` from `fn a<T>`) and projection types (`T::A` from `fn a<T: Trait>`) are assumed to be droppable at compile time, but only when within a `const impl` or `const trait` body.
 
-Proving such property is done via a built-in trait that is not exposed to users. 
+Proving such property is done via a built-in trait that is not exposed to users. We name it here as `[const] Destruct` although that is not a name this RFC intends to specify (only used for illustration).
 
-Because `const fn` cannot assume parameter types and projection types as const droppable as in 5, `const impl` and `const trait` may use a separate built-in trait to distinguish such behavior for the trait solver.
+`const trait`, `const impl`, and `#[const_bounds] const fn` get implicit `[const] Destruct` bounds on all parameter types, all associated types, and all self types if they are bounded:
 
-`const impl`, `const trait` methods, as well as any `const` items or blocks that call them, must have their bodies checked: no expressions may produce a value that cannot be dropped at compile time.
-* This can be done by checking the types of all locals in the MIR.
+```rust
+struct Wrapper<T>(T);
+#[const_bounds]
+const fn foo<A, B, C>() // -> A: [const] Destruct, B: [const] Destruct
+where
+    A: IntoIterator, // -> A::Item: [const] Destruct, A::IntoIter: [const] Destruct
+    // --> <A::IntoIter as Iterator>::Item: [const] Destruct
+    // ^ (the implicit bound is recursively generated for associated types)
+    Wrapper<B>: Clone, // -> Wrapper<B>: [const] Destruct
+    Wrapper<[C; 2]>: IntoIterator, // -> Wrapper<[C; 2]>: [const] Destruct
+    // -> Wrapper::<[C; 2]>::Item: [const] Destruct, Wrapper::<[C; 2]>::IntoIter: [const] Destruct
+    // --> <Wrapper::<[C; 2]>::IntoIter as Iterator>::Item: [const] Destruct
+{
+
+}
+```
+
 
 #### Opting out
 
-There is no opt-out per trait bound (to not require `const impl` for trait bounds). Because it is [expected](https://cel.cs.brown.edu/const-traits-analysis/) that using const traits' methods is the default and most used. This allows this proposal to be free of any additional specified syntax except `const impl` and `const trait`.
+There is no opt-out per trait bound (to not require `const impl` for trait bounds). Because it is [expected](https://cel.cs.brown.edu/const-traits-analysis/) that using const traits' methods is the default and most used. This allows this proposal to be free of any additional specified syntax except `const impl` and `const trait`, as well as `#[const_bounds]` for an opt-in on `const fn`.
 
 Some traits nevertheless want to be opt out from const bounds wholesale. This includes `{Meta,Pointee,}Sized`, `Copy`, `Tuple`, auto traits, and other marker traits that do not make sense to be `const trait`s. These traits will never become `const trait`s and there can be an internal attribute `#[rustc_never_const_trait]` to allow them to be used in `const impl`s without being const traits, pending any further design on this.
-
-It is expected that, without allowing `const fn` to call `const impl`s, more functions will be written as associated functions. This is a reasonable workaround. Existing `fn` in the standard library, however, cannot be worked around as that would be a breaking change. So it also requires an internal attribute `#[rustc_min_const_traits_fn]` that allows the compiler to treat it like a `const impl` method: It disallows any non-const-destruct values within the body, allows calling `const impl`s, but disallows other normal `const fn` callers.
-
 
 ### When we imply `T: [const] Trait`
 
@@ -396,7 +415,6 @@ Only function bodies that rely on these assumptions will be broken, and that app
 
 `fn(T) -> T` function pointers, `impl Trait`, and `dyn Trait` must not appear on any `const impl`s or `const trait`s (or exposed via an unstable feature out of scope for this RFC). Self types, parameter types, return types must be walked recursively to enforce this.
 
-
 ## Drawbacks
 [drawbacks]: #drawbacks
 
@@ -414,18 +432,6 @@ We're introducing a new feature, that has new concepts to teach and new gotchas 
 It is quite true that `T: [const] Trait` is the default bound mode in these contexts. They definitely get used more often than not. Considering an opt-in scheme would have to specify a syntax that remains compatible for other opt-in schemes in the future (other effects? `T: async Trait`). This is hard.
 
 Opting out, similarly, requires specifying a syntax to do so. That is also hard given that it has future considerations with other effects, if we want to add them.
-
-### Allowing `const fn` to call `const impl`s
-
-Because `const fn` doesn't get to call `const impl` methods, many libraries will switch to using inherent `const impl` even if functions can be free functions. However, migrating associated `const impl` functions to and from standalone `const fn` is a breaking change for both directions. This can cause a wave of libraries essentially being stuck using associated `const impl` functions even if we enable `const fn` to use this feature in the future.
-
-This appears to be a reasonable trade-off: We get to specify the new semantics for `const impl` and `const trait`s and design this to add the support we need. If eventually we come up with a design that makes `const fn` usable, library authors can also deprecate the old `const impl` methods that they believe exist more naturally as `const fn`. Breaking changes for library authors is less costly than breaking changes for the Rust language.
-
-We could invent a new opt-in for `const fn` so that they are restricted and cannot construct any non-const-drop values. We could also specify that the restriction applies to a new edition, and only then can they call `const impl`s. These are valid and would unblock many use cases, but would require a separate syntax from `const fn` (otherwise, we could use an attribute?)
-
-Implicitly opting `const fn` in if they call any `const impl` has the bad effect that the function body now affects the property of the function, because it is transitively colored. If `const fn` calls a `const impl`, then any `const fn` that calls it also need to be restricted to not make any non-const-drop values. This is very difficult for both users and compiler developers.
-
-At time of proposal, no `const fn` use `const impl`/`const trait`s in public libraries, as such language feature is unstable/experimentally supported. We can take the most conservative path to allow developing this feature further, while exposing a set of them to the users to make many useful things.
 
 ### Exposing `Destruct`
 
