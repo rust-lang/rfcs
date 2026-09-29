@@ -413,7 +413,9 @@ Only function bodies that rely on these assumptions will be broken, and that app
 
 ### Banned types and constructs
 
-`fn(T) -> T` function pointers, `impl Trait`, and `dyn Trait` must not appear on any `const impl`s or `const trait`s (or exposed via an unstable feature out of scope for this RFC). Self types, parameter types, return types must be walked recursively to enforce this.
+`fn(T) -> T` function pointers, `impl Trait`, and `dyn Trait` must not appear on any `const impl`s, `const trait`s, or `#[const_bounds] const fn`s (or exposed via an unstable feature out of scope for this RFC). Self types, parameter types, return types must be walked recursively to enforce this.
+
+Furthermore, their bodies may not perform `dyn Trait` unsizing coercions, create closures, or convert function items to function pointers.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
