@@ -315,6 +315,22 @@ const impl Foo {
 }
 ```
 
+`#[const_bounds]` is only allowed on free `const fn`, usage of it on any other items are not allowed:
+
+```rust
+#[const_bounds] // ok!
+const fn free_fn() {}
+
+#[const_bounds] // not ok!
+struct Foo;
+
+#[const_bounds] // not ok!
+impl Foo {
+    #[const_bounds] // not ok! use `const impl`
+    const fn assoc_fn() {}
+}
+```
+
 ### Proving that we can call a type's trait methods in const contexts
 
 The trait solver parts to this are covered in the [const conditions checking chapter](https://rustc-dev-guide.rust-lang.org/effects.html) in rustc-dev-guide.
@@ -405,7 +421,7 @@ const trait Bar: PartialEq {
 }
 ```
 
-All bounds here are assumed to mean `T: [const] PartialEq`. This means all callers of `Foo::foo` must provide a type that satisfies this, and all const implementers of `Bar` must provide a type that satisfies `PartialEq`, both for the super trait and for the associated type.
+All bounds here are assumed to mean `[const] PartialEq` (this includes `T: [const] PartialEq`, `Self: [const] PartialEq`, and `Self::Assoc: [const] PartialEq`). This means all callers of `Foo::foo` must provide a type that satisfies this, and all const implementers of `Bar` must provide a type that satisfies `PartialEq`, both for the super trait and for the associated type.
 
 If such assumption changes to mean "non-const" bound, no callers of `Foo::foo`, or const implementers of `Bar` will need to change because they were satsifying a previously stricter requirement.
 
