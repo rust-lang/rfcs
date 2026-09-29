@@ -134,7 +134,7 @@ const trait PartialEq {
 }
 ```
 
-This will require all its default bodies to be callable in compile time, and will allow the trait bound to be used in `const impl`s:
+This will require all its default bodies to only perform const operations (allowing `const impl` to use these default bodies), and will allow the trait bound to be used in `const impl`s:
 
 ```rust
 const impl PartialEq for u32 {
