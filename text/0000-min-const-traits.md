@@ -463,6 +463,16 @@ In the future, if Rust provides support for `Linear` types, that might help us e
 
 It would be pretty hard to know whether we also want to implicitly require `const fn` or `const impl` for them. Properly reserving them and making them unstable appears to be a good idea until we have a more concrete story to act upon.
 
+### Comparison to previous proposals
+
+Past proposals required users to opt-in to `T: [const] Trait` bounds to call its methods in compile time, making it consistent with other language constructs such as `fn()` pointers and `dyn Trait`s which will likely also require opt-in in the future. However, most `const fn` will want to use `[const] Trait` with very rare exceptions. It makes sense to make the most commonly used semantic be the default.
+
+This is the same reasoning applyied to implicit `[const] Destruct` desugaring: Throughout the experiment with using const traits in the standard library, `[const] Destruct` was needed in many situations, so implying them implicitly is beneficial for reducing syntax noise.
+
+Furthermore, as this RFC proposes to ban the use of `fn()` pointers and other features that might need changes to allow them to be used in compile time, we can design these in the future that makes the story consistent.
+
+On the other hand, it might be preferable to make the behavior of requiring `const impl` explicit, and make the less restrictive bound the default. However, making the more restrictive bound the default can also be beneficial: the library author can always choose to relax the bound later without causing a breaking change.
+
 ## Prior art
 [prior-art]: #prior-art
 
@@ -474,11 +484,8 @@ On 2025-08-20, [@fee1-dead](https://github.com/fee1-dead) published a [blogpost]
 
 See also [Prior art](https://github.com/oli-obk/rfcs/blob/const-trait-impl/text/0000-const-trait-impls.md#prior-art) from RFC 3762.
 
-
-
 ## Future possibilities
 [future-possibilities]: #future-possibilities
-
 
 ### Const closures
 
