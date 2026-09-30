@@ -53,7 +53,7 @@ message_on_reopen = "RFC [{number}](https://github.com/rust-lang/rfcs/pull/{numb
 zulip_stream = 639962 # #t-libs/nominated
 topic = "rfcs#{number}: {title}"
 message_on_add = """\
-@*T-libs-ping* [rfcs#{number} "{title}"](https://github.com/rust-lang/pull/{number}) has been nominated for discussion.
+[rfcs#{number} "{title}"](https://github.com/rust-lang/pull/{number}) has been nominated for discussion.
 """
 message_on_remove = """\
 rfcs#{number} is no longer nominated.
