@@ -8,9 +8,8 @@
 
 This RFC adds a new, optional registry index field, `withheld` (`quarantined | unreleased | withdrawn`).
 
-It also defines three new optional registry `config.json` URL templates alongside `dl`: `dl-withheld`, from which 
-withheld bytes can be explicitly fetched by exact coordinates, `version-status` which returns the machine-readable 
-status of a given crate/version together with any human-facing context, and `withheld-page` which is a human-oriented
+It also defines two new optional registry `config.json` URL templates alongside `dl`: `dl-withheld`, from which 
+withheld bytes can be explicitly fetched by exact coordinates, and `notice-page` which is a human-oriented
 webpage display additional displaying details and policies that could either be per-crate or static and global.
 
 Lastly, it specifies how `Cargo` should interact with the new status field and `config.json` templates, for fetches, 
@@ -52,7 +51,7 @@ and, "what if I publish a crate with a checked-in lockfile that points to quaran
 The focus of this RFC is the build tool and registry spec end for withholding releases: Cargo (and docs.rs) should
 have a good experience when interacting with withheld releases. Tools that have not added support for withheld releases 
 will still by default avoid resolving withheld releases where possible, and otherwise fail with a clear 
-server-provided message rather than silently installing withheld bytes. 
+pointer to information on the release's status rather than silently installing withheld bytes. 
 
 Out of scope for this RFC, but in a subsequent one:
 - Decisionmaking for the criteria registries will use for quarantining, pre-publish holding, or withdrawing 
@@ -84,7 +83,7 @@ investigation. It may be released again or withdrawn.
 
 When and why a version moves between these states is a registry decision and not recorded in the index. Whenever
 you encounter a withheld version (resolving versions, building a crate, publishing crates, reading docs.rs, etc), Cargo
-will explain that the version is not installable and share any registry-provided information about it.
+will explain that the version is not installable and share pointers to any registry-provided information about it.
 
 ### Cargo resolution
 
@@ -103,11 +102,10 @@ location searched: crates.io index
 required by package `myapp v0.1.0 (/home/user/myapp)`
   |
   = note: this version is pinned by Cargo.lock; run `cargo update base64squatter` to select a different version, or change the requirement in Cargo.toml if no other version satisfies it
-  = note: quarantined by the crates.io security team pending investigation
   = help: for more information see https://crates.io/crates/base64squatter/1.0.0
 ```
 
-The last two lines come from the registry, when it advertises a version status endpoint or a withheld crate page.
+The last line comes from the registry, when it advertises a notice page.
 
 It is possible to force Cargo to resolve withheld versions, and, if a registry advertises support, fetch withheld bytes.
 But, Cargo will never include copy-pasteable commands to force this behavior. It is reserved as an explicit opt-in for
@@ -122,20 +120,16 @@ withheld, builds keep using the cached copy until something refreshes the index 
 
 ### Registry handling
 
-Registries whose index might include withheld versions can add up to three optional URL templates to `config.json` 
+Registries whose index might include withheld versions can add up to two optional URL templates to `config.json` 
 using the same template tags as `dl`:
 
 - `dl-withheld`: withheld bytes can be explicitly requested from this endpoint (by security researchers, publishers 
 rebuilding against their own withheld crates, etc). If this is not set, withheld bytes are never available.
-- `version-status`: a JSON endpoint sharing a version's current status along with an optional message and information 
-link. Cargo uses this to improve error messages and better report status during publication.
-- `withheld-page`: a human-oriented page, which may be per-version, per-crate, or a global policy page that Cargo links
-to from errors. This supplements `version-status` if both are set.
+- `notice-page`: a human-oriented page, which may be per-version, per-crate, or a global policy page that Cargo links
+to from errors.
 
-A registry can adopt any subset of these; a mirror might only set `withheld-page` and point to an upstream's page, or
+A registry can adopt any subset of these; a mirror might only set `notice-page` and point to an upstream's page, or
 it might also mirror withheld bytes using `dl-withheld`. 
-
-The "Reference" section discusses when each is needed. Specifically, any time that a registry might withhold uploads *without* publishing an index entry, it must provide `version-status` for crate publishers to confirm that their upload succeeded and is under review.
 
 Whenever a registry withholds a version, it also marks its index line as `yanked: true` to help steer older build
 tools around withheld versions. Author-initiated yanks are still preserved after withholding lifts.
@@ -170,8 +164,7 @@ emit an error, and exit with a failure code.
 
 Timeouts maintain are unchanged: If Cargo times out while waiting on a crate to upload that has subsequent
 uploads depending on it, it errors and exits as a failure. If it times out on a crate with no dependencies, it warns
-and continues as a success. A registry's `version-status` endpoint can improve this experience by reporting `pending`
-so that the registry can give more context on a "stuck" upload.
+and continues as a success.
 
 These behaviors can be changed from their defaults via optional flags: `--fail-on-unavailable` will abort and exit
 whenever a version is not installable, due to withholding or timeout. `--continue-on-quarantined` will continue onwards
@@ -194,7 +187,6 @@ help: you may press ctrl-c to skip waiting; the crate should be available shortl
        Found unreleased a v1.2.3 at registry `crates-io`
 note: a v1.2.3 was accepted by registry `crates-io` and is awaiting release; it is not yet installable
   |
-  = note: this is a placeholder for some message from the registry delivered via `version-status` endpoint
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
 
@@ -214,7 +206,6 @@ help: you may press ctrl-c to skip waiting; the crate should be available shortl
 error: a v1.2.3 was quarantined by registry `crates-io` after upload
   |
   = note: the upload succeeded; a v1.2.3 remains on the registry in quarantined state and is not installable
-  = note: this is a placeholder for some message from the registry delivered via `version-status` endpoint
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
 
@@ -274,9 +265,6 @@ a warning indicating that they saw an unknown value and were treating it as quar
 
 A withheld-status-aware build tool MUST NOT resolve withheld versions regardless of yanked status, including when the
 version is present in a lockfile.
-
-Note that this means that withheld statuses are publicly visible in the index. A registry may instead withhold uploads
-without writing an index line at all. If it does, it must advertise `version-status` (see "Sharing version status").
 
 Related:
 - Rationale: Why no index protocol bump?
@@ -353,9 +341,9 @@ Related:
 - Future possibilities: Author-managed staging
 - Future possibilities: Delayed indexing
 
-#### Sharing human-facing pages with `withheld-page`
+#### Sharing human-facing pages with `notice-page`
 
-Registries MAY advertise `withheld-page`, an (optionally templated) URL to include in error outputs that gives human-facing information 
+Registries MAY advertise `notice-page`, an (optionally templated) URL to include in error outputs that gives human-facing information 
 about registry withholding procedures and/or release-specific information.
 
 It may contain the template markers of `{crate}`, `{version}`, `{prefix}`, and `{lowerprefix}`, if the registry
@@ -367,119 +355,31 @@ as-is and is assumed to be a single page covering all crates and versions. Unlik
     "dl": "https://static.crates.io/crates",
     "api": "https://crates.io",
     "dl-withheld": "https://static.crates.io/withheld",
-    "withheld-page": "https://crates.io/crates/{crate}/{version}"
+    "notice-page": "https://crates.io/crates/{crate}/{version}"
 }
 ```
 
 The page's contents are unspecified, but it SHOULD include or link to the registry's withholding policies. A per-crate
 or per-version page SHOULD additionally show the relevant release statuses.
 
-If `withheld-page` is set, Cargo renders it as  "= help: for more information see <url>" string in withheld-related
+If `notice-page` is set, Cargo renders it as  "= help: for more information see <url>" string in withheld-related
 resolution errors, `--fetch-withheld` warnings, and publish-time status outputs. If unset, no `help:`
-link is shown. This is independent of and composes with `version-status`: if both are set, both are rendered.
+link is shown. 
 
 Related:
-- Rationale: Why both `withheld-page` and `version-status`?
 - Rationale: Why no reason text in the index?
-
-#### Sharing release statuses with `version-status`
-
-Registries MAY advertise an additional endpoint via `version-status` in their `config.json` that reports a version's
-current status, along with any additional user-facing messaging. This improves
-publication workflows as well as user-facing errors in the case of resolution and fetch failures due to 
-withheld crates.
-
-A registry MUST advertise and implement `version-status` if it withholds index entries for accepted versions. This
-ensures that "accepted but intentionally not yet indexed" is distinguishable from "not yet published". This avoids
-ambiguity that has caused problems for other language ecosystems, particularly npm. (See: Future possibilities: Delayed indexing).
-
-If the registry advertises `version-status`, it MUST return a valid response for each version that it has accepted,
-withheld or not. It MAY return 404 for a version that it has no record of and MAY return 404 for withdrawn versions.
-
-The `version-status` value is a URL template that follows the same interpretation as `dl`. It may contain the template
-markers of `{crate}`, `{version}`, `{prefix}`, and `{lowerprefix}`. Otherwise, Cargo appends `/{crate}/{version}/status`.
-
-```json
-{
-    "dl": "https://static.crates.io/crates",
-    "api": "https://crates.io",
-    "dl-withheld": "https://static.crates.io/withheld",
-    "version-status": "https://crates.io/api/v1/crates/{crate}/{version}/status"
-}
-```
-
-The response of version-status is `Content-Type: application/json` with at minimum the following fields:
-```json
-{
-  "name": "base64squatter",
-  "version": "1.0.0",
-  "status": "unreleased"
-}
-```
-
-If the response does not contain these fields, the build tool MUST ignore it and behave as if `version-status`
-were not set. Similarly, if `name`/`version` do not match the requested coordinates, the build tool MUST ignore it.
-
-Responses MUST reflect the version's current status. Registries serving `version-status` through a CDN SHOULD either
-use a short cache lifetime or purge the cached object on every status transition. Cargo does not cache these responses.
-
-The known values of the `status` field are:
-`unreleased | quarantined | withdrawn | pending | published`
-
-Unreleased, quarantined, and withdrawn share the same semantic meaning as used in the `withheld` index field.
-
-Pending indicates that initial automated upload-time processing is ongoing, and a state transition upon continued 
-short-term polling. Build tools SHOULD keep polling while they see pending` state (whereas `unreleased`, in 
-contrast, indicates to stop polling). Extended duration of a pending state indicates backpressure on the registry 
-systems independent of the individual release.
-
-Published indicates that the release is available normally to consumers, served via the index with no `withheld` marker.
-
-Unknown values MUST be treated by consuming tools as equivalent to `quarantined`.
-
-Beyond the mandatory fields, the registry MAY return a response containing a `message` field to help enrich 
-user-facing outputs:
-```json
-{
-  "name": "base64squatter",
-  "version": "1.0.0",
-  "status": "unreleased",
-  "message": "a user-facing message for printing directly in resolution/fetch errors or publish status outputs",
-  "checksum": ".."
-}
-```
-
-`message` refers to an arbitrary user-facing message, for instance to explain why a release is quarantined. Cargo 
-renders `message` on a single `= note:` line, stripping control characters. Registries SHOULD keep content constrained 
-to one line and advertise a `withheld-page` to display deeper context. `version-status.message` composes with 
-`withheld-page` outputs; both are shown. 
-
-Specifically, Cargo fetches `version-status.message` as a best-effort check with a short timeout, if not `--offline`
-or `--frozen`, skipping display on failure with no change to the command's outcome. Cargo executes this fetch when 
-rendering a withheld-status related resolution or fetch error, or during a publish-time poll, not during regular 
-happy-path resolution.
-
-`checksum` is OPTIONAL. If present it MUST equal the index line's `cksum`. It exists for registries that withhold
-index entries (see "Future possibilities: Delayed indexing"), where it is the only integrity reference for those
-withheld bytes.
-
-Related:
-- Rationale: Why both `withheld-page` and `version-status`?
-- Rationale: Why a status endpoint rather than richer index data?
-- Prior art: npm publish-time scanning (#203413)
-- Future possibilities: Delayed indexing
 
 #### Authentication
 
-The `dl-withheld` and the `version-status` URL templates do not require auth, unless the entire registry requires 
-auth. In other words, if `auth-required: true` in `config.json`, Cargo attaches its registry token to `dl-withheld` and
-`version-status` calls in the same manner as it does for `dl` calls.
+The `dl-withheld` URL template does not require auth, unless the entire registry requires 
+auth. In other words, if `auth-required: true` in `config.json`, Cargo attaches its registry token to `dl-withheld`
+calls in the same manner as it does for `dl` calls.
 
 This RFC provides no way to require credentials for `dl-withheld` alone. Per-template authentication configuration is 
 out of scope. Registries MAY apply throttles or other CDN-layer controls to these paths, as they can for `dl` and 
 `api`.
 
-`withheld-page` is never fetched by Cargo but rather via the user's browser, so no token authentication is involved.
+`notice-page` is never fetched by Cargo but rather via the user's browser, so no token authentication is involved.
 
 Related:
 - Rationale: Why is dl-withheld as open as dl? 
@@ -700,7 +600,6 @@ error: a v1.2.3 is not available at registry `crates-io`
   |
   = note: the upload succeeded; a v1.2.3 remains on the registry in unreleased state and is not yet installable
   = note: `--fail-on-unavailable` fails the publish unless the version is installable
-  = note: this is a placeholder for some message from the registry delivered via `version-status` endpoint
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
 
@@ -717,7 +616,6 @@ warning: a v1.2.3 was quarantined by registry `crates-io` after upload
   |
   = note: the upload succeeded; a v1.2.3 remains on the registry in quarantined state and is not installable
   = note: continuing with remaining crates because of `--continue-on-quarantined`
-  = note: this is a placeholder for some message from the registry delivered via `version-status` endpoint
   = help: for more information see https://crates.io/crates/a/1.2.3
    Packaging b v1.2.3 (/home/user/ws/b)
     Packaged 5 files, 9.8KiB (3.2KiB compressed)
@@ -747,15 +645,16 @@ Related:
 ---
 
 # NOTE: below here is pretty rough, still WIP, and out of date with different handling for quarantine vs unreleased,
-# it also is missing the version-status check
 
 
 ##### Polling for status
 
+<modify to explain quarantine exiting>
+
 Cargo publish polls for status after each crate that it publishes. This takes the form of looking for the index summary
 line for that version. Withheld crates will show up on this line, so suits our needs if we pass their status through.
 
-When the poll sees the release's index line with `"status": "quarantined"|"withdrawn"`, `cargo publish`
+When the poll sees the release's index line with `"withheld": "unreleased""quarantined"|"withdrawn"`, `cargo publish`
 prints `Found quarantined ...` (or `Found withdrawn ...`) in place of `Published`, followed by a warning
 similar to the resolve-time error, and continues on to remaining crates.
 
@@ -766,10 +665,7 @@ In the underlying poll logic, this will require two small changes:
 We do not currently cover the case where a registry opts not to publish an index entry at all until some extra
 review gate is passed. All our current behaviors assume an explicit marker (eg, `quarantined`) is set in the index
 entry. Prior to introducing any such behavior to crates.io in a subsequent release, we would also improve the poll
-workflow to handle such cases clearly.
-
-<add version-status>
-
+workflow to handle such cases clearly. <need to move this mostly into future possibilities>
 
 ##### Workspace publish
 
@@ -796,7 +692,6 @@ error: a v1.2.3 was quarantined by registry `crates-io` after upload
   |
   = note: the upload succeeded; a v1.2.3 remains on the registry in quarantined state and is not installable
   = note: not publishing remaining crates: b v1.2.3
-  = note: this is a placeholder for some message from the registry delivered via `version-status` endpoint
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
 
@@ -830,7 +725,6 @@ help: you may press ctrl-c to skip waiting; the crate should be available shortl
 note: b v1.2.3 was built against unreleased a v1.2.3
   |
   = note: consumers will resolve `a = "^1.2"` to another published version until a v1.2.3 is released
-  = note: this is a placeholder for some message from the registry delivered via `version-status` endpoint
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
 
@@ -891,7 +785,6 @@ help: you may press ctrl-c to skip waiting; the crate should be available shortl
 note: b v1.2.3 was built against unreleased a v1.2.3
   |
   = note: consumers will resolve `a = "^1.2"` to another published version until a v1.2.3 is released
-  = note: this is a placeholder for some message from the registry delivered via `version-status` endpoint
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
 
@@ -955,10 +848,31 @@ Quarantine can break release trains
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+Quick hits, LLM generated based on my notes, before I can get to writing them up:
+| Alternative | Why not |
+|---|---|
+| Overload `yanked` | Means "author says don't use"; cannot distinguish redacted bytes from a maybe-broken release. See *Why `withheld` status instead of (further) overloading `yanked`?* |
+| Withheld line absent from the index | Untenable for `quarantined` and `withdrawn`: pinned builds fail without saying why, no tombstone, delete-then-republish for diff-driven consumers. Defensible for
+`unreleased`, where nothing is pinned yet and a feed could replace the line; chosen against because separate-invocation publishes would need a second source of index summaries, and one mechanism covers all
+three states. The index-absent form of `unreleased` remains available later as delayed indexing if we added additional support in build tools. See *Why not remove the index line?* and *Future possibilities: Delayed indexing* |
+| Withheld bytes at the ordinary `dl` URL | Protects fresh Cargo resolution only; deterministic URL-plus-checksum fetchers acquire the bytes without reading the index. See *Why a separate `dl-withheld` path
+rather than serving withheld bytes from `dl`?* |
+| Authenticated withheld bytes | Access control, token recovery, and researcher onboarding with no improvement in default acquisition; excludes Trusted Publishing. See *Why is `dl-withheld` as open as `dl`?*
+and *Why nothing after upload requires the publisher to authenticate* |
+| Global `--allow-withheld` | Admits arbitrary withheld transitive dependencies. See *Why `--fetch-withheld` takes an exact `name@version`* |
+| Publish sessions or secret preview tokens | Public bytes bypass access tracking, so tokens cannot enforce provenance; needs a credential that outlives the one Trusted Publishing issues. See *Why no
+sessions or preview tokens* |
+| Owner-authenticated view of the canonical index | Conflicts with signing, mirroring, and cache isolation; does not fit short-lived Trusted Publishing identities. See *Why nothing after upload requires the
+publisher to authenticate* |
+| Automatic downstream propagation | False cascades; transitive gaps; the registry is the right layer, if any. See *Why not publish-time propagation of withheld states during a release train?* |
+| Registry buildability checks before publish | The registry would need partial resolver semantics across features, targets, and registries. See *Why no registry buildability checks* |
+| Structured yank reason | Author-controlled text, not a registry state; says nothing about bytes. Complementary, not a substitute. |
+| Informational and blocking states in one field | Every consumer must classify values; PEP 792 affords it only because omission does the enforcing. See *Why is `withheld` blocking-only?* |
+| Index protocol version bump | Unnecessary since Cargo 1.51 and blocked by the experimental `v: 3`. See *No index protocol version bump* |
+| `min-publish-age` alone (RFC 3923) | Delays admission; cannot preserve an adverse verdict, especially for quarantines on already released crates. Even for fresh publish, the posture of needing to hit the "delete" button very quickly is not sustainable as attack volume grows. Companion, not substitute. |
+| Universal release staging | Sessions, embargoes, atomic groups, upload/publish role separation — too broad; this design can evolve into it. See *Future possibilities: Author-managed staging* |
+| Do nothing | Responders choose between yank (installable when pinned) and deletion (irreversible, destroys evidence); nobody gets a signal. Also does not set us up for the "not always having to  |
+
 
 #### No index protocol version bump
 
@@ -1018,7 +932,7 @@ the same `_and_yanked`) that is not more comprehensible to the audience. We shou
 representation that reflects how build tools should interact with versions.
 
 
-### Why not publish-time propagation of withheld states during a relase train?
+### Why not publish-time propagation of withheld states during a release train?
 We can imagine alternative methods that attempt to propagate quarantined status to 
 dependents based on poll status, with a registry publish API extension. This is useful both for avoiding broken binary versions,
 and also generally offering clearer visualization of what a leaf crate is unreachable due to exclusively quarantined 
@@ -1028,7 +942,9 @@ dependencies and also in that dependencies can become quarantined underneath us.
 The proper place for propagation or transitive display of quarantined state would instead be at the registry level, if at all. In other words, that is a discussion for
 a subsequent RFC.
 
-### Why are withheld status publicly visible?
+### Why is withheld status publicly visible?
+- We don't have great options for legibility like other registries since we have per-line release information with no 
+overall crate status that captures i
 - APIs to silently withdraw tombstones
 or otherwise harden registries against oracle attacks are largely server-side decisions and will
 be discussed in subsequent issues and RFCs. Publishers will anyway be able to tell whether their release is quarantined 
@@ -1037,8 +953,7 @@ information leakage.
 - same holds for history: the git index retains past withholdings, the sparse index does not, and a version's having been cleared is itself useful information for researchers.
 
 ###  Why is dl-withheld as open as dl? 
- — covers: unreleased bytes always served (external review in the review window is the point; registry scanners see everything regardless; existence is public); no author-privacy exception in this RFC (the carve-out an attacker would use; deferred to a staging RFC); no credential gate for researchers (PyPI's Observer-only visibility API was considered and dropped; index visibility is
-   public anyway). Closing sentence: if public-by-default proves wrong, per-template auth-required in config.json is the natural mechanism.
+ — covers: unreleased bytes always served (external review in the review window is the point; registry scanners see everything regardless; existence is public); no author-privacy exception in this RFC (the carve-out an attacker would use; deferred to a staging RFC); no credential gate for researchers (PyPI's Observer-only visibility API was considered and dropped; index visibility is public anyway). Closing sentence: if public-by-default proves wrong, per-template auth-required in config.json is the natural mechanism.
 
 ### Why is the publish default different per type of withholding?
 - unreleased shouldn't break release train (see: npm)
@@ -1056,7 +971,7 @@ information leakage.
 - [PEP 592: yanked releases](https://peps.python.org/pep-0592/) — yank = soft delete that stays installable when pinned; owner-only; reason carried in the index. The contract this RFC preserves for `yanked`.
 - [PEP 694: upload API, staged releases](https://peps.python.org/pep-0694/) — staged = session state, absent from the index until published. Contrast: `unreleased` is a visible line.
 - [Pre-PEP thread: status markers](https://discuss.python.org/t/pre-pep-discussion-project-status-markers-in-the-index-apis/79356) — design discussion; its description of quarantine as "yanked" does not match warehouse's implementation.
-- [npm: publish-time scanning feedback (#203413)](https://github.com/orgs/community/discussions/203413) — pending-scan versions returned plain 404; "pending vs never published" ambiguity broke publish scripts; Cloudflare `wrangler`/`miniflare` release train broken by a dependency still in scan; npm "prioritizing work to display scanning status". Motivates `version-status` and the kind-dependent publish default.
+- [npm: publish-time scanning feedback (#203413)](https://github.com/orgs/community/discussions/203413) — pending-scan versions returned plain 404; "pending vs never published" ambiguity broke publish scripts; Cloudflare `wrangler`/`miniflare` release train broken by a dependency still in scan; npm "prioritizing work to display scanning status". Motivates the kind-dependent publish default, useful 404 messages, and the `notice-page` display.
 - [npm: safer publishing roadmap (#208130)](https://github.com/orgs/community/discussions/208130) — staged publishing and status surfacing on the roadmap.
 - [RubyGems: removing a published gem](https://guides.rubygems.org/removing-a-published-gem/) — `gem yank` removes the index entry *and* the gem file; the version cannot be re-pushed ([rubygems#2183](https://github.com/rubygems/rubygems/issues/2183)). The opposite pole: yank *is* withdrawal, no reversible state.
 - [Go: `retract` directive](https://go.dev/ref/mod#go-mod-file-retract) — author-only, informational; retracted versions remain downloadable; published modules cannot be deleted. Author-informational vs registry-enforced kept separate.
@@ -1071,8 +986,8 @@ information leakage.
 [unresolved-questions]: #unresolved-questions
 
 ### To resolve before merge
-- Whether `pending` is worth including in `version-status`, or if we should just assume "no version-status response = 
-keep polling"
+- Should we supported `unreleased` in the index or scope it out entirely and require that registries only handle
+unreleased via delayed indexing + deeper changes to allow retrieving index summaries for multi-invocation publishes?
 - The default publish behaviors for unreleased vs quarantined, and the naming of the flags. For this, we also will
 want input from `release-plz`'s maintainer. 
 - If we actually want `--fetch-withheld` on `cargo build` and `cargo install` (for forensic build usage) or only
@@ -1081,28 +996,31 @@ want input from `release-plz`'s maintainer.
 
 ### To resolve during implementation
 - Exact errors and prose notes, documentation notes, documentation URLs
-- `version-status` fetch timeout, exactly which commands use it
 - Interaction of `withheld~` cache namespace with `cargo clean gc` and the global cache tracker
-- Whether we use `checksum` in the `version-status` body for anything with Cargo prior to delayed indexing
 
 ### Related problems this RFC leaves open
 - Dependents of a withheld version are published and installable but broken until it is released. Propagation, 
 linking, or docs.rs re-processing are registry- and docs.rs-side problems for a later RFC. We don't expect meaningful
 from this until we have actual systems that would withhold freshly-uploaded crates, which will be part of the same RFC. 
-- What type of discovery channel a registry should offer if it wants to hold off on publishing index lines for 
-`unreleased` versions. We would discuss this alongside introducing any delayed index publishing for crates.io
+- How to support delayed index publishing lines for 'unreleased' versions
+  - What are the mechanisms for avoiding breaking multi-invocation publics that need access to the registry line for unreleased, withheld crates
+  - What discovery channel can we offer security researchers to offer supporting triage and analysis
 - Warm-cache exposure (stale index plus cached bytes) is pre-existing and unaddressed here.
+- Including withdrawn reason in index line: We follow early work on `yanked` here which only has reasons support
+on crates.io backend, not frontend, and not index wire representation. We're adding crates.io backend + frontend 
+support but deferring index representation to be discussed together with yanked.
+    - The `notice-page` support we are adding might work well for displaying yanked reasons via the crates.io frontend
+    once available
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Triggering reverse dependency re-processing based on withholding changes
 
-Delayed indexing
-- We do leave open the possibility of registries applying publish-time holds without publishing index entries via a 
-`version-status` URL template, which is discussed in a subsequent section. This is more relevant for avoiding excessive
-index churn, but it could also be a defense in depth against offline analysis from malicious actors besides publishers
-(at the cost of worse security researcher access).
+Delayed indexing for unreleased
+- A good middle ground to avoid index thrash might be only publishing to the sparse index but not the git index
+- To avoid publishing index lines for unreleased crates, we need an alternative way to serve the full index line,
+or else we break separate publish invocations
 - At some point, we might want to publish a dedicated event feed of quarantined or withdrawn releases (along with yanked 
 releases). That is out of scope for this RFC. For the time being, researchers will have access to the git index
 for a change stream that includes status transitions. Any movement away from hosting the git registry, will need to 
@@ -1129,6 +1047,11 @@ Probing cached crates for withholding (and yanked state)
 - HEAD request to check for byte existence as a quick proxy for needing a refresh
 - run it in CI probably?
 - larger Cargo change that deserves its on RFC
+
+Better display of reasons for withholding:
+- today, registry tracked, available on human readable page (similar model to yanked once frontend is implemented)
+- we could add a registry endpoint that surfaces this in a machine-readable format for cargo to use on different failures and warnings
+- we could also write it to index lines (as part of the conversation about yanked)
 
 ---
 
