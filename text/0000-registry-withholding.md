@@ -220,8 +220,9 @@ builds it (if it has not already successfully built the version's docs) and remo
 A `withdrawn` version keeps its badge permanently and its documentation is removed.
 
 Dependents whose builds fail because they resolve solely to withheld versions are handled as if they are ordinary
-build failures. See "Triggering reverse dependency re-processing based on withholding changes" under "Future 
-possibilities" for what a later RFC could change.
+build failures. docs.rs already triggers fresh resolution on failure, so the docs will only fail to build if no other
+compatible version exists. Further improvements are discussed in "Future possibilities: docs.rs triggering reverse 
+dependency re-processing based on withholding changes".
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -413,6 +414,17 @@ Related:
 - Rationale: Why `withheld` instead of (further) overloading `yanked`?
 - Rationale: Why not `"withheld": "quarantined_and_yanked"`?
 - Rationale: Why no index protocol bump?
+
+#### Relationship to `pubtime`
+
+If a registry supports `pubtime`, used with `min-publish-age`, it MUST set its value at the point
+it first becomes installable. For a version that arrives as `unreleased`, that is the time of release, not the time
+of upload.
+
+While a version is `unreleased`, the registry MAY omit `pubtime` or MAY set it to the upload time. In the second case,
+the registry MUST overwrite that `pubtime` upon release.
+
+A version that was installable before it was withheld keeps its original `pubtime` when released from withholding.
 
 #### Impact on byte mirrors and other index consumers
 
@@ -644,12 +656,6 @@ in the case of separate `cargo publish` invocations (see "Separate `cargo publis
 Related:
 - Drawbacks: A quarantine can break a release train
 - Rationale: Why is the publish default different per type of withholding?
-- Prior art: npm publish-time scanning feedback
-
----
-
-# NOTE: below here is pretty rough, still WIP, and out of date with different handling for quarantine vs unreleased,
-
 
 ##### Polling for status
 
@@ -808,6 +814,8 @@ inputs, such as a version that the same script successfully published beforehand
 For this RFC, we restrict docs.rs to only refraining from building docs for quarantined/withdrawn crates, and instead
 displaying a status tag. If the state transitions from quarantined to published, we can trigger a build and remove the tag.
 
+<the way it re-resolves lockfiles>
+
 This does leave a hole: what if resolution fails because a crate exclusively resolves to another quarantined crate? For the
 purposes of this RFC, we can leave this out of scope. This would primarily be a problem for quarantined-at-the-point-of-publish
 registry behaviors, since then we need a way to trigger transitive rebuilds when the dependents transition to published.
@@ -830,24 +838,36 @@ To summarize:
 4. On docs.rs, on seeing a status transition to `published`, trigger a build if one has not already run, and remove the status tag
 5. On docs.rs, if a build fails to resolve due to quarantined dependencies, do nothing special (for now) and wait to address this use case until a subsequent RFC that implements "quarantine-at-point-of-publish" support to crates.io
 
+See also:
+- Future possibilities: docs.rs triggering reverse dependency re-processing based on withholding changes
+
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
 A second mutable index field
+- This stinks, but the ship has arguably sailed with yanks, and we lack a good non-line-oriented document to carry
+index metadata without adding in entirely new Cargo fetches
+- The justifications for this downside are discussed in "Rationale: Why write withheld releases to the index?"
 
-An index line no longer guarantees fetchable bytes
+An index line no longer guarantees fetchable bytes:
+- This is awkward, but we partially mitigate it through useful 404 bodies on failed fetches
+- This is somewhat by design since we want to make clear to consumers *why* locked versions are not reachable (see:
+"Alternatives: Why write withheld releases to the index?")
 
-Current (and in the git index, past) withheld statuses are publicly visible. See "Rationale: Why are withheld statuses public?"
+Current (and in the git index, past) withheld statuses are publicly visible.
+- See "Rationale: Why are withheld statuses public?"
 
 Existing lockfiles can break without a local change
-- especially painflu for cargo.lock
+- This is especially painful for `cargo install --locked`
+- We can consider improving that situation before adding publish-time holds to crates.io, see "Future possibilities: 
+Smarter cargo install --locked on withheld dependencies"
 
 Warm caches keep withheld versions buildable
-- this is true of any design that doesn't add in cache evictions, which we scope in future possibilities
+- This is true of any design that doesn't add in cache evictions, which we discuss in "Future possibilities: Probing cached crates for withholding (and yanked state)"
 
 Quarantine can break release trains
-- (Intended, see Why is the publish default different per type of withholding)
+- Intended, see Why is the publish default different per type of withholding
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -876,32 +896,140 @@ failing to handle the version when it is released
 Preferred:
 1. Reuse the existing index, version model, synchronization, and release flow (especially, no index protocol bump)
 
-Quick hits, LLM generated based on my notes, before I can get to writing them up:
-| Alternative | Why not |
-|---|---|
-| Overload `yanked` | Means "author says don't use"; cannot distinguish redacted bytes from a maybe-broken release. See *Why `withheld` status instead of (further) overloading `yanked`?* |
-| Withheld line absent from the index | Untenable for `quarantined` and `withdrawn`: pinned builds fail without saying why, no tombstone, delete-then-republish for diff-driven consumers. Defensible for
-`unreleased`, where nothing is pinned yet and a feed could replace the line; chosen against because separate-invocation publishes would need a second source of index summaries, and one mechanism covers all
-three states. The index-absent form of `unreleased` remains available later as delayed indexing if we added additional support in build tools. See *Why not remove the index line?* and *Future possibilities: Delayed indexing* |
-| Withheld bytes at the ordinary `dl` URL | Protects fresh Cargo resolution only; deterministic URL-plus-checksum fetchers acquire the bytes without reading the index. See *Why a separate `dl-withheld` path
-rather than serving withheld bytes from `dl`?* |
-| Authenticated withheld bytes | Access control, token recovery, and researcher onboarding with no improvement in default acquisition; excludes Trusted Publishing. See *Why is `dl-withheld` as open as `dl`?*
-and *Why nothing after upload requires the publisher to authenticate* |
-| Global `--allow-withheld` | Admits arbitrary withheld transitive dependencies. See *Why `--fetch-withheld` takes an exact `name@version`* |
-| Publish sessions or secret preview tokens | Public bytes bypass access tracking, so tokens cannot enforce provenance; needs a credential that outlives the one Trusted Publishing issues. See *Why no
-sessions or preview tokens* |
-| Owner-authenticated view of the canonical index | Conflicts with signing, mirroring, and cache isolation; does not fit short-lived Trusted Publishing identities. See *Why nothing after upload requires the
-publisher to authenticate* |
-| Automatic downstream propagation | False cascades; transitive gaps; the registry is the right layer, if any. See *Why not publish-time propagation of withheld states during a release train?* |
-| Registry buildability checks before publish | The registry would need partial resolver semantics across features, targets, and registries. See *Why no registry buildability checks* |
-| Structured yank reason | Author-controlled text, not a registry state; says nothing about bytes. Complementary, not a substitute. |
-| Informational and blocking states in one field | Every consumer must classify values; PEP 792 affords it only because omission does the enforcing. See *Why is `withheld` blocking-only?* |
-| Index protocol version bump | Unnecessary since Cargo 1.51 and blocked by the experimental `v: 3`. See *No index protocol version bump* |
-| `min-publish-age` alone (RFC 3923) | Delays admission; cannot preserve an adverse verdict, especially for quarantines on already released crates. Even for fresh publish, the posture of needing to hit the "delete" button very quickly is not sustainable as attack volume grows. Companion, not substitute. |
-| Universal release staging | Sessions, embargoes, atomic groups, upload/publish role separation — too broad; this design can evolve into it. See *Future possibilities: Author-managed staging* |
-| Do nothing | Responders choose between yank (installable when pinned) and deletion (irreversible, destroys evidence); nobody gets a signal. Also does not set us up for the "not always having to  |
+### Major architectural alternatives
+
+#### Why write withheld releases to the index?
+
+First off: omitting releases from the index only seems viable for `unreleased` versions,
+not `quarantined` or `withdrawn`. This would be a very confusing experience for users with `withheld`
+versions in their lockfiles, since they would get resolution failures that give no indication of why.
+This is a user experience that two other registries (npm and PyPI) have tripped over. PyPI quarantined through
+omission and then later added project-level flags to indicate state (and is still serves plain 404s on release-level).
+npm similarly omits based on publish-time scanner holds and has received [a fair bit of negative feedback](https://github.com/orgs/community/discussions/203413)
+about its user experience.
+
+Moreover, we are not particularly well positioned to add markers like PyPI has because our index files are
+line-oriented. Each version is a line. PyPI, in contrast, offers a JSON document that makes it easier to reflect
+status in a separate section that build tooling can still understand.
+
+So we need need a globally accessible index line for `quarantined` and `withdrawn`. The real question
+is whether we should write `unreleased` to the index.
+
+Even for `unreleased`, two userbases need its index data and bytes:
+- publishers (who resolve their own withheld crates across separate publish invocations)
+- security researchers and scanners (who want to know about which crates are withheld, and access their bytes)
+
+Serving these users without a withheld index line means additional registry-side systems: index-like metadata via
+sidechannels, author- or researcher-specific authenticated views of the index, publish or session tokens, query APIs
+or feeds to traverse withheld crates, and more.
+
+The authenticated views break publishers, since Trusted Publishing doesn't preserve authentication context after crate
+uploads (not to mention added local Cargo cache complexity). A per-identity index also can't be signed for mirros. And 
+then, do we vend special access to researchers, and take on the responsibility of vetting them and maintaining yet
+more systems for them traverse unreleased crates?
+
+Session tokens work better for publishers but are fairly complex on the server side (durable group state, lost
+token recovery, server-side access scoping, ...). The user experience also isn't great if you ever need to retry 
+partially completed workflows or publish multiple entries out of band. They also still break researchers, unless we 
+build dual systems like separate read capabilities with a feed. And then, once 
+those systems are globally readable, they disclose the same information that an index line would. 
+
+The alternatives to an index line are fairly complex, and have clear costs, so it's worth thinking about why
+we would want to omit lines in the first place.
+
+One reason might be to reduce the risk of oracle attacks. This is a fair concern, but keep in mind that this
+only makes it easier for malicious parties other than the one publishing a release to analyze the triggers for 
+registry-initiated withholding. Hardening on this front seems like a poor trade for diverging from the Rust Project's 
+values around transparency and community access. And if Trusted Publishing rules out authenticated access, the data is
+globally readable anyway, so it is questionable if this offers useful hardening. Regardless, the main point at which 
+we need to start worrying about this style of oracle attack will be when we add pre-publish scanning, so we can 
+discuss adding auth alongside that in the later RFC if desired.
+
+Another reason for wanting this might be author privacy. If we do later have author-initiated staging, we can discuss 
+shifting the index visibility of author-staged releases and/or restricting bytes in a separate RFC.
+
+A third reason is avoiding index thrash. The remedy here is the same as for every other source of index thrash: 
+continue to invest in deprecating the git index, while providing an event channel to support mirrors and other users 
+needing traversal.
+
+And, none of the mentioned options actually addresses the user experience gap of quarantined/withdrawn crates 
+(unless we want to unconditionally check some other index on failure, in which case... why not just use the current 
+one?). 
+
+#### Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?
+- `dl`-only would only protect fresh cargo resolution, tools that don't understand `withdrawn`
+would resolve anyway. Also it's an extra layer of protection against stale cache risks. With `dl`-only,
+all you need is a stale index file. But with `dl-withheld`, you need both stale index file and stale crate cache.
+
+#### Why `withheld` instead of (further) overloading `yanked`?
+First off, this would have the same issues as only `dl` re: build tools that don't understand yanked
+(Yocto), tools that fetch every line in the index, and stale-cache risks. Moreover, if we had overloaded `yanked`
+and then used `dl-withheld`, we would have an awkward case of needing to check both places in the case of using
+`--fetch-withheld`.
+
+Beyond that, the semantics are poor:
+
+Yanked is an overloaded term already in that it is used by crate authors for any reason, most frequently maybe-broken 
+releases. It also is used by registry administrators as an imperfect "soft" mitigation during investigation, very
+similar to our intended use of `quarantine`. The lack of semantic meaning for yanked means that it simply does not
+carry sufficient information for build tools to reasonably evaluate whether yanks correspond to withheld crates that
+have redacted bytes, or just the "probably don't resolve this because it might break you" case.
+
+Overloading the field further such that it may or may not point to available bytes, with no extra data indicating which 
+is the case, seems like a strictly worse user experience than offering
+a clear withheld field indicating state that has direct support in newer build tools. Ideally, we would prefer to have 
+most security responses that currently set `"yanked": true` prefer to instead set `"withheld": "quarantined"`, and 
+leave standalone `yanked` usage for authors only. The wire representation of a withheld entry regardless should 
+include `"yanked": true` for backwards compatibility reasons, but the registry-side management will track it separately
+from an author-initiated yank.
+
+Note that we ARE shifting the semantics of `yanked` to mean that it may or may not point to available bytes. This
+does have downstream implications. The additional `withheld` field is better in that it offers a path to cleaner 
+handling by downstream tools that don't use index resolution before fetching bytes, such as mirrors. Refer to the
+"Impact on byte mirrors and other index consumers" for more details.
+
+#### Why not just `min-publish-age` with a default?
+On a basic level, `min-publish-age` is insufficient because it does not provide a way to redact bytes
+of already released versions. This means it is not appropriate for incident response, and we are back to
+either yanking (also leak bytes) or deleting (we are slower to do it, and it doesn't provide the security
+researcher access that we would like).
+
+Beyond that, even for the basic "publish time supply chain attack handling" case, it is not ideal.
+For one, it requires that build tools request `min-publish-age`, which seems unlikely to be universally
+true. In general, client-side protections are not a great security boundary in comparison to registry-level
+enforcement. We could discuss a registry-side `min-publish-age` for crates.io, but that seems fairly painful
+and contentious, and anyway will need many of the same escape hatches as `withheld` to not break publishers
+or other consumers.
+
+Beyond this, as discussed in "Motivation", `min-publish-age` is concerning because it fails open and thus forces
+an urgent response to avoid security impact of malicious releases. Defaults that registry administration
+teams might be comfortable with might be fairly long from a user perspective. This is about more than just
+user experience: Extended delays also have security downsides insofar as they also delay security fixes and other 
+important changes.
+
+Also, however long the default is, the "I need to press a button with some urgency to avoid a problem" is
+psychologically challenging compared to "My systems will catch things, and I just need to go check them for
+false positives in a reasonable time frame". As security-minded engineers, it seems unlikely that non-automaticaly-handled
+supply chain attacks will ever be treated as not-that-urgent.
+
+It's worth mentioning a nice suggestion from @joshtriplett of letting the registry advertise a dynamic
+`min-publish-age` to buy itself time if falling behind on vulnerability reports or thinks it is at heightened
+risk. This is discussed in "Future possibilities: Registry-advertised dynamic `min-publish-age`". I like this
+idea, but also do not think it suffices. I'm not sold that it will address the psychological pressures of reactive
+responses. And then the same concerns around any byte availability, and what to do for already-released versions,
+still apply.
+
+### Other decisions
 
 #### Why no reason text in the index?
+
+In this RFC, we track the reason for withholding at the registry level. It can be made available on the user-facing
+page that is advertised via `notice-page`. This mirrors crates.io's handling of yanked reasons. Currently they
+are implemented in the backend, and if this RFC were implemented, they could also be displayed using a similar 
+mechanism.
+
+We could imagine better alternatives, but we'd prefer to consider them alongside via `yanked` in their own RFC.
+See also: "Future possibilities: Better display of reasons for withholding".
 
 #### Why no index protocol bump?
 
@@ -931,35 +1059,18 @@ fairly good user experience in most cases, and otherwise clear errors. This shou
 protocol version bump.
 
 
-### Why `withheld` instead of (further) overloading `yanked`?
+#### Why not `"withheld": "quarantined_and_yanked`?
+It's a bit awkward that we have some extra bookkeeping to display `"yanked: true` whenever we have a
+withheld status. But, we do want this set for backwards compatibility reasons. If we don't care about backwards
+compatibility, then we just leave `yanked` only for author and admin-initiated yanks and have it be totally
+orthogonal to `withheld`.
 
-Yanked is an overloaded term already in that it is used by crate authors for any reason, most frequently maybe-broken 
-releases. It also is used by registry administrators as an imperfect "soft" mitigation during investigation, very
-similar to our intended use of `quarantine`. The lack of semantic meaning for yanked means that it simply does not
-carry sufficient information for build tools to reasonably evaluate whether yanks correspond to withheld crates that
-have redacted bytes, or just the "probably don't resolve this because it might break you" case.
+But, if we do want to set the `yanked` bit, giving `withheld` and ugly-looking state explosion (since we need all
+future `*_and_yanked`) doesn't buy us very much on either the readability front or the bookkeeping front. It's simple
+enough for registries just to track `yanked` independent of `withdrawn` and only flush the `"yanked": true` for
+`withdrawn` when writing to the wire. Better to keep the wire representation simpler.
 
-Overloading the field further such that it may or may not point to available bytes, with no extra data indicating which 
-is the case, seems like a strictly worse user experience than offering
-a clear withheld field indicating state that has direct support in newer build tools. Ideally, we would prefer to have 
-most security responses that currently set `"yanked": true` prefer to instead set `"withheld": "quarantined"`, and 
-leave standalone `yanked` usage for authors only. The wire representation of a withheld entry regardless should 
-include `"yanked": true` for backwards compatibility reasons, but the registry-side management will track it separately
-from an author-initiated yank.
-
-Note that we ARE shifting the semantics of `yanked` to mean that it may or may not point to available bytes. This
-does have downstream implications. The additional `withheld` field is better in that it offers a path to cleaner 
-handling by downstream tools that don't use index resolution before fetching bytes, such as mirrors. Refer to the
-"Impact on byte mirrors and other index consumers" for more details.
-
-
-### Why not `"withheld": "quarantined_and_yanked`?
-Simplifies registry stake-keeping slightly at the cost of an explosion of index states (every future state will need 
-the same `_and_yanked`) that is not more comprehensible to the audience. We should optimize for simple wire
-representation that reflects how build tools should interact with versions.
-
-
-### Why not publish-time propagation of withheld states during a release train?
+#### Why not publish-time propagation of withheld states during a release train?
 We can imagine alternative methods that attempt to propagate quarantined status to 
 dependents based on poll status, with a registry publish API extension. This is useful both for avoiding broken binary versions,
 and also generally offering clearer visualization of what a leaf crate is unreachable due to exclusively quarantined 
@@ -969,48 +1080,63 @@ dependencies and also in that dependencies can become quarantined underneath us.
 The proper place for propagation or transitive display of quarantined state would instead be at the registry level, if at all. In other words, that is a discussion for
 a subsequent RFC.
 
-### Why is withheld status publicly visible?
-- We don't have great options for legibility like other registries since we have per-line release information with no 
-overall crate status that captures i
-- APIs to silently withdraw tombstones
-or otherwise harden registries against oracle attacks are largely server-side decisions and will
-be discussed in subsequent issues and RFCs. Publishers will anyway be able to tell whether their release is quarantined 
-via any reasonable registry implementation, so we do not view placing this status into the index as a critical 
-information leakage.
-- same holds for history: the git index retains past withholdings, the sparse index does not, and a version's having been cleared is itself useful information for researchers.
+#### Why not server-side propagation of withheld states?
 
-### Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?
+This would be great, but today it is complex. Crates.io only checks one level of dependencies for reverse
+dependencies. We don't want to start running full resolution server-side. Showing one level of withheld
+dependencies is *an* option, but it seems more misleading to inconsistently reflect this state. And, even then,
+it is somewhat complex, since we only show version constraints, not the actual resolved version, so we would
+need to do some amount of resolution to fix that.
 
-###  Why is `dl-withheld` as open as `dl`?
- — covers: unreleased bytes always served (external review in the review window is the point; registry scanners see everything regardless; existence is public); no author-privacy exception in this RFC (the carve-out an attacker would use; deferred to a staging RFC); no credential gate for researchers (PyPI's Observer-only visibility API was considered and dropped; index visibility is public anyway). Closing sentence: if public-by-default proves wrong, per-template auth-required in config.json is the natural mechanism.
+A better option is to make use of docs.rs's actual use of the resolver and signal back to crates.io. This could
+be added later and is discussed under "Future possibilities: Triggering reverse dependency re-processing based on withholding changes".
 
-### Why is the publish default different per type of withholding?
-- unreleased shouldn't break release train (see: npm)
-- quarantine indicates a verdict about the publisher that should break CI and cause attention, similar to
---allow-dirty to force attention
+####  Why is `dl-withheld` as open as `dl`?
+TLDR: I don't think this is worth including now, even if it might be worth it later. If we want to walk away from 
+public-by-default, it is easy enough to add per-template `auth-required` in `config.json`.
 
-### Why do errors never include a bypass command?
-   - The error is shown to the person least equipped to evaluate it — a consumer who just wants the build to pass — at the exact moment they're most inclined to paste whatever makes the error go away. cargo publish --allow-dirty is the
-   precedent: Cargo deliberately doesn't suggest it in the dirty-tree error.
-   - Error text is copied into CI configs and stays there. A bypass that lands in a workflow file becomes permanent, silent, and shared.
-   - The two intended users don't need the hint: a researcher reads the docs, a publisher's release tool passes the flag deliberately.
-   - The cost is one documentation lookup for a legitimate user, against a quarantined crate being installed by someone who didn't understand what the status meant.
+One of the points of the having a `unreleased` review window, or a `quarantined` freeze is to gather information.
+It seems cleaner to err on the side of general access to scanners rather than getting in the business of blessing
+trusted parties. 
 
+The counterarguments relate to author privacy during staging (handle this in a later RFC if we have staging) and
+oracle attacks on the index (fair, but a tradeoff with having more eyes to catch problems - we can discuss adding
+auth when we add publish-time detection/holds). Both are further discussed in "Major architectural decisions: Why 
+write withheld releases to the index?".
+
+#### Why is the publish default different per type of withholding?
+We don't want unreleased versions to break release trains (see: [complaints from npm users](https://github.com/orgs/community/discussions/203413)).
+So, defaulting to continuing with an informational note seems correct for this case.
+
+But, if a version is immediatley quarantined upon release, that means that the publisher's account is under quarantine
+or otherwise in a concerning state. This deserves publisher's attention and SHOULD break CI, similar to how
+`--allow-dirty` forces attention. We have an easy escape hatch if desired, via `--continue-on-quarantine`, that CI
+workflows are welcome to integrate with.
+
+#### Why do errors never include a bypass command?
+The person that sees the error is the least suited to evaluate it - ie, a consumer that just wants to make the build
+pass. This means they (human or robot) are inclined to paste in whatever they make the error go away.
+
+`cargo publish --allow-dirty` offers a similar precedent of never being suggested directly by Cargo.
+
+Most intended users don't need the hint anyway. Researchers read documentation. Release tools have built-in support for
+the flags. Users setting up custom CI read documentation.
+
+Other legitimate users might be inconveninced by needing to check docs to understand what to do, but this seems
+preferable to risking naive users installing quarantined bytes.
 
 ## Prior art
 [prior-art]: #prior-art
 
 ### Researcher access in other ecosystems
 
-### npm publish-time scanning feedback
-
-<not organized, analysis is LLM generated and will be rewritten in full>
+<analysis is LLM generated and will be rewritten in full>
 - [PyPI: Project Quarantine (2024-12)](https://blog.pypi.org/posts/2024-12-30-quarantine/) — admin-set, reversible; enforced by omission from the Simple index; yank considered and rejected ("a yanked Release is still installable"); ~140 quarantined, 1 released.
 - [PyPI: project status markers (2025-08)](https://blog.pypi.org/posts/2025-08-14-project-status-markers/) / [PEP 792](https://peps.python.org/pep-0792/) — legibility marker retrofitted a year after omission-based quarantine; project-scoped; mixes informational (`archived`, `deprecated`) with enforcing (`quarantined`); works only because omission does the enforcing.
 - [warehouse `Release.lifecycle_status`](https://github.com/pypi/warehouse/blob/main/warehouse/packaging/models.py) — release-level quarantine since 2026; omission in `_simple_detail`; no per-release marker in the standard API. Same shape as `withheld: quarantined`, illegible on the wire.
 - [PEP 592: yanked releases](https://peps.python.org/pep-0592/) — yank = soft delete that stays installable when pinned; owner-only; reason carried in the index. The contract this RFC preserves for `yanked`.
 - [PEP 694: upload API, staged releases](https://peps.python.org/pep-0694/) — staged = session state, absent from the index until published. Contrast: `unreleased` is a visible line.
-- [Pre-PEP thread: status markers](https://discuss.python.org/t/pre-pep-discussion-project-status-markers-in-the-index-apis/79356) — design discussion; its description of quarantine as "yanked" does not match warehouse's implementation.
+- [Pre-PEP thread: status markers](https://discuss.python.org/t/pre-pep-discussion-project-status-markers-in-the-index-apis/79356) — design discussion; warning: its description of quarantine as "yanked" does not match warehouse's implementation.
 - [npm: publish-time scanning feedback (#203413)](https://github.com/orgs/community/discussions/203413) — pending-scan versions returned plain 404; "pending vs never published" ambiguity broke publish scripts; Cloudflare `wrangler`/`miniflare` release train broken by a dependency still in scan; npm "prioritizing work to display scanning status". Motivates the kind-dependent publish default, useful 404 messages, and the `notice-page` display.
 - [npm: safer publishing roadmap (#208130)](https://github.com/orgs/community/discussions/208130) — staged publishing and status surfacing on the roadmap.
 - [RubyGems: removing a published gem](https://guides.rubygems.org/removing-a-published-gem/) — `gem yank` removes the index entry *and* the gem file; the version cannot be re-pushed ([rubygems#2183](https://github.com/rubygems/rubygems/issues/2183)). The opposite pole: yank *is* withdrawal, no reversible state.
@@ -1055,62 +1181,72 @@ support but deferring index representation to be discussed together with yanked.
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-Triggering reverse dependency re-processing based on withholding changes
+docs.rs triggering reverse dependency re-processing based on withholding changes:
+- Primarily affects docs.rs; we trigger fresh builds when we encounter a newly released version, but not its
+dependents, which might also break.
+- Docs.rs could store a mapping of which builds broke due to resolving only to withheld dependencies, and re-trigger
+those builds if that depndency is released or publishes a newer compatible version
+- We can explore this in a RFC that adds crates.io publish-time holds
 
 Delayed indexing for unreleased
 - A good middle ground to avoid index thrash might be only publishing to the sparse index but not the git index
 - To avoid publishing index lines for unreleased crates, we need an alternative way to serve the full index line,
 or else we break separate publish invocations
-- At some point, we might want to publish a dedicated event feed of quarantined or withdrawn releases (along with yanked 
-releases). That is out of scope for this RFC. For the time being, researchers will have access to the git index
-for a change stream that includes status transitions. Any movement away from hosting the git registry, will need to 
-answer questions around how to reliably access an event stream to use alongside the sparse index.
+- Any such change will need to consider security researchers, such as exposing an event feed for withheld crates
+- Alternatives are discussed at greater length in "Rationale: Why write withheld releases to the index?"
 
 
 Author-managed staging
 - https://internals.rust-lang.org/t/pre-rfc-package-staging/20459
-- Privacy for author-managed staging
+- This is much larger scope that we want to pick up, but the `unreleased` status is designed to be supportive of it
+- We would likely need a registry web API-side change to pass in the desire to have things staged (unless scoped
+to be account-wide)
+- The mechanisms for releasing from registry-side staging would be a larger design as well
+- If there is a desire from authors to redact withheld bytes, or avoid writing to the index, this would take
+further design that would be supplementary rather than conflicting to this one
+- Future RFC territory
 
-Restricting dl-withheld to credentialed researchers. 
+Restricting `dl-withheld` to credentialed researchers. 
+- Discussed in "Rationale: Why is `dl-withheld` as open as `dl`?"
+- If we start to see stronger reasons to guard `dl-withheld`
+
 - This RFC makes dl-withheld as open as dl on the same registry: public on crates.io, token-gated on an auth-required registry. A registry wanting to limit withheld bytes to vetted researchers — the model PyPI's Observer program gestured at — would need per-template authentication in config.json (for example, an auth-required map keyed by template). That is deferred; index visibility of withheld versions is public regardless, so the gate would protect bytes, not existence.
 
 Smarter cargo install --locked on withheld dependencies
+- This experience is not good today because the resolver won't try to avoid binaries that bundle
+lockfiles with withheld dependencies
+- Probably a better answer is something along the lines of, on encountering this failure, fetch
+older versions until one does not have a broken lockfile
+- At that point we could print a warning suggesting to install the candidate version (or fall back to it by default 
+with a warning)
+- This is a deeper set of changes to the resolver that belong in their own RFC. This experience already exists for
+deleted crates, and the `quarantine`/`withdrawn` cases are largely a replacement to deletion, so it's not clear
+to me how catastrophic this is
 
 `cargo info` support
-- today cargo info will never show "yanked" since it only shows candidate versions (missing from index view,
+- Today cargo info will never show "yanked" since it only shows candidate versions (missing from index view,
 not found for specific requested version)
-- we could enhance it to support both yanked and withheld with extra visibility
+-  We could enhance it to support both yanked and withheld with extra visibility
 - This RFC exposes all the information necessary to support this via the `IndexSummary::Withheld` variant if prioritized
+- I don't think it is particularly significant, given that we also don't show it for `yanked`
 
 
-Probing cached crates for withholding (and yanked state)
+Probing cached crates for withholding (and yanked state) to avoid stale-cache risks
 - HEAD request to check for byte existence as a quick proxy for needing a refresh
-- run it in CI probably?
-- larger Cargo change that deserves its on RFC
+- There should be a way to run it in CI by default, probably? And other sensitive environemnts?
+- This is a larger Cargo change that deserves its on RFC
 
-Better display of reasons for withholding:
-- today, registry tracked, available on human readable page (similar model to yanked once frontend is implemented)
-- we could add a registry endpoint that surfaces this in a machine-readable format for cargo to use on different failures and warnings
-- we could also write it to index lines (as part of the conversation about yanked)
+Better display of reasons for withholding
+- Beyond displaying it in the frontend and statically linking to the page, a good next step would be to add a registry 
+endpoint that surfaces reasons in a machine-readable format for Cargo to use on different failures and warnings.
+- We could alternatively write it directly to index lines, but we should do so in conversation with `yanked` reasons
+as well.
+- Both approaches probably merit their own RFC that unifies with `yanked` handling.
 
----
-
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
-
+Registry-advertised dynamic `min-publish-age`
+- This is supplementary to this proposal (see: "Alternatives: Why not just `min-publish-age` with a default?") but
+a great idea by @joshtriplett! 
+- It lets the registry temporarily heighten its security posture if it has reason to believe it is being
+targeted in ways that raise risk (for instance: another language's registry was just compromised).
+- We can consider it alongside publish-time checks in a future RFC.
 
