@@ -604,8 +604,10 @@ let #[align(…)] mut ref mut x = …;
   - We could also introduce a similar facility for function pointers.
 - We could also add similar APIs for over-aligned function pointers.
 - We could loosen the restriction that fields of a `packed(n)` struct cannot
-  specify an alignment greater that `n`. (Apparently, some C compilers allow
-  something similar.)
+  specify an alignment greater that `n`. (Some C compilers allow
+  something similar. However, GCC has two versions of `packed`, and they
+  interact differently with `alignas`, so it's not clear what the correct
+  mapping would be.)
 - Once
   [`#![feature(stmt_expr_attributes)]`](https://github.com/rust-lang/rust/issues/15701)
   is stable, we could allow applying `#[align(…))]` to closures and async blocks
