@@ -308,9 +308,9 @@ have [seen complaints](https://github.com/orgs/community/discussions/203413)
 for this. PyPI has since added status markers, and npm plans to.
 
 Writing the line lets Cargo explain the status, point at `notice-page`, and give
-guidance to the user (such as `cargo update`). It still lets older Cargo fall
-back to yanked behavior that avoids resolving to the unfetchable version. It also lets
+guidance to the user (such as `cargo update`). It also lets
 us set `withdrawn` tombstones that transparently reserves coordinates, unlike omission.
+It still lets older Cargo fall back to yanked behavior that avoids resolving to the unfetchable version.
 
 This fits the values of the project around transparency and
 accountability. If we are making it easier for administrators to take new
