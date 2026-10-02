@@ -323,7 +323,8 @@ Note: the layout is unspecified to avoid adding a new post-mono error.
 
 ### packed
 
-`repr(C#editionNext, packed)` will map to `__attribute__((packed))` on non-MSVC targets, and for MSVC it maps to `__declspec(align)` when applied to a type (and not a field).
+`repr(C#editionNext, packed)` will map to `__attribute__((packed))` on non-MSVC targets, and for MSVC it maps to `#pragma pack`.
+`repr(C#editionNext, packed(N))` will map to `__attribute__((packed, aligned(N)))` on non-MSVC targets, and for MSVC it maps to `#pragma pack` and `__declspec(align(N))`.
 On current targets, 
 
 If a `repr(C#editionNext, packed)` type contains an over-aligned field, then a rust compiler must emit a hard error (potentially after monomorphization).
