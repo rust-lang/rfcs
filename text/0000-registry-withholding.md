@@ -1055,8 +1055,8 @@ and also generally offering clearer visualization of what a leaf crate is unreac
 dependencies. But, this is a bit of a trap, in that we would not be probing more deeply for quarantined transitive 
 dependencies and also in that dependencies can become quarantined underneath us. 
 
-The proper place for propagation or transitive display of quarantined state would instead be at the registry level, if at all. In other words, that is a discussion for
-a subsequent RFC.
+The proper place for propagation or transitive display of quarantined state would instead be at the registry level, if 
+at all. In other words, that is a discussion for a subsequent RFC.
 
 #### Why not server-side propagation of withheld states?
 
@@ -1066,8 +1066,18 @@ dependencies is *an* option, but it seems more misleading to inconsistently refl
 it is somewhat complex, since we only show version constraints, not the actual resolved version, so we would
 need to do some amount of resolution to fix that.
 
-A better option is to make use of docs.rs's actual use of the resolver and signal back to crates.io. This could
-be added later and is discussed under Future possibilities: [Re-processing failed docs.rs builds when a dependency becomes available](#re-processing-failed-docsrs-builds-when-a-dependency-becomes-available).
+docs.rs is the only system that already resolves against published crates, though for a single configuration and
+only as a side effect of building. Its failures could be fed back to crates.io for display somehow as an extension of 
+Future possibilities: [Re-processing failed docs.rs builds when a dependency becomes available](#re-processing-failed-docsrs-builds-when-a-dependency-becomes-available).
+
+Even then, the proposed extension only handles cases where crates were broken, and then became unbroken. It does
+not seem reasonable to turn docs.rs into a general system for tracking all dependencies of all crates in case they
+in the future became quarantined. And, extending crates.io to calculate all new reverse dependency relationships
+at any depth when any existing dependency has a newer version published or becomes withheld, seems similarly
+unreasonable. If it did happen, it should be as part of a much larger overhaul of crates.io's architecture to
+solve further questions beyond withholding status (in a different RFC).
+
+It's not clear to me that the juice is worth the squeeze here.
 
 #### Why is `dl-withheld` as open as `dl`?
 TLDR: I don't think this is worth including now, even if it might be worth it later. If we want to walk away from 
