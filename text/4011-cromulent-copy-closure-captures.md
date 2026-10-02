@@ -259,6 +259,64 @@ This writes an invalid `NonZeroU8` into a local, then captures it into a closure
 
 I believe such code should be rare enough that we don't need to worry about it.
 
+### `auto trait`s
+
+This RFC is meant to be a non-breaking change. However, in some situations, it could change the set of auto traits implemented by a closure. I believe this should happen rarely enough not to be a concern, but a crater run will be necessary to verify the assumption. However, even if it is more breaking than expected, there are ways we could work around it. Let's go through each case:
+
+#### Capturing `Copy` + `Sync` + `!Send` 
+
+Consider the following example:
+
+```rust
+use std::marker::PhantomData;
+
+#[derive(Clone, Copy)]
+struct Foo(PhantomData<*const ()>);
+
+unsafe impl Sync for Foo {}
+
+fn main() {
+    let foo = Foo(PhantomData);
+    assert_send(|| { // does this call compile?
+        let _foo = foo;
+    });
+}
+
+fn assert_send(_: impl Fn() + Send) {}
+```
+
+Under the current rules, the closure in this example captures `foo` by reference, and therefore implements `Send`, allowing the call to `assert_send()` to compile. However, with this RFC, the capture will be by value, so the closure will no longer implement `Send`, and the code will no longer compile.
+
+Consider, however, that the combination of `Copy` and `Sync` implies that implementing `Send` would be trivially sound! `Sync` enables transferring a shared reference across threads, and `Copy` enables reading a value out of a shared reference; together, these allow sending a value across threads. Therefore, such examples are unlikely to occur in real code. At worst, the compiler could always forcefully implement `Send` for such closures.
+
+#### Capturing `Copy` + `RefUnwindSafe` + `!UnwindSafe` 
+
+Same as the above example, except with `UnwindSafe`/`RefUnwindSafe` instead of `Send`/`Sync`. And very unlikely to cause problems in real code for the same reason.
+
+#### Capturing `Copy` + `!Unpin` 
+
+Consider the following closure:
+
+```rust
+use std::marker::PhantomPinned;
+
+#[derive(Clone, Copy)]
+struct Foo(PhantomPinned);
+
+fn main() {
+    let foo = Foo(PhantomPinned);
+    assert_unpin(|| { // does this call compile?
+        let _foo = foo;
+    });
+}
+
+fn assert_unpin(_: impl Fn() + Unpin) {}
+```
+
+Under the current rules, the closure in this example captures `foo` by reference, and therefore implements `Unpin`, allowing the call to `assert_send()` to compile. However, with this RFC, the capture will be by value, so the closure will no longer implement `Unpin`, and the code will no longer compile.
+
+Consider, however, that executing the closure does not actually use `foo` in a way that would be inconsistent with the pinning guarantees, because it does not take the address of `foo` at all. If it did, the capture mode would be inferred as by-reference. Therefore, it would be sound for the compiler to forcefully implement `Unpin` for the closure in this case, resolving the breakage.
+
 ## Case, choices
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -291,6 +349,7 @@ None known. C++ does not have Rust-style capture mode inference, they make every
 [unresolved-questions]: #unresolved-questions
 
 - Is the questionable `unsafe` code that would be broken by this proposal really as theoretical as I believe it to be, or is anyone actually doing this cursed thing?
+- What about the auto trait breakage?
 - How rare are cases where this change would introduce new undesirable copies?
 
 ## Coming chance circumstances
