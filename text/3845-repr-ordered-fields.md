@@ -321,6 +321,47 @@ struct BadReprC {
 
 Note: the layout is unspecified to avoid adding a new post-mono error.
 
+### packed
+
+`repr(C#editionNext, packed)` will map to `__attribute__((packed))` on non-MSVC targets, and for MSVC it maps to `__declspec(align)` when applied to a type (and not a field).
+On current targets, 
+
+If a `repr(C#editionNext, packed)` type contains an over-aligned field, then a rust compiler must emit a hard error (potentially after monomorphization).
+
+This is because `C` doesn't have a consistent answer for what the layout of these types should be.
+For example, the following `C` program outputs different layouts for the two similar structs.
+
+```C
+#include <stdint.h>
+#include <stdio.h>
+
+struct attribute_pack {
+    _Alignas(16) uint8_t foo;
+} __attribute__((packed));
+
+#pragma pack(push, 1)
+
+struct pragma_pack {
+    _Alignas(16) uint8_t foo;
+};
+
+#pragma pack(pop)
+
+int main() {
+    // Output on x86-64 Linux GCC
+    // attribute: 16 16
+    // pragma: 1 1
+
+    printf("attribute: %zu %zu\n", sizeof(struct attribute_pack),
+           _Alignof(struct attribute_pack));
+
+    printf("pragma: %zu %zu\n", sizeof(struct pragma_pack),
+           _Alignof(struct pragma_pack));
+
+    return 0;
+}
+```
+
 ## `repr(C)`
 
 Note: This preserves the nice name of `repr(C)`, and gives it the intended meaning.
@@ -569,41 +610,6 @@ This behavior is chosen since it is consistent with the handling of naturally ov
 #[repr(ordered_fields, packed)]
 struct Underalign<T> {
     val: T,
-}
-```
-
-If a `repr(C#editionNext, packed)` type contains an over-aligned field, then a rust compiler must emit a warning to indicate that the exact layout of such a type is not well specified.
-
-For example, the following C program outputs different layouts for the two similar structs.
-
-```C
-#include <stdint.h>
-#include <stdio.h>
-
-struct attribute_pack {
-    _Alignas(16) uint8_t foo;
-} __attribute__((packed));
-
-#pragma pack(push, 1)
-
-struct pragma_pack {
-    _Alignas(16) uint8_t foo;
-};
-
-#pragma pack(pop)
-
-int main() {
-    // Output on x86-64 Linux GCC
-    // attribute: 16 16
-    // pragma: 1 1
-
-    printf("attribute: %zu %zu\n", sizeof(struct attribute_pack),
-           _Alignof(struct attribute_pack));
-
-    printf("pragma: %zu %zu\n", sizeof(struct pragma_pack),
-           _Alignof(struct pragma_pack));
-
-    return 0;
 }
 ```
 
