@@ -240,12 +240,13 @@ If any bugs are found (i.e. differences between the target C compiler's layout/A
 
 ### Flexible Array Members
 
-Given that all major `C` compilers (at the time of writing) put `T field[N];` and `T field[];` at the same offset. `repr(C#editionNext)` will make a guarantee for the last field of a `repr(C#editionNext)` struct.
-* If the only difference between two `repr(C#editionNext)` structs is the type of their last field
-* If the fields' types are `[T]` or `[T; N]`
-* Then the exact offset will also be the same as the equivalent `C` type that has the field type as a flexible array member, i.e. `T field[];`
-* Then the exact offset will also be the same as the equivalent `C` type that has the field type as an array member, i.e. `T field[N];` (of any `N`)
-* Then the offset of that field only depends on `T` (and cannot depend on the length of the array/slice)
+Given that all major `C` compilers (at the time of writing) put `T field[N];` and `T field[];` at the same offset.
+`repr(C#editionNext)` will make a target-specific guarantee for the last field of a `repr(C#editionNext)` struct.
+* If the struct is `repr(C#editionNext)`
+* If the struct has a generic `T: ?Sized` tail (i,e. like `Coercable` in the example below)
+* Then the exact offset of the unsized tail will be the same as the equivalent `C` type that has the field type as a flexible array member, i.e. `T field[];`
+* Then the exact offset of the unsized tail will be the same as the equivalent `C` type that has the field type as an array member, i.e. `T field[N];` (of any `N`)
+* Then the offset of the unsized tail field only depends on `T` (and cannot depend on the length of the array/slice)
 
 If a generic `repr(C#editionNext)` type has an generic unsized final field (see `Coercable<T>`  below), then the obvious unsizing coercion from `Coercable<[T; N]>` to `Coercable<[T]>` is allowed. i.e. `Coercable<[T; N]>: Unsize<Coercable<[T]>>`.
 
@@ -262,18 +263,14 @@ This means that the following four types have `data_array` and `data_slice` at t
 ```rust
 // in Rust
 #[repr(C#editionNext)]
-struct DataWithArray {
+struct DataWith<T: ?Sized> {
     header: i32,
     len: usize,
-    data_array: [T; N],
+    data: T,
 }
 
-#[repr(C#editionNext)]
-struct DataWithSlice {
-    header: i32,
-    len: usize,
-    data_slice: [T],
-}
+type DataWithArray = DataWith<[T; N]>;
+type DataWithSlice = DataWith<[T]>;
 ```
 
 ```C
@@ -291,7 +288,8 @@ struct DataWithSlice {
 };
 ```
 
-If there exists a target where the `C` compiler doesn't put `T field[N];` and `T field[];` at the same offset, then these rules may be revised on those targets. Currently, allow known `C` compiler put array members and flexible array members at the same offset.
+If there exists a target where the `C` compiler doesn't put `T field[N];` and `T field[];` at the same offset, then these rules may be revised on those targets.
+Currently, all known `C` compiler put array members and flexible array members at the same offset.
 
 ### Trait objects
 
@@ -737,6 +735,10 @@ See Rationale and Alternatives as well
     * This must be answered before stabilization, as it is set in stone after that
 * ~~Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)~~ This is now a hard error
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
+* What level of support do we want to give the guarantees for flexible array members?
+    * Universal - any target where C compiler which doesn't provide the necessary behavior is non-compliant, use at your own risk
+    * Target-specific - on targets where C compiler which doesn't provide the necessary behavior, we simply don't allow the coercions outlined in the FAM section
+    * Op-in - users have to opt-in to the guarantees, and will not compile on targets which don't support the coercions
 * What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
 * The name of the new repr `repr(ordered_fields)` is a mouthful (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
     * `repr(linear)`
