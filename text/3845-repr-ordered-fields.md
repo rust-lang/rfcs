@@ -571,6 +571,41 @@ struct Underalign<T> {
 }
 ```
 
+If a `repr(C#editionNext, packed)` type contains an over-aligned field, then a rust compiler must emit a warning to indicate that the exact layout of such a type is not well specified.
+
+For example, the following C program outputs different layouts for the two similar structs.
+
+```C
+#include <stdint.h>
+#include <stdio.h>
+
+struct attribute_pack {
+    _Alignas(16) uint8_t foo;
+} __attribute__((packed));
+
+#pragma pack(push, 1)
+
+struct pragma_pack {
+    _Alignas(16) uint8_t foo;
+};
+
+#pragma pack(pop)
+
+int main() {
+    // Output on x86-64 Linux GCC
+    // attribute: 16 16
+    // pragma: 1 1
+
+    printf("attribute: %zu %zu\n", sizeof(struct attribute_pack),
+           _Alignof(struct attribute_pack));
+
+    printf("pragma: %zu %zu\n", sizeof(struct pragma_pack),
+           _Alignof(struct pragma_pack));
+
+    return 0;
+}
+```
+
 ## Migration Plan
 
 The migration will be handled as follows:
@@ -727,3 +762,4 @@ See Rationale and Alternatives as well
     * This would allow a single Rust app to target multiple compilers robustly, and would make it easier to specify `repr(C)`
     * This would also allow fixing code in older editions
 * https://internals.rust-lang.org/t/consistent-ordering-of-struct-fileds-across-all-layout-compatible-generics/23247
+* Handling of `repr(C#editionNext, packed)` with over-aligned fields.
