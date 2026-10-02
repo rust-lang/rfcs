@@ -939,6 +939,18 @@ one?).
 would resolve anyway. Also it's an extra layer of protection against stale cache risks. With `dl`-only,
 all you need is a stale index file. But with `dl-withheld`, you need both stale index file and stale crate cache.
 
+#### Why is `dl-withheld` as open as `dl`?
+TLDR: I don't think this is worth including now, even if it might be worth it later. If we want to walk away from 
+public-by-default, it is easy enough to add per-template `auth-required` in `config.json`.
+
+One of the points of the having a `unreleased` review window, or a `quarantined` freeze is to gather information.
+It seems cleaner to err on the side of general access to scanners rather than getting in the business of blessing
+trusted parties. 
+
+The counterarguments relate to author privacy during staging (handle this in a later RFC if we have staging) and
+oracle attacks on the index (fair, but a tradeoff with having more eyes to catch problems - we can discuss adding
+auth when we add publish-time detection/holds). Both are further discussed in Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index).
+
 #### Why `withheld` instead of (further) overloading `yanked`?
 First off, this would have the same issues as only `dl` re: build tools that don't understand yanked
 (Yocto), tools that fetch every line in the index, and stale-cache risks. Moreover, if we had overloaded `yanked`
@@ -996,6 +1008,13 @@ risk. This is discussed in Future possibilities: [Registry-advertised dynamic `m
 idea, but also do not think it suffices. I'm not sold that it will address the psychological pressures of reactive
 responses. And then the same concerns around any byte availability, and what to do for already-released versions,
 still apply.
+
+#### Why not a universal staging protocol?
+
+This is worth discussing but does not address issues around `quarantine` and `withdrawn` support. It is also
+a much larger footprint on build tools, registry systems, and more. It does fit nicely into the pre-release
+scanning story, though. The `unreleased` state is designed so that a later staging protocol can work with it
+(whether or not author-managed `unreleased` versions are written into the index). See Future possibilities: [Author-managed staging](#author-managed-staging).
 
 ### Other decisions
 
@@ -1066,30 +1085,21 @@ dependencies is *an* option, but it seems more misleading to inconsistently refl
 it is somewhat complex, since we only show version constraints, not the actual resolved version, so we would
 need to do some amount of resolution to fix that.
 
-docs.rs is the only system that already resolves against published crates, though for a single configuration and
+At which point, now are we rearchitecting crates.io to support
+triggering re-resolution of all reverse dependencies of a crate whenever its direct dependents change in withholding
+status or publish a new version? Sounds neat, but also like a much deeper set of changes that should serve
+more goals than only displaying withholding status (and need their own RFC).
+
+docs.rs is the main system that currently resolves against published crates, though for a single configuration and
 only as a side effect of building. Its failures could be fed back to crates.io for display somehow as an extension of 
 Future possibilities: [Re-processing failed docs.rs builds when a dependency becomes available](#re-processing-failed-docsrs-builds-when-a-dependency-becomes-available).
 
-Even then, the proposed extension only handles cases where crates were broken, and then became unbroken. It does
-not seem reasonable to turn docs.rs into a general system for tracking all dependencies of all crates in case they
-in the future became quarantined. And, extending crates.io to calculate all new reverse dependency relationships
-at any depth when any existing dependency has a newer version published or becomes withheld, seems similarly
-unreasonable. If it did happen, it should be as part of a much larger overhaul of crates.io's architecture to
-solve further questions beyond withholding status (in a different RFC).
+Even then, the theroetical docs.rs extension only handles cases where crates were broken, and then became unbroken. It 
+does not seem reasonable to turn docs.rs into a general system for tracking all dependencies of all crates in case they
+in the future became quarantined. I also tend to view incomplete data as worse than no data in cases like this,
+due to the user confusion it causes.
 
 It's not clear to me that the juice is worth the squeeze here.
-
-#### Why is `dl-withheld` as open as `dl`?
-TLDR: I don't think this is worth including now, even if it might be worth it later. If we want to walk away from 
-public-by-default, it is easy enough to add per-template `auth-required` in `config.json`.
-
-One of the points of the having a `unreleased` review window, or a `quarantined` freeze is to gather information.
-It seems cleaner to err on the side of general access to scanners rather than getting in the business of blessing
-trusted parties. 
-
-The counterarguments relate to author privacy during staging (handle this in a later RFC if we have staging) and
-oracle attacks on the index (fair, but a tradeoff with having more eyes to catch problems - we can discuss adding
-auth when we add publish-time detection/holds). Both are further discussed in Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index).
 
 #### Why is the publish default different per type of withholding?
 We don't want unreleased versions to break release trains (see: [complaints from npm users](https://github.com/orgs/community/discussions/203413)).
