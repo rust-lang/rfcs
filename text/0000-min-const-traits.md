@@ -239,23 +239,58 @@ const fn drop_it<T>(x: T) {
 }
 ```
 
-This includes associated types for all traits bounded in scope, as well as `Self`:
+The parameters always have this requirement, regardless of whether the parameter is actually dropped / used as an owned argument:
 
 ```rust
+const impl<T> Foo<T> {
+    fn wow<A, B, C, D>(&mut self, a: A, b: &B, c: PhantomData<fn(C) -> C>) -> D {
+        panic!(":3");
+    }
+}
+const _: () = Foo::<MyBadType>::wow::<MyBadType, MyBadType, MyBadType, MyBadType>(...);
+// ^ all five instances of passing `MyBadType` as the generic parameter would result in compile error. This is because the rule
+//   applies to all generic parameters.
+```
+
+Bounds on other types will result in a requirement added for it too:
+
+```rust
+#[const_bounds]
+const fn bounded_dreams<T>() where Wrapper<T>: Default {}
+// ^ will require both `T` and `Wrapper<T>` to have const destructors.
+```
+
+Associated types under `const trait`s also require const-droppable types:
+
+```rust
+const trait IntoIterator {
+    type Item;
+    type IntoIter: Iterator<Item = Self::Item>;
+    //^^ implicitly requires downstream `const impl`s to provide types that can be dropped in compile time.
+    fn into_iter(self) -> Self::IntoIter;
+}
+
 #[const_bounds]
 const fn drop_iterator<T: IntoIterator>(x: T) {
     let iter = x.into_iter();
     drop(iter.next());
-    // ^ fine, `T::Item` is required to be const-droppable.
+    // ^ fine, `T::Item` is required by the trait to be const-droppable.
     drop(iter);
-    // ^ fine, `T::IntoIter` is required to be const-droppable.
+    // ^ fine, `T::IntoIter` is required by the trait to be const-droppable.
 }
+```
 
+The `Self` type is also implicitly required to be const-droppable, which means you can't have `const impl` for any type that does not have a const destructor:
+
+```rust
 const trait MyTrait {
     fn drops_self(self) {
         // ^ fine, `Self` is required to be const-droppable.
     }
 }
+
+const impl MyTrait for MyBadType {}
+// ^ errors, regardless of `MyTrait` has `drops_self` or other methods!
 ```
 
 This requirement can be satisfied when providing a parameter type in a `#[const_bounds] const fn`, `const trait`, or `const impl` as the requirement is carried over, or when providing a concrete type that is known to be droppable in compile time.
@@ -345,12 +380,12 @@ Built-in impls should be provided, for example `const fn` should satisfy `: [con
 
 ### Keyword order
 
-Same as `fn`, comes before `unsafe`:
+Keyword order should follow that on a `fn` item, `const` comes before `unsafe`, and before `async` (when/if that becomes allowed):
 
 ```rust
-const unsafe fn hi() {}
-const unsafe trait Hi {}
-const unsafe impl Hi for () {}
+const async unsafe fn hi() {}
+const /* async */ unsafe trait Hi {}
+const /* async */ unsafe impl Hi for () {}
 ```
 
 ### Destructors
@@ -381,25 +416,27 @@ Conditions the compiler uses to prove a type can be dropped in compile time:
 
 Proving such property is done via a built-in trait that is not exposed to users. We name it here as `[const] Destruct` although that is not a name this RFC intends to specify (only used for illustration).
 
-`const trait`, `const impl`, and `#[const_bounds] const fn` get implicit `[const] Destruct` bounds on all parameter types, all associated types, and all self types if they are bounded:
+`const trait`, `const impl`, and `#[const_bounds] const fn` get implicit `[const] Destruct` bounds on all parameter types and all self types of trait bounds:
 
 ```rust
 struct Wrapper<T>(T);
 #[const_bounds]
-const fn foo<A, B, C>() // -> A: [const] Destruct, B: [const] Destruct
+const fn foo<A, B, C>() // -> A: [const] Destruct, B: [const] Destruct, C: [const] Destruct
 where
-    A: IntoIterator, // -> A::Item: [const] Destruct, A::IntoIter: [const] Destruct
-    // --> <A::IntoIter as Iterator>::Item: [const] Destruct
-    // ^ (the implicit bound is recursively generated for associated types)
     Wrapper<B>: Clone, // -> Wrapper<B>: [const] Destruct
     Wrapper<[C; 2]>: IntoIterator, // -> Wrapper<[C; 2]>: [const] Destruct
-    // -> Wrapper::<[C; 2]>::Item: [const] Destruct, Wrapper::<[C; 2]>::IntoIter: [const] Destruct
-    // --> <Wrapper::<[C; 2]>::IntoIter as Iterator>::Item: [const] Destruct
 {
 
 }
 ```
 
+`const trait`s have implicit `[const] Destruct` bounds on associated types and as a super trait:
+
+```rust
+const trait Tr /* implicitly: [const] Destruct as super trait */ {
+    type A; /* implicitly: A: [const] Destruct */
+}
+```
 
 #### Opting out
 
