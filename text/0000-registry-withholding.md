@@ -934,6 +934,29 @@ And, none of the mentioned options actually addresses the user experience gap of
 (unless we want to unconditionally check some other index on failure, in which case... why not just use the current 
 one?). 
 
+#### Why not add raw.crates.io and make crates.io a mirror of it that only serves non-withheld versions?
+
+A few problems:
+
+First, this is a poor consumer experience for quarantined and withdrawn releases, since it is effectively
+withholding index files in the same manner as the preceding section. The big relative benefit is that it
+provides better discoverability for security researchers that can look at `raw.`.
+
+Second, this opens up publishers or anybody else using `raw.` to risk since it means ALL withheld crates
+are available rather than specifically requesting certain ones that the caller acknowledges are withheld.
+The alternative would be to replicate all of the `withheld` handling into `raw.` and have the callers interact
+with it using the same flags as in the RFC. Which would work, and would keep withheld releases out of the index,
+but it's not clear to me how much benefit that in exchange for added complexity.
+
+Third, this opens up the same sorts of oracle attack and privacy concerns that drive us to consider keeping 
+`unreleased` versions out of the index in the first place. So the main benefit seems to reducing index thrash
+on the primary index used by consumers? (But keeping thrash on the raw index?)
+
+In general this will require significant infrastructure buildout, many new endpoints, and more. So, if we
+are going to go to those lengths, it seems better to design something that looks more like author-managed
+staging or otherwise solve our motivating problems more directly. A downstream mirror seems like the worst of
+both worlds.
+
 #### Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?
 - `dl`-only would only protect fresh cargo resolution, tools that don't understand `withdrawn`
 would resolve anyway. Also it's an extra layer of protection against stale cache risks. With `dl`-only,
