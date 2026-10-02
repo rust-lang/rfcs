@@ -238,11 +238,6 @@ The exact algorithm is deferred to whatever the default target `C` compiler does
 
 If any bugs are found (i.e. differences between the target C compiler's layout/ABI and `repr(C)`) then the Rust team reserves the right to change the behavior of `repr(C)` to conform with the target C compiler.
 
-If a `repr(C#editionNext)` type has an (potentially) unsized tail then the following restrictions are in place since `C` doesn't have trait objects.
-* If has a generic `T: ?Sized` tail, then coercions from `Foo<T>` to `Foo<dyn T>` will not compile
-    * Note: This allows rust compilers to give `Foo<dyn T>` an arbitrary layout, since it is impossible to soundly construct a value of this type. (and avoids post-mono errors)
-* The unsized tail cannot be a concrete trait object
-
 ### Flexible Array Members
 
 Given that all major `C` compilers (at the time of writing) put `T field[N];` and `T field[];` at the same offset.
@@ -298,10 +293,13 @@ Currently, all known `C` compiler put array members and flexible array members a
 
 ### Trait objects
 
-If field of a `repr(C#editionNext)` has the type of a trait object, then the layout of the type is unspecified. If this came from a generic instantiation, then coercions form a concrete type to the trait object are disabled. For example
-* you could not derive `Coercable<i32>: Unsize<Coercable<dyn Debug>>`
-* you could not cast from `*const Coercable<i32>` to `*const Coercable<dyn Debug>`
-* the layout of `Coercable<dyn Debug>` is unspecified
+If field of a `repr(C#editionNext)` has the type of a trait object, then the layout of the type is unspecified.
+If this came from a generic instantiation, then coercions form a concrete type to the trait object are disabled.
+For example
+* You cannot derive `Coercable<i32>: Unsize<Coercable<dyn Debug>>`
+* You cannot cast from `*const Coercable<i32>` to `*const Coercable<dyn Debug>`
+* `<Coercable<dyn T> as core::ptr::Pointee>::Metadata` is an uninhabited type
+* The layout of `Coercable<dyn Debug>` is unspecified
 
 ```rust
 #[repr(C#editionNext)]
@@ -321,7 +319,7 @@ struct BadReprC {
 }
 ```
 
-Note: the layout is unspecified to avoid adding a new post-mono error. By making the coercion impossible, it becomes impossible to safely construct a valid pointer to a `*const Coercable<dyn Debug>`. When using `feature(ptr_metadata)`, it may be possible to construct a pointer to `*const Coercable<dyn Debug>` using `core::ptr::from_raw_parts`, but it is not safe to use.
+Note: the layout is unspecified to avoid adding a new post-mono error.
 
 ## `repr(C)`
 
