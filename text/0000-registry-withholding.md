@@ -159,8 +159,8 @@ so routine holds don't break releases.
 
 Meanwhile, an upload that is marked as `quarantined` or `withdrawn`, or depends on a quarantined/withdrawn version,
 is treated as a failure. Cargo skips the upload ahead of time when a dependency is already known to be quarantined or
-withdrawn. In the case of an upload returning a quarantine or withdrawal, Cargo will stop publishing further crates,
-emit an error, and exit with a failure code.
+withdrawn. When encountering a quarantined or withdrawn upload result or dependency, Cargo will stop publishing 
+further crates, emit an error, and exit with a failure code.
 
 Timeout handling is unchanged: If Cargo times out while waiting on a crate to upload that has subsequent
 uploads depending on it, it errors and exits as a failure. If it times out on a crate with no dependents, it warns
@@ -316,6 +316,20 @@ GET https://static.crates.io/withheld/base64squatter/1.0.0/download
   <.crate bytes>
 ```
 
+If withheld bytes are requested from a registry that does not advertise `dl-withheld`, Cargo provides
+a clear error:
+```
+    Updating crates.io index
+note: admitting quarantined dependency a v1.2.3 via `--fetch-withheld`
+error: failed to download `a v1.2.3`
+
+Caused by:
+  registry `crates-io` does not advertise `dl-withheld` in its config.json, so withheld bytes cannot be fetched
+  |
+  = note: a v1.2.3 is quarantined and is not served from the registry's `dl` endpoint
+  = help: for more information see https://crates.io/crates/a/1.2.3
+```
+
 Registries SHOULD offer useful error messages if a download is requested
 via a `dl` endpoint for bytes that are withheld, for instance (as shown
 by Cargo):
@@ -334,6 +348,7 @@ in these error messages to avoid misuse of the security researcher and maintaine
 paths. Instead, they SHOULD point to either crate-specific information, which MAY contain
 the reason for the quarantine, or else general information on the withheld status such
 as the registry specification.
+
 
 Related:
 - Rationale: Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?
@@ -583,22 +598,31 @@ Related:
 
 #### Publishing crates that might become withheld at publish-time or have withheld dependencies
 
-`cargo publish` reports withheld results in a way that clearly captures their state for the user, in both a single
+`cargo publish` reports and acts on withheld results, in both a single
 invocation (`cargo publish --workspace`) and across separate invocations (such as `release-plz`'s planner).
 
-The resulting default behavior depends on the kind of withholding:
-- A crate whose upload results in `unreleased`, or depends on an `unreleased` version, is successfully published, reported with a `note:`, and the invocation continues with an eventual 0 exit.
-Routine holds MUST NOT fail a release train by default.
+After each upload, `cargo publish` keeps polling the index until the version's line
+is found. The poll now reports the line's `IndexSummary` variant (to capture `IndexSummary::Withheld(..)`
+status) rather than only confirming existence. The status line reads `Found unreleased a v1.2.3` (or quarantined, withdrawn) in place of `Published`.
+
+If a `withheld` result is encountered, the default behavior depends on the kind of withholding:
+- A crate whose upload results in `unreleased`, or depends on an `unreleased` version, is treated as a success: Cargo 
+reports it a `note:`, and the invocation continues with an eventual 0 exit.
 - A crate whose upload results in `quarantined` or `withdrawn` fails the invocation: Cargo reports an `error:`,
 publishes nothing further, and exits non-zero. A crate that depends on a `quarantined`
-or `withdrawn` version is not uploaded at all. Already-uploaded crates are left in place. The non-zero exit indicates
+or `withdrawn` version is skipped before upload. Already-uploaded crates are left in place. The non-zero exit indicates
 failure but not a rollback.
-- Poll timeouts keep their existing behavior.
+- Poll timeouts keep their existing behavior. A version with no index line is treated as not yet available. This RFC
+does not define a hold that writes no line (see "Future possibilities: Delayed indexing").
 
 In the above cases, "depends on a <status> version" means that either a sibling publish in a workspace invocation
 returned that status, or a dependency was admitted via `--fetch-withheld`.
 
-Two additional flags change the above defaults and are described below under "Publish flags".
+Two flags change the above defaults and are described below under "Publish flags".
+
+See also:
+- Drawbacks: A quarantine can break a release train
+- Rationale: Why is the publish default different per type of withholding?
 
 ##### Publish flags
 
@@ -653,70 +677,70 @@ warning: b v1.2.3 is published and installable, but depends on quarantined a v1.
 "Fetching withheld bytes...", but does not change policies around skipping uploads or halting. This is primarily needed
 in the case of separate `cargo publish` invocations (see "Separate `cargo publish` invocations").
 
-Related:
-- Drawbacks: A quarantine can break a release train
-- Rationale: Why is the publish default different per type of withholding?
-
-##### Polling for status
-
-<modify to explain quarantine exiting>
-
-Cargo publish polls for status after each crate that it publishes. This takes the form of looking for the index summary
-line for that version. Withheld crates will show up on this line, so suits our needs if we pass their status through.
-
-When the poll sees the release's index line with `"withheld": "unreleased""quarantined"|"withdrawn"`, `cargo publish`
-prints `Found quarantined ...` (or `Found withdrawn ...`) in place of `Published`, followed by a warning
-similar to the resolve-time error, and continues on to remaining crates.
-
-In the underlying poll logic, this will require two small changes:
-- `poll_one_package()` should pass through which `IndexSummary` variant it sees rather than only confirming existence
-- `RegistrySource::query` should pass through `IndexSummary::Quarantined/Withdrawn` to the callback similar to `Yanked`
-
-We do not currently cover the case where a registry opts not to publish an index entry at all until some extra
-review gate is passed. All our current behaviors assume an explicit marker (eg, `quarantined`) is set in the index
-entry. Prior to introducing any such behavior to crates.io in a subsequent release, we would also improve the poll
-workflow to handle such cases clearly. <need to move this mostly into future possibilities>
-
 ##### Workspace publish
 
-The workspace publishing case is straightforward and needs no special handling. For workspace publishing, 
-the `cargo publish` `build_lock` and verify build runs in an ephemeral workspace whose dependencies resolve from the 
-registry, but with a `TmpRegistry` local overlay of the freshly packaged crates layered on top. The overlay is used to 
-resolve publication-time siblings via name + version prior to checking upstream. This means that a sibling that is 
-quarantined upstream is transparently resolved from the overlay during the verify build. This applies regardless of 
-whether the sibling dependency was based on `path` or regular versions, since anyway the verify build converts path 
-declarations to concrete versions. 
+In a workspace publish, the lockfile generation and verify builds run in an ephemeral workspace. Published crates'
+dependencies resolve from the registry, but with freshly packaged siblings layered on top and preferred over registry
+dependencies. This means that, for siblings, resolution doesn't consult the registry, so the sibling is resolvable 
+without `--fetch-withheld`.
 
-<modify to explain quarantine exiting>
+This RFC adjusts existing workspace publish behavior by passing the withheld status of any published sibling 
+for user-facing notes (or aborting on `quarantined`/`withheld`). The following demonstrates for an `unreleased` 
+sibling, but a `quarantined` sibling along with `--continue-on-quarantined` behaves similarly:
 
-<explain that we check during the plan loop rather than relying on a build failure so we can halt on workspace
-siblings that use the local overlay>
-
-
-Dependency found `quarantined` in the same invocation (exit 101):
 ```
+   Packaging a v1.2.3 (/home/user/ws/a)
+    Packaged 6 files, 12.3KiB (4.1KiB compressed)
+   Verifying a v1.2.3 (/home/user/ws/a)
+   Compiling a v1.2.3 (/home/user/ws/target/package/a-1.2.3)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.02s
+   Uploading a v1.2.3 (/home/user/ws/a)
     Uploaded a v1.2.3 to registry `crates-io`
 note: waiting for a v1.2.3 to be available at registry `crates-io`
-       Found quarantined a v1.2.3 at registry `crates-io`
-error: a v1.2.3 was quarantined by registry `crates-io` after upload
+help: you may press ctrl-c to skip waiting; the crate should be available shortly
+       Found unreleased a v1.2.3 at registry `crates-io`
+note: a v1.2.3 was accepted by registry `crates-io` and is awaiting release; it is not yet installable
   |
-  = note: the upload succeeded; a v1.2.3 remains on the registry in quarantined state and is not installable
-  = note: not publishing remaining crates: b v1.2.3
+  = help: for more information see https://crates.io/crates/a/1.2.3
+   Packaging b v1.2.3 (/home/user/ws/b)
+    Packaged 5 files, 9.8KiB (3.2KiB compressed)
+   Verifying b v1.2.3 (/home/user/ws/b)
+   Compiling a v1.2.3
+   Compiling b v1.2.3 (/home/user/ws/target/package/b-1.2.3)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.41s
+   Uploading b v1.2.3 (/home/user/ws/b)
+    Uploaded b v1.2.3 to registry `crates-io`
+note: waiting for b v1.2.3 to be available at registry `crates-io`
+   Published b v1.2.3 at registry `crates-io`
+note: b v1.2.3 depends on unreleased a v1.2.3
+  |
+  = note: consumers will resolve `a = "^1.2"` to another published version until a v1.2.3 is released
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
+
+A workspace publish is not directly resumable. `cargo publish --workspace` will fail if it encounters an already published workspace sibling (regardless of withholding status). Instead, partial workspace publishes can be rerun
+by specific `cargo publish -p a -p b` to specify which packages to include in the overlay. Packages not specified
+are left out of the overlay and resolved from the registry (where they may be `withheld`).
+
+This means that, if a workspace publish needs to be resumed when it has already published a crate that is withheld,
+the rerun needs `--fetch-withheld a@1.2.3`. This is discussed further in "Separate `cargo publish` invocations".
+
+Related:
+- Future possibilities: Resuming a workspace publish
 
 ##### Separate `cargo publish` invocations
 
-We have a harder time if crates are published in separate invocations. For instance, `release-plz` computes its
-own publish ordering and invokes `cargo publish` once per crate. This means that we do not have the shared
-local overlay with sibling crates. Instead, both the packaging step (which generates the tarball's `Cargo.lock`) 
-and verify build runs a fresh resolve against the real upstream index. So, withheld siblings will break this workflow
-by default.
+Separate invocations have no shared overlay that resolves sibling crates locally. For instance, `release-plz` computes 
+its own publish ordering and invokes `cargo publish` once per crate. This means that both the packaging step (which 
+generates the tarball's `Cargo.lock`) and verify build run a fresh resolve against the real upstream index. So, 
+witha held sibling fails resolution with a status-aware error.
 
-Instead, if the publisher is confident of the withheld upload's provenance, they can use the `cargo publish  --fetch-withheld`
-flag to allow usage of a withheld dependency.
+If the publisher knows that the withheld version is their upload, `cargo publish --fetch-withheld a@1.2.3`
+admits it into resolution and fetches its bytes from `dl-withheld`. The publish default then applies to the admitted
+dependency: `unreleased` is a `note:` and the upload continues, `quarantined` or `withdrawn` is an error and the upload
+is skipped unless `--continue-on-quarantined` is also passed.
 
-Example: dependency found `unreleased`, admitted via `--fetch-withheld a@1.2.3` (continue; exit 0):
+Dependency found unreleased, admitted via `--fetch-withheld a@1.2.3` (continues, exit 0)
 ```
     Updating crates.io index
    Packaging b v1.2.3 (/home/user/ws/b)
@@ -732,115 +756,73 @@ note: admitting unreleased dependency a v1.2.3 via `--fetch-withheld`
 note: waiting for b v1.2.3 to be available at registry `crates-io`
 help: you may press ctrl-c to skip waiting; the crate should be available shortly
    Published b v1.2.3 at registry `crates-io`
-note: b v1.2.3 was built against unreleased a v1.2.3
+note: b v1.2.3 depends on unreleased a v1.2.3
   |
   = note: consumers will resolve `a = "^1.2"` to another published version until a v1.2.3 is released
   = help: for more information see https://crates.io/crates/a/1.2.3
 ```
 
+This requires the registry to advertise `dl-withheld`. Without it, the only local path available is a workspace
+publish including the sibling. (See: "Fetching withheld bytes with `--fetch-withheld`")
 
 ###### release-plz 
 
-<needs discussion of quarantine-related stopping, passing through the publish flags to change semantics>
+Note: `release-plz` is not a Rust Project tool and its changes are not approved by its RFC. This discussion
+shows that the publish behavior above is sufficient for `release-plz`-style workflows. Specific changes will be worked
+out with `release-plz` maintainers in its own respository. The work is nonetheless tracked as part of this
+RFC's implementation, since `release-plz` support is a prerequisite for crates.io adopting withholding in a
+subsequent RFC.
 
-Note: `release-plz` is not a RustLang project and its changes do not require approval in this RFC. This discussion
-is provided primarily for explanatory purposes to show that there are solutions available for `release-plz`-like 
-use-cases. Specific approaches will be discussing with maintainers via issue/PR in the `release-plz` repository.
-This will still be tracked as work in scope for this RFC's implementation, since we take `release-plz` support as a
-pre-requisite for subsequent work on crates.io adding quarantine actions (in a subsequent RFC).
+`release-plz` computes a publish plan and runs `cargo publish` once per crate. With the defaults described above,
+it needs two changes:
 
-`release-plz` wants to ensure that we pass `cargo publish --fetch-withheld ...` for all local dependencies
-that we are guaranteed to have directly published in a preceding step, that did not land in the quarantine status. This includes:
-- A single uninterrupted invocation that publishes a series of crates over multiple `cargo publish` invocations without collisions
-- A re-run of a previous workflow that was interrupted after publishing a crate successfully (that was then quarantined), IF we can prove that the uploaded release came from our own usage
+First, it must support passing `--fail-on-unavailable` and `--continue-on-quarantined` through to publish invocations
+when the user configures them.
 
-Underneath the hood, `release-plz` first checks for existence of all local versions via git tags and crates.io lookups.
-If non-existent, we know we need to publish them, and can include the corresponding `--fetch-withheld` commands in each
-subsequent step if we didn't see a collision on publish.
+Second, it must pass `--fetch-withheld` for siblings it published. Each subsequent `cargo publish` in an invocation
+must be able to resolve siblings published in an earlier step, which may be `unreleased` (or `quarantined` in the
+case of `--continue-on-quarantined`). `release-plz` already determines, during its planning phase, which local
+versions exist in the registry (using git tags and registry checks). For a version it expects to publish in a given
+run, it records the coordinate and passes `--fetch-withheld name@version` to subsequent `cargo publish` invocations
+that depend on it. This addresses a single, uninterrupted run.
 
-If existent, we don't have a guarantee that we were the ones tha published the given release, today. We can adopt
-a layered approach to help with this:
-1. If the index status is not `quarantined` (via `cargo info`), then no `--fetch-withheld` is needed; skip it.
-<cargo info is no longer the mechanism, need to fix this to refer to just checking the sparse index>
-2. `release-plz` already checks for git tags as the first step of existence checks (`chore: Release package foo version 1.0.0`).
-We can treat presence of such a tag as provenance to allow us to include `--fetch-withheld foo@1.0.0`. If a malicious 
-actor is pushing arbitrary git tags up to a release-plz-managed repository, we have larger problems than worrying about
-building withheld bytes during verify builds.
+For a version that already exists, such as due to a re-run after an interruption, `release-plz`'s existing registry
+check sees the `withheld` field. If the version is not `withheld`, no special handling is needed. If it is is 
+`withheld`, `release-plz` needs evidence that this version is its own upload before passing `--fetch-withheld`. It uses
+the release tag that `release-plz` creates for every publish (`chore: Release package foo version 1.0.0`). A
+forged tag is only possible if somebody can push arbitrary tags to the repository, in which case, building
+withheld bytes in a verify step is not the largest problem.
 
-We could imagine further fallbacks for already-existing crates when release-plz doesn't have git tags enabled, such as 
-manually regenerating and hashing tarballs and  comparing them to registry-side checksums. But, things get pretty nasty 
-with reproducibility - do we unpack the withheld  bytes to get the `Cargo.lock` (if our dependencies changed) and
-`.vcs_info.json` (if our git HEAD changed)? Are we resilient to cargo changing underneath us? For now, I suggest that 
-we punt on this to be handled until we have evidence of broader impact.
-
-In the meantime, `release-plz` can document steps for manually generating git tags to overcome edge cases around
-out-of-band releases encountering quarantines that come from trusted sources.
-
-Example with dependency found `unreleased`, admitted via `--fetch-withheld` (continue; exit 0):
-```
-    Updating crates.io index
-   Packaging b v1.2.3 (/home/user/ws/b)
-note: admitting unreleased dependency a v1.2.3 via `--fetch-withheld`
-    Packaged 5 files, 9.8KiB (3.2KiB compressed)
-   Verifying b v1.2.3 (/home/user/ws/b)
-  Downloaded a v1.2.3 (unreleased)
-   Compiling a v1.2.3
-   Compiling b v1.2.3 (/home/user/ws/target/package/b-1.2.3)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.41s
-   Uploading b v1.2.3 (/home/user/ws/b)
-    Uploaded b v1.2.3 to registry `crates-io`
-note: waiting for b v1.2.3 to be available at registry `crates-io`
-help: you may press ctrl-c to skip waiting; the crate should be available shortly
-   Published b v1.2.3 at registry `crates-io`
-note: b v1.2.3 was built against unreleased a v1.2.3
-  |
-  = note: consumers will resolve `a = "^1.2"` to another published version until a v1.2.3 is released
-  = help: for more information see https://crates.io/crates/a/1.2.3
-```
-
-
-###### Other multi-publish-invocation build tools
-
-Maintainers doing equivalent multi-crate publishes with separate `cargo publish` invocations will hit similar issues,
-without the out-of-box fix we propose for `release-plz`. To help with this, `cargo publish` SHOULD, on verify build
-failure, in addition to the standard quarantined-status-related errors, print helper output pointing to a section of the
-[publishing docs](https://doc.rust-lang.org/cargo/reference/publishing.html) covering how to work around publishing
-errors. That should include the option of passing in the `--fetch-withheld` option.
-The `--fetch-withheld` option should be heavily caveated that it should only be used for trusted, publisher-controlled
-inputs, such as a version that the same script successfully published beforehand.
+Repositories that disable release tags do not have this evidence. Alternatives are available, such as repackaging
+and comparing checksums, but they are fragile due to variance in `Cargo.lock` and `.cargo_vcs_info.json` as the
+dependency graph and commits change. This will not be pursued unless there is sign of need. In the interim,
+`release-plz` can document creating such a tag manually to recover from failed releases.
 
 ### docs.rs impact
 
-For this RFC, we restrict docs.rs to only refraining from building docs for quarantined/withdrawn crates, and instead
-displaying a status tag. If the state transitions from quarantined to published, we can trigger a build and remove the tag.
+docs.rs does not build withheld versions. The related changes are:
+1. `crates-index-diff`, `docs_rs_crates_io`, and the pending crates.io event feed (([crates.io#14188](https://github.com/rust-lang/crates.io/pull/14188)))
+expose the `withheld` field along with `yanked`.
+2. On seeing a version with `withheld` set, docs.rs skips the version's build and records its withheld status.
+3. The version's page shows a status badge naming its state and linking to the registry's `notice-page` if one is
+advertised. Documentation already built before the version was withheld stays online below the badge for `unreleased`
+and `quarantined`. For `withdrawn`, it is removed, leaving only the badge.
+4. On seeing the `withheld` field remove, docs.rs queues a build if the version does not already have built
+documentation and removes the badge.
 
-<the way it re-resolves lockfiles>
+docs.rs's pre-existing behavior handles cases with dependents of withheld versions, providing an alternative
+non-withheld version satisfies its dependency constraints. For crates without a bundled `Cargo.lock`, docs.rs
+resolves fresh at build time, skipping withheld versions in favor of another compatible version. For a crate with
+a bundled `Cargo.lock` that pins a withheld version, the first build attempt fails. docs.rs then deletes the lockfile,
+regenerates it, and retries the build once.
 
-This does leave a hole: what if resolution fails because a crate exclusively resolves to another quarantined crate? For the
-purposes of this RFC, we can leave this out of scope. This would primarily be a problem for quarantined-at-the-point-of-publish
-registry behaviors, since then we need a way to trigger transitive rebuilds when the dependents transition to published.
-We should scope the distributed systems work to support these actual state transitions on docs.rs side into the RFC adding such behavior to crates.io.
+This means that a dependent only fails if no compatible non-withheld version exists. That failure is recorded
+as an ordinary build failure. docs.rs does not re-queue a failed dependent when the withheld version is later released,
+or a newer compatible version is published. This is not specific to withholding is left for a subsequent RFC. In the
+interim, publishers can manually trigger doc rebuilds via docs.rs's console.
 
-That said, theoretical solutions do exist for this, for instance: docs.rs internally tracks build-time resolution failures due to 
-quarantined dependencies and triggers rebuild if that dependency transitions to published. Alternatives exist on the crates.io
-side as well, though I am nervous about adding the cost of reverse dependency walking across a possibly huge corpus of
-dependents. There also are some fun bidirectional options where docs.rs identifies reverse dependency breakage, but
-signals it to crates.io so that it can enrich its user-facing displays on those broken crates.
-
-Regardless, the important piece here is that this is fundamentally not a build-tool or registry-publish-API side problem,
-because state transitions happen out of band with publication. More discussion of this is in the Rationale/alternatives
-section that follows.
-
-To summarize:
-1. Add support for `status` in `crates-index-diff`, `docs_rs_crates_io`, and the pending `crates.io`-event-based-sending ([#14188](https://github.com/rust-lang/crates.io/pull/14188))
-2. On docs.rs, skip building when a crate is seen with `status: "quarantined"/"withdrawn"`
-3. On docs.rs, when a crate is seen with `status: "quarantined"/"withdrawn"`, add a tag marking it as such and pointing to crates.io
-4. On docs.rs, on seeing a status transition to `published`, trigger a build if one has not already run, and remove the status tag
-5. On docs.rs, if a build fails to resolve due to quarantined dependencies, do nothing special (for now) and wait to address this use case until a subsequent RFC that implements "quarantine-at-point-of-publish" support to crates.io
-
-See also:
-- Future possibilities: docs.rs triggering reverse dependency re-processing based on withholding changes
-
+Related:
+- Future possibilities: Re-processing failed docs.rs builds when a dependency becomes available
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -1152,13 +1134,13 @@ preferable to risking naive users installing quarantined bytes.
 [unresolved-questions]: #unresolved-questions
 
 ### To resolve before merge
-- Should we supported `unreleased` in the index or scope it out entirely and require that registries only handle
-unreleased via delayed indexing + deeper changes to allow retrieving index summaries for multi-invocation publishes?
-- The default publish behaviors for unreleased vs quarantined, and the naming of the flags. For this, we also will
-want input from `release-plz`'s maintainer. 
+- That we are happy with the proposed default publish behaviors for unreleased vs quarantined, and the naming of the 
+flags. For this, we also will want input from `release-plz`'s maintainer. 
 - If we actually want `--fetch-withheld` on `cargo build` and `cargo install` (for forensic build usage) or only
 `cargo fetch` and `cargo publish`
 - Whether we should make `cargo_util_schemas::index::IndexPackage` `#[non_exhaustive]` while we are bumping semver anyway
+- Whether we should scope in implementation of an indemnipotent workspace publish (see Future possibilities: 
+Resuming a workspace publish)
 
 ### To resolve during implementation
 - Exact errors and prose notes, documentation notes, documentation URLs
@@ -1181,12 +1163,14 @@ support but deferring index representation to be discussed together with yanked.
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-docs.rs triggering reverse dependency re-processing based on withholding changes:
-- Primarily affects docs.rs; we trigger fresh builds when we encounter a newly released version, but not its
-dependents, which might also break.
+Re-processing failed docs.rs builds when a dependency becomes available
+- This issue affects any crate that is published with no successful resolver solution available, withheld
+dependencies or otherwise
+- In this case, the version's docs will fail to build, fail its retry, and then never try again unless manually triggered by the user
 - Docs.rs could store a mapping of which builds broke due to resolving only to withheld dependencies, and re-trigger
-those builds if that depndency is released or publishes a newer compatible version
-- We can explore this in a RFC that adds crates.io publish-time holds
+those builds if that dependency is released from withholding, is unyanked, or publishes a newer compatible version
+- We can explore this in a RFC that adds crates.io publish-time holds as that will introduce new impact for this
+problem
 
 Delayed indexing for unreleased
 - A good middle ground to avoid index thrash might be only publishing to the sparse index but not the git index
@@ -1194,7 +1178,6 @@ Delayed indexing for unreleased
 or else we break separate publish invocations
 - Any such change will need to consider security researchers, such as exposing an event feed for withheld crates
 - Alternatives are discussed at greater length in "Rationale: Why write withheld releases to the index?"
-
 
 Author-managed staging
 - https://internals.rust-lang.org/t/pre-rfc-package-staging/20459
@@ -1250,3 +1233,15 @@ a great idea by @joshtriplett!
 targeted in ways that raise risk (for instance: another language's registry was just compromised).
 - We can consider it alongside publish-time checks in a future RFC.
 
+Resuming a workspace publish
+- `cargo publish --workspace` will fail if it encounters an already published workspace sibling (regardless
+of withholding status), so a partial workspace publish cannot be rerun as-is
+- A publisher can rerun the workspace publish with `-p` to specify remaining packages and exclude others from the
+the local overlay. But, that resolves other packages from the registry, where they may be withheld.
+- This is a worse experience in the case of withholding since you then need `cargo publish -p b --fetch-withheld a@1.0.0`
+- The overlay currently shadows an upstream version of the same `name@version` ([#14789](https://github.com/rust-lang/cargo/issues/14789), fixed for `--dry-run` at risk of local bytes drifting from uploaded bytes)
+- Skipping already-published members while keeping them in the overlay would work with withheld siblings with no 
+further support
+- This is requested in [#13397](https://github.com/rust-lang/cargo/issues/13397) as `--indemnipotent`. It is
+indpendent of withholding but could be implemented alongside this RFC if the team desires; otherwise it remains
+future work.
