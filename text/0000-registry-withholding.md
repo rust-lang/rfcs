@@ -304,15 +304,15 @@ PyPI's quarantine and npm's publish-time scanning both remove
 or never write a line. For a version that someone has already locked,
 omission produces confusing resolution failures with no indication of why.
 This is indistinguishable from a version that never existed. Both registries
-have seen [many complaints](https://github.com/orgs/community/discussions/203413)
-for this. PyPI has since added status markers.
+have [seen complaints](https://github.com/orgs/community/discussions/203413)
+for this. PyPI has since added status markers, and npm plans to.
 
 Writing the line lets Cargo explain the status, point at `notice-page`, and give
-guidance to the user (such as `cargo update`). It lets older Cargo fall
+guidance to the user (such as `cargo update`). It still lets older Cargo fall
 back to yanked behavior that avoids resolving to the unfetchable version. It also lets
 us set `withdrawn` tombstones that transparently reserves coordinates, unlike omission.
 
-This also fits the values of the project around transparency and
+This fits the values of the project around transparency and
 accountability. If we are making it easier for administrators to take new
 curation actions on the index, we want transparency logs and auditability.
 Showing the withheld coordinates also makes it possible for researches to
@@ -323,10 +323,12 @@ But they add significant complexity to our systems while producing
 worse consumer-side experiences (new build-tool network calls, or else opaque
 errors).
 
-The cost of this is breaking the invariant that each indexed version is downloadable.
-We accept it because the registry can handle both sides, the index and the 404 body.
-The failure is always explained, and we can nudge unaware tools in a good direction
-by setting `yanked: true`.
+The cost of this decision is breaking the invariant that each indexed version is downloadable.
+We accept it because the registry can smooth consumer experience on both sides (the index and the 404 body).
+We always give an explanation where this causes a failure. We can still nudge unaware tools in a
+good direction by setting `yanked: true`. The worst case (mirrors that fetch every single line
+and loudly fail on missing bytes) still continue to new lines and can trivially add logic to skip
+fetching `withheld` lines.
 
 Whether `unreleased` versions (held with no misuse implied) should have a similar
 treatment is deferred to a subsequent RFC as they have different tradeoffs and
