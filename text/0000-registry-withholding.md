@@ -132,8 +132,8 @@ released.
     // [..]
     // Example: 2025-11-12T19:30:12Z
     //
-    // This should be the time the package version first became installable,
-    // and not changed on any later status change, like `yanked` or `withheld`.
+    // This should be the time the package version first became installable.
+    // It is not changed on any later status changes, like `yanked` or `withheld`.
     // A package version that is withheld on arrival has no `pubtime` until
     // it is released.
     "pubtime": "2025-11-12T19:30:12Z"
