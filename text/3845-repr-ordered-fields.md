@@ -723,7 +723,6 @@ See Rationale and Alternatives as well
 * ~~Should this `repr` be versioned?~~
     * This way we can evolve the repr (for example, by adding new niches)
     * no need to for now, this can be done as a future proposal
-* Should a generic `repr(C#editionNext)` struct instantiated with a trait object as it's trailing field be a post-mono error?
 * Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033 or some other later edition? Yes, it's a breaking change. But at that point, it will likely only be breaking code no one uses.
     * Leaning towards no
 * ~~Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?~~ Not in this RFC
@@ -742,6 +741,9 @@ See Rationale and Alternatives as well
     * Universal - any target where C compiler which doesn't provide the necessary behavior is non-compliant, use at your own risk
     * Target-specific - on targets where C compiler which doesn't provide the necessary behavior, we simply don't allow the coercions outlined in the FAM section
     * Op-in - users have to opt-in to the guarantees, and will not compile on targets which don't support the coercions
+* Should we have a post-mono error for over-aligned types in `repr(C#nextEdition, packed)` types?
+    * The alternative is to leave the layout of such types unspecified
+    * This cannot reliably be a pre-mono error because of generic `repr(C#nextEdition, packed)` types
 * What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
 * The name of the new repr `repr(ordered_fields)` is a mouthful (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
     * `repr(linear)`
