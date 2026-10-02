@@ -65,7 +65,7 @@ possible.
 - The actual mechanism that crates.io will use to manage lifecycle transitions to/from quarantined, unreleased, and withdrawn statuses.
 - crates.io mechanisms for surfacing quarantined/unreleased/withdrawn status in its web frontend or web API
 - Systems for proactively "holding" releases for review at publish-time or supporting author-driven staging
-(More discussion in "Unresolved questions" and "Future possibilities")
+(More discussion in [Unresolved questions](#unresolved-questions) and "Future possibilities")
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -114,10 +114,10 @@ security researchers and publishers (see below).
 
 Older versions of Cargo, and other tools that do not yet understand `withheld`, still avoid withheld versions due to
 registries setting these entries as yanked. If the tools attempt to request withheld bytes anyway, for instance due
-to a lockfile pin, they fail with a helpful not-found message from the registry (see "Serving withheld bytes").
+to a lockfile pin, they fail with a helpful not-found message from the registry (see [Serving withheld bytes with `dl-withheld`](#serving-withheld-bytes-with-dl-withheld)).
 
 One gap remains for all Cargo versions: if both the index file and the crate bytes were cached before a version was 
-withheld, builds keep using the cached copy until something refreshes the index (see "Stale-cache risks").
+withheld, builds keep using the cached copy until something refreshes the index (see [Stale-cache risks](#stale-cache-risks)).
 
 ### Registry handling
 
@@ -221,8 +221,7 @@ A `withdrawn` version keeps its badge permanently and its documentation is remov
 
 Dependents whose builds fail because they resolve solely to withheld versions are handled as if they are ordinary
 build failures. docs.rs already triggers fresh resolution on failure, so the docs will only fail to build if no other
-compatible version exists. Further improvements are discussed in "Future possibilities: docs.rs triggering reverse 
-dependency re-processing based on withholding changes".
+compatible version exists. Further improvements are discussed in Future possibilities: [Re-processing failed docs.rs builds when a dependency becomes available](#re-processing-failed-docsrs-builds-when-a-dependency-becomes-available).
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -245,7 +244,7 @@ a `withheld` entry is equivalent to being published with no withholding.
 
 Presence of `withheld` means that the version is not installable. Registries MUST NOT use `withheld` for informational
 annotations (deprecation, curation status, etc). Every line carrying `withheld` MUST also carry `yanked: true` (see 
-"Managing withheld status transitions").
+[Managing withheld status transitions](#managing-withheld-status-transitions)).
 
 Definitions:
 - `unreleased`: an entry that was submitted to the registry via a publish API, but has not yet been made
@@ -265,15 +264,14 @@ are uninstallable and `quarantined` is the strictest handling that is generally 
 a warning naming the unknown value but MUST handle it as if the release was `quarantined`.
 
 A withheld-status-aware build tool MUST NOT resolve withheld versions regardless of yanked status, including when the
-version is present in a lockfile, unless explicitly directed to (see "Fetching withheld bytes...").
+version is present in a lockfile, unless explicitly directed to (see [Fetching withheld bytes with `--fetch-withheld`](#fetching-withheld-bytes-with---fetch-withheld)).
 
 Related:
-- Drawbacks: A second mutable index field
-- Rationale: Why no index protocol bump?
-- Rationale: Why `withheld` status instead of (further) overloading `yanked`?
-- Rationale: Why are withheld statuses public?
-- Rationale: Why is `withheld` blocking-only?
-- Future possibilities: Delayed indexing
+- Drawbacks: [A second mutable index field](#a-second-mutable-index-field)
+- Rationale: [Why no index protocol bump?](#why-no-index-protocol-bump)
+- Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
+- Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index)
+- Future possibilities: [Delayed indexing for unreleased](#delayed-indexing-for-unreleased)
 
 ### Registry handling
 
@@ -349,14 +347,13 @@ paths. Instead, they SHOULD point to either crate-specific information, which MA
 the reason for the quarantine, or else general information on the withheld status such
 as the registry specification.
 
-
 Related:
-- Rationale: Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?
-- Rationale: Why do errors never include a bypass command?
-- Rationale: Why is dl-withheld as open as dl? 
-- Prior art: Researcher access in other ecosystems
-- Future possibilities: Author-managed staging
-- Future possibilities: Delayed indexing
+- Rationale: [Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?](#why-a-separate-dl-withheld-path-rather-than-serving-withheld-bytes-from-dl)
+- Rationale: [Why do errors never include a bypass command?](#why-do-errors-never-include-a-bypass-command)
+- Rationale: [Why is `dl-withheld` as open as `dl`?](#why-is-dl-withheld-as-open-as-dl)
+- Prior art: [Researcher access in other ecosystems](#researcher-access-in-other-ecosystems)
+- Future possibilities: [Author-managed staging](#author-managed-staging)
+- Future possibilities: [Delayed indexing for unreleased](#delayed-indexing-for-unreleased)
 
 #### Sharing human-facing pages with `notice-page`
 
@@ -387,7 +384,7 @@ resolution errors, `--fetch-withheld` warnings, and publish-time status outputs.
 link is shown. 
 
 Related:
-- Rationale: Why no reason text in the index?
+- Rationale: [Why no reason text in the index?](#why-no-reason-text-in-the-index)
 
 #### Authentication
 
@@ -402,7 +399,7 @@ out of scope. Registries MAY apply throttles or other CDN-layer controls to thes
 `notice-page` is never fetched by Cargo. Instead, it is accessed via the user's browser, so no token authentication is involved.
 
 Related:
-- Rationale: Why is dl-withheld as open as dl? 
+- Rationale: [Why is `dl-withheld` as open as `dl`?](#why-is-dl-withheld-as-open-as-dl)
 
 #### Managing withheld status transitions
 
@@ -425,10 +422,10 @@ SHOULD provide a warning output along with a successful response, indicating tha
 not be reflected during the withholding period.
 
 Related:
-- Drawbacks: A second mutable index field
-- Rationale: Why `withheld` instead of (further) overloading `yanked`?
-- Rationale: Why not `"withheld": "quarantined_and_yanked"`?
-- Rationale: Why no index protocol bump?
+- Drawbacks: [A second mutable index field](#a-second-mutable-index-field)
+- Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
+- Rationale: [Why not `"withheld": "quarantined_and_yanked"`?](#why-not-withheld-quarantined_and_yanked)
+- Rationale: [Why no index protocol bump?](#why-no-index-protocol-bump)
 
 #### Relationship to `pubtime`
 
@@ -448,18 +445,18 @@ this RFC, a withheld line is present in the index but its bytes return 404 via t
 
 This affects tools that fetch bytes for every index line rather than only for versions that a resolver selected, for instance: full byte mirrors like Panamax, caching proxies that eagerly fetch, and docs.rs. Tools that fetch only
 resolver-selected versions, such as `cargo vendor` or regular `cargo build` are unaffected beyond pinned lockfiles
-failures discussed under "Resolution".
+failures discussed under [Resolution](#resolution).
 
 Impacted tools SHOULD either skip index lines with `withheld` present, or fetch withheld bytes from `dl-withheld`
-and serve them under their own `dl-withheld` (see "Impact on verifiable registry mirroring"). Until they do either,
+and serve them under their own `dl-withheld` (see [Impact on verifiable registry mirroring](#impact-on-verifiable-registry-mirroring)). Until they do either,
 they will receive 404s for withheld lines from `dl` and SHOULD treat these 404s as expected rather than a system
-failure. Registries SHOULD serve an informational body on these 404s (see "Serving withheld bytes") to make the cause
+failure. Registries SHOULD serve an informational body on these 404s (see [Serving withheld bytes with `dl-withheld`](#serving-withheld-bytes-with-dl-withheld)) to make the cause
 immediately apparent to a tool that is not aware of the `withheld` field.
 
-docs.rs is the only impacted consumer whose changes are specified by this RFC (see "docs.rs impact").
+docs.rs is the only impacted consumer whose changes are specified by this RFC (see [docs.rs impact](#docsrs-impact)).
 
 Related:
-- Drawbacks: An index line no longer guarantees fetchable bytes
+- Drawbacks: [An index line no longer guarantees fetchable bytes](#an-index-line-no-longer-guarantees-fetchable-bytes)
 
 #### Impact on verifiable registry mirroring
 
@@ -502,9 +499,9 @@ dependencies is withheld, when an older version would have succeeded.
 Failures from a withheld pin are self-healing: if the version is released, the same lockfile builds unchanged.
 
 Related:
-- Rationale: Why `withheld` instead of (further) overloading `yanked`?
-- Drawbacks: Existing lockfiles can break without a local change
-- Future possibilities: Smarter `cargo install --locked` on withheld dependencies
+- Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
+- Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
+- Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
 
 #### Modeling the new withheld field
 
@@ -523,7 +520,7 @@ change because `IndexSummary` is not `#[non_exhaustive]`, but the `cargo` librar
 `0.x` versioned. This change will fit into a regular pre-release version bump.
 
 Related:
-- Rationale: Why no index protocol bump?
+- Rationale: [Why no index protocol bump?](#why-no-index-protocol-bump)
 
 #### Yank and unyank responses
 
@@ -532,7 +529,7 @@ response (`{"ok": true, "warnings": {"other": ["..."]}}`). Cargo renders each en
 `warning:` line, matching its current publish behavior. Registries that return `{"ok": true}` are unaffected.
 
 This is used to surface to the user that an unyank was registered for a withheld version but will not take effect
-until the version is released (see "Managing withheld status transitions").
+until the version is released (see [Managing withheld status transitions](#managing-withheld-status-transitions)).
 
 #### Fetching withheld bytes with `--fetch-withheld`
 
@@ -557,7 +554,7 @@ if the line's withheld marker changed. Under `--offline` or `--frozen`, no refre
 If a withheld version is accessed this way, Cargo adds no special handling to its lockfile. The version and checksum
 are recorded as normal, with no marker that the version was withheld (as the status may change independent of any
 lockfile state). This means that a later build without the `--fetch-withheld` flag will be rejected as described in
-"Resolution". Every invocation that needs withheld bytes must pass the flag.
+[Resolution](#resolution). Every invocation that needs withheld bytes must pass the flag.
 
 Bytes retrieved via fetch from `dl-withheld` are cached under a distinct namespace next to regular entries:
 `registry/cache/<index>/withheld~foo-1.0.0.crate`, unpacking to `registry/src/<index>/withheld~foo-1.0.0`. This
@@ -569,11 +566,11 @@ resolving to newer versions published by external parties, when a publisher is a
 
 `--fetch-withheld` only controls resolution and byte fetching, not publish policy. Whether a publish proceeds upon
 encountering a withheld dependency is governed by default Cargo behaviors and the `--continue-on-quarantined` and
-`--fail-on-unavailable` flags (see "Publishing crates that might become withheld...").
+`--fail-on-unavailable` flags (see [Publishing crates that might become withheld at publish-time or have withheld dependencies](#publishing-crates-that-might-become-withheld-at-publish-time-or-have-withheld-dependencies)).
 
 Related:
-- Rationale: Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?
-- Rationale: Why do errors never include a bypass command?
+- Rationale: [Why a separate `dl-withheld` path rather than serving withheld bytes from `dl`?](#why-a-separate-dl-withheld-path-rather-than-serving-withheld-bytes-from-dl)
+- Rationale: [Why do errors never include a bypass command?](#why-do-errors-never-include-a-bypass-command)
 
 #### Stale-cache risks
 
@@ -593,8 +590,8 @@ Crate bytes admitted via `--fetch-withheld` are stored in the distinct `withheld
 by ordinary builds, so do not add to this exposure.
 
 Related:
-- Drawbacks: Warm caches keep withheld versions buildable
-- Future possibilities: Probing cached crates for withholding
+- Drawbacks: [Warm caches keep withheld versions buildable](#warm-caches-keep-withheld-versions-buildable)
+- Future possibilities: [Probing cached crates for withholding (and yanked state) to avoid stale-cache risks](#probing-cached-crates-for-withholding-and-yanked-state-to-avoid-stale-cache-risks)
 
 #### Publishing crates that might become withheld at publish-time or have withheld dependencies
 
@@ -613,16 +610,16 @@ publishes nothing further, and exits non-zero. A crate that depends on a `quaran
 or `withdrawn` version is skipped before upload. Already-uploaded crates are left in place. The non-zero exit indicates
 failure but not a rollback.
 - Poll timeouts keep their existing behavior. A version with no index line is treated as not yet available. This RFC
-does not define a hold that writes no line (see "Future possibilities: Delayed indexing").
+does not define a hold that writes no line (see Future possibilities: [Delayed indexing for unreleased](#delayed-indexing-for-unreleased)).
 
 In the above cases, "depends on a <status> version" means that either a sibling publish in a workspace invocation
 returned that status, or a dependency was admitted via `--fetch-withheld`.
 
-Two flags change the above defaults and are described below under "Publish flags".
+Two flags change the above defaults and are described below under [Publish flags](#publish-flags).
 
 See also:
-- Drawbacks: A quarantine can break a release train
-- Rationale: Why is the publish default different per type of withholding?
+- Drawbacks: [A quarantine can break a release train](#a-quarantine-can-break-a-release-train)
+- Rationale: [Why is the publish default different per type of withholding?](#why-is-the-publish-default-different-per-type-of-withholding)
 
 ##### Publish flags
 
@@ -674,8 +671,8 @@ warning: b v1.2.3 is published and installable, but depends on quarantined a v1.
 ```
 
 - `--fetch-withheld name@version`: allows resolution and usage of withheld bytes for the build, as described in
-"Fetching withheld bytes...", but does not change policies around skipping uploads or halting. This is primarily needed
-in the case of separate `cargo publish` invocations (see "Separate `cargo publish` invocations").
+[Fetching withheld bytes with `--fetch-withheld`](#fetching-withheld-bytes-with---fetch-withheld), but does not change policies around skipping uploads or halting. This is primarily needed
+in the case of separate `cargo publish` invocations (see [Separate `cargo publish` invocations](#separate-cargo-publish-invocations)).
 
 ##### Workspace publish
 
@@ -723,10 +720,10 @@ by specific `cargo publish -p a -p b` to specify which packages to include in th
 are left out of the overlay and resolved from the registry (where they may be `withheld`).
 
 This means that, if a workspace publish needs to be resumed when it has already published a crate that is withheld,
-the rerun needs `--fetch-withheld a@1.2.3`. This is discussed further in "Separate `cargo publish` invocations".
+the rerun needs `--fetch-withheld a@1.2.3`. This is discussed further in [Separate `cargo publish` invocations](#separate-cargo-publish-invocations).
 
 Related:
-- Future possibilities: Resuming a workspace publish
+- Future possibilities: [Resuming a workspace publish](#resuming-a-workspace-publish)
 
 ##### Separate `cargo publish` invocations
 
@@ -763,7 +760,7 @@ note: b v1.2.3 depends on unreleased a v1.2.3
 ```
 
 This requires the registry to advertise `dl-withheld`. Without it, the only local path available is a workspace
-publish including the sibling. (See: "Fetching withheld bytes with `--fetch-withheld`")
+publish including the sibling. (See: [Fetching withheld bytes with `--fetch-withheld`](#fetching-withheld-bytes-with---fetch-withheld))
 
 ###### release-plz 
 
@@ -822,34 +819,33 @@ or a newer compatible version is published. This is not specific to withholding 
 interim, publishers can manually trigger doc rebuilds via docs.rs's console.
 
 Related:
-- Future possibilities: Re-processing failed docs.rs builds when a dependency becomes available
+- Future possibilities: [Re-processing failed docs.rs builds when a dependency becomes available](#re-processing-failed-docsrs-builds-when-a-dependency-becomes-available)
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-A second mutable index field
+#### A second mutable index field
 - This stinks, but the ship has arguably sailed with yanks, and we lack a good non-line-oriented document to carry
 index metadata without adding in entirely new Cargo fetches
-- The justifications for this downside are discussed in "Rationale: Why write withheld releases to the index?"
+- The justifications for this downside are discussed in Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index)
 
-An index line no longer guarantees fetchable bytes:
+#### An index line no longer guarantees fetchable bytes
 - This is awkward, but we partially mitigate it through useful 404 bodies on failed fetches
 - This is somewhat by design since we want to make clear to consumers *why* locked versions are not reachable (see:
-"Alternatives: Why write withheld releases to the index?")
+Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index))
 
-Current (and in the git index, past) withheld statuses are publicly visible.
-- See "Rationale: Why are withheld statuses public?"
+#### Withheld statuses are publicly visible
+- See Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index)
 
-Existing lockfiles can break without a local change
+#### Existing lockfiles can break without a local change
 - This is especially painful for `cargo install --locked`
-- We can consider improving that situation before adding publish-time holds to crates.io, see "Future possibilities: 
-Smarter cargo install --locked on withheld dependencies"
+- We can consider improving that situation before adding publish-time holds to crates.io, see Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
 
-Warm caches keep withheld versions buildable
-- This is true of any design that doesn't add in cache evictions, which we discuss in "Future possibilities: Probing cached crates for withholding (and yanked state)"
+#### Warm caches keep withheld versions buildable
+- This is true of any design that doesn't add in cache evictions, which we discuss in Future possibilities: [Probing cached crates for withholding (and yanked state) to avoid stale-cache risks](#probing-cached-crates-for-withholding-and-yanked-state-to-avoid-stale-cache-risks)
 
-Quarantine can break release trains
-- Intended, see Why is the publish default different per type of withholding
+#### A quarantine can break a release train
+- Intended, see Rationale: [Why is the publish default different per type of withholding?](#why-is-the-publish-default-different-per-type-of-withholding)
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -983,7 +979,7 @@ enforcement. We could discuss a registry-side `min-publish-age` for crates.io, b
 and contentious, and anyway will need many of the same escape hatches as `withheld` to not break publishers
 or other consumers.
 
-Beyond this, as discussed in "Motivation", `min-publish-age` is concerning because it fails open and thus forces
+Beyond this, as discussed in [Motivation](#motivation), `min-publish-age` is concerning because it fails open and thus forces
 an urgent response to avoid security impact of malicious releases. Defaults that registry administration
 teams might be comfortable with might be fairly long from a user perspective. This is about more than just
 user experience: Extended delays also have security downsides insofar as they also delay security fixes and other 
@@ -996,7 +992,7 @@ supply chain attacks will ever be treated as not-that-urgent.
 
 It's worth mentioning a nice suggestion from @joshtriplett of letting the registry advertise a dynamic
 `min-publish-age` to buy itself time if falling behind on vulnerability reports or thinks it is at heightened
-risk. This is discussed in "Future possibilities: Registry-advertised dynamic `min-publish-age`". I like this
+risk. This is discussed in Future possibilities: [Registry-advertised dynamic `min-publish-age`](#registry-advertised-dynamic-min-publish-age). I like this
 idea, but also do not think it suffices. I'm not sold that it will address the psychological pressures of reactive
 responses. And then the same concerns around any byte availability, and what to do for already-released versions,
 still apply.
@@ -1027,10 +1023,10 @@ behavior of existing fields. This gives us a path to treat `withheld` as compati
 
 The failure mode that we are concerned about is that resolution should skip resolving entries with a withheld
 status, but ignoring that withheld marker might still land on those entries. Bytes will remain unavailable server-side 
-(unless we have a stale cargo cache, which is already treated as out of scope for this feature, discussed under "Stale-cache risks"). But, we do still have a backwards compatibility problem where we might fail to find a resolver solution that would exist using a non-withheld version, if Cargo knew to backtrack.
+(unless we have a stale cargo cache, which is already treated as out of scope for this feature, discussed under [Stale-cache risks](#stale-cache-risks)). But, we do still have a backwards compatibility problem where we might fail to find a resolver solution that would exist using a non-withheld version, if Cargo knew to backtrack.
 
 As a mitigating measure, we can nudge the resolver to avoid this by requiring that registries MUST set `yanked: true` 
-when transitioning to a withheld status. This is discussed further in "Managing withheld status transitions". This
+when transitioning to a withheld status. This is discussed further in [Managing withheld status transitions](#managing-withheld-status-transitions). This
 does still result in builds with `Cargo.lock` pointing to withheld crates, or build tools that don't respect yanks,
 still resolving to the withheld releases, which will fail. But, even a withheld-aware build tool would fail the same
 builds, albeit with better error messages. Our registry spec says that registries SHOULD offer helpful not-found
@@ -1041,7 +1037,7 @@ fairly good user experience in most cases, and otherwise clear errors. This shou
 protocol version bump.
 
 
-#### Why not `"withheld": "quarantined_and_yanked`?
+#### Why not `"withheld": "quarantined_and_yanked"`?
 It's a bit awkward that we have some extra bookkeeping to display `"yanked: true` whenever we have a
 withheld status. But, we do want this set for backwards compatibility reasons. If we don't care about backwards
 compatibility, then we just leave `yanked` only for author and admin-initiated yanks and have it be totally
@@ -1071,9 +1067,9 @@ it is somewhat complex, since we only show version constraints, not the actual r
 need to do some amount of resolution to fix that.
 
 A better option is to make use of docs.rs's actual use of the resolver and signal back to crates.io. This could
-be added later and is discussed under "Future possibilities: Triggering reverse dependency re-processing based on withholding changes".
+be added later and is discussed under Future possibilities: [Re-processing failed docs.rs builds when a dependency becomes available](#re-processing-failed-docsrs-builds-when-a-dependency-becomes-available).
 
-####  Why is `dl-withheld` as open as `dl`?
+#### Why is `dl-withheld` as open as `dl`?
 TLDR: I don't think this is worth including now, even if it might be worth it later. If we want to walk away from 
 public-by-default, it is easy enough to add per-template `auth-required` in `config.json`.
 
@@ -1083,8 +1079,7 @@ trusted parties.
 
 The counterarguments relate to author privacy during staging (handle this in a later RFC if we have staging) and
 oracle attacks on the index (fair, but a tradeoff with having more eyes to catch problems - we can discuss adding
-auth when we add publish-time detection/holds). Both are further discussed in "Major architectural decisions: Why 
-write withheld releases to the index?".
+auth when we add publish-time detection/holds). Both are further discussed in Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index).
 
 #### Why is the publish default different per type of withholding?
 We don't want unreleased versions to break release trains (see: [complaints from npm users](https://github.com/orgs/community/discussions/203413)).
@@ -1178,7 +1173,7 @@ problem
 - To avoid publishing index lines for unreleased crates, we need an alternative way to serve the full index line,
 or else we break separate publish invocations
 - Any such change will need to consider security researchers, such as exposing an event feed for withheld crates
-- Alternatives are discussed at greater length in "Rationale: Why write withheld releases to the index?"
+- Alternatives are discussed at greater length in Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index)
 
 #### Author-managed staging
 - https://internals.rust-lang.org/t/pre-rfc-package-staging/20459
@@ -1190,12 +1185,12 @@ to be account-wide)
 further design that would be supplementary rather than conflicting to this one
 - Future RFC territory
 
-#### Restricting `dl-withheld` to credentialed researchers. 
-- Discussed in "Rationale: Why is `dl-withheld` as open as `dl`?"
+#### Restricting `dl-withheld` to credentialed researchers
+- Discussed in Rationale: [Why is `dl-withheld` as open as `dl`?](#why-is-dl-withheld-as-open-as-dl)
 - If we start to see stronger reasons to guard `dl-withheld`
 - This RFC makes dl-withheld as open as dl on the same registry: public on crates.io, token-gated on an auth-required registry. A registry wanting to limit withheld bytes to vetted researchers — the model PyPI's Observer program gestured at — would need per-template authentication in config.json (for example, an auth-required map keyed by template). That is deferred; index visibility of withheld versions is public regardless, so the gate would protect bytes, not existence.
 
-#### Smarter cargo install --locked on withheld dependencies
+#### Smarter `cargo install --locked` on withheld dependencies
 - This experience is not good today because the resolver won't try to avoid binaries that bundle
 lockfiles with withheld dependencies
 - Probably a better answer is something along the lines of, on encountering this failure, fetch
@@ -1228,7 +1223,7 @@ as well.
 - Both approaches probably merit their own RFC that unifies with `yanked` handling.
 
 #### Registry-advertised dynamic `min-publish-age`
-- This is supplementary to this proposal (see: "Alternatives: Why not just `min-publish-age` with a default?") but
+- This is supplementary to this proposal (see: Rationale: [Why not just `min-publish-age` with a default?](#why-not-just-min-publish-age-with-a-default)) but
 a great idea by @joshtriplett! 
 - It lets the registry temporarily heighten its security posture if it has reason to believe it is being
 targeted in ways that raise risk (for instance: another language's registry was just compromised).
