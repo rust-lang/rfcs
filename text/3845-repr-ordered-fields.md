@@ -238,6 +238,11 @@ The exact algorithm is deferred to whatever the default target `C` compiler does
 
 If any bugs are found (i.e. differences between the target C compiler's layout/ABI and `repr(C)`) then the Rust team reserves the right to change the behavior of `repr(C)` to conform with the target C compiler.
 
+If a `repr(C#editionNext)` type has an (potentially) unsized tail then the following restrictions are in place since `C` doesn't have trait objects.
+* If has a generic `T: ?Sized` tail, then coercions from `Foo<T>` to `Foo<dyn T>` will not compile
+    * Note: This allows rust compilers to give `Foo<dyn T>` an arbitrary layout, since it is impossible to soundly construct a value of this type. (and avoids post-mono errors)
+* The unsized tail cannot be a concrete trait object
+
 ### Flexible Array Members
 
 Given that all major `C` compilers (at the time of writing) put `T field[N];` and `T field[];` at the same offset.
