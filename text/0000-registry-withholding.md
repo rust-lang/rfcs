@@ -1112,7 +1112,8 @@ preferable to risking naive users installing quarantined bytes.
 
 ### Researcher access in other ecosystems
 
-<analysis is LLM generated and will be rewritten in full>
+**analysis is LLM generated and will be rewritten in full before publication**
+
 - [PyPI: Project Quarantine (2024-12)](https://blog.pypi.org/posts/2024-12-30-quarantine/) — admin-set, reversible; enforced by omission from the Simple index; yank considered and rejected ("a yanked Release is still installable"); ~140 quarantined, 1 released.
 - [PyPI: project status markers (2025-08)](https://blog.pypi.org/posts/2025-08-14-project-status-markers/) / [PEP 792](https://peps.python.org/pep-0792/) — legibility marker retrofitted a year after omission-based quarantine; project-scoped; mixes informational (`archived`, `deprecated`) with enforcing (`quarantined`); works only because omission does the enforcing.
 - [warehouse `Release.lifecycle_status`](https://github.com/pypi/warehouse/blob/main/warehouse/packaging/models.py) — release-level quarantine since 2026; omission in `_simple_detail`; no per-release marker in the standard API. Same shape as `withheld: quarantined`, illegible on the wire.
@@ -1163,7 +1164,7 @@ support but deferring index representation to be discussed together with yanked.
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-Re-processing failed docs.rs builds when a dependency becomes available
+#### Re-processing failed docs.rs builds when a dependency becomes available
 - This issue affects any crate that is published with no successful resolver solution available, withheld
 dependencies or otherwise
 - In this case, the version's docs will fail to build, fail its retry, and then never try again unless manually triggered by the user
@@ -1172,14 +1173,14 @@ those builds if that dependency is released from withholding, is unyanked, or pu
 - We can explore this in a RFC that adds crates.io publish-time holds as that will introduce new impact for this
 problem
 
-Delayed indexing for unreleased
+#### Delayed indexing for unreleased
 - A good middle ground to avoid index thrash might be only publishing to the sparse index but not the git index
 - To avoid publishing index lines for unreleased crates, we need an alternative way to serve the full index line,
 or else we break separate publish invocations
 - Any such change will need to consider security researchers, such as exposing an event feed for withheld crates
 - Alternatives are discussed at greater length in "Rationale: Why write withheld releases to the index?"
 
-Author-managed staging
+#### Author-managed staging
 - https://internals.rust-lang.org/t/pre-rfc-package-staging/20459
 - This is much larger scope that we want to pick up, but the `unreleased` status is designed to be supportive of it
 - We would likely need a registry web API-side change to pass in the desire to have things staged (unless scoped
@@ -1189,13 +1190,12 @@ to be account-wide)
 further design that would be supplementary rather than conflicting to this one
 - Future RFC territory
 
-Restricting `dl-withheld` to credentialed researchers. 
+#### Restricting `dl-withheld` to credentialed researchers. 
 - Discussed in "Rationale: Why is `dl-withheld` as open as `dl`?"
 - If we start to see stronger reasons to guard `dl-withheld`
-
 - This RFC makes dl-withheld as open as dl on the same registry: public on crates.io, token-gated on an auth-required registry. A registry wanting to limit withheld bytes to vetted researchers — the model PyPI's Observer program gestured at — would need per-template authentication in config.json (for example, an auth-required map keyed by template). That is deferred; index visibility of withheld versions is public regardless, so the gate would protect bytes, not existence.
 
-Smarter cargo install --locked on withheld dependencies
+#### Smarter cargo install --locked on withheld dependencies
 - This experience is not good today because the resolver won't try to avoid binaries that bundle
 lockfiles with withheld dependencies
 - Probably a better answer is something along the lines of, on encountering this failure, fetch
@@ -1206,7 +1206,7 @@ with a warning)
 deleted crates, and the `quarantine`/`withdrawn` cases are largely a replacement to deletion, so it's not clear
 to me how catastrophic this is
 
-`cargo info` support
+#### `cargo info` support
 - Today cargo info will never show "yanked" since it only shows candidate versions (missing from index view,
 not found for specific requested version)
 -  We could enhance it to support both yanked and withheld with extra visibility
@@ -1214,26 +1214,27 @@ not found for specific requested version)
 - I don't think it is particularly significant, given that we also don't show it for `yanked`
 
 
-Probing cached crates for withholding (and yanked state) to avoid stale-cache risks
+#### Probing cached crates for withholding (and yanked state) to avoid stale-cache risks
 - HEAD request to check for byte existence as a quick proxy for needing a refresh
-- There should be a way to run it in CI by default, probably? And other sensitive environemnts?
+- There should be a way to run it in CI by default, probably? And other sensitive environments?
+- This avoids issues with stale cache w/r/t withheld, but also to crate deletion
 - This is a larger Cargo change that deserves its on RFC
 
-Better display of reasons for withholding
+#### Better display of reasons for withholding
 - Beyond displaying it in the frontend and statically linking to the page, a good next step would be to add a registry 
 endpoint that surfaces reasons in a machine-readable format for Cargo to use on different failures and warnings.
 - We could alternatively write it directly to index lines, but we should do so in conversation with `yanked` reasons
 as well.
 - Both approaches probably merit their own RFC that unifies with `yanked` handling.
 
-Registry-advertised dynamic `min-publish-age`
+#### Registry-advertised dynamic `min-publish-age`
 - This is supplementary to this proposal (see: "Alternatives: Why not just `min-publish-age` with a default?") but
 a great idea by @joshtriplett! 
 - It lets the registry temporarily heighten its security posture if it has reason to believe it is being
 targeted in ways that raise risk (for instance: another language's registry was just compromised).
 - We can consider it alongside publish-time checks in a future RFC.
 
-Resuming a workspace publish
+#### Resuming a workspace publish
 - `cargo publish --workspace` will fail if it encounters an already published workspace sibling (regardless
 of withholding status), so a partial workspace publish cannot be rerun as-is
 - A publisher can rerun the workspace publish with `-p` to specify remaining packages and exclude others from the
