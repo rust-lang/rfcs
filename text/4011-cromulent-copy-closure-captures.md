@@ -148,6 +148,16 @@ At [`type.closure.capture`](https://doc.rust-lang.org/reference/types/closure.ht
 >     let y = x; // x captured by ByCopy (would have been ImmBorrow before)
 > };
 > ```
+>
+> <b>[NEW] <u>However, this does not apply when the value is behind a reference; in that case, the `ImmBorrow` mode is used.
+>
+> ```rust
+> let x = &([0; 1024],);
+> let c = || {
+>     let y = x.0; // x.0 captured by ImmBorrow
+> };
+> ```
+> </u></b>
 
 And at [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.shared-prefix), we account for the new mode:
 
@@ -175,8 +185,9 @@ And at [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/referenc
 >
 > Overall this closure will capture `u` by `ByValue`.
 >
+> <b>[NEW]<u>
+>
 > ```rust
-> // **[NEW] example**
 > let s = 'S';
 > let t = (s, 'T');
 > let mut u = (t, 'U');
@@ -188,7 +199,7 @@ And at [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/referenc
 > c();
 > ```
 >
-> **<u>Overall this closure will capture `u` by `MutBorrow`.</u>**
+> Overall this closure will capture `u` by `MutBorrow`.</u></b>
 
 
 ## Concerns, catches
