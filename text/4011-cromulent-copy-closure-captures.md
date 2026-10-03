@@ -300,10 +300,6 @@ Under the current rules, the closure in this example captures `foo` by reference
 
 Consider, however, that the combination of `Copy` and `Sync` implies that implementing `Send` would be trivially sound! `Sync` enables transferring a shared reference across threads, and `Copy` enables reading a value out of a shared reference; together, these allow sending a value across threads. Therefore, such examples are unlikely to occur in real code. At worst, the compiler could always forcefully implement `Send` for such closures.
 
-#### Capturing `Copy` + `RefUnwindSafe` + `!UnwindSafe` 
-
-Same as the above example, except with `UnwindSafe`/`RefUnwindSafe` instead of `Send`/`Sync`. And very unlikely to cause problems in real code for the same reason.
-
 #### Capturing `Copy` + `!Unpin` 
 
 Consider the following closure:
