@@ -1,8 +1,7 @@
-- Feature Name: `supported-targets`
-- Start Date: 2025-01-08
-- Pre-RFC: [Rust
-  internals](https://internals.rust-lang.org/t/pre-rfc-allow-packages-to-specify-a-set-of-supported-targets/21979)
-- RFC PR: [rust-lang/rfcs#3759](https://github.com/rust-lang/rfcs/pull/3759)
+- Feature Name: `required-targets`
+- Start Date: 2026-10-02
+- Pre-RFC:
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 The word _target_ is extensively used in this document. The
@@ -13,14 +12,14 @@ glossary.
 
 # Summary
 
-The addition of `supported-targets` to `Cargo.toml`. This field is a `cfg` string that restricts the
+The addition of `required-targets` to `Cargo.toml`. This field is a `cfg` string that restricts the
 set of targets which a package supports. Packages can only be built for targets that satisfy their
-`supported-targets`.
+`required-targets`.
 
 ```toml
 [package]
 name = "hello_cargo"
-supported-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
 
 # Motivation
@@ -52,13 +51,13 @@ The error message when a library has platform-specific features, like requiring 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `supported-targets` field can be added to `Cargo.toml` under the `[package]` table.
+The `required-targets` field can be added to `Cargo.toml` under the `[package]` table.
 
 This field is a string containing a `cfg` specification (as for the `[target.'cfg(**)']` table). The
 supported `cfg` syntax is the same as the one for [platform-specific
 dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies)
 (i.e., `cfg(test)`, `cfg(debug_assertions)`, and `cfg(proc_macro)` are not supported). If a selected
-target satisfies the `supported-targets`, then the package can be built for that target.
+target satisfies the `required-targets`, then the package can be built for that target.
 
 __For example:__
 ```toml
@@ -66,7 +65,7 @@ __For example:__
 name = "hello_cargo"
 version = "0.1.0"
 edition = "2021"
-supported-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
 Here, only targets with the `linux` OS or the `macos` OS, are allowed to build the package. User
 experience is enhanced by raising an error that fails compilation when the supported targets of a
@@ -78,31 +77,31 @@ This feature should be used when a package clearly does not support all targets.
 
 This feature increases cargo's knowledge of a package. For example, when working in a workspace
 where some packages are for a platform with `target_os = "none"`, and some others are tools that
-require a desktop OS, using `supported-targets` makes `cargo <command>` ignore packages which have
-`supported-targets` that are not satisfied by the selected target.
+require a desktop OS, using `required-targets` makes `cargo <command>` ignore packages which have
+`required-targets` that are not satisfied by the selected target.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `supported-targets` field is an optional key that tells cargo which targets the package can be
+The `required-targets` field is an optional key that tells cargo which targets the package can be
 built for. However, it does not affect which host can build the package i.e., any host can still build
 the package, but only for certain targets.
 ```toml
 [package]
 # ...
-supported-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
 The value of this field must respect the [`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html),
 and does __not__ accept `cfg(test)`, `cfg(debug_assertions)`, nor `cfg(proc_macro)` as configuration options.
-A malformed `supported-targets` field will raise an error.
+A malformed `required-targets` field will raise an error.
 
-If the `supported-targets` field is not present, then the package is assumed to support all targets. That is,
+If the `required-targets` field is not present, then the package is assumed to support all targets. That is,
 the default value is `'cfg(all())'` (understood as `cfg(true)`).
 
 When a `cargo` build command (e.g. `check`, `build`, `run`, `clippy`) is run, it checks that the
-selected target satisfies the `supported-targets` of the package being built. If it does not, the
+selected target satisfies the `required-targets` of the package being built. If it does not, the
 package is skipped or an error is raised, depending on how [`cargo` was invoked](ignoring-builds).
-However, `supported-targets` is _only_ checked for commands that take a `--target` option and does
+However, `required-targets` is _only_ checked for commands that take a `--target` option and does
 not affect other commands (e.g., `cargo fmt`).
 
 As this field is limited to local development, `cargo package` / `cargo publish` will strip it from `Cargo.toml`.
@@ -116,9 +115,9 @@ This field is subject to [workspace inheritance](https://doc.rust-lang.org/cargo
 If cargo is invoked in a workspace or virtual workspace without specifying a package as
 build-target, then `cargo` skips any package that does not support the selected target. If a package
 is specified using `--package` or if `cargo` is invoked on a single package, and the selected target
-does not satisfy the `supported-targets` of the package, then an error is raised. The intent is to mimic
-the behavior of `required-features` with package filtering based on targets. Hence, `required-targets`
-is proposed as an [alternative name](#naming).
+does not satisfy the `required-targets` of the package, then an error is raised. The intent is to mimic
+the behavior of `required-features` with package filtering based on targets, as reflected in the
+[field name](#naming).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -136,7 +135,7 @@ Other formats can be considered:
 
 Using a list of `cfg` strings, and also accepting explicit target-tuples:
 ```toml
-supported-targets = [
+required-targets = [
     'cfg(target_family = "unix")',
     'cfg(target_family = "wasm")',
     "x86_64-pc-windows-gnu",
@@ -163,22 +162,25 @@ arch = ["x86_64"]
 ```
 
 ## Naming
-[naming]: #Naming
+[naming]: #naming
+
+The name `required-targets` follows `required-features`: both express requirements that must be
+satisfied for a package or cargo-target to be included in a build.
+
+Unlike the list in `required-features`, `required-targets` contains a single `cfg` expression.
+Conjunctions and disjunctions are explicit through `all(...)` and `any(...)`.
 
 Some other names for this field can be considered:
 
-- `required-targets`. Pro: it matches with the naming of `required-features`. Con:
-  `required-features` is a list of features that must _all_ be enabled (conjunction), whereas
-  `supported-targets` is a list of targets where _any_ is allowed (disjunction).
 - `targets`. As in "this package _targets_ ...". Pro: Concise. Con: Ambiguous, and could be confused
   with the `target` table.
 
 ## Package scope vs. cargo-target scope
 
-The `supported-targets` field is placed at the package level, and not at the cargo-target level
+The `required-targets` field is placed at the package level, and not at the cargo-target level
 (i.e., under, `[lib]`, `[[bin]]`, etc.)
 
-It is possible to allow cargo-targets to further restrict the `supported-targets` of the package,
+It is possible to allow cargo-targets to further restrict the `required-targets` of the package,
 but this is left as a [future possibility](#future-possibilities).
 
 See also: [using a package vs. using a workspace](package-vs-workspace).
@@ -212,7 +214,7 @@ Also, this is new syntax not currently used by cargo.
 
 ### Allowing only target-tuples
 
-This is an even stricter version of the above. Set relations between `supported-targets` lists are
+This is an even stricter version of the above. Set relations between `required-targets` lists are
 exact, and the resolver can determine if a platform-specific dependency can be pruned from the
 dependency tree more easily, hence why the original proposal chose this format. Being even simpler
 to implement, this alternative may not be expressive enough for the common use case. Packages rarely
@@ -232,7 +234,7 @@ packages in a workspace, nor does it allow filtering out the library of a packag
 The `per-package-target` nightly feature defines the `force-target` field, which is supposed to
 force the package to build for a specific target-tuple. This does not interact well when used in
 dependencies, as one would expect a dependency to be built for the same target as the package.
-`supported-targets` supersedes `force-target` because instead of enforcing a single target, it
+`required-targets` supersedes `force-target` because instead of enforcing a single target, it
 enforces a set of targets.
 
 Published crates have mainly used their documentation to specify which targets they support, or they
@@ -267,7 +269,7 @@ form comparable to `cfg` in Rust.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should we strip the `cfg` prefix from the field e.g., `supported-targets = 'target_os = "linux"'`?
+- Should we strip the `cfg` prefix from the field e.g., `required-targets = 'target_os = "linux"'`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -275,24 +277,24 @@ form comparable to `cfg` in Rust.
 ## Ensuring proper use of dependencies
 
 Complicated errors caused by packages and dependencies that are incompatible with the selected
-target can be avoided by using the information in the `supported-targets` field. For example, a
+target can be avoided by using the information in the `required-targets` field. For example, a
 warning or an error could be raised if a package uses a dependency that does not accept the package's
-`supported-targets`:
+`required-targets`:
 ```toml
 [package]
 name = "bar"
-supported-targets = 'cfg(target_os = "windows")'
+required-targets = 'cfg(target_os = "windows")'
 ```
 ```toml
 [package]
 name = "foo"
-supported-targets = 'cfg(target_os = "linux")'
+required-targets = 'cfg(target_os = "linux")'
 
 [dependencies]
 bar = "0.1.0"
 ```
 Here, a compilation error helps by showing which dependency is incompatible with the package's
-`supported-targets`, rather than a cryptic error message about missing parts of `std`, or runtime
+`required-targets`, rather than a cryptic error message about missing parts of `std`, or runtime
 errors.
 
 Cargo's documentation should give clear guidance for when to use this field, and should not suggest
@@ -301,51 +303,51 @@ believe the crate will not compile or work as expected (e.g. because it uses tar
 and not use it merely for "I haven't personally tested this on other targets".
 
 Even then, it will happen that crates unnecessarily limit their dependents and users because of 
-overly restrictive `supported-targets`.
+overly restrictive `required-targets`.
 Some options for handling this include
 - Doing nothing, encouraging people to upstream patches
 - Encourage `[patch]`ing the dependency
   - Requires managing a fork
-  - Every dependent of the package with a questionable `supported-targets` must do this
+  - Every dependent of the package with a questionable `required-targets` must do this
 - Encourage unidiff `[patch]`es
   - Design has unresolved questions ([cargo#4648](https://github.com/rust-lang/cargo/issues/4648))
-  - Every dependent of the package with a questionable `supported-targets` must do this
+  - Every dependent of the package with a questionable `required-targets` must do this
 - A bespoke manifest override
   - One-off feature that needs design work
 - A CLI override like `--ignore-rust-version`
   - This precludes `Cargo.lock` trimming as the lockfile is meant to capture dependencies for every potential state a package may be run in
-  - This affects the entire dependency tree and not just the package with questionable `supported-targets`
-  - Every dependent of the package with a questionable `supported-targets` must do this
+  - This affects the entire dependency tree and not just the package with questionable `required-targets`
+  - Every dependent of the package with a questionable `required-targets` must do this
 - A lint like proposed for `package.rust-version`
   - Blocked on [cargo#12235](https://github.com/rust-lang/cargo/issues/12235)
   - See also CLI override
-- Allow a registry database to override `supported-targets`
+- Allow a registry database to override `required-targets`
   - Blocked on a lot of design work ([related discussion](https://blog.rust-lang.org/inside-rust/2024/03/26/this-development-cycle-in-cargo-1.78.html#why-is-this-yanked))
 
 ### Compatibility of `[dependencies]`
 
-One could restrict the set of `supported-targets` of a package to be a subset of the
-`supported-targets` of its `[dependencies]`. If the crate itself had no `supported-targets`
+One could restrict the set of `required-targets` of a package to be a subset of the
+`required-targets` of its `[dependencies]`. If the crate itself had no `required-targets`
 specified, then all dependencies would need to support all targets.
 
 If a dependency does not respect this requirement (if it is not compatible), an error would be
 raised and the build would fail.
 
 Enforcing this means a package cannot support targets that are not supported by its dependencies,
-which is a good thing assuming the dependencies have correctly specified their `supported-targets`.
+which is a good thing assuming the dependencies have correctly specified their `required-targets`.
 
 ### Compatibility of `[dev-dependencies]`
 
 `[dev-dependencies]` should be checked using the same method as regular `[dependencies]`. That is,
-the package's `supported-targets` needs to be a subset of every `[dev-dependencies]`'s
-`supported-targets`. The rationale is that an example, test, or benchmark has access to the
-package's library and binaries, and so it must respect the `supported-targets` of the package.
+the package's `required-targets` needs to be a subset of every `[dev-dependencies]`'s
+`required-targets`. The rationale is that an example, test, or benchmark has access to the
+package's library and binaries, and so it must respect the `required-targets` of the package.
 
 ### Compatibility of `[build-dependencies]`
 [build-dependencies-compatability]: #compatibility-of-build-dependencies
 
 What makes `[build-dependencies]` unique is that they are built for the host computer, and not the
-selected target. As such, they are not restrained by the `supported-targets` of the package. Hence,
+selected target. As such, they are not restrained by the `required-targets` of the package. Hence,
 all dependencies are allowed in the `[build-dependencies]` table. However, a build error could be
 raised if one of the build dependencies does not support the _host-tuple_ at build time.
 
@@ -361,16 +363,16 @@ dependencies, build-dependencies, and dev-dependencies. Rules could be defined t
 platform-specific dependencies are declared correctly.
 
 When platform-specific dependencies are declared, the conditions under which they are declared
-should be a subset of each dependency's `supported-targets`. For example, a dependency declared
+should be a subset of each dependency's `required-targets`. For example, a dependency declared
 under `[target.'cfg(target_os = "linux")'.dependencies]` should at least support the `linux` OS.
 
 For regular dependencies and dev-dependencies, it would suffice for a platform-specific dependency
-to support the _intersection_ of the package's supported-targets, and the target conditions it is
+to support the _intersection_ of the package's required-targets, and the target conditions it is
 declared under. For example:
 ```toml
 [package]
 # ...
-supported-targets = 'cfg(target_os = "linux")'
+required-targets = 'cfg(target_os = "linux")'
 
 [target.'cfg(target_pointer_width = "64")'.dependencies]
 foo = "0.1.0"
@@ -379,7 +381,7 @@ Here, it would suffice for `foo` to support `cfg(all(target_os = "linux", target
 "64"))`.
 
 This would ensure that a package properly uses dependencies that are not available on all targets.
-Assuming that the crate `io-uring` has `supported-targets = 'cfg(target_os = "linux")'`, a crate
+Assuming that the crate `io-uring` has `required-targets = 'cfg(target_os = "linux")'`, a crate
 could depend on it using:
 ```toml
 [package]
@@ -388,22 +390,22 @@ could depend on it using:
 [target.'cfg(target_os = "linux")'.dependencies]
 io-uring = "0.1.0"
 ```
-This would not be required if the package itself had `supported-targets = 'cfg(target_os =
+This would not be required if the package itself had `required-targets = 'cfg(target_os =
 "linux")'`, or an even stricter set.
 
 ### Artifact dependencies
 
 If an artifact dependency has a `target` field, then the dependency would not be checked against the
-package's `supported-targets`. However, the selected `target` for the dependency would need to be
-compatible with the dependency's `supported-targets`, or else an error is raised. If the artifact
+package's `required-targets`. However, the selected `target` for the dependency would need to be
+compatible with the dependency's `required-targets`, or else an error is raised. If the artifact
 dependency does not have a `target` field, then it would be checked against the package's
-`supported-targets`, like any other dependency.
+`required-targets`, like any other dependency.
 
 
 ## Eliminating unused dependencies from `Cargo.lock`
 
 A package's dependencies may themselves have `[target.'cfg(..)'.dependencies]` tables, which may
-never be used because of the `supported-targets` restrictions of the package. These can safely be
+never be used because of the `required-targets` restrictions of the package. These can safely be
 eliminated from the dependency tree of the package.
 
 Consider the following example:
@@ -411,7 +413,7 @@ Consider the following example:
 [package]
 name = "foo"
 # ...
-supported-targets = 'cfg(target_os = "linux")'
+required-targets = 'cfg(target_os = "linux")'
 
 [dependencies]
 bar = "0.1.0"
@@ -428,16 +430,16 @@ Currently, `baz` is included in the dependency tree of `foo`, even though `foo` 
 mutually exclusive with `target_os = "linux"`.
 
 This only applies to `[dependencies]` and `[dev-dependencies]`, as `[build-dependencies]` are
-[not restrained by `supported-targets`](build-dependencies-compatability), so they are not pruned.
+[not restrained by `required-targets`](build-dependencies-compatability), so they are not pruned.
 
 Formally, dependencies (and transitive dependencies) under `[target.**.dependencies]` tables are
-eliminated from the dependency tree of a package if the `supported-targets` of the package is
+eliminated from the dependency tree of a package if the `required-targets` of the package is
 mutually exclusive with the target preconditions of the dependency.
 
-### Comparing `supported-targets`
+### Comparing `required-targets`
 
 To prune the dependency tree, and to ensure proper use of dependencies, it becomes necessary to
-compare `supported-targets`. When comparing two sets of `supported-targets`, it is necessary to
+compare `required-targets`. When comparing two sets of `required-targets`, it is necessary to
 know if one is a _subset_ of the other, or if both are _mutually exclusive_. To proceed, both
 are flattened to the same representation, and they are then compared. This process is done
 internally, and does not affect the `Cargo.toml` file.
@@ -459,11 +461,11 @@ Top level `all` operators are kept as is, as long as they do not contain nested 
 there is an `any` inside an `all`, the statement is split into multiple `all` statements. For
 example,
 ```toml
-supported-targets = 'cfg(all(target_os = "linux", any(target_arch = "x86_64", target_arch = "arm"))'
+required-targets = 'cfg(all(target_os = "linux", any(target_arch = "x86_64", target_arch = "arm"))'
 ```
 is transformed into
 ```toml
-supported-targets = 'cfg(any(all(target_os = "linux", target_arch = "x86_64"), all(target_os = "linux", target_arch = "arm")))'
+required-targets = 'cfg(any(all(target_os = "linux", target_arch = "x86_64"), all(target_os = "linux", target_arch = "arm")))'
 ```
 If an `all` contains an `all`, the inner `all` is flattened into the outer `all`.
 
@@ -472,7 +474,7 @@ either contains a single specification, or an `all` operator with no nested oper
 
 #### The subset relation
 
-To determine if the `supported-targets` set "A" is a subset of another such set "B", the standard
+To determine if the `required-targets` set "A" is a subset of another such set "B", the standard
 mathematical definition of subset is used. That is, "A" is a subset of "B" if and only if each
 element of "A" is contained in "B".
 
@@ -484,7 +486,7 @@ _Note_: `cfg(A) == cfg(all(A))`.
 
 #### Mutual exclusivity
 
-For the `supported-targets` set "A" to be mutually exclusive with another such set "B", each element
+For the `required-targets` set "A" to be mutually exclusive with another such set "B", each element
 of "A" must be mutually exclusive with _all_ elements of "B" (The inverse is also true).
 
 So each element of "A" is compared against each element of "B". A `cfg(all(A, B, ...))` is mutually
@@ -522,13 +524,13 @@ Even more relations could be defined. Consider the following scenario:
 ```toml
 [package]
 name = "bar"
-supported-targets = 'cfg(target_family = "unix")'
+required-targets = 'cfg(target_family = "unix")'
 # ...
 ```
 ```toml
 [package]
 name = "foo"
-supported-targets = 'cfg(target_os = "macos")'
+required-targets = 'cfg(target_os = "macos")'
 
 [dependencies]
 bar = "0.1.0"
@@ -560,7 +562,7 @@ If a package has:
 [package]
 name = "example"
 # ...
-supported-targets = 'cfg(target_os = "linux")'
+required-targets = 'cfg(target_os = "linux")'
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # ...
@@ -571,13 +573,13 @@ A lint could be added to highlight the fact that the `[target]` table is unused.
 Exception should be made for `target.'cfg(any())'`/`target.'cfg(false)` tables, as they are often
 used to lock the version of transitive dependencies, and should not be linted against.
 
-## `supported-targets` at the cargo-target level
+## `required-targets` at the cargo-target level
 
-The `supported-targets` field could also be added at the cargo-target level to have more
+The `required-targets` field could also be added at the cargo-target level to have more
 fine-grained control over which targets a cargo-target supports. This would function similarly to
 the `edition` field, which is available at both the package and the cargo-target level. The
-`supported-targets` of a cargo-target would most likely need to be a subset of the package's
-`supported-targets`.
+`required-targets` of a cargo-target would most likely need to be a subset of the package's
+`required-targets`.
 
 This could also allow for a cargo-target to be swapped out based on the selected target. For example,
 one could specify which binary should be used as `main` based on the selected target
@@ -589,12 +591,12 @@ be executed by a JavaScript environment [#12260](https://github.com/rust-lang/ca
 
 ## Interaction with crate features
 
-Currently, crate `[features]` and `supported-targets` do not interact. It is possible however that a
-crate feature interacts with the set of `supported-targets`, either by restraining or expanding it.
-It could be possible to allow crate features to modify the `supported-targets` of a package.
+Currently, crate `[features]` and `required-targets` do not interact. It is possible however that a
+crate feature interacts with the set of `required-targets`, either by restraining or expanding it.
+It could be possible to allow crate features to modify the `required-targets` of a package.
 
 ## Misc
 
-- Have `cargo add` check the `supported-targets` before adding a dependency.
+- Have `cargo add` check the `required-targets` before adding a dependency.
 - Show which targets are supported on `docs.rs`.
 - Have search filters on `crates.io` for crates with support for specific targets.
