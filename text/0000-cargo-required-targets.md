@@ -12,14 +12,23 @@ glossary.
 
 # Summary
 
-The addition of `required-targets` to `Cargo.toml`. This field is a `cfg` string that restricts the
-set of targets which a package supports. Packages can only be built for targets that satisfy their
-`required-targets`.
+The `required-targets` field in the `[package]` table of `Cargo.toml` lets workspace members
+declare target requirements using
+[`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html). During local
+development, commands such as `cargo check --workspace` skip workspace members whose requirements
+do not match the selected target, much like `required-features` skips cargo-targets when their
+required features are not enabled.
 
 ```toml
 [package]
 name = "hello_cargo"
 required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+```
+
+For example, the following command skips this workspace member when checking for Windows:
+
+```console
+$ cargo check --workspace --target x86_64-pc-windows-msvc
 ```
 
 # Motivation
@@ -51,13 +60,14 @@ The error message when a library has platform-specific features, like requiring 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `required-targets` field can be added to `Cargo.toml` under the `[package]` table.
+The `required-targets` field can be added to `Cargo.toml` under the `[package]` table to declare
+target requirements for local development. Cargo uses these requirements to skip workspace members
+that do not support the selected target.
 
 This field is a string containing a `cfg` specification (as for the `[target.'cfg(**)']` table). The
 supported `cfg` syntax is the same as the one for [platform-specific
 dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies)
-(i.e., `cfg(test)`, `cfg(debug_assertions)`, and `cfg(proc_macro)` are not supported). If a selected
-target satisfies the `required-targets`, then the package can be built for that target.
+(i.e., `cfg(feature = "...")`, `cfg(test)`, `cfg(debug_assertions)`, and `cfg(proc_macro)` are not supported).
 
 __For example:__
 ```toml
@@ -67,63 +77,104 @@ version = "0.1.0"
 edition = "2021"
 required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
-Here, only targets with the `linux` OS or the `macos` OS, are allowed to build the package. User
-experience is enhanced by raising an error that fails compilation when the supported targets of a
-package are not satisfied by the selected target.
 
-This feature should be used when a package clearly does not support all targets. For example:
-`io-uring` requires `cfg(target_os = "linux")`, `gloo` requires `cfg(target_family = "wasm")`, and
-`riscv` requires `cfg(any(target_arch = "riscv32", target_arch = "riscv64"))`.
+This workspace member declares that it requires Linux or macOS. When checking the workspace for
+Windows, Cargo skips `hello_cargo`:
 
-This feature increases cargo's knowledge of a package. For example, when working in a workspace
-where some packages are for a platform with `target_os = "none"`, and some others are tools that
-require a desktop OS, using `required-targets` makes `cargo <command>` ignore packages which have
-`required-targets` that are not satisfied by the selected target.
+```console
+$ cargo check --workspace --target x86_64-pc-windows-msvc
+```
+
+Explicitly selecting `hello_cargo` for the same target instead produces an error:
+
+```console
+$ cargo check --package hello_cargo --target x86_64-pc-windows-msvc
+```
+
+An error is also raised when building a standalone package outside an explicitly declared workspace
+for a target that does not satisfy its requirements. This distinction lets workspace commands skip
+incompatible members while reporting an error when the user specifically asks to build one.
+
+Documentation can be built for a matching target with `cargo doc --target <target>`. For docs.rs
+builds, targets can be configured through [package metadata](https://docs.rs/about/metadata).
+
+These requirements apply only during local development. `cargo package` and `cargo publish` strip
+the field from the packaged `Cargo.toml`, so it does not restrict users of the published package.
+Checking compatibility between a package's requirements and those of its dependencies is left as
+a [future possibility](#ensuring-proper-use-of-dependencies).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `required-targets` field is an optional key that tells cargo which targets the package can be
-built for. However, it does not affect which host can build the package i.e., any host can still build
-the package, but only for certain targets.
+The `required-targets` field is an optional key that tells Cargo which targets the package can be
+built for. The field does not impose requirements on the build host.
 ```toml
 [package]
 # ...
 required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
 The value of this field must respect the [`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html),
-and does __not__ accept `cfg(test)`, `cfg(debug_assertions)`, nor `cfg(proc_macro)` as configuration options.
+and does __not__ accept `cfg(feature = "...")`, `cfg(test)`, `cfg(debug_assertions)`, or
+`cfg(proc_macro)` as configuration options.
 A malformed `required-targets` field will raise an error.
 
-If the `required-targets` field is not present, then the package is assumed to support all targets. That is,
-the default value is `'cfg(all())'` (understood as `cfg(true)`).
+For package selection, omitting `required-targets` has the same effect as specifying `'cfg(all())'`:
+the package is eligible for every target.
 
-When a `cargo` build command (e.g. `check`, `build`, `run`, `clippy`) is run, it checks that the
-selected target satisfies the `required-targets` of the package being built. If it does not, the
-package is skipped or an error is raised, depending on how [`cargo` was invoked](ignoring-builds).
-However, `required-targets` is _only_ checked for commands that take a `--target` option and does
-not affect other commands (e.g., `cargo fmt`).
+When Cargo selects packages for compilation, checking, or documentation (e.g. `build`, `check`,
+`run`, `clippy`, `doc`), it checks that the selected target satisfies the `required-targets` of
+each directly selected package. Commands that do not perform these operations, such as `clean`,
+`fetch`, `tree`, and `fmt`, do not check `required-targets`, even if they accept `--target`.
 
-As this field is limited to local development, `cargo package` / `cargo publish` will strip it from `Cargo.toml`.
-Including the field in the `.crate` file is left as a [future possibility](#future-possibilities) for now.
+Cargo determines the selected target using its existing selection rules, including
+[per-package target settings](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#per-package-target).
+Cargo checks the requirement separately for each selected target, before adjusting individual
+cargo-targets to build for the host. A directly selected proc-macro package is therefore checked
+against the package's selected target, even though its proc-macro library is compiled for the host.
 
-This field is subject to [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table).
+As this field is limited to local development, `cargo package` / `cargo publish` strip it from the
+normalized `Cargo.toml`. Retaining the field in that manifest is left as a
+[future possibility](#future-possibilities).
+
+This field supports [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table).
+For example, a workspace can declare shared requirements:
+
+```toml
+# Workspace Cargo.toml
+[workspace.package]
+required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+```
+
+A member opts in to those requirements:
+
+```toml
+# hello_cargo/Cargo.toml
+[package]
+required-targets.workspace = true
+```
 
 ## Ignoring builds for unsupported targets
-[ignoring-builds]: #igonring-builds-for-unsupported-targets
+[ignoring-builds]: #ignoring-builds-for-unsupported-targets
 
-If cargo is invoked in a workspace or virtual workspace without specifying a package as
-build-target, then `cargo` skips any package that does not support the selected target. If a package
-is specified using `--package` or if `cargo` is invoked on a single package, and the selected target
-does not satisfy the `required-targets` of the package, then an error is raised. The intent is to mimic
-the behavior of `required-features` with package filtering based on targets, as reflected in the
+After normal package selection, Cargo skips incompatible members of an explicitly declared workspace
+when no package is specified with `--package`. This also applies when Cargo is invoked from a
+member's directory. If a package is specified with `--package`, or Cargo is invoked on a standalone
+package outside an explicitly declared workspace, a target mismatch raises an error. The intent is
+to mimic the behavior of `required-features` with package filtering based on targets, as reflected in the
 [field name](#naming).
+
+Cargo removes packages skipped for every selected target from the selected packages used to resolve
+dependency features for compilation. Features required through retained dependencies still apply.
+With [`resolver.feature-unification = "workspace"`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#resolverfeature-unification),
+all workspace members continue contributing dependency features. This does not change lockfile
+resolution or feature unification between packages retained for different targets.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- This is the first step towards a target aware `cargo`, which may increase `cargo`'s complexity,
-  and bring more feature requests along these lines.
+- Adding target requirements to package selection increases Cargo's complexity.
+- Authors must maintain accurate target requirements. An overly restrictive condition can exclude
+  a package from workspace checks on a target it actually supports.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
