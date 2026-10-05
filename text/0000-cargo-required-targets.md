@@ -295,11 +295,10 @@ Users can already select which packages they want to select in a workspace with 
 is built using the `required-features` field. However, `required-features` does not allow filtering
 packages in a workspace, nor does it allow filtering out the library of a package.
 
-The `per-package-target` nightly feature defines the `force-target` field, which is supposed to
-force the package to build for a specific target-tuple. This does not interact well when used in
-dependencies, as one would expect a dependency to be built for the same target as the package.
-`required-targets` supersedes `force-target` because instead of enforcing a single target, it
-enforces a set of targets.
+The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
+to build for a specific target-tuple. `required-targets` instead determines whether a package is
+included for the selected target. It does not select a different target, so it does not replace
+`forced-target` for workflows that build packages for different targets in one command.
 
 Published crates have mainly used their documentation to specify which targets they support, or they
 would leave it up to the user to infer it. Some crates also made use of compile time errors to
@@ -335,6 +334,23 @@ form comparable to `cfg` in Rust.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Additional target conditions
+
+Additional conditions could express standard-library support, whether the selected target matches
+the host, or target support tiers.
+
+## Workspace selection of build tools
+
+A complementary feature could let workspace members that provide procedural macros or build-script
+helpers opt out of bulk workspace selection by commands such as `cargo check --workspace`, while
+still being built as dependencies or explicitly checked and tested.
+
+For example, see [Alacritty's duplicate proc-macro builds](https://github.com/rust-lang/cargo/issues/13321)
+or [Stellar's workspace exclusion workaround](https://github.com/rust-lang/cargo/issues/10827).
+
+An always-false `required-targets` condition also skips direct workspace builds, but prevents
+explicitly checking or testing the package.
 
 ## Target-specific dependency resolution
 
@@ -662,24 +678,21 @@ used to lock the version of transitive dependencies, and should not be linted ag
 ## `required-targets` at the cargo-target level
 
 The `required-targets` field could also be added at the cargo-target level to have more
-fine-grained control over which targets a cargo-target supports. This would function similarly to
-the `edition` field, which is available at both the package and the cargo-target level. The
+fine-grained control over which targets a cargo-target supports. The
 `required-targets` of a cargo-target would most likely need to be a subset of the package's
 `required-targets`.
 
 This could also allow for a cargo-target to be swapped out based on the selected target. For example,
 one could specify which binary should be used as `main` based on the selected target
 [#9208](https://github.com/rust-lang/cargo/issues/9208).
-.
 
-This could also help WebAssembly targets, as `wasm` executables need to be built as libraries to then
-be executed by a JavaScript environment [#12260](https://github.com/rust-lang/cargo/issues/12260).
+This could also let a package select its `cdylib` library target for `wasm-pack` builds and its
+binary target for desktop builds, as requested in [#12260](https://github.com/rust-lang/cargo/issues/12260).
 
 ## Interaction with crate features
 
-Currently, crate `[features]` and `required-targets` do not interact. It is possible however that a
-crate feature interacts with the set of `required-targets`, either by restraining or expanding it.
-It could be possible to allow crate features to modify the `required-targets` of a package.
+Currently, crate features do not change a package's `required-targets`. Crate features could be
+allowed to modify these requirements to restrict or expand the set of permitted targets.
 
 ## Misc
 
