@@ -186,7 +186,7 @@ For GitHub Actions, the crate author will need to provide:
 > [!Note]
 > Supply chain compromises are still possible. As such, we are requiring the workflow file name to be defined in order to limit the attack surface. An attacker would need to compromise an action used specifically within the defined workflow file.
 >
-> It's recommended to thoroughly review any actions used in your release worfklow.
+> It's recommended to thoroughly review any actions used in your release workflow.
 
 ### Example GitHub Actions Workflow
 [example-gha-workflow]: #example-gha-workflow
@@ -354,7 +354,7 @@ Other package repositories have implemented similar support:
 - Provenance verification of published crates (e.g. sigstore or other signing mechanisms).
 - Discussion/debate of CI/CD providers to support next and their expected timelines.
 - Support in the GitHub Action used to perform the OIDC authentication with other Rust package registries.
-- Direct suppport and implementation of the token exchange flow within `cargo`.
+- Direct support and implementation of the token exchange flow within `cargo`.
 
 ### Items to Resolve Before General Availability
 [resolve-before-general-availability]: #resolve-before-general-availability

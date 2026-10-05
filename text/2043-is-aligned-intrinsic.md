@@ -54,7 +54,7 @@ to make it aligned to the desired alignment. It is perfectly valid for an
 implementation to always yield `usize::max_value()` to signal that the pointer
 cannot be aligned. Since the caller needs to check whether the returned offset
 would be in-bounds of the allocation that the pointer points into, returning
-`usize::max_value()` will never be in-bounds of the allocation and therefor
+`usize::max_value()` will never be in-bounds of the allocation and therefore
 the caller cannot act upon the returned offset.
 
 It might be expected that the maximum offset returned is `align - 1`, but as

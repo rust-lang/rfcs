@@ -147,7 +147,7 @@ None identified.
 
 #### Is there a template for project goals?
 
-This RFC does not specify details, so the following should not be considered normative. However, you can see a preview of what the project goal process would look like at the [nikomatsakis/rust-project-goals](https://github.com/nikomatsakis/rust-project-goals) repository; it contains a [goal template](https://nikomatsakis.github.io/rust-project-goals/2024h2/0000-TEMPLATE.html). This RFC is in fact a "repackaged" vesion of [2024's proposed Project Goal #1](https://nikomatsakis.github.io/rust-project-goals/2024h2/0001-Project-goal-slate.html).
+This RFC does not specify details, so the following should not be considered normative. However, you can see a preview of what the project goal process would look like at the [nikomatsakis/rust-project-goals](https://github.com/nikomatsakis/rust-project-goals) repository; it contains a [goal template](https://nikomatsakis.github.io/rust-project-goals/2024h2/0000-TEMPLATE.html). This RFC is in fact a "repackaged" version of [2024's proposed Project Goal #1](https://nikomatsakis.github.io/rust-project-goals/2024h2/0001-Project-goal-slate.html).
 
 #### Why is the goal completion date targeting end of year?
 
@@ -181,7 +181,7 @@ Simply put, no. The owner will review the goals and ensure a quality slate, but 
 
 #### Why the six months horizon?
 
-Per the previous points, it is helpful to have a "season" for goals, but having e.g. an annual process prevents us from reacting to new ideas in a nimble fashion. At the same time, doing quarterly planning, as some companies do, is quite regular overhead. Six months seemed like a nice compromise, and it leaves room for a hefty discussion period of about 2 months, which sems like a good fit for an open-source project.
+Per the previous points, it is helpful to have a "season" for goals, but having e.g. an annual process prevents us from reacting to new ideas in a nimble fashion. At the same time, doing quarterly planning, as some companies do, is quite regular overhead. Six months seemed like a nice compromise, and it leaves room for a hefty discussion period of about 2 months, which seems like a good fit for an open-source project.
 
 ## Prior art
 [prior-art]: #prior-art

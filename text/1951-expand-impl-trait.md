@@ -81,7 +81,7 @@ What happens when they want to return an unstated iterator instead? It's pretty 
 fn give_iter<T: Iterator>() -> T
 ```
 
-if you don't have a crisp understanding of the unversal/existential
+if you don't have a crisp understanding of the universal/existential
 distinction. If we only allowed `impl Trait` in return position, we'd have to
 say: when returning an unknown type, please use a completely different
 mechanism.

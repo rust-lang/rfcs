@@ -93,7 +93,7 @@ The other alternative, as far as getting rid of the reborrow goes,
 is to change the language so that it implicitly does the reborrow.
 That alternative is *massively* more general,
 but it also has knock-on effects throughout the rest of the language.
-It also still doesn't do anything about the asymetry between Cell and RefCell.
+It also still doesn't do anything about the asymmetry between Cell and RefCell.
 
 ## Unresolved questions
 [unresolved]: #unresolved-questions

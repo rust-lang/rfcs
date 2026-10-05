@@ -194,7 +194,7 @@ However, using `doc(auto_cfg = ...)` and `doc(auto_cfg(...))` on the same item w
 pub fn foo() {}
 ```
 
-The reason behind this is that `doc(auto_cfg = ...)` enables or disables the feature, whereas `doc(auto_cfg(...))` enables it unconditionally, making the first attribute to appear useless as it will be overidden by the next `doc(auto_cfg)` attribute.
+The reason behind this is that `doc(auto_cfg = ...)` enables or disables the feature, whereas `doc(auto_cfg(...))` enables it unconditionally, making the first attribute to appear useless as it will be overridden by the next `doc(auto_cfg)` attribute.
 
 #### `#[doc(auto_cfg(show(...)))]`
 
@@ -352,7 +352,7 @@ So for the following crate, `function` wouldn't show up in the generated docs un
 pub fn function() {}
 ```
 
-Therefore, the common and offical workaround is the use of the semi-special cfg `doc`:
+Therefore, the common and official workaround is the use of the semi-special cfg `doc`:
 
 ```rust
 #[cfg(any(doc, special))]

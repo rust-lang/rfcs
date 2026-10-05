@@ -7,7 +7,7 @@
 
 [summary]: #summary
 
-This RFC proposes to add a new kind of pattern, the **guard pattern.** Like match arm guards, guard patterns restrict another pattern to match only if an expression evaluates to `true`. The syntax for guard patterns, `pat if condition`, is compatible with match arm guard syntax, so existing guards can be superceded by guard patterns without breakage.
+This RFC proposes to add a new kind of pattern, the **guard pattern.** Like match arm guards, guard patterns restrict another pattern to match only if an expression evaluates to `true`. The syntax for guard patterns, `pat if condition`, is compatible with match arm guard syntax, so existing guards can be superseded by guard patterns without breakage.
 
 ## Motivation
 
@@ -90,7 +90,7 @@ match foo {
 }
 ```
 
-This match arm is currently parsed as `(A | B) if (c | d)`, with the first `|` being the or-operator on patterns and the second being the bitwise OR operator on expressions. Therefore, to maintain backwards compatability, `if` must have lower precedence than `|` on both sides (or equivalently, for both meanings of `|`). For that reason, guard patterns nested within or-patterns must be explicitly parenthesized:
+This match arm is currently parsed as `(A | B) if (c | d)`, with the first `|` being the or-operator on patterns and the second being the bitwise OR operator on expressions. Therefore, to maintain backwards compatibility, `if` must have lower precedence than `|` on both sides (or equivalently, for both meanings of `|`). For that reason, guard patterns nested within or-patterns must be explicitly parenthesized:
 
 ```rust
 // This is not an or-pattern of guards:

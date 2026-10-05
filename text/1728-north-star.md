@@ -186,7 +186,7 @@ the future.
 
 At the beginning of the cycle we spend no more than one month deciding on a
 small set of _problem statements_ for the project, for the year. The number
-needs to be small enough to present to the community managably, while also
+needs to be small enough to present to the community manageably, while also
 sufficiently motivating the primary work of all the teams for the year. 8-10 is
 a reasonable guideline. This planning takes place via the RFC process and is
 open to the entire community. The result of the process is the yearly 'north

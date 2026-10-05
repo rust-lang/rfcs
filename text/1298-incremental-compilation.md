@@ -536,7 +536,7 @@ recompiling all of them. Our plan is to phase span support in incrementally:
 
 1. Initially, the AST hash will include the filename/line/column,
    which does mean that later fns in the same file will have to be
-   recompiled (somewhat unnnecessarily).
+   recompiled (somewhat unnecessarily).
 2. Eventually, it would be better to encode spans by identifying a
    particular AST node (relative to the root of the item). Since we
    are hashing the structure of the AST, we know the AST from the

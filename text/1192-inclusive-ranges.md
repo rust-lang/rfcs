@@ -46,7 +46,7 @@ etc.), and implements `Iterator`.
 The use of `...` in a pattern remains as testing for inclusion
 within that range, *not* a struct match.
 
-The author cannot forsee problems with breaking backward
+The author cannot foresee problems with breaking backward
 compatibility. In particular, one tokenisation of syntax like `1...`
 now would be `1. ..` i.e. a floating point number on the left,
 however, fortunately, it is actually tokenised like `1 ...`, and is

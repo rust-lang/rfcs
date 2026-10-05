@@ -15,7 +15,7 @@ to override this behavior.
 This means that if the same `#[no_mangle]` function is also
 decorated with `#[export_visibility = "target_default"]`,
 then it will instead use the default visibility of the target platform
-(which can be overriden with the
+(which can be overridden with the
 [`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html)
 command-line flag).
 
@@ -130,7 +130,7 @@ is explored underneath the folded details section below.
 
 <details>
 
-The author of this RFC is not aware of a more authoratitative source that would
+The author of this RFC is not aware of a more authoritative source that would
 explain the mechanisms that can lead to the UB in presence of naming collisions.
 The author speculates that:
 
@@ -408,7 +408,7 @@ Based on the above, the `#[export_visibility = ...]` attribute may never
 _increase_ visibility of a symbol.  This is because:
 
 * `#[no_mangle]` and `#[export_name = ...]` force the
-  _maximum_ possible visiblity.  See
+  _maximum_ possible visibility.  See
   [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937)
 * It seems that `#[linkage = ...]` should have no impact on symbol visibility
 * One known exception is `#[rustc_std_internal_symbol]` - see
@@ -443,7 +443,7 @@ attributes).  Presence of `#[export_visibility = ...]` does not
 _introduce_ this risk.
 
 The [scope-of-naming-collision-risk] section above points out that symbol
-visiblity affects the _scope_ of the risk of undefined behavior (UB) stemming
+visibility affects the _scope_ of the risk of undefined behavior (UB) stemming
 from naming collisions.  `#[export_visibility = ...]` never increases this risk,
 because the [why-new-attr-cant-increase-visibility] section above shows that
 `#[export_visibility = ...]` can never _increase_ visibility of a symbol.
@@ -595,7 +595,7 @@ but also in the hypothetical future Rust edition.
 
 This RFC treats visibility of Rust standard library symbols as out of scope.
 `-Zdefault-visibility=...` remains the only way to control symbol visibility
-of the Rust standard library (assumming that it can be rebuilt with this
+of the Rust standard library (assuming that it can be rebuilt with this
 command-line flag).  This is ok - the RFC is beneficial even with this limited
 scope.
 

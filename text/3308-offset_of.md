@@ -442,7 +442,7 @@ functionality.
 
 [coffsetof]: https://en.cppreference.com/w/c/types/offsetof
 [cppoffsetof]: https://en.cppreference.com/w/cpp/types/offsetof
-[zigoffsetof]: hhttps://ziglang.org/documentation/0.9.1/#offsetOf
+[zigoffsetof]: https://ziglang.org/documentation/0.9.1/#offsetOf
 [zigbitoffset]: https://ziglang.org/documentation/0.9.1/#bitOffsetOf
 [doffsetof]: https://dlang.org/spec/struct.html#struct_field_properties
 [swiftoffset]: https://github.com/apple/swift-evolution/blob/ec2028964daeda2600e49aa89fd9e59d2363433b/proposals/0210-key-path-offset.md

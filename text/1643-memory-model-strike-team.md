@@ -144,7 +144,7 @@ the documents falls to the lang team.
 
 ### Time frame
 
-Working out a a set of rules for unsafe code is a detailed process and
+Working out a set of rules for unsafe code is a detailed process and
 is expected to take months (or longer, depending on the level of
 detail we ultimately aim for). However, the intention is to publish
 preliminary documents as RFCs as we go, so hopefully we can be

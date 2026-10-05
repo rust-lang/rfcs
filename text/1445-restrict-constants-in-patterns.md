@@ -359,7 +359,7 @@ extracting values, we can compile this to code that reads the field
 value. Semantic equality would potentially force a more conservative
 compilation strategy.
 
-**Better exhautiveness and dead-code checking.** Similarly, we can do
+**Better exhaustiveness and dead-code checking.** Similarly, we can do
 more thorough exhaustiveness and dead-code checking. So for example if
 I have a struct like:
 

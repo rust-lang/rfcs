@@ -160,7 +160,7 @@ Not as flexible as the previous proposal.
 The original [DST5 proposal](http://smallcultfollowing.com/babysteps/blog/2014/01/05/dst-take-5/)
 contains a similar proposal with no opt-in trait, i.e., coercions are completely
 automatic and arbitrarily deep. This is a little too magical and unpredictable.
-It violates some 'soft abstraction boundaries' by interefering with the deep
+It violates some 'soft abstraction boundaries' by interfering with the deep
 structure of objects, sometimes even automatically (and implicitly) allocating.
 
 [RFC 401](https://github.com/rust-lang/rfcs/blob/master/text/0401-coercions.md)

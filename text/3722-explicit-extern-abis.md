@@ -69,7 +69,7 @@ Automatic migration (for `cargo fix --edition`) is trivial: Insert `"C"` after `
 ## Prior art
 
 This was proposed before Rust 1.0 in 2015 in [RFC 697](https://github.com/rust-lang/rfcs/pull/697).
-It was not accepted at the time, because "C" seemed like the only resonable default.
+It was not accepted at the time, because "C" seemed like the only reasonable default.
 It was later closed because it'd be a backwards incompatible change, and editions were not yet invented.
 
 ## Unresolved questions

@@ -98,7 +98,7 @@ into a directory and add it to the path.  Compare this to rust where
 
 As an eRFC, this is meant to convey what we are looking to
 accomplish.  Many of the details may change before
-stablization.
+stabilization.
 
 ### Creating a New Package
 
@@ -324,11 +324,11 @@ Initial guidelines for evaluating decisions:
 [drawbacks]: #drawbacks
 
 This will likely permeate cargo's code base.  While we are
-fairly positive this has a path to stablization and it won't
+fairly positive this has a path to stabilization and it won't
 extend out for too long, we will be paying for that cost with
 little benefit until then.
 
-Then when this is stablized, this increases the surface area of
+Then when this is stabilized, this increases the surface area of
 cargo for the cargo team to maintain and support.
 
 

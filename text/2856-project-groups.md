@@ -158,7 +158,7 @@ iteration.
 
 This process has also been unsuitable to describe features that can take
 multiple years to develop and will become multiple RFCs over the course of its
-design process. Some examples of of this are the "`impl Trait`" and "macros
+design process. Some examples of this are the "`impl Trait`" and "macros
 2.0" features, where the goals has shifted a lot from the initial RFCs, and it
 can be hard to know their current status.
 

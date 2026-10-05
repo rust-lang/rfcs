@@ -47,7 +47,7 @@ This includes a trait for producing async iterators and a trait for consuming as
 
 An "async iterator" is the async version of an [iterator].
 
-The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `AsyncIterator` trait includes the `poll_next` method to assist with defining a async iterator. In the future, we should add a `next` method for use when consuming and interacting with a async iterator (see the [Future possiblilities][future-possibilities] section later in this RFC).
+The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `AsyncIterator` trait includes the `poll_next` method to assist with defining a async iterator. In the future, we should add a `next` method for use when consuming and interacting with a async iterator (see the [Future possibilities][future-possibilities] section later in this RFC).
 
 ### poll_next method
 
@@ -217,7 +217,7 @@ AsyncIterator` values without the need to monomorphize the functions that work
 with them.
 
 Unfortunately, the use of poll does mean that it is harder to write
-async iterator implementations. The long-term fix for this, discussed in the [Future possiblilities][future-possibilities] section, is dedicated [generator syntax].
+async iterator implementations. The long-term fix for this, discussed in the [Future possibilities][future-possibilities] section, is dedicated [generator syntax].
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives

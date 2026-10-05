@@ -24,7 +24,7 @@ about which crates are likely to deserve further manual evaluation.**
 [motivation]: #motivation
 
 Finding and evaluating crates can be time consuming. People already familiar
-with the Rust ecosystem often know which crates are best for which puproses, but
+with the Rust ecosystem often know which crates are best for which purposes, but
 we want to share that knowledge with everyone. For example, someone looking for
 a crate to help create a parser should be able to navigate to a category
 for that purpose and get a list of crates to consider. This list would include

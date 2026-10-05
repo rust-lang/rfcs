@@ -17,7 +17,7 @@ achieve three goals:
    the need for explicit opt-in; and,
 3. continue to require "unsafe" Rust types (those that manipulate
    unsafe pointers or implement special abstractions) to "opt-in" to
-   sendability and sharability with an unsafe declaration.
+   sendability and shareability with an unsafe declaration.
    
 These goals are achieved by two changes:
 
@@ -451,7 +451,7 @@ makes sense because they are intimately tied to analyses the compiler
 performs. For example, the running of destructors and tracking of
 moves requires knowing which types are `Copy`. Similarly, the
 allocation of stack frames need to know whether types are fully
-`Sized`. In contrast, sendability and sharability has been fully
+`Sized`. In contrast, sendability and shareability has been fully
 exported to libraries at this point.
 
 In addition, opting in to `Copy` makes sense for several reasons:

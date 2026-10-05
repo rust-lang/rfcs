@@ -186,7 +186,7 @@ Likewise, white-listed tools may be used as a prefix for lints. So for example,
 perspective.
 
 
-#### Activation and unused attibutes/lints
+#### Activation and unused attributes/lints
 
 For each name on the whitelist, it is indicated if the name is active for
 attributes or lints. A name is only activated if required. So for example,
@@ -194,7 +194,7 @@ attributes or lints. A name is only activated if required. So for example,
 I expect `clippy` will be activated only for lints and attributes, and `rustfmt`
 only for attributes.
 
-A tool that has an active name *must* check for unused lints/attibutes. For
+A tool that has an active name *must* check for unused lints/attributes. For
 example, if `rustfmt` becomes active for attributes, and only recognises
 `rustfmt::skip`, it must produce a warning if a user uses `rustfmt::foo` in
 their code.

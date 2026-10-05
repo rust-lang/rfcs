@@ -189,7 +189,7 @@ doesn't seem like a huge burden to bear for good, optimizable performance.
 default methods that give better optimization opportunities.
 
 Most consumers of the pattern API will use them to more narrowly constraint
-how they are looking for a pattern, which given an optimized implementantion,
+how they are looking for a pattern, which given an optimized implementation,
 should lead to mostly optimal code being generated.
 
 #### Example for the issue with double-ended searching

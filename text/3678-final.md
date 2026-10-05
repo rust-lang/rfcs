@@ -22,7 +22,7 @@ instance, this may be an assumption required for correctness.
 
 This RFC allows restricting the implementation of trait methods.
 
-This mechanism also faciliates marker-like traits providing no implementable
+This mechanism also facilitates marker-like traits providing no implementable
 methods, such that implementers only choose whether to provide the trait and
 never how to implement it; the trait then provides all the method
 implementations.

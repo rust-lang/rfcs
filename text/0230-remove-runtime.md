@@ -130,7 +130,7 @@ several problems in practice.
   For example, the lightest-weight M:N task models are essentially just
   collections of closures, and do not provide any special I/O support. This
   style of lightweight tasks is used in Servo, but also shows up in
-  [java.util.concurrent's exectors](http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Executors.html)
+  [java.util.concurrent's executors](http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Executors.html)
   and [Haskell's par monad](https://hackage.haskell.org/package/monad-par),
   among many others. These lighter weight models do not fit into the current
   runtime system.

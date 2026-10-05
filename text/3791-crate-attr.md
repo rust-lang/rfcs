@@ -131,7 +131,7 @@ My awesome crate
 `include!`, `include_str!`, and `module_path!` all behave the same as when
 written in source code at the top of the crate root. That is, any module or
 path-relative resolution within the `--crate-attr` attribute should be treated
-the same as ocurring within the crate root.
+the same as occurring within the crate root.
 
 `--crate-attr` shares an edition with the crate (i.e. it is affected by `--edition`). This may be observable because `doc` attributes can invoke arbitrary macros. Consider this use of [indoc]:
 ```
@@ -164,7 +164,7 @@ the parsed
 attribute.
 
 The original source parsing (i.e., the file provided to rustc) is not affected
-by the injected attributes, in effect, they are treated as ocurring within 0
+by the injected attributes, in effect, they are treated as occurring within 0
 bytes at the start of the file.
 
 [indoc]: https://docs.rs/indoc/latest/indoc/
