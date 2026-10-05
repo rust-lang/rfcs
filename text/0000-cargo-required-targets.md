@@ -4,31 +4,20 @@
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-The word _target_ is extensively used in this document. The
-[glossary](https://doc.rust-lang.org/cargo/appendix/glossary.html#target) defines its many meanings.
-Here, _target_ refers to the "Target Architecture" for which a package is built. Otherwise, the
-terms "cargo-target" and "target-tuple" are used in accordance with their definitions in the
-glossary.
-
 # Summary
 
 The `required-targets` field in the `[package]` table of `Cargo.toml` lets workspace members
 declare target requirements using
 [`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html). During local
 development, commands such as `cargo check --workspace` skip workspace members whose requirements
-do not match the selected target, much like `required-features` skips cargo-targets when their
-required features are not enabled.
+do not match the selected target, much like
+[`required-features`](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-required-features-field)
+skips cargo-targets when their required features are not enabled.
 
 ```toml
 [package]
 name = "hello_cargo"
 required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
-```
-
-For example, the following command skips this workspace member when checking for Windows:
-
-```console
-$ cargo check --workspace --target x86_64-pc-windows-msvc
 ```
 
 # Motivation
@@ -42,6 +31,12 @@ When working on a project with packages that only build on certain platforms, us
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+The word _target_ is extensively used in this document. The
+[glossary](https://doc.rust-lang.org/cargo/appendix/glossary.html#target) defines its many meanings.
+Here, _target_ refers to the "Target Architecture" for which a package is built. Otherwise, the
+terms "cargo-target" and "target-tuple" are used in accordance with their definitions in the
+glossary.
 
 The `required-targets` field can be added to `Cargo.toml` under the `[package]` table to declare
 target requirements for local development. Cargo uses these requirements to skip workspace members
@@ -61,8 +56,16 @@ edition = "2021"
 required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
 
-This workspace member declares that it requires Linux or macOS. When checking the workspace for
-Windows, Cargo skips `hello_cargo`:
+This workspace member declares that it requires Linux or macOS. Consider a workspace containing
+this package and a portable tool with no `required-targets` field:
+
+```text
+workspace
+├── hello_cargo     requires Linux or macOS
+└── portable_tool   no target requirements
+```
+
+When checking the workspace for Windows, Cargo skips `hello_cargo` and checks `portable_tool`:
 
 ```console
 $ cargo check --workspace --target x86_64-pc-windows-msvc
@@ -84,10 +87,12 @@ builds, targets can be configured through [package metadata](https://docs.rs/abo
 These requirements apply only during local development. `cargo package` and `cargo publish` strip
 the field from the packaged `Cargo.toml`, so it does not restrict users of the published package.
 Checking compatibility between a package's requirements and those of its dependencies is left as
-a [future possibility](#ensuring-proper-use-of-dependencies).
+a [future possibility](#dependency-compatibility-checks).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+## Manifest field
 
 The `required-targets` field is an optional key that tells Cargo which targets the package can be
 built for. The field does not impose requirements on the build host.
@@ -103,21 +108,6 @@ A malformed `required-targets` field will raise an error.
 
 For package selection, omitting `required-targets` has the same effect as specifying `'cfg(all())'`:
 the package is eligible for every target.
-
-When Cargo selects packages for compilation, checking, or documentation (e.g. `build`, `check`,
-`run`, `clippy`, `doc`), it checks that the selected target satisfies the `required-targets` of
-each directly selected package. Commands that do not perform these operations, such as `clean`,
-`fetch`, `tree`, and `fmt`, do not check `required-targets`, even if they accept `--target`.
-
-Cargo determines the selected target using its existing selection rules, including
-[per-package target settings](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#per-package-target).
-Cargo checks the requirement separately for each selected target, before adjusting individual
-cargo-targets to build for the host. A directly selected proc-macro package is therefore checked
-against the package's selected target, even though its proc-macro library is compiled for the host.
-
-As this field is limited to local development, `cargo package` / `cargo publish` strip it from the
-normalized `Cargo.toml`. Retaining the field in that manifest is left as a
-[future possibility](#future-possibilities).
 
 This field supports [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table).
 For example, a workspace can declare shared requirements:
@@ -136,21 +126,38 @@ A member opts in to those requirements:
 required-targets.workspace = true
 ```
 
-## Ignoring builds for unsupported targets
-[ignoring-builds]: #ignoring-builds-for-unsupported-targets
+## Package selection
 
-After normal package selection, Cargo skips incompatible members of an explicitly declared workspace
-when no package is specified with `--package`. This also applies when Cargo is invoked from a
-member's directory. If a package is specified with `--package`, or Cargo is invoked on a standalone
-package outside an explicitly declared workspace, a target mismatch raises an error. The intent is
-to mimic the behavior of `required-features` with package filtering based on targets, as reflected in the
-[field name](#naming).
+When Cargo selects packages for compilation, checking, or documentation (e.g. `build`, `check`,
+`run`, `clippy`, `doc`), it checks that the selected target satisfies the `required-targets` of
+each directly selected package. Commands that do not perform these operations, such as `clean`,
+`fetch`, `tree`, and `fmt`, do not check `required-targets`, even if they accept `--target`.
+
+Cargo determines the selected target using its existing selection rules, including
+[per-package target settings](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#per-package-target).
+Cargo checks the requirement separately for each selected target, before adjusting individual
+cargo-targets to build for the host. A directly selected proc-macro package is therefore checked
+against the package's selected target, even though its proc-macro library is compiled for the host.
+
+After normal package selection, Cargo handles a target mismatch as follows:
+
+| Package selection | Result for an incompatible package |
+| --- | --- |
+| Selection within an explicitly declared workspace without `--package`, including from a member's directory | Skip |
+| Explicit selection with `--package` | Error |
+| Standalone package outside an explicitly declared workspace | Error |
 
 Cargo removes packages skipped for every selected target from the selected packages used to resolve
 dependency features for compilation. Features required through retained dependencies still apply.
 With [`resolver.feature-unification = "workspace"`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#resolverfeature-unification),
 all workspace members continue contributing dependency features. This does not change lockfile
 resolution or feature unification between packages retained for different targets.
+
+## Packaging
+
+As this field is limited to local development, `cargo package` / `cargo publish` strip it from the
+normalized `Cargo.toml`. Retaining the field in that manifest is left as a
+[future possibility](#future-possibilities).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -183,15 +190,21 @@ However, this approach would have several drawbacks:
   their own manifests.
 - Excluding a package from a workspace does not necessarily mean it cannot build for that target,
   so conditional membership does not directly provide the target requirements needed for
-  [future dependency compatibility checks](#ensuring-proper-use-of-dependencies).
+  [future dependency compatibility checks](#dependency-compatibility-checks).
 
 With `required-targets`, packages remain workspace members while only their selection for a build
 changes. Each package declares its own target requirements, which could also support those future
 checks.
 
-## Format
+## Field syntax
 
 The `cfg` string format was chosen because of its simplicity and expressiveness.
+
+Cargo already evaluates `cfg` expressions for platform-specific dependencies using cached target
+information obtained from `rustc`. `required-targets` uses the same kind of matching for the selected
+target. Comparing sets of allowed targets is only needed for the
+[future dependency compatibility checks](#dependency-compatibility-checks).
+
 Other formats can be considered:
 
 Using a list of `cfg` strings, and also accepting explicit target-tuples:
@@ -210,7 +223,7 @@ Using the `[target]` table, for example:
 [target.'cfg(target_os = "linux")']
 supported = true
 ```
-If the list of supported targets is long (should it ever be?), then the `Cargo.toml` file becomes
+If the list of supported targets is long, then the `Cargo.toml` file becomes
 very verbose as well.
 
 A `[supported]` table, with `arch = ["<arch>", ...]`, `os = ["<os>", ...]`, `target = ["<target>",
@@ -221,40 +234,6 @@ how `not` and `all` could be represented in this format. For example:
 os = ["linux", "macos"]
 arch = ["x86_64"]
 ```
-
-## Naming
-[naming]: #naming
-
-The name `required-targets` follows `required-features`: both express requirements that must be
-satisfied for a package or cargo-target to be included in a build.
-
-Unlike the list in `required-features`, `required-targets` contains a single `cfg` expression.
-Conjunctions and disjunctions are explicit through `all(...)` and `any(...)`.
-
-Some other names for this field can be considered:
-
-- `targets`. As in "this package _targets_ ...". Pro: Concise. Con: Ambiguous, and could be confused
-  with the `target` table.
-
-## Package scope vs. cargo-target scope
-
-The `required-targets` field is placed at the package level, and not at the cargo-target level
-(i.e., under `[lib]`, `[[bin]]`, etc.)
-
-It is possible to allow cargo-targets to further restrict the `required-targets` of the package,
-but this is left as a [future possibility](#future-possibilities).
-
-See also: [using a package vs. using a workspace][package-vs-workspace].
-
-[package-vs-workspace]: https://blog.rust-lang.org/inside-rust/2024/02/13/this-development-cycle-in-cargo-1-77/#when-to-use-packages-or-workspaces
-
-## Field format 
-
-Cargo already evaluates `cfg` expressions for platform-specific dependencies using cached target
-information obtained from `rustc`. `required-targets` uses the same kind of matching for the selected
-target. Comparing sets of allowed targets is only needed for the
-[future dependency compatibility checks](#ensuring-proper-use-of-dependencies).
-Some alternative formats are discussed here along with their drawbacks.
 
 ### Target-tuples
 
@@ -283,10 +262,36 @@ likely happen is that packages would copy and paste the target-tuple list matchi
 requirements from somewhere or someone else. Every time a new target with the same attribute is
 added, the whole ecosystem would have to be updated.
 
+## Naming
+[naming]: #naming
+
+The name `required-targets` follows `required-features`: both express requirements that must be
+satisfied for a package or cargo-target to be included in a build.
+
+Unlike the list in `required-features`, `required-targets` contains a single `cfg` expression.
+Conjunctions and disjunctions are explicit through `all(...)` and `any(...)`.
+
+Some other names for this field can be considered:
+
+- `targets`. As in "this package _targets_ ...". Pro: Concise. Con: Ambiguous, and could be confused
+  with the `target` table.
+
+## Package scope vs. cargo-target scope
+
+The `required-targets` field is placed at the package level, and not at the cargo-target level
+(i.e., under `[lib]`, `[[bin]]`, etc.)
+
+It is possible to allow cargo-targets to further restrict the `required-targets` of the package,
+but this is left as a [future possibility](#future-possibilities).
+
+See also: [using a package vs. using a workspace][package-vs-workspace].
+
+[package-vs-workspace]: https://blog.rust-lang.org/inside-rust/2024/02/13/this-development-cycle-in-cargo-1-77/#when-to-use-packages-or-workspaces
+
 # Prior art
 [prior-art]: #prior-art
 
-Users can already select which packages they want to select in a workspace with the flags
+Users can already select packages in a workspace with the flags
 `--package` and `--exclude`. Cargo features can also be used to restrict which cargo-target
 is built using the `required-features` field. However, `required-features` does not allow filtering
 packages in a workspace, nor does it allow filtering out the library of a package.
@@ -306,24 +311,21 @@ compile_error!("unsupported target cfg");
 [`getrandom`](https://github.com/rust-random/getrandom/blob/9fb4a9a2481018e4ab58d597ecd167a609033149/src/backends.rs#L156-L160)
 is an example of a crate utilizing this method.
 
-In other system level languages, vendoring dependencies is a common practice, and the user would be
-responsible for ensuring that the dependencies are compatible with the target.
-
 Some higher-level languages and build tools have the ability to specify which platforms are compatible.
-- Python package has [classifiers](https://pypi.org/classifiers/) as package metadata that includes supported platforms
+
+- Python packages have [classifiers](https://pypi.org/classifiers/) as package metadata that includes supported platforms.
 - Python wheels (pre-built packages) have [platform compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-compatibility-tags).
     The reference explains how these are [used](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use)
     by installers to determine which build of a package to install.
 - `npm` allows specifying which [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and
     [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) a package supports. These generate an
     error when installing a package that does not support the platform used.
-- Swift has [`package.platforms`](https://developer.apple.com/documentation/packagedescription/package/platforms), which
-    allows specifying which platforms and versions a package support (mostly for apple products e.g., `macOS`, `iOS`, `watchOS`, `tvOS`).
-- [Buck](https://buck2.build/docs/rule_authors/configurations/#target-platform-compatibility)
-    and [Bazel](https://bazel.build/reference/be/common-definitions#common.target_compatible_with)
-    both provide `target_compatible_with`.
-Some accept a string or list of strings representing the platforms, while `Buck` & `Bazel` seem to accept a
-form comparable to `cfg` in Rust.
+- Swift has [`package.platforms`](https://developer.apple.com/documentation/packagedescription/package/platforms)
+    to specify minimum deployment versions for platforms such as `macOS`, `iOS`, `watchOS`, and `tvOS`.
+- [Buck](https://buck2.build/docs/concepts/configurations/#using-configuration-compatibility)
+    and [Bazel](https://bazel.build/concepts/platforms#skipping-incompatible-targets)
+    both provide `target_compatible_with`. By default, Bazel skips incompatible targets selected
+    through wildcard patterns and reports an error when an incompatible target is requested explicitly.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -335,6 +337,25 @@ form comparable to `cfg` in Rust.
 
 Additional conditions could express standard-library support, whether the selected target matches
 the host, or target support tiers.
+
+## `required-targets` at the cargo-target level
+
+The `required-targets` field could also be added at the cargo-target level to have more
+fine-grained control over which targets a cargo-target supports. The
+`required-targets` of a cargo-target would most likely need to be a subset of the package's
+`required-targets`.
+
+This could also allow for a cargo-target to be swapped out based on the selected target. For example,
+one could specify which binary should be used as `main` based on the selected target
+[#9208](https://github.com/rust-lang/cargo/issues/9208).
+
+This could also let a package select its `cdylib` library target for `wasm-pack` builds and its
+binary target for desktop builds, as requested in [#12260](https://github.com/rust-lang/cargo/issues/12260).
+
+## Interaction with crate features
+
+Currently, crate features do not change a package's `required-targets`. Crate features could be
+allowed to modify these requirements to restrict or expand the set of permitted targets.
 
 ## Workspace selection of build tools
 
@@ -406,7 +427,7 @@ Open questions for this separate design include:
 - [Lockfile stability across Cargo versions](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973817534).
 - [Whether to record resolution targets and how to publish target-restricted lockfiles](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973868712).
 
-## Ensuring proper use of dependencies
+## Dependency compatibility checks
 
 Missing target capabilities, such as particular atomic operations, can produce errors about
 unavailable APIs. Some of these problems won't be found until you've built or tested your project
@@ -545,16 +566,27 @@ With `lib = true`, the dependency also provides an ordinary Rust library. That l
 checked separately using the rules for its dependency kind. An artifact's `target` override does
 not change the target used for this additional library build.
 
-### Comparing `required-targets`
+### Comparing target requirements
 
 `required-targets` uses Rust's existing `cfg` syntax to check the selected target. The
-[future dependency compatibility checks](#ensuring-proper-use-of-dependencies) instead compare
+[future dependency compatibility checks](#dependency-compatibility-checks) instead compare
 the sets of targets that two expressions allow, to determine whether one is a _subset_ of the
 other or whether they are _mutually exclusive_.
+
+For example, using operating-system requirements:
+
+| Package allows | Dependency allows | Relationship |
+| --- | --- | --- |
+| Linux | Linux or macOS | Package's targets are a subset |
+| Linux | Windows | Mutually exclusive |
+| Linux or macOS | Linux | Dependency does not cover every package target |
 
 The rules below give sufficient conditions for proving these relations, but do not cover every
 equivalent expression. Failure to prove a relation with these rules does not mean it is false.
 A complete comparison algorithm and handling of inconclusive results remain to be defined.
+
+<details>
+<summary>Comparison algorithm details</summary>
 
 #### Flattening `not`, `any`, and `all` in `cfg` specifications
 
@@ -672,6 +704,8 @@ because `target_family = "wasm"` is not mutually exclusive with other target fam
 increase usability. By extension, `target_family = "windows"` would now be mutually exclusive with
 `target_os = "linux"`, for example.
 
+</details>
+
 ## Lint against unused target-specific tables
 
 If a package has:
@@ -690,26 +724,7 @@ A lint could be added to highlight the fact that the `[target]` table is unused.
 An exception should be made for `target.'cfg(any())'`/`target.'cfg(false)'` tables, as they are often
 used to lock the version of transitive dependencies, and should not be linted against.
 
-## `required-targets` at the cargo-target level
-
-The `required-targets` field could also be added at the cargo-target level to have more
-fine-grained control over which targets a cargo-target supports. The
-`required-targets` of a cargo-target would most likely need to be a subset of the package's
-`required-targets`.
-
-This could also allow for a cargo-target to be swapped out based on the selected target. For example,
-one could specify which binary should be used as `main` based on the selected target
-[#9208](https://github.com/rust-lang/cargo/issues/9208).
-
-This could also let a package select its `cdylib` library target for `wasm-pack` builds and its
-binary target for desktop builds, as requested in [#12260](https://github.com/rust-lang/cargo/issues/12260).
-
-## Interaction with crate features
-
-Currently, crate features do not change a package's `required-targets`. Crate features could be
-allowed to modify these requirements to restrict or expand the set of permitted targets.
-
-## Misc
+## Tooling integration
 
 - Have `cargo add` check the `required-targets` before adding a dependency.
 - Show which targets are supported on `docs.rs`.
