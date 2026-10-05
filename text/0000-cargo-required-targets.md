@@ -40,19 +40,6 @@ specify platform requirements of a package.
 
 When working on a project with packages that only build on certain platforms, users cannot run Cargo commands across the entire workspace (e.g. `cargo test --workspace`) but must individually select packages that only work on the specific platform (e.g. `cargo test --workspace --exclude firmware`).  This extends to CI with people wanting to write matrix jobs but have to hand maintain the list of packages for each platform in the matrix.
 
-## Long-term Motivations
-
-This RFC unblocks further work to improve platform-specific packages.  While these problems are important, solving them has been left to  [future
-possibilities](#future-possibilities) to deliver an MVP we can then build on.
-
-### Include fewer packages with `cargo vendor`
-
-`Cargo.lock`, and by extension, `cargo vendor`, must assume that a package may be built on any platform that has or will exist.  This means that if a transitive dependency pulls in Windows-specific dependencies, `cargo vendor` will include them when run on a Linux-only application.  Being able to tell `cargo vendor` what platforms to care about can reduce the space used in a repo and reduce churn.
-
-### Dependency Management 
-
-Likewise, today users either need to audit dependencies irrelevant for the platforms they target or filter these out somehow.  By providing first-class support for specifying what platform features a package requires, audit tools can consolidate on that for narrowing down the list of what dependencies to audit.
-
 ### More specific error messages
 
 The error message when a library has platform-specific features, like requiring atomics, is about parts of `std` missing which could be for one of several reasons. Some of these problems won't be found until you've built or tested your project on one of these platforms. Like with [#2495](https://rust-lang.github.io/rfcs/2495-min-rust-version.html), if library authors could provide this information to Cargo, developers can get an improved error message under any circumstance.
@@ -349,6 +336,64 @@ form comparable to `cfg` in Rust.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Target-specific dependency resolution
+
+`Cargo.lock`, and by extension, `cargo vendor`, must assume that a package may be built on any platform that has or will exist.  This means that if a transitive dependency pulls in Windows-specific dependencies, `cargo vendor` will include them when run on a Linux-only application.  Being able to tell `cargo vendor` what platforms to care about can reduce the space used in a repo and reduce churn.
+
+Likewise, today users either need to audit dependencies irrelevant for the platforms they target or
+filter these out somehow. Target-specific dependency resolution could let audit tools focus on
+dependencies for the configured targets.
+
+Target-specific dependency resolution and vendoring can proceed independently of this RFC.
+
+A separate `resolver.targets` setting in `.cargo/config.toml` could specify concrete target-tuples
+for dependency resolution and vendoring. This would describe an application's deployment targets
+rather than the package's target requirements.
+
+### Eliminating unused dependencies from `Cargo.lock`
+
+A package's dependencies may themselves have `[target.'cfg(..)'.dependencies]` tables, which may
+never be used for the targets specified in `resolver.targets`. Omitting these dependencies from
+`Cargo.lock` could reduce the packages included by `cargo vendor`.
+
+Consider an application with the following `.cargo/config.toml`:
+
+```toml
+[resolver]
+targets = ["x86_64-unknown-linux-gnu"]
+```
+
+Its dependency manifests are:
+
+```toml
+[package]
+name = "foo"
+# ...
+
+[dependencies]
+bar = "0.1.0"
+```
+```toml
+[package]
+name = "bar"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+baz = "0.1.0"
+```
+Currently, `baz` is included in the dependency tree of `foo`. With resolution restricted to the
+configured Linux target, the macOS-only dependency on `baz` would not be needed. If no other
+selected dependency path needs `baz`, it could be omitted from `Cargo.lock` and vendoring.
+
+Dependencies used by build scripts and procedural macros must still be considered for the host,
+which can differ from the configured deployment targets. Restricting deployment targets must not
+remove dependencies needed to build on that host.
+
+Open questions for this separate design include:
+
+- [Dependency-path pruning](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973807418).
+- [Lockfile stability across Cargo versions](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973817534).
+- [Whether to record resolution targets and how to publish target-restricted lockfiles](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973868712).
+
 ## Ensuring proper use of dependencies
 
 Complicated errors caused by packages and dependencies that are incompatible with the selected
@@ -390,7 +435,7 @@ Some options for handling this include
 - A bespoke manifest override
   - One-off feature that needs design work
 - A CLI override like `--ignore-rust-version`
-  - This precludes `Cargo.lock` trimming as the lockfile is meant to capture dependencies for every potential state a package may be run in
+  - Ignoring package requirements need not affect lockfile pruning based on a separate `resolver.targets` setting
   - This affects the entire dependency tree and not just the package with questionable `required-targets`
   - Every dependent of the package with a questionable `required-targets` must do this
 - A lint like proposed for `package.rust-version`
@@ -477,44 +522,10 @@ dependency does not have a `target` field, then it would be checked against the 
 `required-targets`, like any other dependency.
 
 
-## Eliminating unused dependencies from `Cargo.lock`
-
-A package's dependencies may themselves have `[target.'cfg(..)'.dependencies]` tables, which may
-never be used because of the `required-targets` restrictions of the package. These can safely be
-eliminated from the dependency tree of the package.
-
-Consider the following example:
-```toml
-[package]
-name = "foo"
-# ...
-required-targets = 'cfg(target_os = "linux")'
-
-[dependencies]
-bar = "0.1.0"
-```
-```toml
-[package]
-name = "bar"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-baz = "0.1.0"
-```
-Currently, `baz` is included in the dependency tree of `foo`, even though `foo` is never built for
-`macos`. `baz` could be pruned from the dependency tree of `foo`, since `target_os = "macos"` is
-mutually exclusive with `target_os = "linux"`.
-
-This only applies to `[dependencies]` and `[dev-dependencies]`, as `[build-dependencies]` are
-[not restrained by `required-targets`](build-dependencies-compatability), so they are not pruned.
-
-Formally, dependencies (and transitive dependencies) under `[target.**.dependencies]` tables are
-eliminated from the dependency tree of a package if the `required-targets` of the package is
-mutually exclusive with the target preconditions of the dependency.
-
 ### Comparing `required-targets`
 
-To prune the dependency tree, and to ensure proper use of dependencies, it becomes necessary to
-compare `required-targets`. When comparing two sets of `required-targets`, it is necessary to
+The [dependency compatibility checks](#ensuring-proper-use-of-dependencies) described above would
+require comparing `required-targets`. When comparing two sets of `required-targets`, it is necessary to
 know if one is a _subset_ of the other, or if both are _mutually exclusive_. To proceed, both
 are flattened to the same representation, and they are then compared. This process is done
 internally, and does not affect the `Cargo.toml` file.
