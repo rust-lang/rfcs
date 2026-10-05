@@ -179,6 +179,33 @@ resolution or feature unification between packages retained for different target
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Conditional workspace membership
+
+Alternatively, instead of adding a `required-targets` package field, Cargo could make
+`workspace.members` and `workspace.exclude` conditional on target `cfg` expressions.
+
+For example, an extension could look like:
+
+```toml
+[workspace.'cfg(any(target_os = "linux", target_os = "macos"))']
+members = ["hello_cargo"]
+```
+
+This would make `hello_cargo` a workspace member only when the selected target is Linux or macOS.
+
+However, this approach would have several drawbacks:
+
+- A package's workspace membership would change depending on the selected target.
+- Target conditions for individual packages would be stored in the workspace manifest instead of
+  their own manifests.
+- Excluding a package from a workspace does not necessarily mean it cannot build for that target,
+  so conditional membership does not directly provide the target requirements needed for
+  [future dependency compatibility checks](#ensuring-proper-use-of-dependencies).
+
+With `required-targets`, packages remain workspace members while only their selection for a build
+changes. Each package declares its own target requirements, which could also support those future
+checks.
+
 ## Format
 
 The `cfg` string format was chosen because of its simplicity and expressiveness.
@@ -203,7 +230,7 @@ supported = true
 If the list of supported targets is long (should it ever be?), then the `Cargo.toml` file becomes
 very verbose as well.
 
-A `[suppported]` table, with `arch = ["<arch>", ...]`, `os = ["<os>", ...]`, `target = ["<target>",
+A `[supported]` table, with `arch = ["<arch>", ...]`, `os = ["<os>", ...]`, `target = ["<target>",
 ...]`, etc. This is more verbose, complex to implement, learn, and remember. It is also not obvious
 how `not` and `all` could be represented in this format. For example:
 ```toml
@@ -229,21 +256,22 @@ Some other names for this field can be considered:
 ## Package scope vs. cargo-target scope
 
 The `required-targets` field is placed at the package level, and not at the cargo-target level
-(i.e., under, `[lib]`, `[[bin]]`, etc.)
+(i.e., under `[lib]`, `[[bin]]`, etc.)
 
 It is possible to allow cargo-targets to further restrict the `required-targets` of the package,
 but this is left as a [future possibility](#future-possibilities).
 
-See also: [using a package vs. using a workspace](package-vs-workspace).
+See also: [using a package vs. using a workspace][package-vs-workspace].
 
-[package-vs-workspace]:
-#https://blog.rust-lang.org/inside-rust/2024/02/13/this-development-cycle-in-cargo-1-77.html#when-to-use-packages-or-workspaces
+[package-vs-workspace]: https://blog.rust-lang.org/inside-rust/2024/02/13/this-development-cycle-in-cargo-1-77/#when-to-use-packages-or-workspaces
 
 ## Field format 
 
-Using the `cfg` syntax complicates the implementation (and thus maintenance), and may require a substantial
-amount of calls to `rustc` to check target-`cfg` compatibility. Some alternatives are discussed here
-along with their drawbacks.
+Cargo already evaluates `cfg` expressions for platform-specific dependencies using cached target
+information obtained from `rustc`. `required-targets` uses the same kind of matching for the selected
+target. Comparing sets of allowed targets is only needed for the
+[future dependency compatibility checks](#ensuring-proper-use-of-dependencies).
+Some alternative formats are discussed here along with their drawbacks.
 
 ### Target-tuples
 
@@ -255,21 +283,19 @@ Target-tuple names also do not encapsulate the semantics of the target.
 
 ### Using wildcards
 
-Instead of using `cfg` specifications, one could use wildcards (e.g., `x86_64-*-linux-*`). This is
-much simpler to implement, target-tuples are syntactically checked for a match instead of solving
-set relations for `cfg`. However, this is not as expressive as `cfg`, and does not correctly
+Instead of using `cfg` specifications, one could use wildcards (e.g., `x86_64-*-linux-*`) to match
+target-tuple names directly. However, this is not as expressive as `cfg`, and does not correctly
 represent the semantics of target-tuples. For example, supporting `target_family = "unix"` would
 require an annoyingly long list of wildcard patterns. Things like `target_pointer_width = "32"` are
 even harder to represent, and things like `target_feature = "avx"` are basically not representable.
-Also, this is new syntax not currently used by cargo.
+Also, this is new syntax not currently used by Cargo.
 
 ### Allowing only target-tuples
 
-This is an even stricter version of the above. Set relations between `required-targets` lists are
-exact, and the resolver can determine if a platform-specific dependency can be pruned from the
-dependency tree more easily, hence why the original proposal chose this format. Being even simpler
-to implement, this alternative may not be expressive enough for the common use case. Packages rarely
-support specific target-tuples, rather they support/require specific target attributes. What would
+This is an even stricter version of the above. Explicit target-tuple lists would simplify set
+comparisons for future dependency compatibility checks. However, this alternative may not be
+expressive enough for the common use case. Packages rarely support specific target-tuples, rather
+they support/require specific target attributes. What would
 likely happen is that packages would copy and paste the target-tuple list matching their
 requirements from somewhere or someone else. Every time a new target with the same attribute is
 added, the whole ecosystem would have to be updated.
@@ -319,8 +345,6 @@ form comparable to `cfg` in Rust.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-- Should we strip the `cfg` prefix from the field e.g., `required-targets = 'target_os = "linux"'`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
