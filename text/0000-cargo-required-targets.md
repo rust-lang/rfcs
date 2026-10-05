@@ -40,10 +40,6 @@ specify platform requirements of a package.
 
 When working on a project with packages that only build on certain platforms, users cannot run Cargo commands across the entire workspace (e.g. `cargo test --workspace`) but must individually select packages that only work on the specific platform (e.g. `cargo test --workspace --exclude firmware`).  This extends to CI with people wanting to write matrix jobs but have to hand maintain the list of packages for each platform in the matrix.
 
-### More specific error messages
-
-The error message when a library has platform-specific features, like requiring atomics, is about parts of `std` missing which could be for one of several reasons. Some of these problems won't be found until you've built or tested your project on one of these platforms. Like with [#2495](https://rust-lang.github.io/rfcs/2495-min-rust-version.html), if library authors could provide this information to Cargo, developers can get an improved error message under any circumstance.
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -412,10 +408,13 @@ Open questions for this separate design include:
 
 ## Ensuring proper use of dependencies
 
-Complicated errors caused by packages and dependencies that are incompatible with the selected
-target can be avoided by using the information in the `required-targets` field. For example, a
-warning or an error could be raised if a package uses a dependency that does not accept the package's
-`required-targets`:
+Missing target capabilities, such as particular atomic operations, can produce errors about
+unavailable APIs. Some of these problems won't be found until you've built or tested your project
+on an affected target. Like with [#2495](https://rust-lang.github.io/rfcs/2495-min-rust-version.html),
+declared requirements could let Cargo identify an incompatible dependency before compiling it.
+
+For example, a warning or an error could be raised if a package uses a dependency that does not
+accept the package's `required-targets`:
 ```toml
 [package]
 name = "bar"
@@ -430,7 +429,7 @@ required-targets = 'cfg(target_os = "linux")'
 bar = "0.1.0"
 ```
 Here, a compilation error helps by showing which dependency is incompatible with the package's
-`required-targets`, rather than a cryptic error message about missing parts of `std`, or runtime
+`required-targets`, rather than a cryptic error message about unavailable APIs, or runtime
 errors.
 
 Cargo's documentation should give clear guidance for when to use this field, and should not suggest
@@ -455,35 +454,45 @@ Some options for handling this include
   - This affects the entire dependency tree and not just the package with questionable `required-targets`
   - Every dependent of the package with a questionable `required-targets` must do this
 - A lint like proposed for `package.rust-version`
-  - Blocked on [cargo#12235](https://github.com/rust-lang/cargo/issues/12235)
   - See also CLI override
 - Allow a registry database to override `required-targets`
   - Blocked on a lot of design work ([related discussion](https://blog.rust-lang.org/inside-rust/2024/03/26/this-development-cycle-in-cargo-1.78.html#why-is-this-yanked))
 
 ### Compatibility of `[dependencies]`
 
-One could restrict the set of `required-targets` of a package to be a subset of the
-`required-targets` of its `[dependencies]`. If the crate itself had no `required-targets`
-specified, then all dependencies would need to support all targets.
+For dependencies built for the same target as the package, one could restrict the package's
+`required-targets` to be a subset of each dependency's `required-targets`. If the crate itself had
+no `required-targets` specified, then those dependencies would need to support all targets.
+
+Alternatively, omitting `required-targets` could opt out of dependency compatibility checks.
+Explicitly specifying `required-targets = 'cfg(all())'` would request those checks for all targets.
+This distinction would not affect package selection.
 
 If a dependency does not respect this requirement (if it is not compatible), an error would be
 raised and the build would fail.
 
-Enforcing this means a package cannot support targets that are not supported by its dependencies,
-which is a good thing assuming the dependencies have correctly specified their `required-targets`.
+Enforcing this means a package cannot support targets that are not supported by dependencies built
+for those targets, assuming the dependencies have correctly specified their `required-targets`.
+
+Procedural macros and their dependencies are built for the host, so dependency compatibility checks
+would need to consider the host target, as with build dependencies. This requires distinguishing
+host build requirements from the selected-target eligibility defined by this RFC. A proc-macro's
+`required-targets` condition cannot simply be reinterpreted as a host requirement.
 
 ### Compatibility of `[dev-dependencies]`
 
-`[dev-dependencies]` should be checked using the same method as regular `[dependencies]`. That is,
-the package's `required-targets` needs to be a subset of every `[dev-dependencies]`'s
-`required-targets`. The rationale is that an example, test, or benchmark has access to the
+`[dev-dependencies]` should be checked using the same method as regular `[dependencies]`, including
+the separate consideration of host compatibility for procedural macros. For dependencies built for
+the package's target, the package's `required-targets` needs to be a subset of each dependency's
+`required-targets`.
+The rationale is that an example, test, or benchmark has access to the
 package's library and binaries, and so it must respect the `required-targets` of the package.
 
 ### Compatibility of `[build-dependencies]`
-[build-dependencies-compatability]: #compatibility-of-build-dependencies
+[build-dependencies-compatibility]: #compatibility-of-build-dependencies
 
-What makes `[build-dependencies]` unique is that they are built for the host computer, and not the
-selected target. As such, they are not restrained by the `required-targets` of the package. Hence,
+Build dependencies are built for the host computer, and not the selected target. As such,
+they are not restrained by the `required-targets` of the package. Hence,
 all dependencies are allowed in the `[build-dependencies]` table. However, a build error could be
 raised if one of the build dependencies does not support the _host-tuple_ at build time.
 
@@ -498,13 +507,9 @@ Platform-specific dependencies are dependencies under the `[target.**]` table. T
 dependencies, build-dependencies, and dev-dependencies. Rules could be defined to ensure that
 platform-specific dependencies are declared correctly.
 
-When platform-specific dependencies are declared, the conditions under which they are declared
-should be a subset of each dependency's `required-targets`. For example, a dependency declared
-under `[target.'cfg(target_os = "linux")'.dependencies]` should at least support the `linux` OS.
-
-For regular dependencies and dev-dependencies, it would suffice for a platform-specific dependency
-to support the _intersection_ of the package's required-targets, and the target conditions it is
-declared under. For example:
+For platform-specific dependencies built for the package's target, each dependency's
+`required-targets` would need to include the _intersection_ of the package's `required-targets` and
+the target condition under which the dependency is declared. For example:
 ```toml
 [package]
 # ...
@@ -531,26 +536,31 @@ This would not be required if the package itself had `required-targets = 'cfg(ta
 
 ### Artifact dependencies
 
-If an artifact dependency has a `target` field, then the dependency would not be checked against the
-package's `required-targets`. However, the selected `target` for the dependency would need to be
-compatible with the dependency's `required-targets`, or else an error is raised. If the artifact
-dependency does not have a `target` field, then it would be checked against the package's
-`required-targets`, like any other dependency.
+Each artifact would be checked against the dependency's `required-targets` using the target it is
+built for. An explicit `target` field selects that target. Without it, build-dependency artifacts
+use the host target, while other artifacts use the declaring package's target.
+`target = "target"` makes a build-dependency artifact use the declaring package's target.
 
+With `lib = true`, the dependency also provides an ordinary Rust library. That library would be
+checked separately using the rules for its dependency kind. An artifact's `target` override does
+not change the target used for this additional library build.
 
 ### Comparing `required-targets`
 
-The [dependency compatibility checks](#ensuring-proper-use-of-dependencies) described above would
-require comparing `required-targets`. When comparing two sets of `required-targets`, it is necessary to
-know if one is a _subset_ of the other, or if both are _mutually exclusive_. To proceed, both
-are flattened to the same representation, and they are then compared. This process is done
-internally, and does not affect the `Cargo.toml` file.
+`required-targets` uses Rust's existing `cfg` syntax to check the selected target. The
+[future dependency compatibility checks](#ensuring-proper-use-of-dependencies) instead compare
+the sets of targets that two expressions allow, to determine whether one is a _subset_ of the
+other or whether they are _mutually exclusive_.
+
+The rules below give sufficient conditions for proving these relations, but do not cover every
+equivalent expression. Failure to prove a relation with these rules does not mean it is false.
+A complete comparison algorithm and handling of inconclusive results remain to be defined.
 
 #### Flattening `not`, `any`, and `all` in `cfg` specifications
 
-Since `cfg` specifications can contain `not`, `any`, and `all` operators, these must be handled.
-This is done by flattening the `cfg` specification to a specific form. This form is equivalent to
-[disjunctive normal form](https://en.wikipedia.org/wiki/Disjunctive_normal_form).
+To compare these sets, each expression is rewritten in
+[disjunctive normal form](https://en.wikipedia.org/wiki/Disjunctive_normal_form). In the worst case,
+the number of terms grows exponentially with the size of the original expression.
 
 The `not` operator is "passed through" `any` and `all` operators using [De Morgan's
 laws](https://en.wikipedia.org/wiki/De_Morgan%27s_laws), until it reaches a single `cfg`
@@ -563,7 +573,7 @@ Top level `all` operators are kept as is, as long as they do not contain nested 
 there is an `any` inside an `all`, the statement is split into multiple `all` statements. For
 example,
 ```toml
-required-targets = 'cfg(all(target_os = "linux", any(target_arch = "x86_64", target_arch = "arm"))'
+required-targets = 'cfg(all(target_os = "linux", any(target_arch = "x86_64", target_arch = "arm")))'
 ```
 is transformed into
 ```toml
@@ -571,8 +581,8 @@ required-targets = 'cfg(any(all(target_os = "linux", target_arch = "x86_64"), al
 ```
 If an `all` contains an `all`, the inner `all` is flattened into the outer `all`.
 
-The result of these transformations on a `cfg` specification is a union of `cfg` specifications that
-either contains a single specification, or an `all` operator with no nested operators.
+The result is a union of individual conditions or `all` groups with no nested `any` or `all`
+operators. Individual conditions may still be negated with `not`.
 
 #### The subset relation
 
@@ -580,9 +590,14 @@ To determine if the `required-targets` set "A" is a subset of another such set "
 mathematical definition of subset is used. That is, "A" is a subset of "B" if and only if each
 element of "A" is contained in "B".
 
-So each element of the union forming "A" is compared against each element of the union forming "B".
+One sufficient test is to show that each term of the union forming "A" is contained in at least
+one term of the union forming "B". This does not cover cases where several terms of "B" together
+cover a term of "A".
 A `cfg(all(A, B, ...))` is a subset of a `cfg(all(C, D ...))`, if the list `C, D, ...` is a subset
-of the list `A, B, ...`.
+of the list `A, B, ...`. For negated conditions, `cfg(A)` is a subset of `cfg(not(B))` if
+`cfg(A)` and `cfg(B)` are mutually exclusive.
+For example, `cfg(target_os = "linux")` is a subset of `cfg(not(target_os = "windows"))`, because
+a target cannot have both operating system values.
 
 _Note_: `cfg(A) == cfg(all(A))`.
 
@@ -594,8 +609,6 @@ of "A" must be mutually exclusive with _all_ elements of "B" (The inverse is als
 So each element of "A" is compared against each element of "B". A `cfg(all(A, B, ...))` is mutually
 exclusive with a `cfg(all(C, D, ...))` if any element of the list `A, B, ...` is mutually exclusive
 with any element of the list `C, D, ...`.
-
-_Note_: `cfg(A) == cfg(all(A))`.
 
 Two `cfg` singletons are mutually exclusive under the following rules:
 - `cfg(A)` is mutually exclusive with `cfg(not(A))`.
@@ -639,12 +652,17 @@ bar = "0.1.0"
 ```
 This could compile if `target_os = "macos"` was a subset of `target_family = "unix"`.
 
+The following relations are valid only for a set of targets whose definitions are known to satisfy
+them, such as verified built-in targets. They must not be assumed for arbitrary
+[custom targets](https://doc.rust-lang.org/rustc/targets/custom.html), which can use
+`target_os = "linux"` without the Unix family or belong to both the Unix and Windows families.
+
 Specifically, two extra relations can be defined:
 - `cfg(target_os = "windows")` ⊆ `cfg(target_family = "windows")`.
-- `cfg(target_os = <unix-os>)` ⊆ `cfg(target_family = "unix")`, where `<unix-os>` is any of
+- `cfg(target_os = <unix-os>)` ⊆ `cfg(target_family = "unix")`. Examples of `<unix-os>` include
   `["freebsd", "linux", "netbsd", "redox", "illumos", "fuchsia", "emscripten", "android", "ios",
-  "macos", "solaris"]`. This list needs to be updated if a new `unix` OS is supported by `rustc`'s
-  official target list. This would make the first example compile.
+  "macos", "solaris"]`. These relations need to be kept in sync with the target definitions used
+  for the comparison. This would make the first example compile.
 
 _Note:_ The contrapositive of these relations is also true.
 
@@ -653,9 +671,6 @@ because `target_family = "wasm"` is not mutually exclusive with other target fam
 `target_family = "unix"` could be defined as mutually exclusive with `target_family = "windows"` to
 increase usability. By extension, `target_family = "windows"` would now be mutually exclusive with
 `target_os = "linux"`, for example.
-
-_Note:_ More relations could be defined, for example `target_feature = "neon"` ⊆ `target_arch =
-"arm"`. With this however, things start to get complicated.
 
 ## Lint against unused target-specific tables
 
@@ -672,7 +687,7 @@ required-targets = 'cfg(target_os = "linux")'
 
 A lint could be added to highlight the fact that the `[target]` table is unused.
 
-Exception should be made for `target.'cfg(any())'`/`target.'cfg(false)` tables, as they are often
+An exception should be made for `target.'cfg(any())'`/`target.'cfg(false)'` tables, as they are often
 used to lock the version of transitive dependencies, and should not be linted against.
 
 ## `required-targets` at the cargo-target level
