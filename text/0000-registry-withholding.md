@@ -47,7 +47,7 @@ ecosystems (PyPI, npm) that started with omission have since added explanatory m
 The security boundary that we are focused on here is fresh acquisition, with a cold cache. Cargo avoids withheld bytes 
 whenever its view of the index is fresh, but the combination of a warm crate cache and a stale, cached view of the 
 index that is missing a newer `withheld` marker, will allow continued use of withheld bytes. This problem also affects
-deletion today. Our plans to fix it are left to a future RFC.
+deletion today. This gap will mostly be addressed by verified mirrors using the upcoming TUF signing work.
 
 Out of scope for this RFC:
 - publish-time `unreleased` state (which does not imply misuse, for instance publish-time review)
@@ -231,17 +231,16 @@ lockfile resolves again unchanged.
 a binary can fail to install because a dependency is withheld where an older version
 would have succeeded; Cargo does not inspect candidates' bundled lockfiles when choosing.
 
-Cache lifecycles are unchanged. A withheld version keeps building only while the local
-index was cached before the withholding and not refreshed, the `.crate` bytes are already
-cached, and the lockfile or cached index satisfies resolution without a refresh. The next
-change to `Cargo.toml` or `Cargo.lock` touching the registry, `cargo update`, or cache eviction
-clears it; CI caches of `~/.cargo` and mirrors on the same snapshot preserve it.
+Cache lifecycles are unchanged. A withheld version keeps building if it was last seen
+not-withheld, and has its bytes and index file cached. Once Cargo integrates with
+verifiable mirrors, it will invalidate caches on any upstream change for verified mirrors.
 
 Related:
 - Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
 - Drawbacks: [Warm caches keep withheld versions buildable](#warm-caches-keep-withheld-versions-buildable)
+- Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
 - Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
-- Future possibilities: [Probing cached crates for withholding (and yanked state) to avoid stale-cache risks](#probing-cached-crates-for-withholding-and-yanked-state-to-avoid-stale-cache-risks)
+
 
 ### docs.rs
 
@@ -274,7 +273,8 @@ mechanisms not consider byte availability
 - Especially painful for `cargo install --locked`. See Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
 
 #### Warm caches keep withheld versions buildable
-- True of any design without cache evictions. See Future possibilities: [Probing cached crates for withholding (and yanked state) to avoid stale-cache risks](#probing-cached-crates-for-withholding-and-yanked-state-to-avoid-stale-cache-risks)
+- True of any design without cache evictions. Will be addressed for verifiable mirrors by default, see Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
+
 - Already the case for current crate deletion practices
 
 ## Rationale and alternatives
@@ -388,6 +388,15 @@ the other v3-gated features stabilize.
 ## Prior art
 [prior-art]: #prior-art
 
+### Cache invalidation for verifiable mirrors
+
+The [ongoing Verifiable Mirror Project Goal](https://goals.rust-lang.org/2026/mirroring.html) will mostly
+address the "stale-cache" risk that currently impacts deleted crates and will impact quarantined crates.
+
+Because the TUF allows vending a verifiable merkle tree for all index content, Cargo can cheaply evaluate
+subtrees such as individual crate files for consistency with upstream. This allows Cargo to invalidate its
+cache if it sees a new change, such as a quarantine on an already-cached crate's index metadata.
+
 ### Withholding across ecosystems
 
 Across language ecosystems, the most crates.io-like registries (PyPI, npm), have implemented
@@ -493,11 +502,6 @@ alternative or implicitly fall back.
 #### `cargo info` support
 - `cargo info` shows only candidate versions, meaning not yanked or withheld ones. It could show both,
 with a marker, since the index has that state.
-
-#### Probing cached crates for withholding (and yanked state) to avoid stale-cache risks
-- A HEAD request to check for byte existence would be a cheap probe for whether the cached index is stale,
-perhaps worth turning on by default in CI.
-- This merits its own RFC since it adds multiple new network calls during happy-path resolution.
 
 #### Better display of reasons for withholding
 - A registry endpoint could serve machine-readable reasons that Cargo shows in errors, or reasons on the index
