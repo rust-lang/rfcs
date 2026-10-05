@@ -1,9 +1,7 @@
 - Feature Name: `cfg_version` and `cfg_accessible`
 - Start Date: 2018-08-12
-- RFC PR: [rust-lang/rfcs#2523](https://github.com/rust-lang/rfcs/pull/2523)
+- RFC PR: [rust-lang/rfcs#4004](https://github.com/rust-lang/rfcs/pull/4004)
 - Rust Issue: [rust-lang/rust#64796](https://github.com/rust-lang/rust/issues/64796) and [rust-lang/rust#64797](https://github.com/rust-lang/rust/issues/64797)
-
-##### Superseded by [RFC 4004](./4004-cfg-path-version.md)
 
 ## Summary
 [summary]: #summary
@@ -70,6 +68,14 @@ of *control* over what is supported and what is not.
 Another use case this RFC supports is to work around compiler bugs by
 checking if we are on a particular version. An example where this occurred
 is documented in [rust-lang-nursery/error-chain#101].
+
+### Non-goal for `accessible(..)`
+
+It is not the design objective of `accessible(..)` to support the use case where
+users would like to express complex and composite `cfg` predicates.
+To keep the `cfg` language clean, teachable and easily understandable, we kindly
+defer design discussion to a more suitable `cfg` construct with a stronger
+semantics without sacrificing the expressivity.
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -337,6 +343,27 @@ will be considered when determining if a path is accessible.
 Note that the above sections also apply to the attribute `#[cfg_attr(..)]` as
 well as the special macro `cfg!(..)` in that `version(..)` and `accessible(..)`
 are added to those as well.
+
+### Accessible only in remote crate
+
+Conditioning on `accessible(...)` makes the most sense only if the path under
+test is resolved to an item in a remote crate, without resolving through local
+items.
+If evaluating `accessible(...)` involves resolving the accessibility of a local
+item, it is either pedantic since the item is not gated anyway, or it is
+pedentic because the item is gated by other `cfg` indirectly.
+We do not encourage adoption of this practice to use indirection in `cfg` which
+will degrade code readability significantly.
+We should fail the attribute evaluation and suggest users to spell out the
+conditions explicitly.
+
+Most importantly, restricting accessibility condition allows us to reject the
+following code that is impossible to compile.
+
+```rust
+#[cfg(not(accessible(MyTy)))]
+pub type MyTy = u8;
+```
 
 ## Drawbacks
 [drawbacks]: #drawbacks
