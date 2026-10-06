@@ -1,5 +1,5 @@
 - Start Date: 2026-10-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#4015](https://github.com/rust-lang/rfcs/pull/4015)
 
 ## Summary
 [summary]: #summary
