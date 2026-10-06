@@ -16,7 +16,7 @@ The functionality for deleting entire crates proposed in [RFC #3660][rfc-3660] h
 feature has successfully lessened the support burden for crate deletions, and has not caused any
 negative ecosystem impacts we're aware of.
 
-Increasingly[^numbers], however, crates.io is getting support requests from crate owners who would
+[Increasingly][numbers], however, crates.io is getting support requests from crate owners who would
 like to delete particular _versions_ of their crates, but not the entire crate. Examples of reasons
 for wanting to delete particular versions are accidental publishes of:
 
@@ -147,8 +147,11 @@ deletions, and hasn't caused any undesired ecosystem effects that we know of.
 
 [rfc-3660]: https://github.com/rust-lang/rfcs/pull/3660
 
-[^numbers]: Here are support request counts by month in 2026 through September. It is left as an
-exercise for the reader to imagine _why_ these requests are increasing.
+## Show me the numbers
+[numbers]: #numbers
+
+Here are support request counts by month in 2026 through September. It is left as an exercise for
+the reader to imagine _why_ these requests are increasing.
 
 | Month | Number of requests | Total number of crates affected | Total number of versions deleted |
 |-------|--------------------|---------------------------------|----------------------------------|
