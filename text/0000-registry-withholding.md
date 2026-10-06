@@ -216,7 +216,7 @@ for the `publish` response.
 [Withheld releases][withheld] are those that a registry has marked as
 not installable. When the resolver is building the graph, it will
 ignore all withheld versions, including those that already exist
-in the `Cargo.lcok` file, and report an error if no other
+in the `Cargo.lock` file, and report an error if no other
 version satisfies the requirement.
 
 [withheld]: registry-index.md#withheld-versions
