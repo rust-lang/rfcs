@@ -80,6 +80,37 @@ Because of this special case, it's impossible for a `Copy` closure capture to ev
 
 The special case makes common closures less capable and efficient. It also makes it a minor breaking change to add an implementation of `Copy` for an existing type. However, it also has benefits, and removing it entirely would be a breaking change. Can we find a middle ground?
 
+### Confounding coercions
+
+There's another big problem with our closure capture rules. Consider the following example, copied [straight from `rustc`'s test suite](https://github.com/rust-lang/rust/blob/cc9a14f721fac5226338c61dcec7d5ab785bde82/tests/ui/coercion/structural_identity_dependent_reborrows.rs):
+
+```rust
+fn foo<'a>(b: &'a ()) -> impl Fn() {
+    || {
+        expected::<&()>(b);
+    }
+}
+
+// No reborrow of `b` is emitted which means our closure captures
+// `b` by ref resulting in an upvar of `&&'a ()`
+fn bar<'a>(b: &'a ()) -> impl Fn() {
+    || {
+        //~^ ERROR: closure may outlive the current function
+        expected::<&'a ()>(b);
+    }
+}
+
+fn expected<T>(_: T) {}
+```
+
+`foo`'s closure captures `b` by value, but `bar` captures it by reference. Lifetime annotations are affecting codegen‽
+
+The reason for this is that, inside `foo`'s closure, the compiler inserts a no-op re-borrow of `b`. The call to `expected` is transformed into effectively `expected::<&()>(&*b)`. However, with edition 2021 precise capturing, this reborrow affects capture inference. In contrast, `bar` does not get a re-borrow because HIR type-checking considers `&'a ()` from the function parameter type annotation to equal `&'a ()` from the turbofish of `expected` in `bar` (but not to `&()` from the turbofish in `foo`).
+
+Ideally, we would never emit these `&T` -> `&T` reborrows. They are complete no-ops, and bloat MIR for no benefit. This behavior is not documented in the Reference. And, of course, lifetime annotations should never affect runtime code generation! For all these reasons, it would be nice to get rid of these reborrows—but we can't do that if it will break user code.
+
+(A similar issue exists for reborrows of `&mut` references; addressing that is out of scope for this RFC.)
+
 ## Condensed clarification
 [guide-level-explanation]: #guide-level-explanation
 
@@ -130,7 +161,7 @@ At [`type.closure.capture`](https://doc.rust-lang.org/reference/types/closure.ht
 >
 > A *capture mode* determines how a [place expression](https://doc.rust-lang.org/reference/expressions.html#place-expressions-and-value-expressions) from the environment is borrowed or moved into the closure. The capture modes are:
 >
-> 1. **[NEW] <u>Copy (`ByCopy`) --- The place expression is captured by [copying the value](https://doc.rust-lang.org/reference/expressions.html#moved-and-copied-types) into the closure.</u>**
+> 1. **[NEW] Copy (`ByCopy`) --- The place expression is captured by [copying the value](https://doc.rust-lang.org/reference/expressions.html#moved-and-copied-types) into the closure.**
 > 2. Immutable borrow (`ImmBorrow`) --- The place expression is captured as a [shared reference](https://doc.rust-lang.org/reference/types/pointer.html#references--and-mut).
 > 3. Unique immutable borrow (`UniqueImmBorrow`) --- This is similar to an immutable borrow, but must be unique as described [below](https://doc.rust-lang.org/reference/types/closure.html#unique-immutable-borrows-in-captures).
 > 4. Mutable borrow (`MutBorrow`) --- The place expression is captured as a [mutable reference](https://doc.rust-lang.org/reference/types/pointer.html#mutable-references-mut).
@@ -140,24 +171,34 @@ At [`type.closure.capture`](https://doc.rust-lang.org/reference/types/closure.ht
 >
 > ### `Copy` values
 >
-> Values that implement [`Copy`](https://doc.rust-lang.org/reference/special-types-and-traits.html#copy) that are moved into the closure are captured with the **[EDITED] ~~`ImmBorrow`~~<u>`ByCopy`</u>** mode.
+> Values that implement [`Copy`](https://doc.rust-lang.org/reference/special-types-and-traits.html#copy) that are moved into the closure are captured with the **[EDITED] ~~`ImmBorrow`~~`ByCopy`** mode.
 >
 > ```rust
 > let x = [0; 1024];
 > let c = || {
->     let y = x; // x captured by ByCopy (would have been ImmBorrow before)
+>     let y = x; // `x` captured by ByCopy
+>                // (would have been ImmBorrow before)
 > };
 > ```
 >
-> <b>[NEW] <u>However, this does not apply when the value is behind a reference; in that case, the `ImmBorrow` mode is used.
+> <strong>[NEW] However, this does not apply when the value is behind a reference; in that case, the `ImmBorrow` mode is used.
 >
 > ```rust
 > let x = &([0; 1024],);
 > let c = || {
->     let y = x.0; // x.0 captured by ImmBorrow
+>     let y = x.0; // `(*x).0` captured by ImmBorrow
 > };
 > ```
-> </u></b>
+>
+> As an exception to the exception, if the value is itself a shared reference, it will be captured by `ByCopy` even behind other references.
+>
+> ```rust
+> let x = &(&false,);
+> let c = || {
+>     let y = x.0; // `(*x).0` captured by ByCopy
+> };
+> ```
+> </strong>
 
 And at [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.shared-prefix), we account for the new mode:
 
@@ -165,7 +206,7 @@ And at [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/referenc
 >
 > In the case where a capture path and one of the ancestors of that path are both captured by a closure, the ancestor path is captured with the highest capture mode among the two captures, `CaptureMode = max(AncestorCaptureMode, DescendantCaptureMode)`, using the strict weak ordering:
 >
-> <code><strong>[EDITED] <u>ByCopy <</u></strong> ImmBorrow < UniqueImmBorrow < MutBorrow < ByValue</code>
+> <code><strong>[EDITED] ByCopy <</strong> ImmBorrow < UniqueImmBorrow < MutBorrow < ByValue</code>
 >
 > Note that this might need to be applied recursively.
 >
@@ -176,31 +217,221 @@ And at [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/referenc
 > let mut u = (t, String::from("U"));
 >
 > let c = || {
->     println!("{:?}", u); // u captured by ImmBorrow
->     u.1.truncate(0); // u.1 captured by MutBorrow
->     move_value(u.0.0); // u.0.0 captured by ByValue
+>     println!("{:?}", u); // `u` captured by ImmBorrow
+>     u.1.truncate(0); // `u.1` captured by MutBorrow
+>     move_value(u.0.0); // `u.0.0` captured by ByValue
 > };
 > c();
 > ```
 >
 > Overall this closure will capture `u` by `ByValue`.
 >
-> <b>[NEW]<u>
+> <strong>[NEW]
 >
 > ```rust
 > let s = 'S';
 > let t = (s, 'T');
 > let mut u = (t, 'U');
 > let c = || {
->     println!("{:?}", u); // u captured by ImmBorrow
->     u.1 = '\0'; // u.1 captured by MutBorrow
->     move_value(u.0.0); // u.0.0 captured by ByCopy
+>     println!("{:?}", u); // `u` captured by ImmBorrow
+>     u.1 = '\0'; // `u.1` captured by MutBorrow
+>     move_value(u.0.0); // `u.0.0` captured by ByCopy
 > };
 > c();
 > ```
 >
-> Overall this closure will capture `u` by `MutBorrow`.</u></b>
+> Overall this closure will capture `u` by `MutBorrow`.</strong>
 
+We make changes to the "rightmost shared reference truncation" rule at [type.closure.capture.precision.dereference-shared](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.dereference-shared):
+
+> ### Rightmost shared reference truncation
+>
+> The capture path is truncated at the rightmost dereference in the capture path if the dereference is applied to a shared reference, **[NEW] and the capture mode is not `ByCopy`**.
+>
+> This truncation is allowed because fields that are read through a shared reference will always be read via a shared reference or a copy. This helps reduce the size of the capture when the extra precision does not yield any benefit from a borrow checking perspective.
+>
+> The reason it is the *rightmost* dereference is to help avoid a shorter lifetime than is necessary. Consider the following example:
+>
+> ```rust
+> struct Int(i32);
+> struct B<'a>(&'a i32);
+>
+> struct MyStruct<'a> {
+>     a: &'static Int,
+>     b: B<'a>,
+> }
+>
+> fn foo<'a, 'b>(m: &'a MyStruct<'b>) -> impl FnMut() + 'static {
+>     let c = || drop(&m.a.0);
+>     c
+> }
+> ```
+>
+> If this were to capture `m`, then the closure would no longer outlive `'static`, since `m` is constrained to `'a`. Instead, it captures `(*(*m).a)` by `ImmBorrow`.
+>
+> <strong>[NEW] If the capture mode is `ByCopy`, no truncation occurs:
+>
+> ```rust
+> struct MyStruct<'b> {
+>     a: &'static u32,
+>     b: &'b u32,
+> }
+>
+> fn foo<'a, 'b>(m: &'a MyStruct<'b>) -> impl FnMut() + 'static {
+>     let c = || drop(m.a);
+>     c
+> }
+> ```
+>
+> If this were to capture `*m`, then the closure would no longer outlive `'static`, since `*m` is constrained to `'b`. Instead, it captures `(*m).a` by `ByCopy`.</strong>
+
+We modify the capture rules for raw pointers dereferenced within the closure, at [type.closure.capture.precision.raw-pointer-dereference](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.raw-pointer-dereference):
+
+> ### Raw pointer dereference
+>
+> Because it is `unsafe` to dereference a raw pointer, closures will only capture the prefix of a capture path that runs up to, but not including, the first dereference of a raw pointer.
+>
+> **[NEW] The raw pointer is captured with the `ByCopy` mode.**
+>
+> ```rust
+> struct T(String, String);
+>
+> let t = T(String::from("foo"), String::from("bar"));
+> let t_ptr = &t as *const T;
+>
+> let c = || unsafe {
+>    println!("{}", (*t_ptr).0); // captures `t_ptr` by ByCopy
+>                                // (would have been ImmBorrow before)
+> };
+> c();
+> ```
+
+We modify the capture rules for union fields, at [type.closure.capture.precision.union](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.union):
+
+> ### Union fields
+> 
+> Because it is `unsafe` to access a union field, closures will only capture the prefix of a capture path that runs up to the union itself.
+>
+> <strong>[NEW] If all the following conditions hold:
+>
+> - The capture mode that would have been inferred from the whole capture path, including the discarded suffix, is `ImmBorrow`.
+> - The discarded suffix contained at least one dereference.
+> - The union implements `Copy`.
+>
+> Then, the union is captured by `ByCopy`.
+>
+> However, if the capture mode that would have been inferred from the whole path is `ByCopy`, but the union does not implement `Copy`, then it is captured by `ImmBorrow`.</strong>
+>
+> ```rust
+> union U {
+>     a: (i32, i32),
+>     b: bool,
+> }
+> let u = U { a: (123, 456) };
+>
+> let c = || {
+>     let x = unsafe { u.a.0 }; // captures `u` by ImmBorrow
+>     // (The Reference currently states that the capture above is ByValue,
+>     // but this is incorrect and does not match the behavior of rustc.)
+> };
+> c();
+>
+> // This also includes writing to fields.
+> let mut u = U { a: (123, 456) };
+>
+> let mut c = || {
+>     u.b = true; // captures `u` with MutBorrow
+> };
+> c();
+> ```
+>
+> <strong>[NEW]
+>
+> ```rust
+> #[derive(Clone, Copy)]
+> union U<'a> {
+>     a: (&'a String, i32),
+>     b: bool,
+> }
+> let string: String = "hello world!".to_owned();
+> let u = U { a: (&string, 42) };
+>
+> let c = || {
+>    let x = unsafe { u.a.0.len() }; // captures `u` by ByCopy
+> };
+> c();
+> ```
+> </strong>
+
+Finally, we modify the capture rules for fields of `repr(packed)` ADTs, at [type.closure.capture.precision.unaligned](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.unaligned). (Please note: the current text of this section of the Reference is incorrect, and does not fully reflect the current behavior of the compiler.)
+
+> ### Reference into unaligned `struct`s
+> 
+> Because it is [undefined behavior] to create references to unaligned fields in a structure, closures will only capture the prefix of the capture path that runs up to, but not including, the first field access into a structure that uses [the `packed` representation]. This includes all fields, even those that are aligned, to protect against compatibility concerns should any of the fields in the structure change in the future.
+>
+> **[NEW] This restriction only applies to by-reference (`ImmBorrow`, `UniqueImmBorrow`, or `MutBorrow`) captures, and only in cases where there are no dereferences in the capture path suffix that would be truncated.**
+>
+> </strong>
+>
+> ```rust
+> #[repr(packed)]
+> struct T(i32, i32);
+>
+> let t = T(2, 5);
+> let c = || {
+>     let a = t.0; // captures `t.0` with ByCopy
+>                  // (before, would have been "captures `t` with ImmBorrow")
+> };
+> // Copies out of `t` are ok.
+> let (a, b) = (t.0, t.1);
+> c();
+> ```
+> <strong> [NEW]
+>
+> ```rust
+> #[repr(packed)]
+> struct T(&'static i32, i32);
+>
+> let t = T(&2, 5);
+> let c = || {
+>     let a = *t.0 ; // captures `*t.0` with ImmBorrow
+> };
+> // References out of `t` are ok.
+> let (a, b) = (t.0, t.1);
+> c();
+> ```
+> </strong>
+>
+> Taking the address of an unaligned field captures the entire struct:
+>
+> ```rust
+> #[repr(packed)]
+> struct T(String, String);
+>
+> let mut t = T(String::new(), String::new());
+> let c = || {
+>     let a = &raw const t.1; // captures `t` with ImmBorrow
+> };
+> let a = t.0; // ERROR: cannot move out of `t.0` because it is borrowed [E0505]
+> c();
+> ```
+>
+> but the above works if it is not packed since it captures the field precisely:
+>
+> ```rust
+> struct T(String, String);
+>
+> let mut t = T(String::new(), String::new());
+> let c = || {
+>     let a = &raw const t.1; // captures `t.1` with ImmBorrow
+> };
+> // The move here is allowed.
+> let a = t.0;
+> c();
+> ```
+>
+> [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+> [the `packed` representation]: https://doc.rust-lang.org/reference/type-layout.html#the-alignment-modifiers
 
 ## Concerns, catches
 [drawbacks]: #drawbacks
@@ -270,7 +501,7 @@ This writes an invalid `NonZeroU8` into a local, then captures it into a closure
 
 I believe such code should be rare enough that we don't need to worry about it.
 
-### `auto trait`s
+### Changing `auto trait`s
 
 This RFC is meant to be a non-breaking change. However, in some situations, it could change the set of auto traits implemented by a closure. I believe this should happen rarely enough not to be a concern, but a crater run will be necessary to verify the assumption. However, even if it is more breaking than expected, there are ways we could work around it. Let's go through each case:
 
@@ -364,6 +595,8 @@ None known. C++ does not have Rust-style capture mode inference, they make every
 
 - We could introduce an explicit capturing syntax, e.g. [RFC 3968](https://github.com/rust-lang/rfcs/pull/3968). This would be particularly useful for capturing clones of values. [RFC 3680](https://github.com/rust-lang/rfcs/pull/3680) or some other [ergonomic clones](https://goals.rust-lang.org/2024h2/ergonomic-rc.html) design would also be helpful here. Note that neither of these would subsume this RFC, which aims to allow users to specify their captures *without* dedicated syntax.
 - In future editions, we could choose to go all-in on the `let` shadow trick, and deprecate having by-move captures implicitly take precedence over by-reference captures for non-`Copy` types. We could also add a lint for older editions. This would mitigate the issue that implementing `Copy` is technically a breaking change. But it would not completely eliminate the semver hazard (because old editions would remain supported forever) so it's unclear that it would be worth the churn.
+- There is an additional minor `Copy` semver hazard remaining, due to the different treatment of `Copy` vs non-`Copy` captures via union fields. We could resolve this by introducing a special "copy as `MaybeUninit`" mode for such cases.
+- We could introduce a `ByReborrow` capture mode, to fit with the ongoing work on the `Reborrow` and `CoerceShared` traits.
 
 To elaborate on that second bullet point:
 
@@ -400,7 +633,7 @@ fn main() {
 
 If we were to "unwrap" the closure body by commenting out the lines labeled `>8`, the failing assertion would instead pass. Therefore, the behavior of this closure violates [Tennent's Correspondence Principle](https://gafter.blogspot.com/2006/08/tennents-correspondence-principle-and.html). This isn't ideal!
 
-### Choice 1: censor
+### Choice 1: Censor
 
 One option would be to simply reject the snippet above in future editions. We could require users to choose only one of by-reference or by-value use of non-`Copy` captures. The example would need to be rewritten like so:
 
@@ -417,11 +650,11 @@ fn main() {
 
 This option would have the downside of requiring lots of churn.
 
-### Choice 2: —
+### Choice 2: Cease
 
 Doing nothing is always an option, of course.
 
-### Choice 3: `&own`
+### Choice 3: Claim (`&own`)
 
 We could say that, when a closure captures non-`Copy` local `foo` via use both by reference and by value, the capture is by [RFC 4000](https://github.com/rust-lang/rfcs/pull/4000)-style owning reference.
 
