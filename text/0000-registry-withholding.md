@@ -409,7 +409,7 @@ the core registry level.
 #### Rust
 
 [RFC 3660](https://rust-lang.github.io/rfcs/3660-crates-io-crate-deletions.html) adds destructive
-deletes via index line omission. It reserves the crate name upon deletion.
+deletes via index line omission. It temporarily reserves the crate name upon deletion.
 
 `withheld` is the non-destructive counterpart to this, and `withdrawn` is the terminal,
 non-destructive equivalent.
