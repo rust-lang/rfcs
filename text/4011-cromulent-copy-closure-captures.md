@@ -246,7 +246,7 @@ We make changes to the "rightmost shared reference truncation" rule at [type.clo
 
 > ### Rightmost shared reference truncation
 >
-> The capture path is truncated at the rightmost dereference in the capture path if the dereference is applied to a shared reference, **[NEW] and the capture mode is not `ByCopy`**.
+> The capture path is truncated at the rightmost dereference in the capture path if the dereference is applied to a shared reference, **[NEW] and the capture mode is by-reference (`ImmBorrow`, `UniqueImmBorrow`, or `MutBorrow`)**.
 >
 > This truncation is allowed because fields that are read through a shared reference will always be read via a shared reference or a copy. This helps reduce the size of the capture when the extra precision does not yield any benefit from a borrow checking perspective.
 >
