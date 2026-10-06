@@ -311,7 +311,7 @@ It still lets older Cargo fall back to yanked behavior that avoids resolving to 
 This fits the values of the project around transparency and
 accountability. If we are making it easier for administrators to take new
 curation actions on the index, we want transparency logs and auditability.
-Showing the withheld coordinates also makes it possible for researches to
+Showing the withheld coordinates also makes it possible for researchers to
 obtain withheld bytes (though this RFC defers this as a registry decision).
 
 We could address these needs with other side channels (a status feed, a query API, etc).
