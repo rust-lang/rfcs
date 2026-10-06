@@ -263,7 +263,7 @@ to our historical backfill operations
 Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index))
 - Partially mitigated by helpful 404 bodies
 - Index signing and verification are unaffected since withheld status is written to the index and these
-mechanisms not consider byte availability
+mechanisms do not consider byte availability
 
 #### Existing lockfiles can break without a local change
 - Especially painful for `cargo install --locked`. See Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
