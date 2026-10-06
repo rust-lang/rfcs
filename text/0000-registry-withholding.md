@@ -13,11 +13,7 @@ readers to withheld crate information pages.
 
 Lastly, it specifies how Cargo avoids resolving `withheld` versions and instead display status-aware errors.
 
-This is the first of four changes that are part of the [crates.io registry response project goal](https://github.com/rust-lang/goals/pull/795).
-1. `quarantined`/`withdrawn` support (this RFC)
-2. crates.io support for quarantine/withdrawn admin APIs, and related admin API work (PR, not a RFC, not open yet)
-3. The `unreleased` withholding type; dl-withheld and Cargo support for fetching, building, and publishing against `withheld` versions (RFC not open yet)
-4. crates.io support for publish-time detections with automatic holds, a manual review queue, and supporting console interface (RFC not open yet)
+This is part of the proposed [crates.io registry response project goal](https://github.com/rust-lang/goals/pull/795).
 
 ## Motivation
 [motivation]: #motivation
