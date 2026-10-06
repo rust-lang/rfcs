@@ -182,7 +182,7 @@ and later set when the package exits withholding.
 ---
 
 Related:
-- Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)i
+- Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
 
 ### Added to [Registry Web API](https://doc.rust-lang.org/cargo/reference/registry-web-api.html)
 
