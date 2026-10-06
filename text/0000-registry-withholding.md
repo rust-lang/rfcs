@@ -401,7 +401,7 @@ cache if it sees a new change, such as a quarantine on an already-cached crate's
 
 Across language ecosystems, the most crates.io-like registries (PyPI, npm), have implemented
 reversible quarantine, enforced via omission from the index. Both have seen user pain
-due to illegibilty. PyPI has added additional markers, and npm plans to.
+due to illegibility. PyPI has added additional markers, and npm plans to.
 
 Other registries have variants of deletions and yanks, but no reversible quarantine at
 the core registry level.
