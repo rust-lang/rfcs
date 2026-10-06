@@ -506,5 +506,5 @@ line itself
 
 #### Yank reasons on `notice-page`
 - `notice-page` could carry the yank reasons once crates.io's frontend shows them. This could land
-alongisde the crates.io admin API. Yank reasons already have backend API support, and the frontend
+alongside the crates.io admin API. Yank reasons already have backend API support, and the frontend
 work for `withheld` reasons touches similar code paths.
