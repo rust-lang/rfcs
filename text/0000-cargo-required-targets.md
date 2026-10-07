@@ -181,6 +181,21 @@ We could introduce no new features and continue selecting workspace packages wit
 and `--exclude`. Users would still need to maintain the appropriate package selection for each
 target in their commands and CI configuration.
 
+## Documentation and compile-time errors
+
+Published crates have mainly used their documentation to specify which targets they support, or they
+would leave it up to the user to infer it. Some crates also made use of compile time errors to
+ensure that `cfg` requirements are met, for example:
+```rust
+#[cfg(not(any(…)))]
+compile_error!("unsupported target cfg");
+```
+[`getrandom`](https://github.com/rust-random/getrandom/blob/9fb4a9a2481018e4ab58d597ecd167a609033149/src/backends.rs#L156-L160)
+is an example of a crate utilizing this method.
+
+These approaches do not automatically skip incompatible workspace packages. Users must still
+select or exclude those packages when running workspace commands.
+
 ## Using `forced-target`
 
 The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
@@ -314,16 +329,6 @@ See also: [using a package vs. using a workspace][package-vs-workspace].
 The `required-features` field can restrict which targets are built based on enabled features.
 However, it does not allow filtering packages in a workspace, nor does it allow filtering out
 the library of a package.
-
-Published crates have mainly used their documentation to specify which targets they support, or they
-would leave it up to the user to infer it. Some crates also made use of compile time errors to
-ensure that `cfg` requirements are met, for example:
-```rust
-#[cfg(not(any(…)))]
-compile_error!("unsupported target cfg");
-```
-[`getrandom`](https://github.com/rust-random/getrandom/blob/9fb4a9a2481018e4ab58d597ecd167a609033149/src/backends.rs#L156-L160)
-is an example of a crate utilizing this method.
 
 Some higher-level languages and build tools have the ability to specify which platforms are compatible.
 
