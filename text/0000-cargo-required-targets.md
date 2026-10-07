@@ -348,6 +348,14 @@ constraints.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+# Related work
+
+## Target-specific dependency resolution
+
+A separate RFC could introduce a `resolver.targets` setting to restrict dependency resolution to
+an application's deployment targets, reducing the packages included in `Cargo.lock` and by
+`cargo vendor`.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -414,64 +422,6 @@ or [Stellar's workspace exclusion workaround](https://github.com/rust-lang/cargo
 An always-false `required-targets` condition also skips direct workspace builds, but prevents
 explicitly checking or testing the package.
 
-## Target-specific dependency resolution
-
-`Cargo.lock`, and by extension, `cargo vendor`, must assume that a package may be built on any platform that has or will exist.  This means that if a transitive dependency pulls in Windows-specific dependencies, `cargo vendor` will include them when run on a Linux-only application.  Being able to tell `cargo vendor` what platforms to care about can reduce the space used in a repo and reduce churn.
-
-Likewise, today users either need to audit dependencies irrelevant for the platforms they target or
-filter these out somehow. Target-specific dependency resolution could let audit tools focus on
-dependencies for the configured targets.
-
-Target-specific dependency resolution and vendoring can proceed independently of this RFC.
-
-A separate `resolver.targets` setting in `.cargo/config.toml` could specify concrete target-tuples
-for dependency resolution and vendoring. This would describe an application's deployment targets
-rather than the package's target requirements.
-
-### Eliminating unused dependencies from `Cargo.lock`
-
-A package's dependencies may themselves have `[target.'cfg(..)'.dependencies]` tables, which may
-never be used for the targets specified in `resolver.targets`. Omitting these dependencies from
-`Cargo.lock` could reduce the packages included by `cargo vendor`.
-
-Consider an application with the following `.cargo/config.toml`:
-
-```toml
-[resolver]
-targets = ["x86_64-unknown-linux-gnu"]
-```
-
-Its dependency manifests are:
-
-```toml
-[package]
-name = "foo"
-# ...
-
-[dependencies]
-bar = "0.1.0"
-```
-```toml
-[package]
-name = "bar"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-baz = "0.1.0"
-```
-Currently, `baz` is included in the dependency tree of `foo`. With resolution restricted to the
-configured Linux target, the macOS-only dependency on `baz` would not be needed. If no other
-selected dependency path needs `baz`, it could be omitted from `Cargo.lock` and vendoring.
-
-Dependencies used by build scripts and procedural macros must still be considered for the host,
-which can differ from the configured deployment targets. Restricting deployment targets must not
-remove dependencies needed to build on that host.
-
-Open questions for this separate design include:
-
-- [Dependency-path pruning](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973807418).
-- [Lockfile stability across Cargo versions](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973817534).
-- [Whether to record resolution targets and how to publish target-restricted lockfiles](https://github.com/rust-lang/rfcs/pull/3759#discussion_r1973868712).
-
 ## Dependency compatibility checks
 
 Missing target capabilities, such as particular atomic operations, can produce errors about
@@ -516,7 +466,6 @@ Some options for handling this include
 - A bespoke manifest override
   - One-off feature that needs design work
 - A CLI override like `--ignore-rust-version`
-  - Ignoring package requirements need not affect lockfile pruning based on a separate `resolver.targets` setting
   - This affects the entire dependency tree and not just the package with questionable `required-targets`
   - Every dependent of the package with a questionable `required-targets` must do this
 - A lint like proposed for `package.rust-version`
