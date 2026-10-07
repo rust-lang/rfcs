@@ -175,6 +175,12 @@ normalized `Cargo.toml`. Retaining the field in that manifest is left as a
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Do nothing
+
+We could introduce no new features and continue selecting workspace packages with `--package`
+and `--exclude`. Users would still need to maintain the appropriate package selection for each
+target in their commands and CI configuration.
+
 ## Using `forced-target`
 
 The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
@@ -305,10 +311,9 @@ See also: [using a package vs. using a workspace][package-vs-workspace].
 # Prior art
 [prior-art]: #prior-art
 
-Users can already select packages in a workspace with the flags
-`--package` and `--exclude`. Cargo features can also be used to restrict which cargo-target
-is built using the `required-features` field. However, `required-features` does not allow filtering
-packages in a workspace, nor does it allow filtering out the library of a package.
+The `required-features` field can restrict which targets are built based on enabled features.
+However, it does not allow filtering packages in a workspace, nor does it allow filtering out
+the library of a package.
 
 Published crates have mainly used their documentation to specify which targets they support, or they
 would leave it up to the user to infer it. Some crates also made use of compile time errors to
