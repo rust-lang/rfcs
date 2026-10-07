@@ -330,21 +330,20 @@ The `required-features` field can restrict which targets are built based on enab
 However, it does not allow filtering packages in a workspace, nor does it allow filtering out
 the library of a package.
 
-Some higher-level languages and build tools have the ability to specify which platforms are compatible.
+Other languages and build tools express platform compatibility at different stages:
 
-- Python packages have [classifiers](https://pypi.org/classifiers/) as package metadata that includes supported platforms.
-- Python wheels (pre-built packages) have [platform compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-compatibility-tags).
-    The reference explains how these are [used](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use)
-    by installers to determine which build of a package to install.
-- `npm` allows specifying which [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and
-    [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) a package supports. These generate an
-    error when installing a package that does not support the platform used.
-- Swift has [`package.platforms`](https://developer.apple.com/documentation/packagedescription/package/platforms)
-    to specify minimum deployment versions for platforms such as `macOS`, `iOS`, `watchOS`, and `tvOS`.
-- [Buck](https://buck2.build/docs/concepts/configurations/#using-configuration-compatibility)
-    and [Bazel](https://bazel.build/concepts/platforms#skipping-incompatible-targets)
-    both provide `target_compatible_with`. By default, Bazel skips incompatible targets selected
-    through wildcard patterns and reports an error when an incompatible target is requested explicitly.
+| Feature | What it does | Comparison |
+| --- | --- | --- |
+| Python [classifiers](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#classifiers) | Describe supported platforms for searching and browsing, without enforcing installation restrictions. | `required-targets` affects which packages Cargo selects. |
+| Python wheel [compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use) | Select compatible prebuilt distributions for installation, accounting for Python, ABI, and platform requirements. | This RFC selects local workspace packages to build from source, not published artifacts. |
+| npm [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) | Restrict installation to allowed platforms. Incompatible required dependencies cause errors, while [optional dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies) can be omitted. | This RFC strips the field on publication, avoiding restrictions on downstream users but providing no corresponding installation check. |
+| Swift [supported platforms](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#supportedplatform) | Set minimum deployment versions and check that dependencies do not require higher versions. | This RFC does not introduce deployment-version requirements or dependency compatibility checks. |
+| [Buck2](https://buck2.build/docs/concepts/configurations/#using-configuration-compatibility) and [Bazel](https://bazel.build/concepts/platforms#skipping-incompatible-targets) `target_compatible_with` | Skip incompatible targets selected through patterns and, by default, error on explicit selection. | Similar skip vs. error behavior, but they also propagate incompatibility through dependencies and apply requirements to individual build targets. This RFC checks directly selected packages. |
+
+Reusing Cargo's existing `cfg` syntax allows combinations such as permitting an architecture on
+one operating system but not another, beyond npm's separate lists. It avoids introducing a
+separate constraint system, but doesn't provide Buck2 and Bazel's general build-configuration
+constraints.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
