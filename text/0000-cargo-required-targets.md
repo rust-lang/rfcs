@@ -305,7 +305,8 @@ packages in a workspace, nor does it allow filtering out the library of a packag
 The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
 to build for a specific target-tuple. `required-targets` instead determines whether a package is
 included for the selected target. It does not select a different target, so it does not replace
-`forced-target` for workflows that build packages for different targets in one command.
+the target-selection behavior of `forced-target` on its own. Alternatives for these workflows are
+discussed under [removing `forced-target`](#removing-forced-target).
 
 Published crates have mainly used their documentation to specify which targets they support, or they
 would leave it up to the user to infer it. Some crates also made use of compile time errors to
@@ -344,6 +345,27 @@ Some higher-level languages and build tools have the ability to specify which pl
 `required-targets` could also accept target tuples alongside `cfg` expressions. One way to express
 this would be an array containing either form. It's worth noting that the existing `required-features`
 field uses AND for its array entries, whereas this array would use OR. The syntax needs further consideration.
+
+## Removing `forced-target`
+
+`forced-target` must select a specific target to build for, whereas a `cfg` expression can match
+several targets without choosing one. `required-targets` can use these expressions to describe a
+package's compatibility requirements, making it a more general way to express those requirements.
+The unstable `forced-target` field could be removed if its target-selection use cases have
+acceptable alternatives. Workflows to preserve include:
+
+- [Building workspace packages for different targets](https://github.com/rust-lang/cargo/issues/7004)
+  in one command.
+- Building a component for a different target and consuming its compiled output, such as a
+  WebAssembly component used by a native application.
+- [Running a portable library's tests on the host](https://github.com/rust-lang/cargo/issues/17383#issuecomment-5377029221)
+  while the workspace defaults to an embedded target.
+
+Depending on the use case, replacements or workarounds include explicit target selection,
+separate Cargo invocations, and
+[artifact dependencies](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies).
+These approaches may require users to change commands, configuration, or scripts, losing some
+of the convenience of automatically selecting a fixed target for each package.
 
 ## Additional target conditions
 
