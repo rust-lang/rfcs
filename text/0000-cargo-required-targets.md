@@ -128,10 +128,16 @@ required-targets.workspace = true
 
 ## Package selection
 
-When Cargo selects packages for compilation, checking, or documentation (e.g. `build`, `check`,
-`run`, `clippy`, `doc`), it checks that the selected target satisfies the `required-targets` of
-each directly selected package. Commands that do not perform these operations, such as `clean`,
-`fetch`, `tree`, and `fmt`, do not check `required-targets`, even if they accept `--target`.
+Cargo checks that the selected target satisfies the `required-targets` of each directly selected
+package when selecting packages for:
+
+- Compilation (e.g. `cargo build`, `cargo run`)
+- Checking (e.g. `cargo check`, `cargo clippy`)
+- Documentation (`cargo doc`)
+- Dependency fetching (`cargo fetch`)
+- Dependency inspection (`cargo tree`)
+
+Other commands do not check `required-targets`.
 
 Cargo determines the selected target using its existing selection rules, including
 [per-package target settings](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#per-package-target).
