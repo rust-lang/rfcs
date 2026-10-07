@@ -83,6 +83,8 @@ implementations and functions with unsafe attributes).
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - **Do Nothing**: This unsoundness stays open.
+  As [RFC 3324](https://github.com/rust-lang/rfcs/blob/master/text/3325-unsafe-attributes.md) argues, having the `unsafe_code` lint warn against this is not enough,
+  because the lint is opt-in, while Rust has "safety by default".
 - **Disallow the old syntax on all editions**: This would break all rust code that uses `global_asm`.
 - **Other syntax**: There are a couple of alternatives.
   - It could be renamed to something like `unsafe_global_asm`.
