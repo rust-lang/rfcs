@@ -90,7 +90,7 @@ implementations and functions with unsafe attributes).
   - It could be renamed to something like `unsafe_global_asm`.
   - It could require `unsafe` as part of its syntax (`global_asm!(unsafe {".."})` or `global_asm!(unsafe "..")`)
   - Unsafe blocks in item position could be added.
-  - It could require an `#[unsafe]` or `#[unsafe()]` attribute.
+  - It could require an `#[unsafe]` or `#[unsafe()]` attribute. This syntax implies maybe even more generality, because one could expect `#[unsafe] impl Send for MyType {}` to work.
 
 The chosen syntax mirrors the one chosen for unsafe attributes in that it does not rename the problematic
 item and in that it defines a syntax for unsafe macros.
