@@ -100,12 +100,12 @@ Using `unsafe` for macros in non-item positions is still disallowed in the gramm
 - **Do Nothing**: This unsoundness stays open.
   As [RFC 3324](https://github.com/rust-lang/rfcs/blob/master/text/3325-unsafe-attributes.md) argues, having the `unsafe_code` lint warn against this is not enough,
   because the lint is opt-in, while Rust has "safety by default".
-- **Disallow the old syntax on all editions**: This would break all rust code that uses `global_asm`.
+- **Disallow the old syntax on all editions**: This would break all Rust code that uses `global_asm`.
 - **Other syntax**: There are a couple of alternatives.
-  - It could be renamed to something like `unsafe_global_asm`.
-  - It could require `unsafe` as part of its syntax (`global_asm!(unsafe {".."})` or `global_asm!(unsafe "..")`)
-  - Unsafe blocks in item position could be added.
-  - It could require an `#[unsafe]` or `#[unsafe()]` attribute. This syntax implies maybe even more generality, because one could expect `#[unsafe] impl Send for MyType {}` to work.
+  - It could be renamed to something like `unsafe_global_asm`. This is less helpful when the macro is imported with a different name.
+  - It could require `unsafe` as part of its syntax (`global_asm!(unsafe {".."})` or `global_asm!(unsafe "..")`).
+  - Unsafe blocks in item position could be added. This is a big change that would require it's own RFC. I don't think `global_asm` is enough motivation for this.
+  - It could require an `#[unsafe]` or `#[unsafe()]` attribute, which wouldn't require the grammar of Rust to change. This syntax implies maybe even more generality, because one could expect `#[unsafe] impl Send for MyType {}` to work.
 
 The chosen syntax mirrors the one chosen for unsafe attributes in that it does not rename the problematic
 item and in that it defines a syntax for unsafe macros.
