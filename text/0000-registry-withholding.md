@@ -393,7 +393,11 @@ Because the TUF allows vending a verifiable merkle tree for all index content, C
 subtrees such as individual crate files for consistency with upstream. This allows Cargo to invalidate its
 cache if it sees a new change, such as a quarantine on an already-cached crate's index metadata.
 
+
 ### Withholding across ecosystems
+
+<details>
+  <summary>See roundup</summary>
 
 Across language ecosystems, the most crates.io-like registries (PyPI, npm), have implemented
 reversible quarantine, enforced via omission from the index. Both have seen user pain
@@ -463,6 +467,8 @@ functions similarly to `yanked` (reversible, steers resolution, still installabl
 Removals are destructive and leave no marker in the index, similar to crates.io deletes. The proxy
 protocol does allow a plain-text error body on 404/410, which `go` surfaces, so removed versions
 can offer explanations.
+
+</details>
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
