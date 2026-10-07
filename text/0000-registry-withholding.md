@@ -8,10 +8,7 @@
 
 This RFC adds a new, optional registry index field, `withheld` (`quarantined | withdrawn`).
 
-It also adds an optional registry `config.json` URL template alongside `dl`: `notice-page`, to point
-readers to withheld crate information pages.
-
-Lastly, it specifies how Cargo avoids resolving `withheld` versions and instead display status-aware errors.
+It also specifies how Cargo avoids resolving `withheld` versions and instead display status-aware errors.
 
 This is part of the proposed [crates.io registry response project goal](https://github.com/rust-lang/goals/pull/795).
 
@@ -22,9 +19,10 @@ This RFC is the first step towards a goal of hardening crates.io and other regis
 rapidly respond to possible attacks using non-destructive actions and, ultimately, pre-emptively hold likely
 malicious bytes for pre-release reviews. The big-picture plan [is in the registry response Project Goal](https://github.com/rust-lang/goals/pull/795).
 
-Our goal in this RFC is to unblock crates.io from closing a gap in its security responses: its operators are slow to 
-take destructive actions like blanket-deleting all crates of an account. It needs a way to "freeze" that account 
-during investigation. That same capability will also be needed for any sort of automated defense. The next RFC
+During security investigations, crates.io operators are slow to take destructive actions like
+blanket-deleting all crates of an account. They could move more rapidly, with less risk of collateral
+damage, if they could "freeze" that account: something that prevents users from installing malicious
+crates while still being easy to reverse if it turns out to be a false alarm. That same capability will also be needed for any sort of automated defense. The next RFC
 adds an `unreleased` state to cover publish-time holds.
 
 To accomplish this goal, we add a middle ground between "released" and "erased from the index" via the
@@ -53,13 +51,23 @@ to access those bytes (`dl-withheld`)
 - crates.io criteria for and implementation of withholding
 - crates.io frontend display of withheld status
 - crates.io automated withholding systems
+- crates.io API exposure of the withheld status, for the frontend or other consumers
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`withheld` is an optional new index field with two possible values: `quarantined` (the registry froze the version;
-it is not installable and its bytes are not served via the normal download path; it may be released or withdrawn) and 
-`withdrawn` (permanent tombstone marking the removed version).
+`withheld` is an optional new index field, when it is present tools should ignore the 
+version, only using this record for error messages. This RFC defines two possible 
+values, `quarantined` and `withdrawn`. Other values may be added in future RFC's, and 
+client should be forward compatible with this by treating unknown values as 
+`quarantined`.
+
+`quarantined` is set when the registry froze a version. It is not installable and its 
+bytes are not served via the normal download path. It may be subsequently released or 
+withdrawn.
+
+`withdrawn` is a permanently withheld version, whose index row is a tombstone
+marking the removed version.
 
 Cargo never selects a withheld version. On fresh resolution, it will pick a different compatible version, so
 most people never encounter it. The only time you encounter withheld versions is when pinned in a lockfile,
@@ -72,13 +80,11 @@ location searched: crates.io index
 required by package `myapp v0.1.0 (/home/user/myapp)`
   |
   = note: this version is pinned by Cargo.lock; run `cargo update base64squatter` to select a different version, or change the requirement in Cargo.toml if no other version satisfies it
-  = help: for more information see https://crates.io/crates/base64squatter/1.0.0
 ```
 
-The last line comes from the registry's `notice-page`, if it advertises one in its `config.json`.
-
 Registries also mark withheld versions `yanked: true`, so older Cargo and other tools route around them. If they fetch 
-the version anyway, for instance due to a pinned lockfile, they get a 404 with an explanation in the body.
+the version anyway, for instance due to a pinned lockfile, they should get a 404,
+and should include an explanation of the version's state in the body.
 
 For researchers, withheld versions are in the index, and a registry may document a way to fetch withheld bytes.
 Fetching withheld bytes via Cargo is in the next RFC.
@@ -95,7 +101,7 @@ released.
 
 ### Added to [Registry Index / JSON schema](https://doc.rust-lang.org/cargo/reference/registry-index.html#json-schema)
 
-*Amended, new "withheld" field after "yanked", pubtime comment amended*
+*Amended, new "withheld" field after "yanked"*
 
 ```javascript
 {
@@ -125,39 +131,21 @@ released.
     // All unknown values are treated as "quarantined".
     "withheld": "quarantined",
     [...]
-    // [..]
-    // Example: 2025-11-12T19:30:12Z
-    //
-    // This should be the time the package version first became installable.
-    // It is not changed on any later status changes, like `yanked` or `withheld`.
-    // A package version that is withheld on arrival has no `pubtime` until
-    // it is released.
-    "pubtime": "2025-11-12T19:30:12Z"
 }
 ```
-*Amended, withheld as mutable, pubtime as write-once*
+*Amended, withheld as mutable*
 
 The JSON objects should not be modified after they are added, except for the
-`yanked` and `withheld` fields, whose value may change at any time, and
-`pubtime`, which may be updated exactly once from unset to a non-null value.
+`yanked` and `withheld` fields, whose value may change at any time.
 
 ---
 
-Related:
+Elsewhere in this RFC:
 - Drawbacks: [A second mutable index field](#a-second-mutable-index-field)
 - Rationale: [Why no index protocol bump?](#why-no-index-protocol-bump)
 - Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
 - Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index)
 - Rationale: [Why no reason text in the index?](#why-no-reason-text-in-the-index)
-
-### Added to [Registry Index / Index Configuration](https://doc.rust-lang.org/cargo/reference/registry-index.html#index-configuration)
-
-*Amended, new key after `auth-required`:*
-- `notice-page`: an optional URL for a human-readable page describing a package
-  version's status or the registry's withholding policies. Cargo links it from errors about withheld
-  versions but never fetches it. Accepts the `dl` markers except `{sha256-checksum}`.
-  Without markers, the URL is used as-is, and no path is appended.
-
 
 ### Added to [Registry Index / Withheld versions](https://doc.rust-lang.org/cargo/reference/registry-index.html#withheld-versions)
 
@@ -167,9 +155,10 @@ A registry may withhold a package version by setting the `withheld` field
 in its index entry and also setting `"yanked": true`, so that tools unaware
 of `withheld` avoid the version.
 
-A withheld package version's `.crate` file is not served. The endpoint responds 404,
-with a body explaining the status and linking to `notice-page` or the
-registry's withholding policy. The body does not name an alternative download location.
+A withheld package version's `.crate` file is not served. The endpoint should
+respond 404 and serve a body explaining the status and linking to a webpage about
+the crate's status and/or registry policies. The body should not not name an 
+alternative  download location.
 
 When the withholding ends, the registry restores the author's requested
 yank state. A yank or unyank requested while the package version is withheld
@@ -181,29 +170,8 @@ and later set when the package exits withholding.
 
 ---
 
-Related:
+Elsewhere in this RFC:
 - Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
-
-### Added to [Registry Web API](https://doc.rust-lang.org/cargo/reference/registry-web-api.html)
-
-*Amended, `warnings` added to the Yank response object (same for Unyank)*
-```javascript
-{
-    // Indicates the yank succeeded, always true.
-    "ok": true,
-    // Optional object of warnings to display to the user, in the same form as
-    // the publish response. Used, for example, when the version is withheld and
-    // the change to `yanked` takes effect only when the version is released.
-    "warnings": {
-        "other": []
-    }
-}
-```
-
----
-
-Cargo prints each entry in `warnings.other` as a `warning:` line, matching its handling
-for the `publish` response.
 
 ### Added to [Dependency Resolution / Withheld versions](https://doc.rust-lang.org/cargo/reference/resolver.html#withheld-versions)
 
@@ -231,7 +199,7 @@ Cache lifecycles are unchanged. A withheld version keeps building if it was last
 not-withheld, and has its bytes and index file cached. Once Cargo integrates with
 verifiable mirrors, it will invalidate caches on any upstream change for verified mirrors.
 
-Related:
+Elsewhere in this RFC:
 - Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
 - Drawbacks: [Warm caches keep withheld versions buildable](#warm-caches-keep-withheld-versions-buildable)
 - Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
@@ -243,11 +211,12 @@ Related:
 docs.rs does not build withheld versions. `crates-index-diff`, `docs_rs_crates_io`, and the pending crates.io event 
 feed ([crates.io#14188](https://github.com/rust-lang/crates.io/pull/14188)) expose the `withheld` field along with `yanked`.
 
-On seeing a withheld version, docs.rs skips the version's build and shows a badge stating its status
-and linking to `notice-page` if the registry advertises one. Documentation built before withholding
-stays below the badge. For `withdrawn`, it is removed.
+On seeing a withheld version, docs.rs skips the version's build and shows a badge stating its status. Documentation built before withholding
+stays below the badge. For `withdrawn`, documentation is deleted, leaving behind
+a placeholder page indicating status.
 
-When the `withheld` field is removed, docs.rs builds the version if it has not already and drops the badge.
+When the `withheld` field is removed, docs.rs drops the badge but does not trigger
+a rebuild unless manually requested.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -267,6 +236,9 @@ mechanisms do not consider byte availability
 
 #### Existing lockfiles can break without a local change
 - Especially painful for `cargo install --locked`. See Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
+- This is not a new problem; the same behavior affects deleted versions. This is
+arguably an improvement because now we have better error messages, but it would
+be nice to have a better solution at least for the install case.
 
 #### Warm caches keep withheld versions buildable
 - True of any design without cache evictions. Will be addressed for verifiable mirrors by default, see Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
@@ -280,7 +252,8 @@ mechanisms do not consider byte availability
 
 Essential:
 1. Fresh fetches of a withheld version through default registry paths fail with diagnostics that explain the status, 
-both for Cargo, and for other tools, including ones that do not consult the index to decide what to fetch
+both for Cargo, and for other tools, including ones that do not consult full index
+resolution rules to decide what to fetch (Yocto, registry mirrors, etc)
 2. Existing Cargo releases have a safe default behavior with no code changes
 3. Tools can differentiate withheld releases on the wire from other statuses like yanked, deleted, and never-published
 4. Withholding is reversible without requiring a fresh publication, loses no information, and a released
@@ -381,6 +354,22 @@ seems strictly worse ("version not found" rather than an explanatory error). The
 `v: 3` also makes a bump awkward since we do want `withheld` to be immediately usable, before
 the other v3-gated features stabilize.
 
+#### Right, but why not use an index protocol bump itself as a way to prevent access?
+
+It's true that we could index lines as a version that is not supported by modern Cargo,
+so that the resolver avoids them. This fully mitigates even the case where old Cargo
+ignores withheld and tries to resolve the yanked (from its perspective) line due to a
+lockfile. And then we could manipulate the version back down again upon leaving
+withholding.
+
+But, this option seems pretty painfully hacky and confusing. We ideally shouldn't be 
+mutating index line protocol versions in place. It overloads the semantics
+of versioning to mean something than "this will cause Cargo to misbehave" (which is
+not true, as previously explained).
+
+It does not seem worth the added complexity of overloading `v=` to be mutable,
+to avoid overloading the (already overloaded) `yanked=true`.
+
 ## Prior art
 [prior-art]: #prior-art
 
@@ -409,10 +398,10 @@ the core registry level.
 #### Rust
 
 [RFC 3660](https://rust-lang.github.io/rfcs/3660-crates-io-crate-deletions.html) adds destructive
-deletes via index line omission. It temporarily reserves the crate name upon deletion.
+deletes by removing a crate's index file entirely. It temporarily reserves the crate name upon deletion.
 
-`withheld` is the non-destructive counterpart to this, and `withdrawn` is the terminal,
-non-destructive equivalent.
+`withheld` is a non-destructive counterpart to this, operating on the per-release
+rather than per-crate level. `withdrawn` is the terminal, non-destructive equivalent.
 
 #### PyPI
 
@@ -475,8 +464,31 @@ can offer explanations.
 
 ### To resolve before merge
 - Whether we should make `cargo_util_schemas::index::IndexPackage` `#[non_exhaustive]` while we are bumping semver anyway
-- Whether this RFC names the crates.io researcher download location or leaves it to the crates.io admin-API work
-(I suggest deferring)
+- Is `withheld` a good field name in the index, or something more generic like `status`?
+   - `status` reads more naturally, but it might invite registries to add other states
+   that DO still allow installs, and then it blurs the lines of whether this field
+   always connotes uninstallable
+- Do we need to further specify `pubtime` behavior for withholding in this RFC? Nothing
+technically prevents a registry from quarantining packages immediately as they are
+published, for instance due to a frozen account. This could create ambiguous
+interpretations of pubtime. It becomes more relevant in a later RFC where we specify
+`unreleased` for publish-time withholding. 
+  - If we did specify it, I think the proper course is to only set `pubtime` upon first
+  time non-withheld, but this mertis discussion.
+- Do we need to also extend the registry spec to allow advertising a URL with which to
+retrieve information about withdrawal reasons (or eventually, yanked)? This could
+provide human-friendlier error messages, but it is a bit of scope creep. For instance:
+```
+{
+  "web": {
+    "version": "https://crates.io/crates/{crate}/{version}"
+  }
+}
+```
+- Do we care to trigger fresh docs.rs builds for withheld-at-publish-time releases that
+never had docs? This is technically a reachable state today, if a registry freezes
+an entire account and quarantines on release instead of locking, but it seems more
+likely to be encountered in the later RFC on publish-time withholding.
 
 ### To resolve during implementation
 - Exact errors and prose notes, documentation notes, documentation URLs
@@ -486,14 +498,14 @@ can offer explanations.
 linking, or docs.rs re-processing are registry- and docs.rs-side problems for a later RFC once we add `unreleased`
 publish-time holds.
 - Warm-cache exposure (stale index + cached crate bytes) is pre-existing and un-addressed here
+- Tombstones for author-deleted crates: we could use `withdrawn` for this (and probably
+should) but that should be a separate RFC since it has other implications related to
+author privacy.
+- What to name a crates.io researcher download location (to be discussed in
+subsequent crates.io-side issue/PR)
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
-
-#### `unreleased` and publishing against withheld versions
-- The next RFC adds a routine `unreleased` status, a registry-advertised `dl-withheld` location
-for withheld bytes, `--fetch-withheld name@version` for forensic and publish-time builds, and related
-`cargo publish` behavior for workspace publishes and release trains
 
 #### Smarter `cargo install --locked` on withheld dependencies
 - Cargo does not inspect candidates' bundled lockfiles, so a newer binary could fail where an
@@ -509,8 +521,3 @@ with a marker, since the index has that state.
 - A registry endpoint could serve machine-readable reasons that Cargo shows in errors, or reasons on the index
 line itself
 - This should be designed along with `yanked` reason improvements
-
-#### Yank reasons on `notice-page`
-- `notice-page` could carry the yank reasons once crates.io's frontend shows them. This could land
-alongside the crates.io admin API. Yank reasons already have backend API support, and the frontend
-work for `withheld` reasons touches similar code paths.
