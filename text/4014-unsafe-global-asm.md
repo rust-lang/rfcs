@@ -51,8 +51,8 @@ ret
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `global_asm` macro is considered unsafe and (starting from the next edition) can only be invoked by
-using the `unsafe` keyword.
+The `global_asm` macro is considered unsafe and (starting from the next edition) can only be invoked if the `unsafe` keyword appears
+immediately before it.
 Other macros can't be invoked in this way.
 
 ```rust
