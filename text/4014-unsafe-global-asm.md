@@ -55,6 +55,12 @@ The `global_asm` macro is considered unsafe and (starting from the next edition)
 using the `unsafe` keyword.
 Other macros can't be invoked in this way.
 
+```rust
+unsafe global_asm!(""); // ERROR now
+global_asm!(""); // ERROR on next edition
+unsafe my_macro!(); // ERROR now and on next edition
+```
+
 To keep backwards compatibility using the `global_asm` macro without `unsafe` on older editions is not
 a hard error, but is linted against.
 
@@ -71,6 +77,15 @@ fn outer() {
 
 Because `global_asm` is an item and not a statement this behaviour is the same as other items (unsafe trait
 implementations and functions with unsafe attributes).
+
+The syntax of [MacroItem](https://doc.rust-lang.org/nightly/reference/items.html#grammar-MacroItem) is changed to the following:
+```grammar,items
+MacroItem ->
+      `unsafe`? MacroInvocationSemi
+    | MacroRulesDefinition
+```
+
+Using `unsafe` for macros in non-item positions is still disallowed in the grammar.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -122,4 +137,5 @@ concept. That `unsafe` marks *every* part of the code that requires special care
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-Users could be allowed to require `unsafe` for their own macros, which would reuse this syntax.
+- Users could be allowed to require `unsafe` for their own macros, which would reuse this syntax.
+- After that it could be allowed to use `unsafe` for more macros, not just item macros.
