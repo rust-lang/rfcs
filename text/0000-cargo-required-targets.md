@@ -175,6 +175,14 @@ normalized `Cargo.toml`. Retaining the field in that manifest is left as a
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Using `forced-target`
+
+The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
+to build for a specific target-tuple. `required-targets` instead determines whether a package is
+included for the selected target. It does not select a different target, so it does not replace
+the target-selection behavior of `forced-target` on its own. Alternatives for these workflows are
+discussed under [removing `forced-target`](#removing-forced-target).
+
 ## Conditional workspace membership
 
 Alternatively, instead of adding a `required-targets` package field, Cargo could make
@@ -301,12 +309,6 @@ Users can already select packages in a workspace with the flags
 `--package` and `--exclude`. Cargo features can also be used to restrict which cargo-target
 is built using the `required-features` field. However, `required-features` does not allow filtering
 packages in a workspace, nor does it allow filtering out the library of a package.
-
-The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
-to build for a specific target-tuple. `required-targets` instead determines whether a package is
-included for the selected target. It does not select a different target, so it does not replace
-the target-selection behavior of `forced-target` on its own. Alternatives for these workflows are
-discussed under [removing `forced-target`](#removing-forced-target).
 
 Published crates have mainly used their documentation to specify which targets they support, or they
 would leave it up to the user to infer it. Some crates also made use of compile time errors to
