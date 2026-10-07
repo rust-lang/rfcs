@@ -247,7 +247,7 @@ The initial proposal allowed both the `cfg` syntax and whitelisting specific tar
 dependency tables](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies).
 This was removed as it was deemed better to accept targets based on their _attributes_ rather than on their
 _name_. Indeed, `rustc` supported target-tuples have changed names, and have been added or removed in the past.
-Target-tuple names also do not encapsulate the semantics of the target.
+Target-tuple names also do not encapsulate the semantics of the target. Support for target tuples remains a [future possibility](#target-tuples-1).
 
 ### Using wildcards
 
@@ -338,6 +338,12 @@ Some higher-level languages and build tools have the ability to specify which pl
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Target tuples
+
+`required-targets` could also accept target tuples alongside `cfg` expressions. One way to express
+this would be an array containing either form. It's worth noting that the existing `required-features`
+field uses AND for its array entries, whereas this array would use OR. The syntax needs further consideration.
 
 ## Additional target conditions
 
