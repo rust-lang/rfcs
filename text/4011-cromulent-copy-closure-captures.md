@@ -181,7 +181,7 @@ At [`type.closure.capture`](https://doc.rust-lang.org/reference/types/closure.ht
 > };
 > ```
 >
-> <strong>[NEW] However, this does not apply when the value is behind a reference; in that case, the `ImmBorrow` mode is used.
+> <strong>[NEW] However, this does not apply when the capture path contains a dereference; in that case, the `ImmBorrow` mode is used.
 >
 > ```rust
 > let x = &([0; 1024],);
@@ -616,8 +616,21 @@ fn main() {
 
 Under current Rust, this closure moves `string` into the closure at closure creation time. However, if `string`'s type implemented `Copy`, the capture would instead be by-reference. This is a semver hazard, because implementing `Copy` changes the behavior of the closure. We'd like to mitigate this as far as possible.
 
-Additionally, upon reflection, the `Copy` semver hazard isn't the only issue with the current behavior.
-We also have this surprising subtlety:
+Note that this issue also applies to moves out of a `Box`:
+
+```rust
+fn main() {
+    let string: String = "foo".to_owned(); // A value of a non-`Copy` type
+    let string_box: Box<String> = Box::new(string);
+    let closure = || {
+        drop(*string_box); // use `*string` by value
+    };
+}
+```
+
+Under current Rust, this closure moves `string_box` into the closure at closure creation time. However, if `string`'s type implemented `Copy`, the capture would instead be by-reference.
+
+Additionally, the `Copy` semver hazard isn't the only issue with the current behavior. We also have this surprising subtlety:
 
 ```rust
 fn main() {
@@ -648,7 +661,7 @@ fn main() {
 }
 ```
 
-This option would have the downside of requiring lots of churn.
+This option would have the downside of requiring lots of churn. It also wouldn't address the `Box` example.
 
 ### Choice 2: Cease
 
@@ -656,7 +669,7 @@ Doing nothing is always an option, of course.
 
 ### Choice 3: Claim (`&own`)
 
-We could say that, when a closure captures non-`Copy` local `foo` via use both by reference and by value, the capture is by [RFC 4000](https://github.com/rust-lang/rfcs/pull/4000)-style owning reference.
+We could say that, when a closure captures non-`Copy` local `foo` via use both by reference and by value, or via dereferencing a `Box`, the capture is by [RFC 4000](https://github.com/rust-lang/rfcs/pull/4000)-style owning reference.
 
 This is less breaking than Choice 1, while still addressing the `Copy` issue and preserving TCP. However, it still needs to be an edition change, because it restricts the lifetime of the closure compared to current Rust behavior.
 
