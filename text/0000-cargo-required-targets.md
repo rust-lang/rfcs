@@ -175,8 +175,6 @@ We could introduce no new features and continue selecting workspace packages wit
 and `--exclude`. Users would still need to maintain the appropriate package selection for each
 target in their commands and CI configuration.
 
-## Documentation and compile-time errors
-
 Published crates have mainly used their documentation to specify which targets they support, or they
 would leave it up to the user to infer it. Some crates also made use of compile time errors to
 ensure that `cfg` requirements are met, for example:
@@ -187,8 +185,7 @@ compile_error!("unsupported target cfg");
 [`getrandom`](https://github.com/rust-random/getrandom/blob/9fb4a9a2481018e4ab58d597ecd167a609033149/src/backends.rs#L156-L160)
 is an example of a crate utilizing this method.
 
-These approaches do not automatically skip incompatible workspace packages. Users must still
-select or exclude those packages when running workspace commands.
+These approaches do not automatically skip incompatible workspace packages.
 
 ## Using `forced-target`
 
