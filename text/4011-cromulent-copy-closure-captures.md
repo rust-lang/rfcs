@@ -200,7 +200,9 @@ At [`type.closure.capture`](https://doc.rust-lang.org/reference/types/closure.ht
 > ```
 > </strong>
 
-And at [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.shared-prefix), we account for the new mode:
+(The reason behind the "exception to the exception" is to make the capture behavior independent of whether the captured reference is implicitly reborrowed or not. It's also a good optimization.)
+
+At [`type.closure.capture.shared-prefix`](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.shared-prefix), we account for the new mode:
 
 > ### Shared prefix
 >
