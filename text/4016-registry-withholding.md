@@ -91,8 +91,9 @@ displays this body on fetch failure.
 For researchers, withheld versions are in the index, and a registry may document a way to fetch withheld bytes.
 Fetching withheld bytes via Cargo is in the next RFC.
 
-For maintainers, publishing skips a withheld dependency like a yanked one. Pinned withheld dependencies fail
-with the above error. Publishing against your own withheld versions is in the next RFC.
+For maintainers, Cargo will avoid withheld versions of crate dependencies while generating a lockfile.
+If a lockfile is committed and includes a withheld version, the publication fails with a useful errors.
+`cargo publish --exclude-lockfile` skips this evaluation as before.
 
 docs.rs does not build withheld versions and shows a status badge instead. It instead builds them when they are 
 released.
