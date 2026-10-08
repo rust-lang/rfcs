@@ -107,9 +107,9 @@ fn expected<T>(_: T) {}
 
 The reason for this is that, inside `foo`'s closure, the compiler inserts a no-op re-borrow of `b`. The call to `expected` is transformed into effectively `expected::<&()>(&*b)`. However, with edition 2021 precise capturing, this reborrow affects capture inference. In contrast, `bar` does not get a re-borrow because HIR type-checking considers `&'a ()` from the function parameter type annotation to equal `&'a ()` from the turbofish of `expected` in `bar` (but not to `&()` from the turbofish in `foo`).
 
-Ideally, we would never emit these `&T` -> `&T` reborrows. They are complete no-ops, and bloat MIR for no benefit. This behavior is not documented in the Reference. And, of course, lifetime annotations should never affect runtime code generation! For all these reasons, it would be nice to get rid of these reborrows—but we can't do that if it will break user code.
+Ideally, we would never emit these `&T` -> `&T` reborrows. They are complete no-ops, and bloat MIR for no benefit. This behavior is not documented in the Reference. And, of course, lifetime annotations should never affect runtime code generation! For all these reasons, it would be nice to get rid of these reborrows—but we can't do that if it would break user code.
 
-(A similar issue exists for reborrows of `&mut` references; addressing that is out of scope for this RFC.)
+(A similar issue exists for reborrows of `&mut` references; addressing that is out of scope for this RFC, but discussed in the Future Possibilities.)
 
 ## Condensed clarification
 [guide-level-explanation]: #guide-level-explanation
@@ -598,7 +598,7 @@ None known. C++ does not have Rust-style capture mode inference, they make every
 - We could introduce an explicit capturing syntax, e.g. [RFC 3968](https://github.com/rust-lang/rfcs/pull/3968). This would be particularly useful for capturing clones of values. [RFC 3680](https://github.com/rust-lang/rfcs/pull/3680) or some other [ergonomic clones](https://goals.rust-lang.org/2024h2/ergonomic-rc.html) design would also be helpful here. Note that neither of these would subsume this RFC, which aims to allow users to specify their captures *without* dedicated syntax.
 - In future editions, we could choose to go all-in on the `let` shadow trick, and deprecate having by-move captures implicitly take precedence over by-reference captures for non-`Copy` types. We could also add a lint for older editions. This would mitigate the issue that implementing `Copy` is technically a breaking change. But it would not completely eliminate the semver hazard (because old editions would remain supported forever) so it's unclear that it would be worth the churn.
 - There is an additional minor `Copy` semver hazard remaining, due to the different treatment of `Copy` vs non-`Copy` captures via union fields. We could resolve this by introducing a special "copy as `MaybeUninit`" mode for such cases.
-- We could introduce a `ByReborrow` capture mode, to fit with the ongoing work on the `Reborrow` and `CoerceShared` traits.
+- We could introduce a `ByReborrow` capture mode, to fit with the ongoing work on the `Reborrow` and `CoerceShared` traits. This should let us fix the lifetime-annotations-affect-closure-captures issue for mutable references, and would also allow us to get rid of the `UniqueImmBorrow` capture mode.
 
 To elaborate on that second bullet point:
 
@@ -696,3 +696,12 @@ fn main() {
     closure(); // `string` dropped at this point
 }
 ```
+
+If we combine this with a `ByReborrow` capture mode (replacing `UniqueImmBorrow`), the result is a quite intuitive set of six capture modes:
+
+|                  | **Immutable** | **Mutable**  | **Owning**  |
+|------------------|---------------|--------------|-------------|
+| **By value**     | `ByCopy`      | `ByReborrow` | `ByMove`    |
+| **By reference** | `ImmBorrow`   | `MutBorrow`  | `OwnBorrow` |
+
+Captures would be inferred to use the top-left-most mode that is compatible with how the capture is used in the closure body. I think this would be a much easier model to teach, compared to the mess we have now.
