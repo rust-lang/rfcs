@@ -84,7 +84,8 @@ required by package `myapp v0.1.0 (/home/user/myapp)`
 
 Registries also mark withheld versions `yanked: true`, so older Cargo and other tools route around them. If they fetch 
 the version anyway, for instance due to a pinned lockfile, they should get a 404,
-which should include an explanation of the version's state in the body. This differs from current 
+which should include an explanation of the version's state in the body. Cargo
+displays this body on fetch failure.
 
 For researchers, withheld versions are in the index, and a registry may document a way to fetch withheld bytes.
 Fetching withheld bytes via Cargo is in the next RFC.
