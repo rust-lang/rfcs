@@ -109,23 +109,6 @@ A malformed `required-targets` field will raise an error.
 For package selection, omitting `required-targets` has the same effect as specifying `'cfg(all())'`:
 the package is eligible for every target.
 
-This field supports [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table).
-For example, a workspace can declare shared requirements:
-
-```toml
-# Workspace Cargo.toml
-[workspace.package]
-required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
-```
-
-A member opts in to those requirements:
-
-```toml
-# hello_cargo/Cargo.toml
-[package]
-required-targets.workspace = true
-```
-
 ## Package selection
 
 Commands that support target selection through `--target` check that the selected target satisfies
@@ -336,6 +319,25 @@ constraints.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+## Workspace inheritance
+
+Should `required-targets` support [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table)?
+For example, a workspace could declare shared requirements:
+
+```toml
+# Workspace Cargo.toml
+[workspace.package]
+required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+```
+
+A member would opt in to those requirements:
+
+```toml
+# hello_cargo/Cargo.toml
+[package]
+required-targets.workspace = true
+```
 
 # Related work
 
