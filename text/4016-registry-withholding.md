@@ -62,9 +62,9 @@ values, `quarantined` and `withdrawn`. Other values may be added in future RFC's
 client should be forward compatible with this by treating unknown values as 
 `quarantined`.
 
-`quarantined` is set when the registry froze a version. It is not installable and its 
-bytes are not served via the normal download path. It may be subsequently released or 
-withdrawn.
+`quarantined` is set when the registry froze a version. It is not available to select during
+dependency resolution and its bytes are not served via the normal download path. `quarantined`
+versions may be subsequently released or withdrawn.
 
 `withdrawn` is a permanently withheld version, whose index row is a tombstone
 marking the removed version.
