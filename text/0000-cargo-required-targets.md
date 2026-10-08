@@ -369,11 +369,23 @@ acceptable alternatives. Workflows to preserve include:
 - [Running a portable library's tests on the host](https://github.com/rust-lang/cargo/issues/17383#issuecomment-5377029221)
   while the workspace defaults to an embedded target.
 
-Depending on the use case, replacements or workarounds include explicit target selection,
+One approach is to request both the host and the target previously specified by `forced-target` in `.cargo/config.toml`:
+
+```toml
+[build]
+target = ["host-tuple", "<'forced' tuple>"]
+```
+
+With [target tuple support](#target-tuples-1), each package could use `required-targets` to match
+its intended target and skip the other, allowing one workspace command to build packages for
+different targets. However, this does not provide separate dependency feature resolution for each
+target.
+
+Other replacements or workarounds include explicit target selection,
 separate Cargo invocations, and
 [artifact dependencies](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies).
-These approaches may require users to change commands, configuration, or scripts, losing some
-of the convenience of automatically selecting a fixed target for each package.
+Some workflows may still require separate commands or scripts, losing some of the convenience of
+automatically selecting a fixed target for each package.
 
 ## Additional target conditions
 
