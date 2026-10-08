@@ -52,6 +52,7 @@ to access those bytes (`dl-withheld`)
 - crates.io automated withholding systems
 - crates.io API exposure of the withheld status, for the frontend or other consumers
 - end-user-triggered quarantine
+- withholding newly published versions by default
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -372,6 +373,17 @@ API. But, this brings in further UX and policy questions, registry web API,
 and other discussion that is less relevant to the goals of this RFC.
 
 It is best deferred to a later proposal.
+
+#### Why not withhold newly published versions by default?
+
+This RFC operates under the assumption that packages won't be held by default on publish.
+Rather, withholding is done after publish or in extremely suspicious situations.
+
+Support for withholding all crates by default belongs in a different RFC because
+it has significant implications on user experience, raises concern around index and CDN
+thrash, and generally deserves a full design treatment. Likely it should be discussed
+alongside broader refactors to publish workflows to include user-managed upload staging as distinct
+from a release action.
 
 ## Prior art
 [prior-art]: #prior-art
