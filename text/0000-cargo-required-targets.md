@@ -269,6 +269,14 @@ This was removed as it was deemed better to accept targets based on their _attri
 _name_. Indeed, `rustc` supported target-tuples have changed names, and have been added or removed in the past.
 Target-tuple names also do not encapsulate the semantics of the target. Support for target tuples remains a [future possibility](#target-tuples-1).
 
+### Allowing only target-tuples
+
+This alternative accepts target-tuples without `cfg` expressions. Explicit target-tuple lists would simplify set
+comparisons for future dependency compatibility checks. However, this alternative may not be expressive enough for the common use case.
+Packages rarely support specific target-tuples, rather they support/require specific target attributes.
+What would likely happen is that packages would copy and paste the target-tuple list matching their requirements from somewhere or someone else.
+Every time a new target with the same attribute is added, the whole ecosystem would have to be updated.
+
 ### Using wildcards
 
 Instead of using `cfg` specifications, one could use wildcards (e.g., `x86_64-*-linux-*`) to match
@@ -277,16 +285,6 @@ represent the semantics of target-tuples. For example, supporting `target_family
 require an annoyingly long list of wildcard patterns. Things like `target_pointer_width = "32"` are
 even harder to represent, and things like `target_feature = "avx"` are basically not representable.
 Also, this is new syntax not currently used by Cargo.
-
-### Allowing only target-tuples
-
-This is an even stricter version of the above. Explicit target-tuple lists would simplify set
-comparisons for future dependency compatibility checks. However, this alternative may not be
-expressive enough for the common use case. Packages rarely support specific target-tuples, rather
-they support/require specific target attributes. What would
-likely happen is that packages would copy and paste the target-tuple list matching their
-requirements from somewhere or someone else. Every time a new target with the same attribute is
-added, the whole ecosystem would have to be updated.
 
 ## Naming
 [naming]: #naming
