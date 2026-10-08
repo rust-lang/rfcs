@@ -84,7 +84,7 @@ required by package `myapp v0.1.0 (/home/user/myapp)`
 
 Registries also mark withheld versions `yanked: true`, so older Cargo and other tools route around them. If they fetch 
 the version anyway, for instance due to a pinned lockfile, they should get a 404,
-and should include an explanation of the version's state in the body.
+which should include an explanation of the version's state in the body. This differs from current 
 
 For researchers, withheld versions are in the index, and a registry may document a way to fetch withheld bytes.
 Fetching withheld bytes via Cargo is in the next RFC.
@@ -387,15 +387,15 @@ cache if it sees a new change, such as a quarantine on an already-cached crate's
 
 ### Withholding across ecosystems
 
-<details>
-  <summary>See roundup</summary>
-
 Across language ecosystems, the most crates.io-like registries (PyPI, npm), have implemented
 reversible quarantine, enforced via omission from the index. Both have seen user pain
 due to illegibility. PyPI has added additional markers, and npm plans to.
 
 Other registries have variants of deletions and yanks, but no reversible quarantine at
 the core registry level.
+
+<details>
+  <summary>See roundup</summary>
 
 #### Rust
 
