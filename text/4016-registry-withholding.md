@@ -1,6 +1,6 @@
 - Feature Name: `registry_withholding`
 - Start Date: 2026-10-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/4016)
+- RFC PR: [rust-lang/rfcs#4016](https://github.com/rust-lang/rfcs/pull/4016)
 
 ## Summary
 [summary]: #summary
@@ -51,6 +51,7 @@ to access those bytes (`dl-withheld`)
 - crates.io frontend display of withheld status
 - crates.io automated withholding systems
 - crates.io API exposure of the withheld status, for the frontend or other consumers
+- end-user-triggered quarantine
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -190,10 +191,6 @@ The error for a locked withheld version suggests `cargo update <crate>`, which r
 that crate and keeps every other lock entry. Once the version is released, the same
 lockfile resolves again unchanged.
 
-`cargo install --locked` honors the crate's bundled `Cargo.lock`, so the newest version of
-a binary can fail to install because a dependency is withheld where an older version
-would have succeeded; Cargo does not inspect candidates' bundled lockfiles when choosing.
-
 Cache lifecycles are unchanged. A withheld version keeps building if it was last seen
 not-withheld, and has its bytes and index file cached. Once Cargo integrates with
 verifiable mirrors, it will invalidate caches on any upstream change for verified mirrors.
@@ -202,7 +199,6 @@ Elsewhere in this RFC:
 - Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
 - Drawbacks: [Warm caches keep withheld versions buildable](#warm-caches-keep-withheld-versions-buildable)
 - Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
-- Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
 
 
 ### docs.rs
@@ -234,7 +230,6 @@ Rationale: [Why write withheld releases to the index?](#why-write-withheld-relea
 mechanisms do not consider byte availability
 
 #### Existing lockfiles can break without a local change
-- Especially painful for `cargo install --locked`. See Future possibilities: [Smarter `cargo install --locked` on withheld dependencies](#smarter-cargo-install---locked-on-withheld-dependencies)
 - This is not a new problem; the same behavior affects deleted versions. This is
 arguably an improvement because now we have better error messages, but it would
 be nice to have a better solution at least for the install case.
@@ -369,6 +364,14 @@ not true, as previously explained).
 It does not seem worth the added complexity of overloading `v=` to be mutable,
 to avoid overloading the (already overloaded) `yanked=true`.
 
+#### Why no end-user-triggered quarantine?
+
+The `withheld` primitive is appropriate for usage by end users via a yank-like
+API. But, this brings in further UX and policy questions, registry web API,
+and other discussion that is less relevant to the goals of this RFC.
+
+It is best deferred to a later proposal.
+
 ## Prior art
 [prior-art]: #prior-art
 
@@ -462,11 +465,6 @@ can offer explanations.
 [unresolved-questions]: #unresolved-questions
 
 ### To resolve before merge
-- Whether we should make `cargo_util_schemas::index::IndexPackage` `#[non_exhaustive]` while we are bumping semver anyway
-- Is `withheld` a good field name in the index, or something more generic like `status`?
-   - `status` reads more naturally, but it might invite registries to add other states
-   that DO still allow installs, and then it blurs the lines of whether this field
-   always connotes uninstallable
 - Do we need to further specify `pubtime` behavior for withholding in this RFC? Nothing
 technically prevents a registry from quarantining packages immediately as they are
 published, for instance due to a frozen account. This could create ambiguous
@@ -490,6 +488,11 @@ an entire account and quarantines on release instead of locking, but it seems mo
 likely to be encountered in the later RFC on publish-time withholding.
 
 ### To resolve during implementation
+- Is `withheld` a good field name in the index, or something more generic like `status`?
+   - `status` reads more naturally, but it might invite registries to add other states
+   that DO still allow installs, and then it blurs the lines of whether this field
+   always connotes uninstallable
+
 - Exact errors and prose notes, documentation notes, documentation URLs
 
 ### Related problems this RFC leaves open
@@ -505,12 +508,6 @@ subsequent crates.io-side issue/PR)
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
-
-#### Smarter `cargo install --locked` on withheld dependencies
-- Cargo does not inspect candidates' bundled lockfiles, so a newer binary could fail where an
-older one would succeed. On that failure, Cargo could check older versions and either suggest an
-alternative or implicitly fall back.
-- This deserves its own RFC and the same gap already exists for deleted crates
 
 #### `cargo info` support
 - `cargo info` shows only candidate versions, meaning not yanked or withheld ones. It could show both,
