@@ -5,9 +5,9 @@
 ## Summary
 [summary]: #summary
 
-This RFC adds a new, optional registry index field, `withheld` (`quarantined | withdrawn`).
+This RFC adds a new, optional registry index field, `availability` (`available | quarantined | withdrawn`).
 
-It also specifies how Cargo avoids resolving `withheld` versions and instead display status-aware errors.
+It also specifies how Cargo avoids resolving unavailable versions and instead displays status-aware errors.
 
 This is part of the proposed [crates.io registry response project goal](https://github.com/rust-lang/goals/pull/795).
 
@@ -25,53 +25,56 @@ crates while still being easy to reverse if it turns out to be a false alarm. Th
 adds an `unreleased` state to cover publish-time holds.
 
 To accomplish this goal, we add a middle ground between "released" and "erased from the index" via the
-new `withheld` field. We have "yanked", but yanked does not indicate a malicious release. Yanked releases are also 
+new `availability` field. We have "yanked", but yanked does not indicate a malicious release. Yanked releases are also 
 still resolvable via an existing `Cargo.lock`, and, worse, their bytes are freely downloaded by default. We instead
 want a way to say, "this release is being quarantined, and its bytes are not served via the normal download path". And 
 similarly, if we ultimately delete a release, we'd like the option to leave a tombstone showing that it used to be 
-there. Withheld bytes are retained for research purposes. Registries can opt to serve them, but Cargo has no way
+there. unavailable bytes are retained for research purposes. Registries can opt to serve them, but Cargo has no way
 to fetch them until the next RFC.
 
-A key tradeoff of this approach, withheld crates staying in the index, is that it breaks the invariant that every
+A key tradeoff of this approach, unavailable crates staying in the index, is that it breaks the invariant that every
 indexed version is downloadable from `dl`. We accept this because omitting the line would cause pinned
 versions to fail with no explanation, and it is indistinguishable from a version that was never published. Other 
 ecosystems (PyPI, npm) that started with omission have since added explanatory markers or plan to.
 
-The security boundary that we are focused on here is fresh acquisition, with a cold cache. Cargo avoids withheld bytes 
+The security boundary that we are focused on here is fresh acquisition, with a cold cache. Cargo avoids unavailable bytes 
 whenever its view of the index is fresh, but the combination of a warm crate cache and a stale, cached view of the 
-index that is missing a newer `withheld` marker, will allow continued use of withheld bytes. This problem also affects
+index that is missing a newer `availability` marker, will allow continued use of unavailable bytes. This problem also affects
 deletion today. This gap will mostly be addressed by verified mirrors using the upcoming TUF signing work.
 
 Out of scope for this RFC:
 - publish-time `unreleased` state (which does not imply misuse, for instance publish-time review)
-- publishing against `withheld` versions (mainly a concern for `unreleased`)
-- fetching `withheld` bytes via Cargo, for forensic or publish-time builds, with a registry-advertised location
-to access those bytes (`dl-withheld`)
+- publishing against `availability` versions (mainly a concern for `unreleased`)
+- fetching unavailable bytes via Cargo, for forensic or publish-time builds, with a registry-advertised location
+to access those bytes
 - crates.io criteria for and implementation of withholding
-- crates.io frontend display of withheld status
+- crates.io frontend display of unavailable statuses
 - crates.io automated withholding systems
-- crates.io API exposure of the withheld status, for the frontend or other consumers
+- crates.io API exposure of the unavailable status, for the frontend or other consumers
 - end-user-triggered quarantine
 - withholding newly published versions by default
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`withheld` is an optional new index field, when it is present tools should ignore the 
-version, only using this record for error messages. This RFC defines two possible 
-values, `quarantined` and `withdrawn`. Other values may be added in future RFC's, and 
-client should be forward compatible with this by treating unknown values as 
-`quarantined`.
+`availability` is an optional new index field. When it is present, and its value is not `available`,
+tools should ignore the version and only consider the index row for display in error messages.
+This RFC defines three possible values, `quarantined`, `withdrawn`, and `available`.
+Other values may be added in future RFC's, and client should be forward compatible with this by
+treating unknown values as `quarantined`.
 
 `quarantined` is set when the registry froze a version. It is not available to select during
 dependency resolution and its bytes are not served via the normal download path. `quarantined`
 versions may be subsequently released or withdrawn.
 
-`withdrawn` is a permanently withheld version, whose index row is a tombstone
+`withdrawn` is a permanently unavailable version, whose index row is a tombstone
 marking the removed version.
 
-Cargo never selects a withheld version. On fresh resolution, it will pick a different compatible version, so
-most people never encounter it. The only time you encounter withheld versions is when pinned in a lockfile,
+`available` is equivalent to a value of `null` and indicates that the index row has no availability
+restrictions.
+
+Cargo never selects an unavailable version. On fresh resolution, it will pick a different compatible version, so
+most people never encounter it. The only time you encounter unavailable versions is when pinned in a lockfile,
 or if no other version satisfies the requirement:
 
 ```
@@ -83,19 +86,19 @@ required by package `myapp v0.1.0 (/home/user/myapp)`
   = note: this version is pinned by Cargo.lock; run `cargo update base64squatter` to select a different version, or change the requirement in Cargo.toml if no other version satisfies it
 ```
 
-Registries also mark withheld versions `yanked: true`, so older Cargo and other tools route around them. If they fetch 
-the version anyway, for instance due to a pinned lockfile, they should get a 404,
+Registries also mark unavailable versions with `yanked: true`, so older Cargo and other tools route around them.
+If non-status-aware tools fetch the version anyway, for instance due to a pinned lockfile, they should get a 404,
 which should include an explanation of the version's state in the body. Cargo
 displays this body on fetch failure.
 
-For researchers, withheld versions are in the index, and a registry may document a way to fetch withheld bytes.
-Fetching withheld bytes via Cargo is in the next RFC.
+For researchers, unavailable versions are in the index, and a registry may document a way to fetch unavailable bytes.
+Fetching unavailable bytes via Cargo is in the next RFC.
 
-For maintainers, Cargo will avoid withheld versions of crate dependencies while generating a lockfile.
-If a lockfile is committed and includes a withheld version, the publication fails with a useful errors.
+For maintainers, Cargo will avoid unavailable versions of crate dependencies while generating a lockfile.
+If a lockfile is committed and includes an unavailable version, the publication fails with a useful errors.
 `cargo publish --exclude-lockfile` skips this evaluation as before.
 
-docs.rs does not build withheld versions and shows a status badge instead. It instead builds them when they are 
+docs.rs does not build unavailable versions and shows a status badge instead. It instead builds them when they are 
 released.
 
 
@@ -104,116 +107,111 @@ released.
 
 ### Added to [Registry Index / JSON schema](https://doc.rust-lang.org/cargo/reference/registry-index.html#json-schema)
 
-*Amended, new "withheld" field after "yanked"*
+*Amended, new "unavailable" field after "yanked"*
 
 ```javascript
 {
     [...]
     // Boolean of whether or not this version has been yanked.
     "yanked": false,
-    // The withheld status of this package version (optional).
+    // The availability status of this package version (optional).
     //
-    // Omitted when the package version is not withheld.
-    //
-    // A withheld entry is also marked as `"yanked": true`.
-    // 
-    // If set, Cargo does not select this version, even if it
+    // If set to a value besides "available", Cargo does not select this version, even if it
     // is pinned in `Cargo.lock`, and errors if no other
-    // version satisfies the requirement.
+    // version satisfies the requirement. If not set, Cargo treats this version as "available".
     //
-    // The `.crate` file is not served from a registry's `dl` endpoint
-    // while the package version is withheld.
+    // For unavailable versions, a `.crate` file is not served from a registry's `dl` endpoint
+    // while the package version is unavailable.
     //
     // The current values are:
     // * "quarantined": The registry has frozen this package version because it
     //   suspects misuse. The package version may later transition to "withdrawn"
-    //   or have its "withheld" field removed (making it installable again).
+    //   or have its "unavailable" field removed (making it installable again).
     // * "withdrawn": The registry has permanently removed this package version.
     //   The entry remains as a tombstone and the version number cannot be reused.
+    // * "available": Available with no restrictions
     //
     // All unknown values are treated as "quarantined".
-    "withheld": "quarantined",
+    "availability": "quarantined",
     [...]
 }
 ```
-*Amended, withheld as mutable*
+*Amended, unavailable as mutable*
 
 The JSON objects should not be modified after they are added, except for the
-`yanked` and `withheld` fields, whose value may change at any time.
+`yanked` and `availability` fields, whose value may change at any time.
 
 ---
 
 Elsewhere in this RFC:
 - Drawbacks: [A second mutable index field](#a-second-mutable-index-field)
 - Rationale: [Why no index protocol bump?](#why-no-index-protocol-bump)
-- Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
-- Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index)
+- Rationale: [Why `availability` instead of (further) overloading `yanked`?](#why-unavailable-instead-of-further-overloading-yanked)
+- Rationale: [Why write unavailable releases to the index?](#why-write-unavailable-releases-to-the-index)
 - Rationale: [Why no reason text in the index?](#why-no-reason-text-in-the-index)
 
-### Added to [Registry Index / Withheld versions](https://doc.rust-lang.org/cargo/reference/registry-index.html#withheld-versions)
+### Added to [Registry Index / Unavailable versions](https://doc.rust-lang.org/cargo/reference/registry-index.html#unavailable-versions)
 
 *New section after "Version uniqueness":*
 
-A registry may withhold a package version by setting the `withheld` field
-in its index entry and also setting `"yanked": true`, so that tools unaware
-of `withheld` avoid the version.
+A registry may withhold a package version by setting the `availability` field
+in its index entry to a value besides `available` and also setting `"yanked": true`,
+so that tools unaware of `availability` avoid the version.
 
-A withheld package version's `.crate` file is not served. The endpoint should
+An unavailable package version's `.crate` file is not served. The endpoint should
 respond 404 and serve a body explaining the status and linking to a webpage about
 the crate's status and/or registry policies. The body should not not name an 
 alternative  download location.
 
-When the withholding ends, the registry restores the author's requested
-yank state. A yank or unyank requested while the package version is withheld
+When a period of unavailability ends, the registry restores the author's requested
+yank state. A yank or unyank requested while the package version is unavailable
 is recorded and takes effect on release.
 
-`pubtime` is never modified for a withheld package version. This means
-that it is initially unset if a package is uploaded while initially withheld,
-and later set when the package exits withholding.
+The value of `pubtime` is not impacted by changes to the `availability` field.
 
 ---
 
 Elsewhere in this RFC:
-- Rationale: [Why `withheld` instead of (further) overloading `yanked`?](#why-withheld-instead-of-further-overloading-yanked)
+- Rationale: [Why `availability` instead of (further) overloading `yanked`?](#why-unavailable-instead-of-further-overloading-yanked)
 
-### Added to [Dependency Resolution / Withheld versions](https://doc.rust-lang.org/cargo/reference/resolver.html#withheld-versions)
+### Added to [Dependency Resolution / Unavailable versions](https://doc.rust-lang.org/cargo/reference/resolver.html#unavailable-versions)
 
 *New section after "Yanked versions":*
 
-[Withheld releases][withheld] are those that a registry has marked as
-not installable. When the resolver is building the graph, it will
-ignore all withheld versions, including those that already exist
+[Unavailable releases][unavailable] are those that a registry has marked as
+not accessible for usage. When the resolver is building the graph, it will
+ignore all unavailable versions, including those that already exist
 in the `Cargo.lock` file, and report an error if no other
 version satisfies the requirement.
 
-[withheld]: registry-index.md#withheld-versions
+[unavailable]: registry-index.md#unavailable-versions
 
 ---
 
-The error for a locked withheld version suggests `cargo update <crate>`, which re-resolves
+The error for a locked unavailable version suggests `cargo update <crate>`, which re-resolves
 that crate and keeps every other lock entry. Once the version is released, the same
 lockfile resolves again unchanged.
 
-Cache lifecycles are unchanged. A withheld version keeps building if it was last seen
-not-withheld, and has its bytes and index file cached. Once Cargo integrates with
+Cache lifecycles are unchanged. an unavailable version keeps building if it was last seen
+not-unavailable, and has its bytes and index file cached. Once Cargo integrates with
 verifiable mirrors, it will invalidate caches on any upstream change for verified mirrors.
 
 Elsewhere in this RFC:
 - Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
-- Drawbacks: [Warm caches keep withheld versions buildable](#warm-caches-keep-withheld-versions-buildable)
+- Drawbacks: [Warm caches keep unavailable versions buildable](#warm-caches-keep-unavailable-versions-buildable)
 - Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
 
 
 ### docs.rs
 
-docs.rs does not build withheld versions. `crates-index-diff`, `docs_rs_crates_io`, and the pending crates.io event 
-feed ([crates.io#14188](https://github.com/rust-lang/crates.io/pull/14188)) expose the `withheld` field along with `yanked`.
+docs.rs does not build unavailable versions. `crates-index-diff`, `docs_rs_crates_io`, and the pending crates.io event 
+feed ([crates.io#14188](https://github.com/rust-lang/crates.io/pull/14188)) expose the `availability` field along with `yanked`.
 
-On seeing a withheld version, docs.rs skips the version's build and shows a badge stating its status. Documentation built before withholding
+On seeing an unavailable version, docs.rs skips the version's build and shows a badge stating its status. Documentation built before withholding
 stays below the badge. For `withdrawn`, documentation is deleted, leaving behind
 a placeholder page indicating status.
 
-When the `withheld` field is removed, docs.rs drops the badge but does not trigger
+When the `availability` field is subsequently set to `available` or removed, docs.rs drops the badge but does not trigger
 a rebuild unless manually requested.
 
 ## Drawbacks
@@ -221,15 +219,13 @@ a rebuild unless manually requested.
 
 #### A second mutable index field
 - This stinks, but the ship has arguably sailed with yanks. See Rationale: 
-[Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index)
-- We also indicate that `pubtime` is write-once, from unset to a value, but this was already the case due
-to our historical backfill operations
+[Why write unavailable releases to the index?](#why-write-unavailable-releases-to-the-index)
 
 #### An index line no longer guarantees fetchable bytes
 - By design since we want to make clear to consumers *why* locked versions are not reachable (see:
-Rationale: [Why write withheld releases to the index?](#why-write-withheld-releases-to-the-index))
+Rationale: [Why write unavailable releases to the index?](#why-write-unavailable-releases-to-the-index))
 - Partially mitigated by helpful 404 bodies
-- Index signing and verification are unaffected since withheld status is written to the index and these
+- Index signing and verification are unaffected since unavailable status is written to the index and these
 mechanisms do not consider byte availability
 
 #### Existing lockfiles can break without a local change
@@ -237,7 +233,7 @@ mechanisms do not consider byte availability
 arguably an improvement because now we have better error messages, but it would
 be nice to have a better solution at least for the install case.
 
-#### Warm caches keep withheld versions buildable
+#### Warm caches keep unavailable versions buildable
 - True of any design without cache evictions. Will be addressed for verifiable mirrors by default, see Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
 
 - Already the case for current crate deletion practices
@@ -248,16 +244,16 @@ be nice to have a better solution at least for the install case.
 ### Requirements
 
 Essential:
-1. Fresh fetches of a withheld version through default registry paths fail with diagnostics that explain the status, 
+1. Fresh fetches of an unavailable version through default registry paths fail with diagnostics that explain the status, 
 both for Cargo, and for other tools, including ones that do not consult full index
 resolution rules to decide what to fetch (Yocto, registry mirrors, etc)
 2. Existing Cargo releases have a safe default behavior with no code changes
-3. Tools can differentiate withheld releases on the wire from other statuses like yanked, deleted, and never-published
+3. Tools can differentiate unavailable releases on the wire from other statuses like yanked, deleted, and never-published
 4. Withholding is reversible without requiring a fresh publication, loses no information, and a released
-version is treated the same by tools as one which was never withheld
-5. Index followers such as docs.rs handle a version while withheld and once released
+version is treated the same by tools as one which was never unavailable
+5. Index followers such as docs.rs handle a version while unavailable and once released
 6. Mirrors and index signing keep working unchanged
-7. Withheld versions and their status are discoverable from the index, without additional requests
+7. unavailable versions and their status are discoverable from the index, without additional requests
 
 Preferred:
 1. Reuse the existing index, version model, synchronization, and release flow (especially, no index protocol bump)
@@ -276,9 +272,23 @@ a release was flagged for manual review.
 
 Migrating from a bool to an enum later would be awkward and confusing. We arguably would
 prefer for `yanked` to be part of this same status enum, rather than a bool, but are stuck
-with it for backwards compatibility reasons.cd 
+with it for backwards compatibility reasons.
 
-#### Why write withheld releases to the index?
+#### Why include `availability` (with `available`) rather than `withheld`?
+
+We don't want to have a negative connotation on crates that are withheld, since this does not
+necessarily indicate malicious activity. A neutral field name like `availability` leaves us
+open for alternative, softer statuses, without the negative implication.
+
+The downside of this is slightly more complexity for downstream tooling, which now needs
+to check the enum rather than assuming presence of the field indicates unavailbility. This
+is partially mitigated by defining everything besides `available` or `null` as unavailable, and
+equivalent to `quarantined` if unknown. This allows tools that are uninterested in more granular
+status to handle this field with a straightforward equivalence check.
+
+We prefer `availability` to `available` because `"available": "available` is weird looking.
+
+#### Why write unavailable releases to the index?
 
 PyPI's quarantine and npm's publish-time scanning both remove
 or never write a line. For a version that someone has already locked,
@@ -295,8 +305,8 @@ It still lets older Cargo fall back to yanked behavior that avoids resolving to 
 This fits the values of the project around transparency and
 accountability. If we are making it easier for administrators to take new
 curation actions on the index, we want transparency logs and auditability.
-Showing the withheld coordinates also makes it possible for researchers to
-obtain withheld bytes (though this RFC defers this as a registry decision).
+Showing the unavailable coordinates also makes it possible for researchers to
+obtain unavailable bytes (though this RFC defers this as a registry decision).
 
 We could address these needs with other side channels (a status feed, a query API, etc).
 But they add significant complexity to our systems while producing
@@ -308,36 +318,36 @@ We accept it because the registry can smooth consumer experience on both sides (
 We always give an explanation where this causes a failure. We can still nudge unaware tools in a
 good direction by setting `yanked: true`. The worst case (mirrors that fetch every single line
 and loudly fail on missing bytes) still continue to new lines and can trivially add logic to skip
-fetching `withheld` lines.
+fetching `availability` lines.
 
 Whether `unreleased` versions (held with no misuse implied) should have a similar
 treatment is deferred to a subsequent RFC as they have different tradeoffs and
 systems involved.
 
-#### Why not add raw.crates.io and make crates.io a mirror of it that only serves non-withheld versions?
+#### Why not add raw.crates.io and make crates.io a mirror of it that only serves non-unavailable versions?
 
 This is still omission from the consumer's point of view, with all the same downsides around
 legibility and clear build tool behavior. It has advantages in comparison to omission in that it preserves
 an audit log, and that it makes it possible for researchers to enumerate quarantined versions.
-But, writing the `withheld` line to the index offers the same benefits.
+But, writing the `availability` line to the index offers the same benefits.
 
 In exchange, it requires building a second index, which adds a systems complexity
-and operator burden. It also makes it possible for Cargo to access all withheld bytes
+and operator burden. It also makes it possible for Cargo to access all unavailable bytes
 with no warnings or guardrails. A future RFC will suggest a method of accessing
-withheld bytes that instead is scoped to explicitly requested bytes.
+unavailable bytes that instead is scoped to explicitly requested bytes.
 
-#### Why `withheld` instead of (further) overloading `yanked`?
+#### Why `availability` instead of (further) overloading `yanked`?
 
 `yanked` currently means two things: an author saying, "probably don't use this" for an unspecified
 reason, and an administrator's soft mitigation during an investigation. Making a yank also mean "and the bytes are gone"
 makes the semantics even more confusing and makes clean handling by build tools more difficult
-since they cannot distinguish a broken release from a withheld one. `withheld` also enables
+since they cannot distinguish a broken release from an unavailable one. `availability` also enables
 `withdrawn` which signals that the state is terminal, which `yanked` currently does not imply.
-We do still set `yanked: true` when `withheld` as a compatibility shim for old tools.
+We do still set `yanked: true` when `availability` as a compatibility shim for old tools.
 
 Adding a second field with a small enum allows build tools to understand the state of crate bytes
 without making additional fetches or adding further fallbacks. It also gives us a path to clean
-up the semantics of `yanked` to at least be clearer that a standalone yank (with no `withheld`)
+up the semantics of `yanked` to at least be clearer that a standalone yank (with no `availability`)
 is *not* due to administrator action.
 
 ### Other decisions
@@ -356,20 +366,20 @@ in the same future RFC. See Future possibilities: [Better display of reasons for
 `v` exists for changes that older Cargo would misinterpret in a way that causes incorrect behavior.
 A higher `v` makes it ignore the entry entirely. Cargo already skips unknown fields.
 
-If `withheld` is ignored, Cargo will produce the same build outcome, just with worse error messages.
-It still avoids resolving withheld versions via the `yanked: true` shim. If it is forced
-to resolve a withheld version via a lockfile, it sees an explanatory 404 from the registry.
+If `availability` is ignored, Cargo will produce the same build outcome, just with worse error messages.
+It still avoids resolving unavailable versions via the `yanked: true` shim. If it is forced
+to resolve an unavailable version via a lockfile, it sees an explanatory 404 from the registry.
 
 The cost of bumping `v` is effectively the same as omission for older versions of Cargo, which
 seems strictly worse ("version not found" rather than an explanatory error). The unstabilized experimental
-`v: 3` also makes a bump awkward since we do want `withheld` to be immediately usable, before
+`v: 3` also makes a bump awkward since we do want `availability` to be immediately usable, before
 the other v3-gated features stabilize.
 
 #### Right, but why not use an index protocol bump itself as a way to prevent access?
 
 It's true that we could index lines as a version that is not supported by modern Cargo,
 so that the resolver avoids them. This fully mitigates even the case where old Cargo
-ignores withheld and tries to resolve the yanked (from its perspective) line due to a
+ignores unavailable and tries to resolve the yanked (from its perspective) line due to a
 lockfile. And then we could manipulate the version back down again upon leaving
 withholding.
 
@@ -383,7 +393,7 @@ to avoid overloading the (already overloaded) `yanked=true`.
 
 #### Why no end-user-triggered quarantine?
 
-The `withheld` primitive is appropriate for usage by end users via a yank-like
+The `availability` primitive is appropriate for usage by end users via a yank-like
 API. But, this brings in further UX and policy questions, registry web API,
 and other discussion that is less relevant to the goals of this RFC.
 
@@ -430,7 +440,7 @@ the core registry level.
 [RFC 3660](https://rust-lang.github.io/rfcs/3660-crates-io-crate-deletions.html) adds destructive
 deletes by removing a crate's index file entirely. It temporarily reserves the crate name upon deletion.
 
-`withheld` is a non-destructive counterpart to this, operating on the per-release
+`availability` is a non-destructive counterpart to this, operating on the per-release
 rather than per-crate level. `withdrawn` is the terminal, non-destructive equivalent.
 
 #### PyPI
@@ -505,13 +515,13 @@ provide human-friendlier error messages, but it is a bit of scope creep. For ins
   }
 }
 ```
-- Do we care to trigger fresh docs.rs builds for withheld-at-publish-time releases that
+- Do we care to trigger fresh docs.rs builds for unavailable-at-publish-time releases that
 never had docs? This is technically a reachable state today, if a registry freezes
 an entire account and quarantines on release instead of locking, but it seems more
 likely to be encountered in the later RFC on publish-time withholding.
 
 ### To resolve during implementation
-- Is `withheld` a good field name in the index, or something more generic like `status`?
+- Is `availability` a good field name in the index, or something more generic like `status`?
    - `status` reads more naturally, but it might invite registries to add other states
    that DO still allow installs, and then it blurs the lines of whether this field
    always connotes uninstallable
@@ -519,7 +529,7 @@ likely to be encountered in the later RFC on publish-time withholding.
 - Exact errors and prose notes, documentation notes, documentation URLs
 
 ### Related problems this RFC leaves open
-- Dependents of a withheld version are published and installable but broken until it is released. Propagation, 
+- Dependents of an unavailable version are published and installable but broken until it is released. Propagation, 
 linking, or docs.rs re-processing are registry- and docs.rs-side problems for a later RFC once we add `unreleased`
 publish-time holds.
 - Warm-cache exposure (stale index + cached crate bytes) is pre-existing and un-addressed here
@@ -533,7 +543,7 @@ subsequent crates.io-side issue/PR)
 [future-possibilities]: #future-possibilities
 
 #### `cargo info` support
-- `cargo info` shows only candidate versions, meaning not yanked or withheld ones. It could show both,
+- `cargo info` shows only candidate versions, meaning not yanked or unavailable ones. It could show both,
 with a marker, since the index has that state.
 
 #### Better display of reasons for withholding
