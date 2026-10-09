@@ -276,7 +276,7 @@ a release was flagged for manual review.
 
 Migrating from a bool to an enum later would be awkward and confusing. We arguably would
 prefer for `yanked` to be part of this same status enum, rather than a bool, but are stuck
-with it for backwards compatibility reasons.
+with it for backwards compatibility reasons.cd 
 
 #### Why write withheld releases to the index?
 
@@ -493,13 +493,8 @@ can offer explanations.
 [unresolved-questions]: #unresolved-questions
 
 ### To resolve before merge
-- Do we need to further specify `pubtime` behavior for withholding in this RFC? Nothing
-technically prevents a registry from quarantining packages immediately as they are
-published, for instance due to a frozen account. This could create ambiguous
-interpretations of pubtime. It becomes more relevant in a later RFC where we specify
-`unreleased` for publish-time withholding. 
-  - If we did specify it, I think the proper course is to only set `pubtime` upon first
-  time non-withheld, but this mertis discussion.
+- Is the yanked handling of pubtime correct for quarantined and withdrawn packages? IE, totally
+orthogonal, no impact on pubtime (which is set on initial publish only)
 - Do we need to also extend the registry spec to allow advertising a URL with which to
 retrieve information about withdrawal reasons (or eventually, yanked)? This could
 provide human-friendlier error messages, but it is a bit of scope creep. For instance:
