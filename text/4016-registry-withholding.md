@@ -264,6 +264,20 @@ Preferred:
 
 ### Major architectural alternatives
 
+#### Why indicate status with an enum rather than a bool?
+
+A bool is all we need to strictly tell Cargo that bytes are unavailable and to avoid resolving.
+But, an enum carries additional semantic meaning that is clearer to users (is it temporary
+or not, is it under suspicion of misuse). It also sets up better for behaviors around publishing
+in a future RFC: for instance, we probably don't want to automatically continue publishing
+release trains that include quarantined dependencies (which is the behavior added in this RFC),
+but we might want to warn and continue publishing on some future status that indicates that
+a release was flagged for manual review.
+
+Migrating from a bool to an enum later would be awkward and confusing. We arguably would
+prefer for `yanked` to be part of this same status enum, rather than a bool, but are stuck
+with it for backwards compatibility reasons.
+
 #### Why write withheld releases to the index?
 
 PyPI's quarantine and npm's publish-time scanning both remove
