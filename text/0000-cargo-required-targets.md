@@ -339,6 +339,9 @@ A member would opt in to those requirements:
 required-targets.workspace = true
 ```
 
+Sharing target requirements between some members may not justify workspace inheritance, since
+newly created packages would inherit those requirements by default.
+
 # Related work
 
 ## Target-specific dependency resolution
