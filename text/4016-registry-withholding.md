@@ -379,7 +379,7 @@ the other v3-gated features stabilize.
 
 It's true that we could index lines as a version that is not supported by modern Cargo,
 so that the resolver avoids them. This fully mitigates even the case where old Cargo
-ignores unavailable and tries to resolve the yanked (from its perspective) line due to a
+ignores unavailable statuses and tries to resolve the yanked (from its perspective) line due to a
 lockfile. And then we could manipulate the version back down again upon leaving
 withholding.
 
