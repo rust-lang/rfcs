@@ -225,7 +225,7 @@ a rebuild unless manually requested.
 - By design since we want to make clear to consumers *why* locked versions are not reachable (see:
 Rationale: [Why write unavailable releases to the index?](#why-write-unavailable-releases-to-the-index))
 - Partially mitigated by helpful 404 bodies
-- Index signing and verification are unaffected since unavailable status is written to the index and these
+- Index signing and verification are unaffected since unavailable statuses are written to the index and these
 mechanisms do not consider byte availability
 
 #### Existing lockfiles can break without a local change
