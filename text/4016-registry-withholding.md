@@ -253,7 +253,7 @@ resolution rules to decide what to fetch (Yocto, registry mirrors, etc)
 version is treated the same by tools as one which was never unavailable
 5. Index followers such as docs.rs handle a version while unavailable and once released
 6. Mirrors and index signing keep working unchanged
-7. unavailable versions and their status are discoverable from the index, without additional requests
+7. Unavailable versions and their status are discoverable from the index, without additional requests
 
 Preferred:
 1. Reuse the existing index, version model, synchronization, and release flow (especially, no index protocol bump)
