@@ -44,7 +44,7 @@ deletion today. This gap will mostly be addressed by verified mirrors using the 
 
 Out of scope for this RFC:
 - publish-time `unreleased` state (which does not imply misuse, for instance publish-time review)
-- publishing against `availability` versions (mainly a concern for `unreleased`)
+- publishing against unavailable versions (mainly a concern for `unreleased`)
 - fetching unavailable bytes via Cargo, for forensic or publish-time builds, with a registry-advertised location
 to access those bytes
 - crates.io criteria for and implementation of withholding
