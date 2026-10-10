@@ -418,9 +418,11 @@ allowed to modify these requirements to restrict or expand the set of permitted 
 
 ## Workspace selection of build tools
 
+When cross-compiling with `cargo check --workspace --target <target>`, a proc-macro workspace
+member can be built as a host dependency and also built separately because it was directly selected.
 A complementary feature could let workspace members that provide procedural macros or build-script
-helpers opt out of bulk workspace selection by commands such as `cargo check --workspace`, while
-still being built as dependencies or explicitly checked and tested.
+helpers opt out of that direct selection while still being built as dependencies and allowing
+their tests to be run.
 
 For example, see [Alacritty's duplicate proc-macro builds](https://github.com/rust-lang/cargo/issues/13321)
 or [Stellar's workspace exclusion workaround](https://github.com/rust-lang/cargo/issues/10827).
