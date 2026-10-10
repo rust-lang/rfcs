@@ -263,12 +263,11 @@ Preferred:
 #### Why indicate status with an enum rather than a bool?
 
 A bool is all we need to strictly tell Cargo that bytes are unavailable and to avoid resolving.
-But, an enum carries additional semantic meaning that is clearer to users (is it temporary
-or not, is it under suspicion of misuse). It also sets up better for behaviors around publishing
-in a future RFC: for instance, we probably don't want to automatically continue publishing
-release trains that include quarantined dependencies (which is the behavior added in this RFC),
-but we might want to warn and continue publishing on some future status that indicates that
-a release was flagged for manual review.
+But, an enum allows Cargo to share additional semantic meaning that is clearer to readers
+(for quarantined vs withdrawn, is it a temporary hold or not?).
+
+It also sets up better for future variants that might need additional special handling,
+for instance related to publishing and release trains (see [Future Possibilities](#future-possibilities)).
 
 Migrating from a bool to an enum later would be awkward and confusing. We arguably would
 prefer for `yanked` to be part of this same status enum, rather than a bool, but are stuck
@@ -550,3 +549,8 @@ with a marker, since the index has that state.
 - A registry endpoint could serve machine-readable reasons that Cargo shows in errors, or reasons on the index
 line itself
 - This should be designed along with `yanked` reason improvements
+
+#### Additional variants like "unreleased"
+- We probably want to indicate "held at publish time but not necessarily misuse"
+- This would need additional handling to support release trains (ie, opt-in way to access held bytes via Cargo)
+- This will come in a subsequent RFC to avoid scope creep
