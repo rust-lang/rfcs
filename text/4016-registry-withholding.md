@@ -126,7 +126,7 @@ released.
     // The current values are:
     // * "quarantined": The registry has frozen this package version because it
     //   suspects misuse. The package version may later transition to "withdrawn"
-    //   or have its "unavailable" field removed (making it installable again).
+    //   or to "available" (making it installable again).
     // * "withdrawn": The registry has permanently removed this package version.
     //   The entry remains as a tombstone and the version number cannot be reused.
     // * "available": Available with no restrictions
