@@ -29,7 +29,7 @@ new `availability` field. We have "yanked", but yanked does not indicate a malic
 still resolvable via an existing `Cargo.lock`, and, worse, their bytes are freely downloaded by default. We instead
 want a way to say, "this release is being quarantined, and its bytes are not served via the normal download path". And 
 similarly, if we ultimately delete a release, we'd like the option to leave a tombstone showing that it used to be 
-there. unavailable bytes are retained for research purposes. Registries can opt to serve them, but Cargo has no way
+there. Unavailable bytes are retained for research purposes. Registries can opt to serve them, but Cargo has no way
 to fetch them until the next RFC.
 
 A key tradeoff of this approach, unavailable crates staying in the index, is that it breaks the invariant that every
