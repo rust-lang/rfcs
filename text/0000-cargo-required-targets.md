@@ -374,13 +374,20 @@ acceptable alternatives. Workflows to preserve include:
 - [Running a portable library's tests on the host](https://github.com/rust-lang/cargo/issues/17383#issuecomment-5377029221)
   while the workspace defaults to an embedded target.
 
-One approach is to request both the host and the target previously specified by `forced-target` in `.cargo/config.toml`:
-
-```toml
-[build]
-target = ["host-tuple", "<'forced' tuple>"]
+Users of `forced-target` can migrate to this by changing `Cargo.toml`
+```diff
+-cargo-features = ["per-package-target"]
+-
+[package]
+-forced-target = "wasm32-unknown-unknown"
++required-targets = 'cfg(target_arch = "wasm32")'
 ```
 
+And adding to your `.cargo/config.toml`:
+```diff
+[build[
++target = ["host-tuple", "wasm32-unknown-unknown"]
+```
 With [target tuple support](#target-tuples-1), each package could use `required-targets` to match
 its intended target and skip the other, allowing one workspace command to build packages for
 different targets. However, this does not provide separate dependency feature resolution for each
