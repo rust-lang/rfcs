@@ -1,4 +1,4 @@
-- Feature Name: `registry_withholding`
+- Feature Name: `registry_crate_unavailability`
 - Start Date: 2026-10-07
 - RFC PR: [rust-lang/rfcs#4016](https://github.com/rust-lang/rfcs/pull/4016)
 
@@ -9,14 +9,14 @@ This RFC adds a new, optional registry index field, `availability` (`available |
 
 It also specifies how Cargo avoids resolving unavailable versions and instead displays status-aware errors.
 
-This is part of the proposed [crates.io registry response project goal](https://github.com/rust-lang/goals/pull/795).
+This is part of the proposed [crates.io security response project goal](https://github.com/rust-lang/goals/pull/795).
 
 ## Motivation
 [motivation]: #motivation
 
 This RFC is the first step towards a goal of hardening crates.io and other registries to be able to
 rapidly respond to possible attacks using non-destructive actions and, ultimately, pre-emptively hold likely
-malicious bytes for pre-release reviews. The big-picture plan [is in the registry response Project Goal](https://github.com/rust-lang/goals/pull/795).
+malicious bytes for pre-release reviews. The big-picture plan [is in the security response Project Goal](https://github.com/rust-lang/goals/pull/795).
 
 During security investigations, crates.io operators are slow to take destructive actions like
 blanket-deleting all crates of an account. They could move more rapidly, with less risk of collateral
