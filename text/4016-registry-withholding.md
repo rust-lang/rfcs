@@ -50,7 +50,7 @@ to access those bytes
 - crates.io criteria for and implementation of withholding
 - crates.io frontend display of unavailable statuses
 - crates.io automated withholding systems
-- crates.io API exposure of the unavailable status, for the frontend or other consumers
+- crates.io API exposure of unavailable statuses, for the frontend or other consumers
 - end-user-triggered quarantine
 - withholding newly published versions by default
 
