@@ -286,7 +286,7 @@ is partially mitigated by defining everything besides `available` or `null` as u
 equivalent to `quarantined` if unknown. This allows tools that are uninterested in more granular
 status to handle this field with a straightforward equivalence check.
 
-We prefer `availability` to `available` because `"available": "available` is weird looking.
+We prefer `availability` to `available` because `"available": "available"` is weird looking.
 
 #### Why write unavailable releases to the index?
 
