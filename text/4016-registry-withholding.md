@@ -136,7 +136,7 @@ released.
     [...]
 }
 ```
-*Amended, unavailable as mutable*
+*Amended, availability as mutable*
 
 The JSON objects should not be modified after they are added, except for the
 `yanked` and `availability` fields, whose value may change at any time.
