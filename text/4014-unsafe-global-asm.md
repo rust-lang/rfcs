@@ -137,5 +137,11 @@ concept. That `unsafe` marks *every* part of the code that requires special care
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Users could be allowed to require `unsafe` for their own macros, which would reuse this syntax.
-- After that it could be allowed to use `unsafe` for more macros, not just item macros.
+Users could be allowed to require `unsafe` for their own macros, which would at least partially reuse this syntax.
+This RFC implies that it should be possible to invoke unsafe macros in item positions and that this should use the `unsafe my_macro!();` syntax.
+Otherwise all directions, especially in regard to interaction with unsafe blocks stay open.
+
+- If unsafe macros in expression positions should use the same syntax or require an `unsafe` block can be decided later.
+- If unsafe macros should have to either expand to items or statements, but not both to differentiate between having to use an unsafe block or `unsafe my_macro!()`
+  can be decided later.
+
