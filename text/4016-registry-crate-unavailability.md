@@ -9,7 +9,7 @@ This RFC adds a new, optional registry index field, `availability` (`available |
 
 It also specifies how Cargo avoids resolving unavailable versions and instead displays status-aware errors.
 
-This is part of the proposed [crates.io crates.io supply chain hardening Project Goal](https://github.com/rust-lang/goals/pull/795).
+This is part of the proposed [crates.io supply chain hardening Project Goal](https://github.com/rust-lang/goals/pull/795).
 
 ## Motivation
 [motivation]: #motivation
