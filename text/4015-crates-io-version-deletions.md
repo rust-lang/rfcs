@@ -47,7 +47,7 @@ have been mirrored elsewhere already, but they would like crates.io and docs.rs 
 content completely. By the time they have made a support request, they have published fixed
 versions of the crate, so they don't want to delete the entire crate and risk losing the crate name.
 
-Originally, [deleting individiual versions was part of RFC #3660][https://github.com/rust-lang/rfcs/pull/3660#discussion_r1647411989], but [was
+Originally, [deleting individiual versions was part of RFC #3660](https://github.com/rust-lang/rfcs/pull/3660#discussion_r1647411989), but [was
 removed](https://github.com/rust-lang/rfcs/pull/3731) because the scope of resolving versions to
 determine there weren't crates depending on a particular version [turned out to be rather large and
 complex](https://github.com/rust-lang/rfcs/pull/3660#discussion_r1647844396).
