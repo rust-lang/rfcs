@@ -16,7 +16,7 @@ The functionality for deleting entire crates proposed in [RFC #3660][rfc-3660] h
 feature has successfully lessened the support burden for crate deletions, and has not caused any
 negative ecosystem impacts we're aware of.
 
-[Increasingly](#show-me-the-numbers), however, crates.io is getting support requests from crate
+Increasingly, however, crates.io is getting support requests from crate
 owners who would like to delete particular _versions_ of their crates, but not the entire crate.
 Examples of reasons for wanting to delete particular versions are accidental publishes of:
 
@@ -24,6 +24,22 @@ Examples of reasons for wanting to delete particular versions are accidental pub
 - Authentication tokens
 - Incorrect license declarations
 - Personal information
+
+Here are support request counts by month in 2026 through September. It is left as an exercise for
+the reader to imagine _why_ these requests are increasing.
+
+| Month | Number of requests | Total number of crates affected | Total number of versions deleted |
+|-------|--------------------|---------------------------------|----------------------------------|
+| Jan 2026 | 0 | 0 | 0 |
+| Feb 2026 | 0 | 0 | 0 |
+| March 2026 | 0 | 0 | 0 |
+| April 2026 | 0 | 0 | 0 |
+| May 2026 | 3 | 21 | 26 |
+| June 2026 | 0 | 0 | 0 |
+| July 2026 | 2 | 2 | 2 |
+| August 2026 | 4 | 5 | 7 |
+| September 2026 | 5 | 9 | 832 |
+
 
 The owners have usually already yanked the relevant versions and understand that the contents may
 have been mirrored elsewhere already, but they would like crates.io and docs.rs to stop serving the
@@ -153,20 +169,3 @@ deletions, and hasn't caused any undesired ecosystem effects that we know of.
   restriction would further reduce the support burden, but would likely need its own RFC.
 
 [rfc-3660]: https://github.com/rust-lang/rfcs/pull/3660
-
-## Show me the numbers
-
-Here are support request counts by month in 2026 through September. It is left as an exercise for
-the reader to imagine _why_ these requests are increasing.
-
-| Month | Number of requests | Total number of crates affected | Total number of versions deleted |
-|-------|--------------------|---------------------------------|----------------------------------|
-| Jan 2026 | 0 | 0 | 0 |
-| Feb 2026 | 0 | 0 | 0 |
-| March 2026 | 0 | 0 | 0 |
-| April 2026 | 0 | 0 | 0 |
-| May 2026 | 3 | 21 | 26 |
-| June 2026 | 0 | 0 | 0 |
-| July 2026 | 2 | 2 | 2 |
-| August 2026 | 4 | 5 | 7 |
-| September 2026 | 5 | 9 | 832 |
