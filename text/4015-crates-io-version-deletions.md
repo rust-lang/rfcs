@@ -39,6 +39,7 @@ the reader to imagine _why_ these requests are increasing.
 | July 2026 | 2 | 2 | 2 |
 | August 2026 | 4 | 5 | 7 |
 | September 2026 | 5 | 9 | 832 |
+| (Partial month) Oct 1-12 2026 | 2 | 3 | 5 |
 
 
 The owners have usually already yanked the relevant versions and understand that the contents may
