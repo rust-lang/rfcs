@@ -108,7 +108,10 @@ with a message indicating that `nums` is required. Nothing will be deleted.
 
 If all of the crate's `nums` are specified, this endpoint will return an error that the request was
 invalid with a message indicating that the requester should either delete the crate instead or
-leave at least one version. Nothing will be deleted.
+leave at least one version. Nothing will be deleted. Crates.io's code assumes a crate always has at
+least one version, so deleting all versions but leaving the crate record would be an invalid state.
+Deleting the crate record may not have been what the owner intended, so we should confirm that by
+forcing them to delete the whole crate or leave a version to clarify their intent.
 
 The deletions will be recorded in a `deleted_versions` table along with the reasons specified for
 the deletion, in the same way as `deleted_crates` stores this information for crate deletions today.
