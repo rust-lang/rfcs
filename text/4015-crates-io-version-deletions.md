@@ -127,6 +127,10 @@ Much as in [RFC #3660](https://github.com/rust-lang/rfcs/pull/3660), this would 
 [RFC #3660][rfc-3660] originally wanted to allow version deletions if there were no dependencies on
 crates.io that must resolve to that version. We could try to find better solutions to that problem.
 
+[RFC #4016](https://github.com/rust-lang/rfcs/pull/4016) is proposing a `withdrawn` attribute that
+quarantines a version and leaves a tombstone in the index. We could use that status for version
+deletions as well, but that wouldn't allow the owner to republish using the same version number.
+
 ## Prior art
 [prior-art]: #prior-art
 
