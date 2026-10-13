@@ -137,6 +137,9 @@ With [`resolver.feature-unification = "workspace"`](https://doc.rust-lang.org/ni
 all workspace members continue contributing dependency features. This does not change lockfile
 resolution or feature unification between packages retained for different targets.
 
+It's worth noting that how skipped packages contribute dependency features may change as
+`feature-unification` moves towards [stabilization](https://github.com/rust-lang/cargo/issues/14774).
+
 ### Proc-macro packages
 
 Consider a package `foo` with no `required-targets` that depends on a proc-macro package
