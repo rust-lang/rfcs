@@ -92,6 +92,9 @@ If non-status-aware tools fetch the version anyway, for instance due to a pinned
 which should include an explanation of the version's state in the body. Cargo
 displays this body on fetch failure.
 
+The reverse is not true: Direct yanking, whether by author or registry administrators,
+does not imply that the crate is made unavailable.
+
 For researchers, unavailable versions are in the index, and a registry may document a way to fetch unavailable bytes.
 Fetching unavailable bytes via Cargo is in the next RFC.
 
@@ -157,7 +160,8 @@ Elsewhere in this RFC:
 
 A registry may withhold a package version by setting the `availability` field
 in its index entry to a value besides `available` and also setting `"yanked": true`,
-so that tools unaware of `availability` avoid the version.
+so that tools unaware of `availability` avoid the version. Yanking a package directly
+does not change the value of `availability`.
 
 An unavailable package version's `.crate` file is not served. The endpoint should
 respond 404 and serve a body explaining the status and linking to a webpage about
@@ -554,7 +558,7 @@ the index if all needed metadata is cached in the local index
 - Another option would be a knob to actively refresh the index, which might be enabled by default based on an environment variable
 like `CI=true`
 - This is scoped out of this design and probably belongs in the Verifiable Mirror goal, since the shift to a single network call
-is what makes this viable in the first placeZ
+is what makes this viable in the first place
 
 #### Script to probe for unavailable crates in cache
 
