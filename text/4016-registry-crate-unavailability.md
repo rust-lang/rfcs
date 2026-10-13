@@ -9,14 +9,14 @@ This RFC adds a new, optional registry index field, `unavailable` (`quarantined 
 
 It also specifies how Cargo avoids resolving unavailable versions and instead displays status-aware errors.
 
-This is part of the proposed [crates.io supply chain hardening Project Goal](https://github.com/rust-lang/goals/pull/795).
+This is part of the proposed [crates.io supply chain hardening Project Goal](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html).
 
 ## Motivation
 [motivation]: #motivation
 
 This RFC is the first step towards a goal of hardening crates.io and other registries to be able to
 rapidly respond to possible attacks using non-destructive actions and, ultimately, pre-emptively hold likely
-malicious bytes for pre-release reviews. The big-picture plan [is in the crates.io supply chain hardening Project Goal](https://github.com/rust-lang/goals/pull/795).
+malicious bytes for pre-release reviews. The big-picture plan [is in the crates.io supply chain hardening Project Goal](hhttps://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html).
 
 During security investigations, crates.io operators are slow to take destructive actions like
 blanket-deleting all crates of an account. They could move more rapidly, with less risk of collateral
