@@ -555,3 +555,9 @@ the index if all needed metadata is cached in the local index
 like `CI=true`
 - This is scoped out of this design and probably belongs in the Verifiable Mirror goal, since the shift to a single network call
 is what makes this viable in the first placeZ
+
+#### Script to probe for unavailable crates in cache
+
+- In the recent `arrayref` supply chain attack, security responders scrambled to publish a script that could be used to check
+for impact, in the form of looking for impacted versions in the local Cargo cache.
+- We could offer an "evergreen" script that checks for the presence of any unavailable versions in cache.
