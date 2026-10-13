@@ -93,6 +93,7 @@ Using `unsafe` for macros in non-item positions is still disallowed in the gramm
 - Disallowing the old syntax is a breaking change.
 - It makes `global_asm` more special since users can't require the use of `unsafe` for their own macros.
 - If unsafe macros would ever be allowed the syntax should be consistent, so this limits the possibilities.
+- This syntax is harder to search for than the currently existing markers for unsafe code.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
