@@ -411,7 +411,7 @@ Users of `forced-target` can migrate to this by changing `Cargo.toml`
 
 And adding to your `.cargo/config.toml`:
 ```diff
-[build[
+[build]
 +target = ["host-tuple", "wasm32-unknown-unknown"]
 ```
 With [target tuple support](#target-tuples-1), each package could use `required-targets` to match
