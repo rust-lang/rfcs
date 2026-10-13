@@ -561,3 +561,8 @@ is what makes this viable in the first placeZ
 - In the recent `arrayref` supply chain attack, security responders scrambled to publish a script that could be used to check
 for impact, in the form of looking for impacted versions in the local Cargo cache.
 - We could offer an "evergreen" script that checks for the presence of any unavailable versions in cache.
+- This might be undermined by cache eviction, depending on its implementation
+(though presumably we could also add user-facing warnings on cache eviction, or instead move bytes to a
+special area of the cache that the script still looks for, but Cargo doesn't use by default)
+  - This partitioning of the cache will anyway be discussed in a subsequent RFC, when we need to start fetching certain
+  unavailable bytes for release trains.
