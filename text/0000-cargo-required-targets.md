@@ -343,9 +343,20 @@ constraints.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+# Related work
+
+## Target-specific dependency resolution
+
+A separate RFC could introduce a `resolver.targets` setting to restrict dependency resolution to
+an application's deployment targets, reducing the packages included in `Cargo.lock` and by
+`cargo vendor`.
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
 ## Workspace inheritance
 
-Should `required-targets` support [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table)?
+`required-targets` could support [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table).
 For example, a workspace could declare shared requirements:
 
 ```toml
@@ -364,17 +375,6 @@ required-targets.workspace = true
 
 Sharing target requirements between some members may not justify workspace inheritance, since
 newly created packages would inherit those requirements by default.
-
-# Related work
-
-## Target-specific dependency resolution
-
-A separate RFC could introduce a `resolver.targets` setting to restrict dependency resolution to
-an application's deployment targets, reducing the packages included in `Cargo.lock` and by
-`cargo vendor`.
-
-# Future possibilities
-[future-possibilities]: #future-possibilities
 
 ## Target tuples
 
