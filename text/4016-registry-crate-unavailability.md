@@ -53,6 +53,7 @@ to access those bytes
 - crates.io API exposure of unavailable statuses, for the frontend or other consumers
 - end-user-triggered quarantine
 - withholding newly published versions by default
+- evicting unavailable versions or index data from local caches
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -234,9 +235,9 @@ arguably an improvement because now we have better error messages, but it would
 be nice to have a better solution at least for the install case.
 
 #### Warm caches keep unavailable versions buildable
-- True of any design without cache evictions. Will be addressed for verifiable mirrors by default, see Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
-
+- True of any design without cache evictions.
 - Already the case for current crate deletion practices
+- For alternatives, see: Future possibilities: [Warm cache invalidation enhancements](#warm-cache-invalidation-enhancements)
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -412,16 +413,6 @@ from a release action.
 ## Prior art
 [prior-art]: #prior-art
 
-### Cache invalidation for verifiable mirrors
-
-The [ongoing Verifiable Mirror Project Goal](https://goals.rust-lang.org/2026/mirroring.html) will mostly
-address the "stale-cache" risk that currently impacts deleted crates and will impact quarantined crates.
-
-Because the TUF allows vending a verifiable merkle tree for all index content, Cargo can cheaply evaluate
-subtrees such as individual crate files for consistency with upstream. This allows Cargo to invalidate its
-cache if it sees a new change, such as a quarantine on an already-cached crate's index metadata.
-
-
 ### Withholding across ecosystems
 
 Across language ecosystems, the most crates.io-like registries (PyPI, npm), have implemented
@@ -554,3 +545,13 @@ line itself
 - We probably want to indicate "held at publish time but not necessarily misuse"
 - This would need additional handling to support release trains (ie, opt-in way to access held bytes via Cargo)
 - This will come in a subsequent RFC to avoid scope creep
+
+#### Warm cache invalidation enhancements
+
+- The [ongoing Verifiable Mirror Project Goal](https://goals.rust-lang.org/2026/mirroring.html) will improve the "stale-cache" risk
+story by allowing invalidation of caches across all crates with a single network call, but it won't actively refresh its view of
+the index if all needed metadata is cached in the local index
+- Another option would be a knob to actively refresh the index, which might be enabled by default based on an environment variable
+like `CI=true`
+- This is scoped out of this design and probably belongs in the Verifiable Mirror goal, since the shift to a single network call
+is what makes this viable in the first placeZ
