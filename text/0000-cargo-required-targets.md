@@ -86,6 +86,7 @@ Documentation can be built for a matching target with `cargo doc --target <targe
 builds, targets can be configured through [package metadata](https://docs.rs/about/metadata).
 
 `cargo install` checks `required-targets` when installing a published package.
+
 Cargo also checks each dependency's requirements against the target that dependency is built for,
 and reports an error on a mismatch. Comparing the full sets of targets allowed by a package and
 its dependencies is left as a [future possibility](#dependency-compatibility-checks).
