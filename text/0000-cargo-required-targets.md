@@ -43,7 +43,7 @@ that do not support the selected target.
 This field is a string containing a `cfg` specification (as for the `[target.'cfg(**)']` table). The
 supported `cfg` syntax is the same as the one for [platform-specific
 dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies)
-(i.e., `cfg(feature = "...")`, `cfg(test)`, `cfg(debug_assertions)`, and `cfg(proc_macro)` are not supported).
+Not all `cfg`s will be supported, like `cfg(feature = "...")`, `cfg(test)`, `cfg(debug_assertions)`, and `cfg(proc_macro)`.
 
 __For example:__
 ```toml
