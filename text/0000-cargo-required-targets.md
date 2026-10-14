@@ -83,8 +83,9 @@ Documentation can be built for a matching target with `cargo doc --target <targe
 builds, targets can be configured through [package metadata](https://docs.rs/about/metadata).
 
 `cargo install` checks `required-targets` when installing a published package.
-Checking compatibility between a package's requirements and those of its dependencies is left as
-a [future possibility](#dependency-compatibility-checks).
+Cargo also checks each dependency's requirements against the target that dependency is built for,
+and reports an error on a mismatch. Comparing the full sets of targets allowed by a package and
+its dependencies is left as a [future possibility](#dependency-compatibility-checks).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -92,7 +93,7 @@ a [future possibility](#dependency-compatibility-checks).
 ## Manifest field
 
 The `required-targets` field is an optional key that controls whether Cargo directly selects a
-package for a given target. The field does not impose requirements on the build host.
+package for a given target and whether it can build that package as a dependency.
 ```toml
 [package]
 # ...
@@ -103,7 +104,10 @@ and does __not__ accept `cfg(feature = "...")`, `cfg(test)`, `cfg(debug_assertio
 `cfg(proc_macro)` as configuration options. `RUSTFLAGS` does not affect the evaluation of `required-targets`.
 A malformed `required-targets` field will raise an error.
 
-For package selection, omitting `required-targets` has the same effect as specifying `'cfg(all())'`:
+Package selection and dependency checks use the same compiler-provided configuration for a given
+target, with the exclusions above and without additions from build scripts or profile settings.
+
+Omitting `required-targets` has the same effect as specifying `'cfg(all())'` for these checks:
 the package is eligible for every target.
 
 ## Package selection
@@ -138,6 +142,24 @@ resolution or feature unification between packages retained for different target
 It's worth noting that how skipped packages contribute dependency features may change as
 `feature-unification` moves towards [stabilization](https://github.com/rust-lang/cargo/issues/14774).
 
+## Dependencies
+
+Before building a dependency, Cargo checks its `required-targets` against its compilation target
+and reports an error on a mismatch. This applies to every direct or transitive dependency needed
+for the build, regardless of its source. A skipped workspace member is still checked if needed
+as a dependency. Inactive dependencies are not checked, and these checks do not change dependency
+version selection or prune `Cargo.lock`.
+
+Dependencies compiled for the host, including procedural macros and build dependencies, are checked
+against the host target. A dependency built for multiple targets must satisfy its requirement for
+each build.
+
+Compiling a package's own build script for the host does not require the package's `required-targets`
+to match the host. Its build dependencies are checked against their own requirements.
+
+Artifact dependencies are checked against each artifact's compilation target. With `lib = true`,
+the additional library is checked separately against its own compilation target.
+
 ### Proc-macro packages
 
 Consider a package `foo` with no `required-targets` that depends on a proc-macro package
@@ -148,17 +170,18 @@ Without per-package target overrides, the outcomes of
 
 | Selected package | Host | `--target` | Check of `foo-gen`'s `required-targets` | Outcome |
 | --- | --- | --- | --- | --- |
-| `foo` | Linux | Linux | Not checked (dependency of `foo`) | Compilation error (`foo-gen` needs a macOS host) |
-| `foo` | Linux | macOS | Not checked (dependency of `foo`) | Compilation error (`foo-gen` needs a macOS host) |
-| `foo` | macOS | Linux | Not checked (dependency of `foo`) | Success (`foo-gen` compiles for macOS, `foo` for Linux) |
-| `foo` | macOS | macOS | Not checked (dependency of `foo`) | Success (both compile for macOS) |
+| `foo` | Linux | Linux | Error (host target) | Requirement error (`foo-gen` needs a macOS host) |
+| `foo` | Linux | macOS | Error (host target) | Requirement error (`foo-gen` needs a macOS host) |
+| `foo` | macOS | Linux | Pass (host target) | Success (`foo-gen` compiles for macOS, `foo` for Linux) |
+| `foo` | macOS | macOS | Pass (host target) | Success (both compile for macOS) |
 | `foo-gen` | Linux | Linux | Error | Requirement error (before compilation) |
 | `foo-gen` | Linux | macOS | Pass | Compilation error (`foo-gen` needs a macOS host) |
 | `foo-gen` | macOS | Linux | Error | Requirement error (before compilation, even with `--lib`) |
 | `foo-gen` | macOS | macOS | Pass | Success (`foo-gen` compiles for macOS) |
 
-The proc-macro library compiles for the host, but `required-targets` checks the selected target.
-This can reject an otherwise valid host library build.
+The proc-macro library compiles for the host. When used as a dependency, its requirement is checked
+against the host target. Direct package selection still checks the selected target, which can
+reject an otherwise valid host library build.
 
 ## Packaging
 
@@ -172,7 +195,7 @@ along with the verification build, allowing authors to package and publish for o
 
 - Adding target requirements to package selection increases Cargo's complexity.
 - Authors must maintain accurate target requirements. An overly restrictive condition can exclude
-  a package from workspace checks on a target it actually supports.
+  a package from workspace checks or reject a dependency build on a target it actually supports.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -224,18 +247,17 @@ However, this approach would have several drawbacks:
   their own manifests.
 - Excluding a package from a workspace does not necessarily mean it cannot build for that target,
   so conditional membership does not directly provide the target requirements needed for
-  [future dependency compatibility checks](#dependency-compatibility-checks).
+  [dependency checks](#dependencies).
 
-With `required-targets`, packages remain workspace members while only their selection for a build
-changes. Each package declares its own target requirements, which could also support those future
-checks.
+With `required-targets`, packages remain workspace members. Each package declares its own target
+requirements, which Cargo uses for package selection and dependency checks.
 
 ## Field syntax
 
 The `cfg` string format was chosen because of its simplicity and expressiveness.
 
 Cargo already evaluates `cfg` expressions for platform-specific dependencies using cached target
-information obtained from `rustc`. `required-targets` uses the same kind of matching for the selected
+information obtained from `rustc`. `required-targets` uses the same kind of matching for the relevant
 target. Comparing sets of allowed targets is only needed for the
 [future dependency compatibility checks](#dependency-compatibility-checks).
 
@@ -333,9 +355,9 @@ Other languages and build tools express platform compatibility at different stag
 | --- | --- | --- |
 | Python [classifiers](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#classifiers) | Describe supported platforms for searching and browsing, without enforcing installation restrictions. | `required-targets` affects which packages Cargo selects. |
 | Python wheel [compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use) | Select compatible prebuilt distributions for installation, accounting for Python, ABI, and platform requirements. | This RFC checks target requirements for packages built from source rather than selecting compatible prebuilt artifacts. |
-| npm [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) | Restrict installation to allowed platforms. Incompatible required dependencies cause errors, while [optional dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies) can be omitted. | `required-targets` is also retained on publication and checked during installation, but this RFC does not yet check dependency requirements. |
-| Swift [supported platforms](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#supportedplatform) | Set minimum deployment versions and check that dependencies do not require higher versions. | This RFC does not introduce deployment-version requirements or dependency compatibility checks. |
-| [Buck2](https://buck2.build/docs/concepts/configurations/#using-configuration-compatibility) and [Bazel](https://bazel.build/concepts/platforms#skipping-incompatible-targets) `target_compatible_with` | Skip incompatible targets selected through patterns and, by default, error on explicit selection. | Similar skip vs. error behavior, but they also propagate incompatibility through dependencies and apply requirements to individual build targets. This RFC checks directly selected packages. |
+| npm [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) | Restrict installation to allowed platforms. Incompatible required dependencies cause errors, while [optional dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies) can be omitted. | `required-targets` also checks installation and dependencies. An enabled optional dependency that fails its requirement causes an error rather than being omitted. |
+| Swift [supported platforms](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#supportedplatform) | Set minimum deployment versions and check that dependencies do not require higher versions. | This RFC checks dependencies against their compilation targets, but does not introduce deployment-version requirements or compare packages' full sets of supported targets. |
+| [Buck2](https://buck2.build/docs/concepts/configurations/#using-configuration-compatibility) and [Bazel](https://bazel.build/concepts/platforms#skipping-incompatible-targets) `target_compatible_with` | Skip incompatible targets selected through patterns and, by default, error on explicit selection. | Similar skip vs. error behavior. This RFC errors on incompatible dependencies rather than using them to skip selected packages, and applies requirements at the package level. |
 
 Reusing Cargo's existing `cfg` syntax allows combinations such as permitting an architecture on
 one operating system but not another, beyond npm's separate lists. It avoids introducing a
@@ -460,14 +482,13 @@ For example, see [Alacritty's duplicate proc-macro builds](https://github.com/ru
 or [Stellar's workspace exclusion workaround](https://github.com/rust-lang/cargo/issues/10827).
 
 An always-false `required-targets` condition also skips direct workspace builds, but prevents
-explicitly checking or testing the package.
+explicitly checking or testing the package and rejects its use as a dependency.
 
 ## Dependency compatibility checks
 
-Missing target capabilities, such as particular atomic operations, can produce errors about
-unavailable APIs. Some of these problems won't be found until you've built or tested your project
-on an affected target. Like with [#2495](https://rust-lang.github.io/rfcs/2495-min-rust-version.html),
-declared requirements could let Cargo identify an incompatible dependency before compiling it.
+This RFC checks each dependency's requirement against its compilation target. A further extension
+could compare the full sets of targets allowed by packages and their dependencies, finding
+inconsistencies without requiring a build for each target.
 
 For example, a warning or an error could be raised if a package uses a dependency that does not
 accept the package's `required-targets`:
@@ -484,9 +505,8 @@ required-targets = 'cfg(target_os = "linux")'
 [dependencies]
 bar = "0.1.0"
 ```
-Here, a compilation error helps by showing which dependency is incompatible with the package's
-`required-targets`, rather than a cryptic error message about unavailable APIs, or runtime
-errors.
+Here, comparing the declarations would reveal that the packages' requirements are mutually
+exclusive, independently of the target selected for a particular build.
 
 Cargo's documentation should give clear guidance for when to use this field, and should not suggest
 using it by default. In particular, we should steer users to use this when they have good reason to
@@ -521,7 +541,7 @@ no `required-targets` specified, then those dependencies would need to support a
 
 Alternatively, omitting `required-targets` could opt out of dependency compatibility checks.
 Explicitly specifying `required-targets = 'cfg(all())'` would request those checks for all targets.
-This distinction would not affect package selection.
+This distinction would not affect the checks against compilation targets defined by this RFC.
 
 If a dependency does not respect this requirement (if it is not compatible), an error would be
 raised and the build would fail.
@@ -529,10 +549,9 @@ raised and the build would fail.
 Enforcing this means a package cannot support targets that are not supported by dependencies built
 for those targets, assuming the dependencies have correctly specified their `required-targets`.
 
-Procedural macros and their dependencies are built for the host, so dependency compatibility checks
-would need to consider the host target, as with build dependencies. This requires distinguishing
-host build requirements from the selected-target eligibility defined by this RFC. A proc-macro's
-`required-targets` condition cannot simply be reinterpreted as a host requirement.
+Procedural macros and their dependencies are built for the host. Comparing declarations would
+therefore need to distinguish allowed host targets from the targets of the consuming package,
+rather than requiring one set to be a subset of the other.
 
 ### Compatibility of `[dev-dependencies]`
 
@@ -546,10 +565,9 @@ package's library and binaries, and so it must respect the `required-targets` of
 ### Compatibility of `[build-dependencies]`
 [build-dependencies-compatibility]: #compatibility-of-build-dependencies
 
-Build dependencies are built for the host computer, and not the selected target. As such,
-they are not restrained by the `required-targets` of the package. Hence,
-all dependencies are allowed in the `[build-dependencies]` table. However, a build error could be
-raised if one of the build dependencies does not support the _host-tuple_ at build time.
+Build dependencies are checked against the host target by this RFC. Comparing declarations would
+need to account for the hosts on which a package is expected to build, separately from its
+`required-targets` for the selected target.
 
 A problem can arise if a crate's build script depends on a package that does not support `target_os
 = "windows"` for example. It would be possible to only allow dependencies supporting all targets in
@@ -589,20 +607,9 @@ io-uring = "0.1.0"
 This would not be required if the package itself had `required-targets = 'cfg(target_os =
 "linux")'`, or an even stricter set.
 
-### Artifact dependencies
-
-Each artifact would be checked against the dependency's `required-targets` using the target it is
-built for. An explicit `target` field selects that target. Without it, build-dependency artifacts
-use the host target, while other artifacts use the declaring package's target.
-`target = "target"` makes a build-dependency artifact use the declaring package's target.
-
-With `lib = true`, the dependency also provides an ordinary Rust library. That library would be
-checked separately using the rules for its dependency kind. An artifact's `target` override does
-not change the target used for this additional library build.
-
 ### Comparing target requirements
 
-`required-targets` uses Rust's existing `cfg` syntax to check the selected target. The
+`required-targets` uses Rust's existing `cfg` syntax to check a concrete target. The
 [future dependency compatibility checks](#dependency-compatibility-checks) instead compare
 the sets of targets that two expressions allow, to determine whether one is a _subset_ of the
 other or whether they are _mutually exclusive_.
