@@ -150,6 +150,9 @@ for the build, regardless of its source. A skipped workspace member is still che
 as a dependency. Inactive dependencies are not checked, and these checks do not change dependency
 version selection or prune `Cargo.lock`.
 
+These checks use the same target configuration and `cfg` exclusions as package selection,
+as described under [Manifest field](#manifest-field), including ignoring `RUSTFLAGS`.
+
 Dependencies compiled for the host, including procedural macros and build dependencies, are checked
 against the host target. A dependency built for multiple targets must satisfy its requirement for
 each build.
