@@ -63,16 +63,19 @@ workspace
 └── portable_tool   no target requirements
 ```
 
-When checking the workspace for Windows, Cargo skips `hello_cargo` and checks `portable_tool`:
+When checking the workspace for Windows, Cargo skips `hello_cargo` and checks `portable_tool`.
+For example:
 
 ```console
 $ cargo check --workspace --target x86_64-pc-windows-msvc
+    Skipping hello_cargo (`required-targets` not satisfied by x86_64-pc-windows-msvc)
 ```
 
-Explicitly selecting `hello_cargo` for the same target instead produces an error:
+Explicitly selecting `hello_cargo` for the same target instead produces an error. For example:
 
 ```console
 $ cargo check --package hello_cargo --target x86_64-pc-windows-msvc
+error: package `hello_cargo` does not support target `x86_64-pc-windows-msvc`
 ```
 
 An error is also raised when building a standalone package outside an explicitly declared workspace
