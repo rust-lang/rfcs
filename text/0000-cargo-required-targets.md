@@ -355,20 +355,6 @@ require an annoyingly long list of wildcard patterns. Things like `target_pointe
 even harder to represent, and things like `target_feature = "avx"` are basically not representable.
 Also, this is new syntax not currently used by Cargo.
 
-## Naming
-[naming]: #naming
-
-The name `required-targets` follows `required-features`: both express requirements that must be
-satisfied for a package or cargo-target to be included in a build.
-
-Unlike the list in `required-features`, `required-targets` contains a single `cfg` expression.
-Conjunctions and disjunctions are explicit through `all(...)` and `any(...)`.
-
-Some other names for this field can be considered:
-
-- `targets`. As in "this package _targets_ ...". Pro: Concise. Con: Ambiguous, and could be confused
-  with the `target` table.
-
 ## Package scope vs. cargo-target scope
 
 The `required-targets` field is placed at the package level, and not at the cargo-target level
@@ -405,6 +391,25 @@ constraints.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+## Field name
+
+The field's name will be resolved through the implementation and stabilization process.
+
+Throughout this RFC, we use `required-targets` for now, following the naming of `required-features`.
+
+Unlike the list in `required-features`, `required-targets` contains a single `cfg` expression.
+Conjunctions and disjunctions are explicit through `all(...)` and `any(...)`.
+
+Names under consideration:
+
+| Name | Pros | Cons |
+| --- | --- | --- |
+| `required-targets` | Follows `required-features` for skipping items whose requirements are not met. | "Requires targets" can sound like all targets are required, rather than the selected target needing to satisfy a condition. |
+| `supported-targets` | Naturally describes the targets a package supports. | "Supported" can suggest only targets actively tested by the author, encouraging overly restrictive declarations. |
+| `allowed-targets` | Makes clear that targets outside the condition are rejected. | Loses the naming connection to `required-features` and its skip behavior. |
+| `targets` | Concise, as in "this package targets ...". | Ambiguous and could be confused with the `target` table. |
+| `known-broken-targets` | Encourages declaring known incompatibilities rather than restricting builds to tested targets. | Reverses the condition's meaning and requires authors to describe incompatible targets, which may be harder than stating a requirement. |
 
 # Related work
 
