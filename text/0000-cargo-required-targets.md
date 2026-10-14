@@ -793,6 +793,13 @@ increase usability. By extension, `target_family = "windows"` would now be mutua
 
 </details>
 
+## Checking for unexpected configuration options
+
+Cargo could check `required-targets` for unexpected configuration names and values, similar to
+the [`unexpected_cfgs` lint](https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#unexpected-cfgs).
+This would help catch typos such as `target_os = "windwos"` and confusion over which configuration
+options the field supports.
+
 ## Lint against unused target-specific tables
 
 If a package has:
