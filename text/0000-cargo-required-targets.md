@@ -592,7 +592,7 @@ For dependencies built for the same target as the package, one could restrict th
 no `required-targets` specified, then those dependencies would need to support all targets.
 
 Alternatively, omitting `required-targets` could opt out of dependency compatibility checks.
-Explicitly specifying `required-targets = 'cfg(all())'` would request those checks for all targets.
+Explicitly specifying `required-targets = 'cfg(true)'` would request those checks for all targets.
 This distinction would not affect the checks against compilation targets defined by this RFC.
 
 If a dependency does not respect this requirement (if it is not compatible), an error would be
