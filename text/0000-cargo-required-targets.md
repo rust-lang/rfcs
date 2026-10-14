@@ -229,6 +229,15 @@ and packages installed with `cargo install`, reporting target mismatches before 
 Incorrect declarations should be fixed upstream, and authors may deliberately restrict targets
 to those they can maintain even when the code could compile elsewhere.
 
+## Overriding `required-targets`
+
+Cargo could provide a flag to ignore `required-targets`, or make mismatches a deny-by-default lint
+that users can disable. Either would allow otherwise valid builds when a declaration is too restrictive.
+
+We have chosen not to introduce an override initially. Incorrect declarations should be fixed
+upstream, and we'll see how it goes initially before deciding whether an override is needed.
+Override mechanisms remain a future possibility.
+
 ## Using `forced-target`
 
 The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
