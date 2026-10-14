@@ -111,10 +111,11 @@ the package is eligible for every target.
 
 ## Package selection
 
-Commands that support target selection through `--target` check that the selected target satisfies
-the `required-targets` of each directly selected package. Examples include `cargo build`,
-`cargo check`, `cargo doc`, `cargo fetch`, and `cargo tree`. Commands without target selection,
-such as `cargo fmt`, do not check `required-targets`.
+Commands that support target selection through `--target`, except `cargo package` and `cargo publish`,
+check that the selected target satisfies the `required-targets` of each directly selected package.
+Examples include `cargo build`, `cargo check`, `cargo doc`, `cargo fetch`, and `cargo tree`.
+`cargo package` and `cargo publish` check the requirement only for [verification](#packaging).
+Commands without target selection, such as `cargo fmt`, do not check `required-targets`.
 
 Cargo determines the selected target using its existing selection rules, including
 [per-package target settings](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#per-package-target).
@@ -164,8 +165,13 @@ This can reject an otherwise valid host library build.
 
 ## Packaging
 
-As this field is limited to local development, `cargo package` / `cargo publish` strip it from the
-normalized `Cargo.toml`. Retaining the field in that manifest is left as a
+`cargo package` and `cargo publish` do not filter package selection using `required-targets`.
+Before their verification build, they check each package's requirement from the original manifest
+against each selected target and report an error on a mismatch. `--no-verify` skips this check
+along with the verification build, allowing authors to package and publish for other targets.
+
+As this field is limited to local development, these commands strip it from the normalized
+`Cargo.toml`. Retaining the field in that manifest is left as a
 [future possibility](#future-possibilities).
 
 # Drawbacks
