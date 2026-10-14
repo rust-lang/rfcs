@@ -375,6 +375,13 @@ A separate RFC could introduce a `resolver.targets` setting to restrict dependen
 an application's deployment targets, reducing the packages included in `Cargo.lock` and by
 `cargo vendor`.
 
+This is separate because an application's chosen deployment targets can be narrower than the
+targets its packages support. A dedicated setting could name those targets directly without
+requiring packages to restrict their `required-targets` just to reduce vendored dependencies.
+Applications already choose target tuples for deployment, so using those directly avoids much of
+the complexity of comparing `cfg` expressions. Pruning also raises separate questions about
+keeping lockfile resolution stable and handling published lockfiles, which a separate RFC can address.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
