@@ -7,10 +7,8 @@
 # Summary
 
 The `required-targets` field in the `[package]` table of `Cargo.toml` lets workspace members
-declare target requirements using
-[`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html). During local
-development, commands such as `cargo check --workspace` skip workspace members whose requirements
-do not match the selected target, much like
+declare target requirements using [`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html).
+Commands such as `cargo check --workspace` skip workspace members whose requirements do not match the selected target, much like
 [`required-features`](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-required-features-field)
 skips cargo-targets when their required features are not enabled.
 
@@ -39,7 +37,7 @@ terms "cargo-target" and "target-tuple" are used in accordance with their defini
 glossary.
 
 The `required-targets` field can be added to `Cargo.toml` under the `[package]` table to declare
-target requirements for local development. Cargo uses these requirements to skip workspace members
+target requirements. Cargo uses these requirements to skip workspace members
 that do not support the selected target.
 
 This field is a string containing a `cfg` specification (as for the `[target.'cfg(**)']` table). The
@@ -84,8 +82,7 @@ incompatible members while reporting an error when the user specifically asks to
 Documentation can be built for a matching target with `cargo doc --target <target>`. For docs.rs
 builds, targets can be configured through [package metadata](https://docs.rs/about/metadata).
 
-These requirements apply only during local development. `cargo package` and `cargo publish` strip
-the field from the packaged `Cargo.toml`, so it does not restrict users of the published package.
+`cargo install` checks `required-targets` when installing a published package.
 Checking compatibility between a package's requirements and those of its dependencies is left as
 a [future possibility](#dependency-compatibility-checks).
 
@@ -169,10 +166,6 @@ This can reject an otherwise valid host library build.
 Before their verification build, they check each package's requirement from the original manifest
 against each selected target and report an error on a mismatch. `--no-verify` skips this check
 along with the verification build, allowing authors to package and publish for other targets.
-
-As this field is limited to local development, these commands strip it from the normalized
-`Cargo.toml`. Retaining the field in that manifest is left as a
-[future possibility](#future-possibilities).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -339,8 +332,8 @@ Other languages and build tools express platform compatibility at different stag
 | Feature | What it does | Comparison |
 | --- | --- | --- |
 | Python [classifiers](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#classifiers) | Describe supported platforms for searching and browsing, without enforcing installation restrictions. | `required-targets` affects which packages Cargo selects. |
-| Python wheel [compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use) | Select compatible prebuilt distributions for installation, accounting for Python, ABI, and platform requirements. | This RFC selects local workspace packages to build from source, not published artifacts. |
-| npm [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) | Restrict installation to allowed platforms. Incompatible required dependencies cause errors, while [optional dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies) can be omitted. | This RFC strips the field on publication, avoiding restrictions on downstream users but providing no corresponding installation check. |
+| Python wheel [compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use) | Select compatible prebuilt distributions for installation, accounting for Python, ABI, and platform requirements. | This RFC checks target requirements for packages built from source rather than selecting compatible prebuilt artifacts. |
+| npm [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) | Restrict installation to allowed platforms. Incompatible required dependencies cause errors, while [optional dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies) can be omitted. | `required-targets` is also retained on publication and checked during installation, but this RFC does not yet check dependency requirements. |
 | Swift [supported platforms](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#supportedplatform) | Set minimum deployment versions and check that dependencies do not require higher versions. | This RFC does not introduce deployment-version requirements or dependency compatibility checks. |
 | [Buck2](https://buck2.build/docs/concepts/configurations/#using-configuration-compatibility) and [Bazel](https://bazel.build/concepts/platforms#skipping-incompatible-targets) `target_compatible_with` | Skip incompatible targets selected through patterns and, by default, error on explicit selection. | Similar skip vs. error behavior, but they also propagate incompatibility through dependencies and apply requirements to individual build targets. This RFC checks directly selected packages. |
 
