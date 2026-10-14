@@ -218,6 +218,17 @@ is an example of a crate utilizing this method.
 
 These approaches do not automatically skip incompatible workspace packages.
 
+## Stripping `required-targets` on publication
+
+Cargo could strip `required-targets` from published manifests to prevent incorrect or overly
+restrictive declarations from rejecting otherwise valid downstream builds. This would allow the
+field to be tried in local development before enforcing it for users of published packages.
+
+We have chosen to retain the field so Cargo can check the requirements of published dependencies
+and packages installed with `cargo install`, reporting target mismatches before compilation.
+Incorrect declarations should be fixed upstream, and authors may deliberately restrict targets
+to those they can maintain even when the code could compile elsewhere.
+
 ## Using `forced-target`
 
 The `per-package-target` nightly feature defines the `forced-target` field, which forces a package
