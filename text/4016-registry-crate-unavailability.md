@@ -303,13 +303,13 @@ for this. PyPI has since added status markers, and npm plans to.
 
 Writing the line lets Cargo explain the status, point at `notice-page`, and give
 guidance to the user (such as `cargo update`). It also lets
-us set `withdrawn` tombstones that transparently reserves coordinates, unlike omission.
+us set `withdrawn` tombstones that transparently reserves package versions, unlike omission.
 It still lets older Cargo fall back to yanked behavior that avoids resolving to the unfetchable version.
 
 This fits the values of the project around transparency and
 accountability. If we are making it easier for administrators to take new
 curation actions on the index, we want transparency logs and auditability.
-Showing the unavailable coordinates also makes it possible for researchers to
+Showing the unavailable package versions also makes it possible for researchers to
 obtain unavailable bytes (though this RFC defers this as a registry decision).
 
 We could address these needs with other side channels (a status feed, a query API, etc).
