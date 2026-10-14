@@ -139,10 +139,10 @@ After normal package selection, Cargo handles a target mismatch as follows:
 
 Cargo removes packages skipped for every selected target from the selected packages used to resolve
 dependency features for compilation. Features required through retained dependencies still apply.
+
 With [`resolver.feature-unification = "workspace"`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#resolverfeature-unification),
 all workspace members continue contributing dependency features. This does not change lockfile
 resolution or feature unification between packages retained for different targets.
-
 It's worth noting that how skipped packages contribute dependency features may change as
 `feature-unification` moves towards [stabilization](https://github.com/rust-lang/cargo/issues/14774).
 
