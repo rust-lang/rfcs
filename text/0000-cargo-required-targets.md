@@ -103,7 +103,7 @@ required-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
 The value of this field must respect the [`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html),
 and does __not__ accept `cfg(feature = "...")`, `cfg(test)`, `cfg(debug_assertions)`, or
-`cfg(proc_macro)` as configuration options.
+`cfg(proc_macro)` as configuration options. `RUSTFLAGS` does not affect the evaluation of `required-targets`.
 A malformed `required-targets` field will raise an error.
 
 For package selection, omitting `required-targets` has the same effect as specifying `'cfg(all())'`:
