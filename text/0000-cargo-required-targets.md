@@ -272,6 +272,19 @@ However, this approach would have several drawbacks:
 With `required-targets`, packages remain workspace members. Each package declares its own target
 requirements, which Cargo uses for package selection and dependency checks.
 
+## Supported configuration options
+
+`required-targets` describes target requirements for a whole package. `cfg(test)`,
+`cfg(debug_assertions)`, and `cfg(proc_macro)` instead depend on the profile or the individual
+crate being compiled, so their values can differ between builds of the same package.
+
+Allowing `cfg(feature = "...")` would couple package selection to feature resolution, which package
+selection itself affects. Feature-dependent requirements are left as a
+[future possibility](#interaction-with-crate-features).
+
+We exclude `RUSTFLAGS` to avoid adding further confusion over which `cfg` values apply, as seen
+with differences between `[target.*.dependencies]` and Rust source code.
+
 ## Field syntax
 
 The `cfg` string format was chosen because of its simplicity and expressiveness.
