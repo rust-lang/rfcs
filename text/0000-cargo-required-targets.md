@@ -825,6 +825,8 @@ used to lock the version of transitive dependencies, and should not be linted ag
 
 ## Tooling integration
 
+- Expose `required-targets` through `cargo metadata` when needed by tools, for example to help
+  generate CI target matrices without reparsing manifests.
 - Have `cargo add` check the `required-targets` before adding a dependency.
 - Show which targets are supported on `docs.rs`.
 - Have search filters on `crates.io` for crates with support for specific targets.
