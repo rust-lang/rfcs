@@ -167,7 +167,7 @@ to match the host. Its build dependencies are checked against their own requirem
 Artifact dependencies are checked against each artifact's compilation target. With `lib = true`,
 the additional library is checked separately against its own compilation target.
 
-### Proc-macro packages
+### Example: proc-macro packages
 
 Consider a package `foo` with no `required-targets` that depends on a proc-macro package
 `foo-gen` declaring `required-targets = 'cfg(target_os = "macos")'`. Assume `foo-gen`'s implementation
