@@ -598,7 +598,7 @@ None known. C++ does not have Rust-style capture mode inference, they make every
 - We could introduce an explicit capturing syntax, e.g. [RFC 3968](https://github.com/rust-lang/rfcs/pull/3968). This would be particularly useful for capturing clones of values. [RFC 3680](https://github.com/rust-lang/rfcs/pull/3680) or some other [ergonomic clones](https://goals.rust-lang.org/2024h2/ergonomic-rc.html) design would also be helpful here. Note that neither of these would subsume this RFC, which aims to allow users to specify their captures *without* dedicated syntax.
 - In future editions, we could choose to go all-in on the `let` shadow trick, and deprecate having by-move captures implicitly take precedence over by-reference captures for non-`Copy` types. We could also add a lint for older editions. This would mitigate the issue that implementing `Copy` is technically a breaking change. But it would not completely eliminate the semver hazard (because old editions would remain supported forever) so it's unclear that it would be worth the churn.
 - There is an additional minor `Copy` semver hazard remaining, due to the different treatment of `Copy` vs non-`Copy` captures via union fields. We could resolve this by introducing a special "copy as `MaybeUninit`" mode for such cases.
-- We could introduce a `ByReborrow` capture mode, to fit with the ongoing work on the `Reborrow` and `CoerceShared` traits. This should let us fix the lifetime-annotations-affect-closure-captures issue for mutable references, and would also allow us to get rid of the `UniqueImmBorrow` capture mode.
+- We could introduce a `ByReborrow` capture mode, to fit with the ongoing work on the `Reborrow` and `CoerceShared` traits. This should let us fix the lifetime-annotations-affect-closure-captures issue for mutable references.
 
 To elaborate on that second bullet point:
 
@@ -697,11 +697,13 @@ fn main() {
 }
 ```
 
-If we combine this with a `ByReborrow` capture mode (replacing `UniqueImmBorrow`), the result is a quite intuitive set of six capture modes:
+If we combine this with a `ByReborrow` capture mode, the result is a set of seven capture modes:
 
-|                  | **Immutable** | **Mutable**  | **Owning**  |
-|------------------|---------------|--------------|-------------|
-| **By value**     | `ByCopy`      | `ByReborrow` | `ByMove`    |
-| **By reference** | `ImmBorrow`   | `MutBorrow`  | `OwnBorrow` |
+|                  | **Immutable** | **Mutable**                         | **Owning**  |
+|------------------|---------------|-------------------------------------|-------------|
+| **By value**     | `ByCopy`      | `ByReborrow`                        | `ByMove`    |
+| **By reference** | `ImmBorrow`   | `MutBorrow` (`UniqueImmBorrow`)[^1] | `OwnBorrow` |
 
-Captures would be inferred to use the top-left-most mode that is compatible with how the capture is used in the closure body. I think this would be a much easier model to teach, compared to the mess we have now.
+Captures would be inferred to use the top-left-most mode that is compatible with how the capture is used in the closure body.
+
+[^1]: Mutable by-reference use results in the `MutBorrow` mode, while combining immutable by-reference and mutable by-value use results in the `UniqueImmBorrow` mode.
