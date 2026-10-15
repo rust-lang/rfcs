@@ -723,7 +723,7 @@ See the [_body desugaring chapter_](#desugaring-of-individual-delegation-body) f
 
 #### Target block
 
-The target block is an optional [block expression](https://doc.rust-lang.org/beta/reference/expressions/block-expr.html) ([?](#why-is-the-target-block-a-block-expression)) that is used to transform the delegation item's effective self parameters before they are forwarded to the resolved callee. There are no restrictions on the expressions that can be used inside the target block ([?](#why-is-the-target-block-unrestricted)).
+The target block is an optional [block expression](https://doc.rust-lang.org/beta/reference/expressions/block-expr.html) ([?](#why-is-the-target-block-a-block-expression)) that is used to transform the delegation item's [effective self parameters](#effective-self-type-identification) before they are forwarded to the resolved callee. There are no restrictions on the expressions that can be used inside the target block ([?](#why-is-the-target-block-unrestricted)).
 
 Inside that block, `self` refers to an effective self parameter that will be transformed.
 If the generated function has no effective self parameters, then it's an error to specify the target block, unless the current delegation item was defined as part of a list or glob delegation in which at least one other item has an effective self parameter ([?](#why-can-target-blocks-be-allowed-without-effective-self-parameters)).
@@ -987,6 +987,20 @@ impl<T> HashSet<T, RandomState> {
 ```rust
 pub fn to_string(f: impl FnOnce(&mut State<'_>)) -> String {
   State::to_string(f)
+}
+```
+
+</details>
+
+<details>
+<summary> Example: delegating from a free function to a free function. </summary>
+
+[example link](https://github.com/rust-lang/rust/blob/752b9bf8798c2ffc1d3fe2b804c04454366fc6d6/library/stdarch/crates/core_arch/src/x86_64/adx.rs#L26-L37)
+
+```rust
+#[target_feature(enable = "adx")]
+pub fn _addcarryx_u64(c_in: u8, a: u64, b: u64, out: &mut u64) -> u8 {
+    _addcarry_u64(c_in, a, b, out)
 }
 ```
 
