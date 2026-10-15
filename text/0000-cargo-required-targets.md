@@ -178,8 +178,7 @@ Consider a workspace where a library can compile for both Linux and macOS which 
 
 *Note: generally proc-macros and build scrip should be more general than the library using them; this is purely for illustrative purposes*
 
-Assuming neither package sets `forced-target`, the outcomes of
-`cargo check --package <package> --target <target>` are:
+The outcomes of `cargo check --package <package> --target <target>` are:
 
 | Selected package | Host | `--target` | Check of `foo-gen`'s `required-targets` | Outcome |
 | --- | --- | --- | --- | --- |
