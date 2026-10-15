@@ -295,7 +295,6 @@ impl<T: Clone> Clone for BTreeSet<T> {
 
 Both methods can be delegated using the list syntax shown above:
 
-<!-- compile-fail: nightly currently hardcodes the field name to `0`, but BTreeSet has a named field called `map` -->
 ```rust
 impl<T: Clone> Clone for BTreeSet<T> {
     reuse Clone::{clone, clone_from} { self.map }
@@ -308,7 +307,6 @@ Both methods share the target block `{ self.map }`. The value returned by `Clone
 
 `Clone` has only these two methods, so instead of listing them we can delegate all of them with a glob:
 
-<!-- compile-fail: nightly currently hardcodes the field name to `0`, but BTreeSet has a named field called `map` -->
 ```rust
 impl<T: Clone> Clone for BTreeSet<T> {
     reuse Clone::* { self.map }
@@ -317,7 +315,6 @@ impl<T: Clone> Clone for BTreeSet<T> {
 
 A glob delegation item behaves as if all the methods of the trait were listed, including those with default implementations. `clone_from` is such a method. A glob delegation can also be written as follows:
 
-<!-- compile-fail: nightly currently hardcodes the field name to `0`, but BTreeSet has a named field called `map` -->
 ```rust
 reuse impl<T: Clone> Clone for BTreeSet<T> { self.map }
 ```
