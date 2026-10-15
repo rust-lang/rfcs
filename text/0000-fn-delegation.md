@@ -1527,8 +1527,34 @@ TODO: think about [field projections](https://github.com/BennoLossin/rfcs/blob/f
 
 #### Why are self return types limited to bare self type?
 
-TODO important: explain the rationale. <br>
-TODO: future possibilities - extend the set of uses of the effective self type to which the conversions apply.
+With this limitation we can generate conversion for the return value as a simple struct literal expression.
+```rust
+Wrapper { inner: callee(...) }
+```
+
+In a perfect world, the conversion would instead be done using something like a private trait impl.
+```rust
+<Wrapper as DelegationWrap<Inner>>::wrap(callee(...))
+```
+The visibility of that impl would be limited to visibility of the `inner` field, this way we wouldn't give the whole world ability to convert from the inner type to the wrapper type, because that may be undesirable.
+
+For newtypes such trait impl could be implemented either fully automatically by the compiler, or semi-automatically using `derive(DelegationWrap)`.
+In more complex cases the trait impl could be written manually by the user.
+There would also be a blanket impl of `DelegationWrap` for every type allowing to convert it to itself, so the wrapping call could be emitted unconditionally.
+
+The problem is that we don't currently have private trait impls in the language.
+So we are doing something that is forward compatible with them, in the scenario where such impls for newtypes are auto-provided by the compiler.
+
+The second potential extension is supporting return types like `Box<Self>` or `Rc<Self>`, that can be trivially created from `Self`.
+The body desugaring then would look like
+```rust
+From::from(Wrapper { inner: callee(...) }) // or the same with `DelegationWrap::wrap` instead of `Wrapper { ... }`
+```
+
+This extension is currently implemented on nightly rustc.
+
+Whether `From` specifically or some other more specialized trait should be used for the conversion is a matter for discussion, many iterations of discussions about the `Try` trait conversions may serve as an inspiration.
+One requirement for the trait is to have a blanket impl for converting any type to itself.
 
 ↩ [_Effective self type identification_](#effective-self-type-identification)
 
