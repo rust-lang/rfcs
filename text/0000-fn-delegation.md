@@ -1638,7 +1638,81 @@ The first option should be chosen because otherwise the generated call may fail 
 
 #### Why is return type wrapping restricted to single-field structs?
 
-TODO important: explain the rationale.
+We currently generate conversion for the return value as a struct literal expression with a single field.
+```rust
+Wrapper { inner: callee(...) }
+```
+
+We could easily extend this expression with support for [default field values](https://github.com/rust-lang/rust/issues/132162).
+```rust
+Wrapper { inner: callee(...), .. }
+```
+In that case "newtypes" like
+```rust
+struct Wrapper {
+    inner: Inner,
+    phantom: PhantomData<Something> = PhantomData,
+}
+```
+would also be supported.
+
+This however would create semver hazards for structures with public fields.
+
+If we selected `inner` in `Wrapper { inner: callee(...), .. }` to be the *first* field in the structure, then it would become a breaking change to reorder public fields in structures.
+
+<details>
+
+<summary> Breaking change: reorder fields </summary>
+
+```rust
+// Ok
+pub struct Wrapper {
+    pub inner: Inner,
+    pub other: Other = default_other,
+}
+
+// Not ok
+pub struct Wrapper {
+    pub other: Other = default_other,
+    pub inner: Inner,
+}
+```
+
+</details>
+
+If we selected `inner` in `Wrapper { inner: callee(...), .. }` to be the *only non-default* field in the structure, then it would become a breaking change to add new default fields.
+
+<details>
+
+<summary> Breaking change: adding a default field </summary>
+
+```rust
+// Ok
+pub struct Wrapper {
+    pub inner: Inner,
+    pub other: Other = default_other,
+}
+
+// Not ok
+pub struct Wrapper {
+    pub inner: Inner = default_inner,
+    pub other: Other = default_other,
+}
+```
+
+</details>
+
+The potential solutions could be:
+- Generate the `..`, but then emit an error if it results in a semver hazard.
+- Add some definition-site attribute for selecting the correct inner field:
+  ```rust
+  // Ok
+  pub struct Wrapper {
+      #[delegation_inner]
+      pub inner: Inner,
+      pub other: Other = default_other,
+  }
+  ```
 
 ↩ [_Return type wrapping_](#return-type-wrapping)
 
