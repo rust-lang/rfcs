@@ -242,8 +242,17 @@ field to be tried in local development before enforcing it for users of publishe
 
 We have chosen to retain the field so Cargo can check the requirements of published dependencies
 and packages installed with `cargo install`, reporting target mismatches before compilation.
-Incorrect declarations should be fixed upstream, and authors may deliberately restrict targets
-to those they can maintain even when the code could compile elsewhere.
+Reasons for retaining it include:
+
+- The concern about overly restrictive declarations was greater when the
+  [original RFC](https://github.com/rust-lang/rfcs/pull/3759) also affected lockfile contents.
+- We encourage fixing incorrect declarations upstream rather than working around them downstream.
+- For platform-specific code, supporting another target can require a commitment from
+  maintainers who may lack the access or knowledge to review and maintain that support. They may
+  therefore choose not to support a target even if the code could compile there. This does not
+  encourage restricting platform-agnostic code to only the targets the author tests.
+- Stripping the field would make errors depend on the dependency source. Path and git dependencies
+  would report a requirement mismatch, while registry dependencies would proceed to compilation.
 
 ## Overriding `required-targets`
 
