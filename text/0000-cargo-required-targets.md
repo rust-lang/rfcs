@@ -202,7 +202,10 @@ reject an otherwise valid host library build.
 Before their verification build, they check each package's requirement from the original manifest
 against each selected target and report an error on a mismatch. `--no-verify` skips this check
 along with the verification build, allowing authors to package and publish for other targets.
-
+For `cargo package` and `cargo publish`, `required-targets` only applies to package verification.
+It does not affect the selection of packages for publication.
+Like with using these packages as a dependency, the the verification compilation will fail when the target does not match the `required-targets` of any of the to-be-published crates.
+As this is part of verification, `--no-verify` can be used to bypass this check.
 # Drawbacks
 [drawbacks]: #drawbacks
 
