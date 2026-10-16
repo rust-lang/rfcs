@@ -687,7 +687,7 @@ impl Trait for Struct {
     fn method(self, other: Struct) -> Struct { unimplemented!() }
 }
 ```
-Let's call such types in signatures "effective self types".
+Let's call such types in signatures "effective self types" (`EffSelf`).
 
 The following procedure is used for detecting effective self types.
 
@@ -713,8 +713,15 @@ impl Struct {
 reuse Struct::method;
 ```
 
-If a function parameter's type is an effective self type, possibly wrapped in one of the references or smart pointers mentioned in [items.associated.fn.method.self-ty](https://doc.rust-lang.org/reference/items/associated-items.html#r-items.associated.fn.method.self-ty), then let's call it an "effective self parameter" ([?](#why-are-specific-smart-pointers-used-for-detecting-effective-self-parameters)).
-If the function's return type is an effective self type, without any additional wrapping, let's call it a "self return type" ([?](#why-are-self-return-types-limited-to-bare-self-type)).
+- If a function parameter's type has an effective self type inside it, then let's call it an *effective self parameter*.
+  If an effective self parameter has a type other than `EffSelf`, `&EffSelf` or `&mut EffSelf`, then an error is reported ([?](#why-are-effective-self-parameters-limited-to-references)).
+- If the function's return type has an effective self type inside it, let's call it a *self return type*.
+  If a self return type has a type other than bare `EffSelf`, then an error is reported ([?](#why-are-self-return-types-limited-to-bare-self-type)).
+
+> [!NOTE]
+>
+> On nightly rustc effective self parameters and self return types are not limited to bare and referenced effective self types, in most cases conversions are attempted instead. These conversions have open questions about their design, see the [_rationale sections_](#why-are-effective-self-parameters-limited-to-references) linked above for their discussion. <br>
+> On nightly rustc the first function parameter is also always considered an effective self parameter in absence of other effective self parameters, and is therefore converted using the target block. So explicit target blocks can be used for conversions even in free-to-free delegations.
 
 In the generated function body, effective self parameters are converted using the delegation's target block, and self return types are converted using newtype wrapping.
 See the [_body desugaring chapter_](#desugaring-of-individual-delegation-body) for details.
@@ -1565,11 +1572,91 @@ But we could additionally feature gate delegations to methods with "something eq
 
 ↩ [_Effective self type identification_](#effective-self-type-identification)
 
-#### Why are specific smart pointers used for detecting effective self parameters?
+#### Why are effective self parameters limited to references?
 
-TODO important: explain the rationale. <br>
-TODO: future possibilities - extend the set of uses of the effective self type to which the conversions apply. <br>
-TODO: think about [field projections](https://github.com/BennoLossin/rfcs/blob/field-projection-v2/text/3735-field-projections.md)
+##### Two interpretations of target blocks
+
+There are two fundamental alternative interpretations for the target block (or target expression) - it can either be used for converting the "wrapped" version of `Self` like `Box<Self>`/`Pin<&mut Self>`/etc as it occurs in the signature (A), or for converting the `Self` type *itself* (B).
+The difference between the two interpretations can be seen from delegating to a method like
+```rust
+impl Inner {
+    fn boxed_self(self: Box<Self>) {}
+}
+struct Wrapper { inner: Inner }
+
+// Interpretation A ("as it occurs")
+impl Wrapper {
+    // Target expression contains the wrapping logic
+    reuse Inner::boxed_self { Box::new(self.field) }
+    // Desugars into
+    fn boxed_self(self: Box<Self>) {
+        Inner::boxed_self(Box::new(self.field))
+    }
+}
+
+// Interpretation B ("`Self` itself")
+impl Wrapper {
+    // The wrapping logic is added by the delegation infra
+    reuse Inner::boxed_self { self.field }
+    // Desugars into:
+    // 1) Simple version, `self.field` can only be called once
+    fn boxed_self(self: Box<Self>) {
+        Inner::boxed_self(From::from(self.field))
+    }
+    // 2) More advanced version, `self.field` can be called multiple times to support types like `Vec<Self>`.
+    // `DelegationMap` is a trait that can map from `SmartPtr<T>` to `SmartPtr<U>` using a `Fn(T) -> U` closure.
+    fn boxed_self(self: Box<Self>) {
+        Inner::boxed_self(<Box as DelegationMap>::delegation_map(|this| this.field))
+    }
+}
+```
+
+The first interpretation is simpler, but the second one is definitely more powerful.
+With the second interpretation we can delegate functions using both `Self` and `SmartPtr<Self>` as a part of a single list or glob delegation, using the same target block.
+```rust
+reuse Inner::{boxed_self, ref_self, ref_mut_self} { self.field };
+
+// With interpretation A we'll have to split this into two items
+reuse Inner::{ref_self, ref_mut_self} { self.field };
+reuse Inner::boxed_self { Box::new(self.field) };
+```
+We can also support functions using both `Self` and `SmartPtr<Self>` in the *same* signature.
+```rust
+// With interpretation A this is not delegatable at all.
+fn foo(self: Self, other_self: Box<Self>);
+```
+
+If the design goes into the direction of interpretation B, then we'll also need to think how to support `Pin` smart pointers specifically, and how [field projections](https://github.com/BennoLossin/rfcs/blob/field-projection-v2/text/3735-field-projections.md) fit into this picture and the design of `DelegationMap`.
+
+The RFC and the nightly implementation currently use interpretation A ("as it occurs"), that's why the reference level explanation limits effective self parameters to `Self`, `&Self` and `&mut Self`, for future-compatibility with interpretation B.
+
+##### Some more on the interpretation A ("as it occurs")
+
+In this interpretation if we have an effective self parameter candidate `param: Something<Self>`, it is almost always better to try applying the target block conversion to it.
+In the best case it will convert correctly and make the code compile, in the worst case it will produce a different error.
+
+Note that if the signature for an *individual* delegation has a single parameter with `Self` in it, we can always write a target block that will convert it successfully, e.g. change it from `self.field` to `Box::new(self.field)` for `Box<Self>`, like shown above.
+So we expect delegations like this to be common:
+```rust
+// Delegate with a glob and field for most methods.
+reuse Trait::* { self.inner }
+// Override with an individual delegation for a few methods with "weirdly wrapped" `Self`
+reuse Trait::boxed_self { Box::new(self.inner) }
+```
+
+As mentioned above, methods like `fn foo(self: Self, other_self: Box<Self>)`, lacking a single suitable block for all argument conversions, are basically undelegatable with this approach.
+
+One exception from the "always apply the conversion" rule is associated types, i.e. the case where `Something<Self>` is `Self::AssocTy`.
+
+Unfortunately, associated types are generally split into two classes.
+- The first class consists of associated types behaving like `Add::Output`, they must be converted using the target block, because typically `Wrapper::Output == Wrapper`, and `Inner::Ouput == Inner`.
+- The second class consists of associated types behaving like `Iterator::Item`, they must not be converted using the target block, because typically `WrapperIterator::Item == ElemType`, and `InnerIterator::Item == ElemType`, where `ElemType` is the same in both cases.
+
+So if we support `Add` we break `Iterator`, and vice versa.
+
+Implementation on nightly rustc currently applies target block conversions to all effective self parameters, except those having type `Self::AssocTy`.
+So it supports `Iterator` and breaks `Add`.
+Istead we should probably flip the default and convert all parameters with `Self` in their type by default, but add some attribute to `Iterator::Item` that will opt out of the conversion and keep `Iterator` working.
 
 ↩ [_Effective self type identification_](#effective-self-type-identification)
 
