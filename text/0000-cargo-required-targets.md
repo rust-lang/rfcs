@@ -119,7 +119,7 @@ the package is eligible for every target.
 Commands that support target selection through `--target`, except `cargo package` and `cargo publish`,
 check that the selected target satisfies the `required-targets` of each directly selected package.
 Examples include `cargo build`, `cargo check`, `cargo doc`, `cargo fetch`, and `cargo tree`.
-`cargo package` and `cargo publish` check the requirement only for [verification](#packaging).
+`cargo package` and `cargo publish` use the requirement to filter [verification builds](#packaging).
 Commands without target selection, such as `cargo fmt`, do not check `required-targets`.
 
 Cargo determines the selected target using its existing selection rules, including
@@ -197,14 +197,25 @@ reject an otherwise valid host library build.
 
 ## Packaging
 
-`cargo package` and `cargo publish` do not filter package selection using `required-targets`.
-Before their verification build, they check each package's requirement from the original manifest
-against each selected target and report an error on a mismatch. `--no-verify` skips this check
-along with the verification build, allowing authors to package and publish for other targets.
-For `cargo package` and `cargo publish`, `required-targets` only applies to package verification.
-It does not affect the selection of packages for publication.
-Like with using these packages as a dependency, the the verification compilation will fail when the target does not match the `required-targets` of any of the to-be-published crates.
-As this is part of verification, `--no-verify` can be used to bypass this check.
+`cargo package` and `cargo publish` use `required-targets` to filter verification builds, without
+changing which packages are selected for packaging or publication. Each selected package is verified
+only for selected targets that satisfy its requirement.
+
+If none of the selected targets satisfy a package's requirement, Cargo warns that the package is
+not being verified and continues packaging or publication with that package included.
+
+For the earlier workspace example, publishing for Windows verifies `portable_tool` and skips
+verification of `hello_cargo`, while keeping both selected for publication:
+
+```text
+warning: skipping verification of package `hello_cargo` because it does not support target `x86_64-pc-windows-msvc`
+```
+
+Verification builds still check dependency requirements and report compilation failures as errors.
+If a package whose verification was skipped is needed as a dependency of another verification build,
+Cargo checks its requirement against the target it is built for. A mismatch is an error and stops
+packaging or publication.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
