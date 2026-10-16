@@ -702,14 +702,14 @@ we also need to treat `Rhs` as an effective self type if it was obtained from th
 
 If the delegation resolution is an inherent method with `self`, then its corresponding type is considered an effective self type in the generated function.
 
-In all other cases, types in signatures are not considered effective self types. In particular, effective self types are *not* detected by tracking uses of the `Self` type alias in impls (as opposed to the `Self` parameter in traits) or by checking type equality ([?](#why-are-effective-self-types-not-detected-through-type-aliases-or-type-equality)).
+In all other cases, types in signatures are not considered effective self types. In particular, effective self types are *not* detected by tracking uses of the `Self` type *alias* in impls (as opposed to the `Self` parameter in traits) or by checking type equality ([?](#why-are-effective-self-types-not-detected-through-type-aliases-or-type-equality)).
 
 ```rust
 impl Struct {
     fn method(self, other1: Self, other2: Struct) {}
 }
 
-// Types of `other1` and `other2` are not considered effective self types here.
+// Types of `other1` and `other2` are not currently considered effective self types here.
 reuse Struct::method;
 ```
 
@@ -1511,9 +1511,57 @@ TODO: explain the rationale.
 
 #### Why are effective self types not detected through type aliases or type equality?
 
-TODO important: explain the rationale. <br>
-TODO: future possibilities - allow users to opt in to marking types as effective self types, or use type equality checks and allow users to opt out. <br>
-TODO: future possibilities - extend the set of uses of the effective self type to which the conversions apply.
+There's no good "minimal" or "conservative" way to detect effective self types, because we can get both false positive and false negative mis-detections.
+Both applying the conversion (target block) when it should not be applied, and not applying the conversion when it should be applied is a mistake.
+
+The only conservative solution is refusing to choose and producing an error (maybe a feature gate error) for types that have type equality with the `Self` type (after nomalizing away all the associated types, etc), but are not considered effective self types by the current rules.
+This solution would also be unfortunate, because it would reject many functions that could actually be delegated.
+
+The current rules only detect effective self types in the cases in which we are absolutely sure (`Self` parameter in traits, basically).
+
+We could try detecting more of such types using the next two methods:
+
+##### Consider uses of `Self` *type alias* in inherent impls to be an effective self type
+
+```rust
+impl Struct {
+    fn method(remapped: &Self, not_remapped: &Struct) { }
+}
+```
+
+Pros:
+- Near zero chance of false positives, if something is marked as `Self` for an inner type method, then it's very clear that it will also use `Self` in the delegated wrapper type method.
+- Easy to detect even at early stages of compilation.
+- We can express both types that need to be remapped, and types that don't need to be remapped during delegation.
+
+
+Cons:
+- Makes type aliases more significant, previously it wasn't important whether some type was written directly or through a type alias.
+- Introduces a new semver hazard, now it's a breaking change to change `Self` to `Struct` or back in `impl Struct { ... }` methods.
+
+A variation of this approach would be marking self types in signatures in some other way, e.g. with some `#[delegation_self]` attribute, but using the `Self` alias would probably be better than *that*.
+
+We think using `Self` aliases is a good way forward, and the pros overweigh the cons.
+We can teach people to use the `Self` alias when they indeed mean the self type, and tools can detect the new semver-breaking changes.
+
+##### Consider types *equal* to `Self` type to be effective self types
+
+```rust
+impl Struct {
+    fn method(remapped: &Self, also_remapped: &Struct) { }
+}
+```
+
+Pros:
+- No false negatives, if the type is not equal to `Self` then it definitely shouldn't be remapped during delegation.
+
+Cons:
+- False positives are possible, same type may be used in signatures of both inner and wrapper type methods, it just *happens* to be the same type as `Self` for the inner type. This may happen especially often in the inner type is something common, e.g. `u32` or other arithmetic type.
+- Need to define what type equality means, e.g. how lifetimes and associated types are treated. Some forms of type equality are hard to check early in compilation, and we need to decide whether something is an effective self type or not early during type AST lowering.
+- An opt-out using some attribute like `#[not_delegation_self]` is possible, but it is worse than the opt-in using the `Self` alias from the alternative above.
+
+We don't think this is a good way forward.
+But we could additionally feature gate delegations to methods with "something equal to `Self` but not using `Self` alias" in signatures, to decide later.
 
 ↩ [_Effective self type identification_](#effective-self-type-identification)
 
