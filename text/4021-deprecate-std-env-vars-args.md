@@ -1,6 +1,6 @@
 - Feature Name: N/A
 - Start Date: 2026-10-19
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#4021](https://github.com/rust-lang/rfcs/pull/4021)
 - Rust Issue: none
 
 Large language models were **not** used in the production of this RFC.
