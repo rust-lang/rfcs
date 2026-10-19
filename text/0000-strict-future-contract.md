@@ -120,7 +120,7 @@ can see that `main` gets polled three times:
 
 [^sleep]: This can be confusing: How does the `sleep` in `bar` invoke anything
     if `bar_future` isn't getting polled? It's true that control never reaches
-    `bar` again after the first poll at 0 ms, but low-level IO is driven by
+    `bar` again after the second poll at 5 ms, but low-level IO is driven by
     external events, and we arrange for those events to invoke wakers. For
     sleeps and other timers, Tokio runs a ["hashed timer wheel"][tokio_timer]
     in the background, and `sleep` registers its `Waker` there.
