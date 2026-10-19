@@ -265,6 +265,7 @@ Everything is fine
 ### Haskell
 Does the same thing as Python:
 ```
+[I] goat@CHARA /tmp> cat hi.hs
 import Data.Char (ord)
 import Numeric (showHex)
 import System.Environment (getArgs, getEnv)
@@ -286,6 +287,7 @@ attempt to do something with the strings that requires them to be UTF-8.
 For both the argument vector and the environment block, performs the equivalent of
 `String::from_utf8_lossy` (converts into �):
 ```
+[I] goat@CHARA /tmp> cat Hi.java
 public class Hi {
     public static void main(String[] args) {
       for (var arg : args) System.out.format("%d %s\n", arg.codePointAt(0), arg);
