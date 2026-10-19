@@ -18,6 +18,19 @@ to `args` and `vars_os` to `vars`.
 ## Motivation
 [motivation]: #motivation
 
+The command-line argument vector and the environment block consist of entries that biject to
+`OsString`. In the majority of cases, those entries are valid Unicode strings and a subsequent
+conversion to `String` will succeed, but that is not true in the general case.
+
+An example where the assumption that it will always succeed compromises program robustness is
+Unix systems with the `ja_JP.sjis` (Shift JIS) locale. The Shift JIS encoding still sees use among
+users in Japan, and certain systems may use it to the point of having Shift JIS filenames, or
+environment variables whose value was set to data containing Shift JIS by some program.
+
+An example where this assumption compromises program security is a Rust program with security
+duties running under an untrusted parent process, as might be the case when the program is
+set-user-ID root or has Linux file capabilities.
+
 The distinguishing property of both `std::env::args` and `std::env::vars` is that they call
 `.unwrap()` on a `Result` of a conversion from `OsString` to `String` when the caller could have
 just as easily done the `unwrap` themselves. An equivalent to `args` can be obtained via
@@ -36,7 +49,7 @@ below, that many people, including proficient Rust programmers such as rustc con
 being misled (consciously or subconsciously) by the shape of the API into using the iterators that
 have the wrong error handling.
 
-The below two sections detail the footguns and how they affect the correctness of programs that
+The below two sections detail the footguns and how they affect the robustness of programs that
 use them.
 
 ### `std::env::vars`
@@ -78,7 +91,7 @@ As an aside, even presuming that the hazard described above is somehow okay to h
 (necessarily user-unfriendly) programs, validating UTF-8 of both the key and the value before a
 program knows that the key of the environment block entry is of interest to it is a completely
 unnecessary performance cost. As such, `std::env::vars` is also a minor performance footgun in
-addition to being a significant correctness footgun.
+addition to being a significant robustness footgun.
 
 It is also prudent to look at the real-world situation. A
 [GitHub search for uses of `std::env::vars`][gh-search-vars] reveals 21.6k results, of which the
