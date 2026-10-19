@@ -7,7 +7,7 @@
 [summary]: #summary
 
 The current [`AsyncIterator`] trait ([RFC 2996]) is incompatible with the
-"strict" [`Future`] contract ([RFC TODO][strict_future_rfc]), which requires us
+"strict" [`Future`] contract ([RFC 4019][strict_future_rfc]), which requires us
 to poll futures promptly when they request a wakeup. The only way to poll an
 `AsyncIterator` today is `poll_next`, but we do not and generally cannot call
 that method while control is suspended in e.g. the body of a `for await` loop
@@ -112,7 +112,7 @@ concurrent combinators have the same problem.
 To avoid these sorts of deadlocks, and other hard-to-diagnose hangs and
 latencies, futures and async iterators need to continuously drive any other
 futures or async iterators they contain. That's why the "strict" `Future`
-contract ([RFC TODO][strict_future_rfc]) requires us to poll or drop a future
+contract ([RFC 4019][strict_future_rfc]) requires us to poll or drop a future
 promptly when it requests a wakeup. At a high level, that guarantees steady
 control flow through `async` blocks and functions until they return or get
 cancelled. We need a "strict" `AsyncIterator` contract that requires the same,
@@ -704,7 +704,7 @@ example of how driving an `AsyncIterator` correctly requires _ownership_.
 compile.
 
 See also the discussion of [the blanket `Future` impl for `Pin<&mut _>`
-references][blanket] in [RFC TODO][strict_future_rfc].
+references][blanket] in [RFC 4019][strict_future_rfc].
 
 [blanket]: https://doc.rust-lang.org/std/future/trait.Future.html#impl-Future-for-Pin%3CP%3E
 
@@ -731,7 +731,7 @@ The need for `poll_progress` came from the following assumptions:
 2. We can't pause those child iterators or futures at random await points.
 
 `LendingAsyncIterator` can't do much about the second requirement, which comes
-from the "strict" `Future` contract in [RFC TODO][strict_future_rfc]. But it
+from the "strict" `Future` contract in [RFC 4019][strict_future_rfc]. But it
 might be able to attack the first, either by not wrapping multiple futures, or
 by waiting for all the futures it's running to finish before yielding control.
 That could be a useful abstraction in many cases, but giving up on `Merge`
@@ -1174,12 +1174,12 @@ approach might be better for consistency.
 
 ### Should we allow an indefinite delay between creation and polling?
 
-See the corresponding question in [RFC TODO][strict_future_rfc]. `Future` and
+See the corresponding question in [RFC 4019][strict_future_rfc]. `Future` and
 `AsyncIterator` should presumably answer this question the same way.
 
 ### Should we require callers to drop async iterators promptly after they're `Done`?
 
-Again see the corresponding question in [RFC TODO][strict_future_rfc].
+Again see the corresponding question in [RFC 4019][strict_future_rfc].
 
 Note that the `Map` playground examples above ([\[1\]][playground_map],
 [\[2\]][playground_map_lazy]) include implementations of `Take` that drop their
@@ -1191,7 +1191,7 @@ after `Done`. This will be easy for implementations to get wrong in practice.
 
 ### Concurrency syntax
 
-[RFC TODO][strict_future_rfc] mentions dedicated concurrency syntax in its
+[RFC 4019][strict_future_rfc] mentions dedicated concurrency syntax in its
 "future possibilities" section. It's interesting to consider how yielding from
 concurrent blocks might work in that syntax:
 
@@ -1302,4 +1302,4 @@ need a way to come up with input values, which might be possible in some cases
 [`StreamMap`]: https://docs.rs/tokio-stream/latest/tokio_stream/struct.StreamMap.html
 [mini_redis]: https://smallcultfollowing.com/babysteps/blog/2022/06/13/async-cancellation-a-case-study-of-pub-sub-in-mini-redis/
 [snooze]: https://jacko.io/snooze.html
-[strict_future_rfc]: ./0000-strict-future-contract.md
+[strict_future_rfc]: https://github.com/rust-lang/rfcs/pull/4019
