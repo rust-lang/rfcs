@@ -944,7 +944,7 @@ instantiating a `Pin<&mut _>` reference ourselves.
 
 ### `AsyncIterator`
 
-See [RFC TODO][poll_progress_rfc].
+See [RFC 4020][poll_progress_rfc].
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
@@ -1039,7 +1039,7 @@ because they only short-circuit the block, not the calling function. It's also
 impossible to `break` or `continue` a loop outside the block. With concurrency
 keywords, short-circuiting could work naturally. Another interesting
 possibility would be `yield`ing from concurrent blocks in an `async gen fn`;
-see [RFC TODO][poll_progress_rfc].
+see [RFC 4020][poll_progress_rfc].
 
 [barbara]: https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_battles_buffered_streams.html
 ["Futurelock"]: https://rfd.shared.oxide.computer/rfd/0609
@@ -1055,5 +1055,5 @@ see [RFC TODO][poll_progress_rfc].
 [`StreamExt::next`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.next
 [`FuturesUnordered`]: https://docs.rs/futures/latest/futures/stream/struct.FuturesUnordered.html
 [blanket]: https://doc.rust-lang.org/std/future/trait.Future.html#impl-Future-for-Pin%3CP%3E
-[poll_progress_rfc]: ./0000-poll-progress.md
+[poll_progress_rfc]: https://github.com/rust-lang/rfcs/pull/4020
 [`Future`]: https://doc.rust-lang.org/std/future/trait.Future.html
