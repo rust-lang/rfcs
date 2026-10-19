@@ -91,7 +91,6 @@ value.
 
 [gh-search-vars]: https://github.com/search?q=lang%3ARust%20std%3A%3Aenv%3A%3Avars()&type=code
 
-
 ### `std::env::args`
 
 Unlike with `vars`, there theoretically exist programs in which use of `args` produces correct
@@ -113,9 +112,9 @@ This means that, for `args` to never cause unnecessary panics, all of the follow
 Hopefully, it is clear that programs for which use of `args` is actually appropriate are highly
 exotic. What is not exotic, however, is programs using `args` when they should've used `args_os`,
 [with the most recent example being rustc itself][rustc-args]. As for a
-[GitHub search for `std::env::args`], the number is a staggering 339k results, many of them being
-`args().skip(1)`, `args().nth(1)`, and `args().skip(1).len()`, all of which will senselessly panic
-on non-UTF-8 argument 0.
+[GitHub search for `std::env::args`][gh-search-args], the number is a staggering 339k results,
+many of them being `args().skip(1)`, `args().nth(1)`, and `args().skip(1).len()`, all of which
+will senselessly panic on non-UTF-8 argument 0.
 
 [rustc-args]: https://github.com/rust-lang/rust/issues/164585
 [gh-search-args]: https://github.com/search?q=lang%3ARust%20std%3A%3Aenv%3A%3Aargs()&type=code
@@ -186,7 +185,7 @@ and `std::env::args_os` to `std::env::args` in an edition change to mortalize th
 > to have assumptions about UTF-8 validity of command-line arguments and environment variables.
 
 That is true, but their presence, being of very magrinal utility, is not without a severe cost
-(refer to the lead section of [*Motivation*][#motivation]). Deprecation of `vars` and `args` would
+(refer to the lead section of [*Motivation*][motivation]). Deprecation of `vars` and `args` would
 benefit the ecosystem decidedly more than it would hurt scripting use cases, where a small amount
 of additional typing would be necessary to perform error handling in the style that those scripts
 already perform it for every other invariant they depend on.
