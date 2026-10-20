@@ -365,7 +365,7 @@ We modify the capture rules for union fields, at [type.closure.capture.precision
 > ```
 > </strong>
 
-Finally, we modify the capture rules for fields of `repr(packed)` ADTs, at [type.closure.capture.precision.unaligned](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.unaligned). (Please note: the current text of this section of the Reference is incorrect, and does not fully reflect the current behavior of the compiler.)
+We modify the capture rules for fields of `repr(packed)` ADTs, at [type.closure.capture.precision.unaligned](https://doc.rust-lang.org/reference/types/closure.html#r-type.closure.capture.precision.unaligned). (Please note: the current text of this section of the Reference is incorrect, and does not fully reflect the current behavior of the compiler.)
 
 > ### Reference into unaligned `struct`s
 > 
@@ -435,6 +435,8 @@ Finally, we modify the capture rules for fields of `repr(packed)` ADTs, at [type
 > [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 > [the `packed` representation]: https://doc.rust-lang.org/reference/type-layout.html#the-alignment-modifiers
 
+Finally, we modify the rules for auto trait inference, to state that, for the purposes of determining whether a closure implements `Send`, `Unpin`, or `UnwindSafe`, `ByCopy` captures are treated as if they were by shared reference. In other words, such captures will be considered to be unconditionally `Unpin`, `Send` if the type of the captured value is `Sync`, and `UnwindSafe` if the type of the captured value is `RefUnwindSafe`. (This is necessary to preserve backward compatibility.) In the future, once the trait solver supports or-constraints, we will loosen these rules, such that `ByCopy` captures will be `Send` if their type is `Send` or `Sync`, and `UnwindSafe` if it is `UnwindSafe` or `RefUnwindSafe`. 
+
 ## Concerns, catches
 [drawbacks]: #drawbacks
 
@@ -503,60 +505,6 @@ This writes an invalid `NonZeroU8` into a local, then captures it into a closure
 
 I believe such code should be rare enough that we don't need to worry about it.
 
-### Changing `auto trait`s
-
-This RFC is meant to be a non-breaking change. However, in some situations, it could change the set of auto traits implemented by a closure. I believe this should happen rarely enough not to be a concern, but a crater run will be necessary to verify the assumption. However, even if it is more breaking than expected, there are ways we could work around it. Let's go through each case:
-
-#### Capturing `Copy` + `Sync` + `!Send` 
-
-Consider the following example:
-
-```rust
-use std::marker::PhantomData;
-
-#[derive(Clone, Copy)]
-struct Foo(PhantomData<*const ()>);
-
-unsafe impl Sync for Foo {}
-
-fn main() {
-    let foo = Foo(PhantomData);
-    assert_send(|| { // does this call compile?
-        let _foo = foo;
-    });
-}
-
-fn assert_send(_: impl Fn() + Send) {}
-```
-
-Under the current rules, the closure in this example captures `foo` by reference, and therefore implements `Send`, allowing the call to `assert_send()` to compile. However, with this RFC, the capture will be by value, so the closure will no longer implement `Send`, and the code will no longer compile.
-
-Consider, however, that the combination of `Copy` and `Sync` implies that implementing `Send` would be trivially sound! `Sync` enables transferring a shared reference across threads, and `Copy` enables reading a value out of a shared reference; together, these allow sending a value across threads. Therefore, such examples are unlikely to occur in real code. At worst, the compiler could always forcefully implement `Send` for such closures.
-
-#### Capturing `Copy` + `!Unpin` 
-
-Consider the following closure:
-
-```rust
-use std::marker::PhantomPinned;
-
-#[derive(Clone, Copy)]
-struct Foo(PhantomPinned);
-
-fn main() {
-    let foo = Foo(PhantomPinned);
-    assert_unpin(|| { // does this call compile?
-        let _foo = foo;
-    });
-}
-
-fn assert_unpin(_: impl Fn() + Unpin) {}
-```
-
-Under the current rules, the closure in this example captures `foo` by reference, and therefore implements `Unpin`, allowing the call to `assert_send()` to compile. However, with this RFC, the capture will be by value, so the closure will no longer implement `Unpin`, and the code will no longer compile.
-
-Consider, however, that executing the closure does not actually use `foo` in a way that would be inconsistent with the pinning guarantees, because it does not take the address of `foo` at all. If it did, the capture mode would be inferred as by-reference. Therefore, it would be sound for the compiler to forcefully implement `Unpin` for the closure in this case, resolving the breakage.
-
 ## Case, choices
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -589,7 +537,6 @@ None known. C++ does not have Rust-style capture mode inference, they make every
 [unresolved-questions]: #unresolved-questions
 
 - Is the questionable `unsafe` code that would be broken by this proposal really as theoretical as I believe it to be, or is anyone actually doing this cursed thing?
-- What about the auto trait breakage?
 - How rare are cases where this change would introduce new undesirable copies?
 
 ## Coming chance circumstances
