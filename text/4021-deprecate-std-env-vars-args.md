@@ -148,20 +148,22 @@ let environment = std::env::vars_os().collect::<Vec<_>>();
 ```
 ```rs
 // before
-std::proces::Command::new("my-program")
+std::process::Command::new("my-program")
     .envs(std::env::vars())
 
 // after
-std::proces::Command::new("my-program")
+std::process::Command::new("my-program")
 // (environment variables are inherited by default)
 ```
 ```rs
 // before
-std::proces::Command::new("my-program")
+std::process::Command::new("my-program")
+    .env_clear()
     .envs(std::env::vars().filter(|(k, _)| is_env_var_permissible(k)))
 
 // after
-std::proces::Command::new("my-program")
+std::process::Command::new("my-program")
+    .env_clear()
     .envs(std::env::vars_os().filter(|(k, _)| is_env_var_permissible(k)))
 ```
 ```rs
