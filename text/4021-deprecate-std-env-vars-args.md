@@ -12,8 +12,7 @@ Large language models were **not** used in the production of this RFC.
 library contradicts modern best practices of standard library API design. They do the language
 user a disservice by obfuscating the handling of errors and elevating an ignorant and buggy
 approach above one that is correct and only marginally more verbose. Accordingly, deprecate `args`
-in favor of `args_os` and `vars` in favor of `vars_os`, and, in future editions, rename `args_os`
-to `args` and `vars_os` to `vars`.
+in favor of `args_os` and `vars` in favor of `vars_os`.
 
 ## Motivation
 [motivation]: #motivation
@@ -188,8 +187,7 @@ let has_foo_set = std::env::var_os("FOO").is_some();
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Deprecate `std::env::vars` and `std::env::args`. Rename `std::env::vars_os` to `std::env::vars`
-and `std::env::args_os` to `std::env::args` in an edition change to mortalize the design mistake.
+Deprecate `std::env::vars` and `std::env::args`.
 
 ## Counterarguments and drawbacks
 [counterarguments-and-drawbacks]: #counterarguments-and-drawbacks
@@ -228,14 +226,26 @@ is exactly what is necessary to do with `vars` and `args`.
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Elide the renaming of `vars_os` to `vars` and `args_os` to `args` on the next edition change.
-  There is no obvious benefit to doing so, and it would keep the former design mistake visible
-  in the standard library, which is undesirable, as the seemingly off-the-beaten-path names of
-  `vars_os` and `args_os` are in all likelihood a large part of the reason why `vars` and `args`
-  are used so frequently to begin with.
+- Additionally rename `vars_os` to `vars` and `args_os` to `args` as an edition-gated change to
+  mortalize the design mistake. This would grant `vars_os` and `args_os` less off-the-beaten-path
+  names and make them not feel like an advanced or niche interface to use. The downside is that
+  this would require new infrastructure in rustc and Rustdoc for renaming items across editions,
+  as there is currently no precedent for doing so.
+- Additionally, change the behavior of `vars` and `args` in contradiction with their current
+  documentation to skip non-UTF-8 environment variable keys and lossily decode non-UTF-8
+  environment variable values and argument vector entries. This would solve the most acute
+  problems associated with their usage at the cost of changing observable behavior.
+  - Another option in this vein would be to implement the `skip` and `nth` methods on `args` by
+    delegation, overturning the [current judgement of not inhibiting panics][src-no-skip-deleg].
+- Change the behavior as specified in the preceding alternative without deprecating `vars` and
+  `args`. This would still solve the most acute problems, but would reinforce ignorance within
+  the ecosystem and normalize the outsourcing of easy error handling questions to hacks and
+  compromises in the standard library.
 - Keep everything as is, with all the footguns and unnecessary panics, endure potential ridicule
   from the communities of other programming languages, and allow un-Rust-like APIs with easy
   idiomatic alternatives to remain in one of the most basic parts of the standard library.
+
+[src-no-skip-deleg]: https://github.com/rust-lang/rust/blob/39b126b8e227197c688fed9f9962658bdd89a761/library/std/src/env.rs#L943-L952
 
 ## Prior art
 [prior-art]: #prior-art
