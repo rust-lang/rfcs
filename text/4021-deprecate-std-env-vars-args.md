@@ -226,11 +226,6 @@ is exactly what is necessary to do with `vars` and `args`.
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Additionally rename `vars_os` to `vars` and `args_os` to `args` as an edition-gated change to
-  mortalize the design mistake. This would grant `vars_os` and `args_os` less off-the-beaten-path
-  names and make them not feel like an advanced or niche interface to use. The downside is that
-  this would require new infrastructure in rustc and Rustdoc for renaming items across editions,
-  as there is currently no precedent for doing so.
 - Additionally, change the behavior of `vars` and `args` in contradiction with their current
   documentation to skip non-UTF-8 environment variable keys and lossily decode non-UTF-8
   environment variable values and argument vector entries. This would solve the most acute
@@ -329,10 +324,19 @@ took 0.301 seconds
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None.
+If the behavior of `vars` and `args` is to be modified (see
+[*Rationale and alternatives*][rationale-and-alternatives]), what should that change be,
+exactly? Is there a better solution than skipping non-UTF-8 environment variable keys and lossily
+converting environment variable values and argument vector entries?
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
+
+It would be useful to rename `vars_os` to `vars` and `args_os` to `args` as an edition-gated
+change to mortalize the design mistake. This would grant `vars_os` and `args_os` less
+off-the-beaten-path names and make them not feel like an advanced or niche interface to use. The
+downside is that this would require new infrastructure in rustc and Rustdoc for renaming items
+across editions, as there is currently no precedent for doing so.
 
 It would be worthwhile to audit a few more panic points in the standard library on the question
 of whether they are appropriate. `std::env::set_var`'s panicking behavior comes to mind, but there
