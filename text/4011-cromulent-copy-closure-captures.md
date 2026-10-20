@@ -111,6 +111,28 @@ Ideally, we would never emit these `&T` -> `&T` reborrows. They are complete no-
 
 (A similar issue exists for reborrows of `&mut` references; addressing that is out of scope for this RFC, but discussed in the Future Possibilities.)
 
+#### Coercing comparisons
+
+Implicit reborrowing coercions also rear their ugly heads in the arguments to comparison operators. The following compiles:
+
+```rust
+pub fn test() -> impl Fn() -> bool {
+   let i = &42u8;
+   || &42u8 <= i // `i` captured by value du to reborrowing coercion
+}
+```
+
+The following does not:
+
+```rust
+pub fn test() -> impl Fn() -> bool {
+   let i = &42u8;
+   || &42u8 == i // ERROR `i` captured by reference
+}
+```
+
+We would like to resolve this inconsistency, ideally without any breaking changes.
+
 ## Condensed clarification
 [guide-level-explanation]: #guide-level-explanation
 
@@ -435,7 +457,22 @@ We modify the capture rules for fields of `repr(packed)` ADTs, at [type.closure.
 > [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 > [the `packed` representation]: https://doc.rust-lang.org/reference/type-layout.html#the-alignment-modifiers
 
-Finally, we modify the rules for auto trait inference, to state that, for the purposes of determining whether a closure implements `Send`, `Unpin`, or `UnwindSafe`, `ByCopy` captures are treated as if they were by shared reference. In other words, such captures will be considered to be unconditionally `Unpin`, `Send` if the type of the captured value is `Sync`, and `UnwindSafe` if the type of the captured value is `RefUnwindSafe`. (This is necessary to preserve backward compatibility.) In the future, once the trait solver supports or-constraints, we will loosen these rules, such that `ByCopy` captures will be `Send` if their type is `Send` or `Sync`, and `UnwindSafe` if it is `UnwindSafe` or `RefUnwindSafe`. 
+### `auto trait`s
+
+We modify the rules for auto trait inference, to state that, for the purposes of determining whether a closure implements `Send`, `Unpin`, or `UnwindSafe`, `ByCopy` captures are treated as if they were by shared reference. In other words, such captures will be considered to be unconditionally `Unpin`, `Send` if the type of the captured value is `Sync`, and `UnwindSafe` if the type of the captured value is `RefUnwindSafe`. (This is necessary to preserve backward compatibility.) In the future, once the trait solver supports or-constraints, we will loosen these rules, such that `ByCopy` captures will be `Send` if their type is `Send` or `Sync`, and `UnwindSafe` if it is `UnwindSafe` or `RefUnwindSafe`. 
+
+### Comparison correction
+
+To fix the comparison operator issue mentioned in the motivation section, we need another special case. We declare that, when a captured value is a shared reference, and its capture path does not include any dereferences, using the capture as an argument to one of the comparison operators (`==`, `!=`, `<`, `<=`, `>`, or `>=`) results in an inferred `ByCopy` capture mode. (Without this rule, the inferred capture mode would be `ImmBorrow` due to the implicit reference that these operators apply.)
+
+For example:
+
+```rust
+let r = &42_u8; // a shared reference
+let c = || {
+    &42 == r // `r` captured with `ByCopy`
+}
+```
 
 ## Concerns, catches
 [drawbacks]: #drawbacks
