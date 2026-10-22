@@ -583,6 +583,7 @@ None known. C++ does not have Rust-style capture mode inference, they make every
 - In future editions, we could choose to go all-in on the `let` shadow trick, and deprecate having by-move captures implicitly take precedence over by-reference captures for non-`Copy` types. We could also add a lint for older editions. This would mitigate the issue that implementing `Copy` is technically a breaking change. But it would not completely eliminate the semver hazard (because old editions would remain supported forever) so it's unclear that it would be worth the churn.
 - There is an additional minor `Copy` semver hazard remaining, due to the different treatment of `Copy` vs non-`Copy` captures via union fields. We could resolve this by introducing a special "copy as `MaybeUninit`" mode for such cases.
 - We could introduce a `ByReborrow` capture mode, to fit with the ongoing work on the `Reborrow` and `CoerceShared` traits. This should let us fix the lifetime-annotations-affect-closure-captures issue for mutable references.
+- Pattern matching analysis [creates many implicit references](https://github.com/rust-lang/rust/blob/1a2c4797ef2570bd76ca5dee34449169bc7dc457/compiler/rustc_hir_typeck/src/expr_use_visitor.rs#L815-L969), which affect captures, even in situations where a by-value read could suffice. We could consider making some of these references not inhibit by-copy capture.
 
 To elaborate on that second bullet point:
 
