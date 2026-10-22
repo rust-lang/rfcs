@@ -881,7 +881,12 @@ Many cases of delegation require more than simple forwarding (e.g., transforming
 
 The delegation feature could potentially be implemented as a third-party library with compile‑time [_reflection_](#reflection) (if and when that becomes available).
 
-TODO: collect remaining drawbacks from the rationale sections.
+Language features reducing the amount of boilerplate code are less important now when majority of code is read and written by LLMs.
+
+The feature may potentially introduce a number of semver hazards:
+- Delegating from a public function to a private function could lead to unintended breaking changes in public interfaces, but this can be caught by a lint ([_more_](#should-the-visibility-of-the-delegation-item-be-restricted)).
+- Adding a non-delegatable method with default body to a trait may become a breaking change, [_depending on the design_](#why-are-methods-with-default-bodies-included-in-glob-delegation).
+- Changing between `Self` type alias and `Struct` in function signatures inside `impl Struct { ... }` may become a breaking change, [_depending on the design_](#why-are-effective-self-types-not-detected-through-type-aliases-or-type-equality).
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -1149,9 +1154,21 @@ TODO: explain the rationale.
 
 #### Why are methods with default bodies included in glob delegation?
 
-TODO important: explain the rationale. <br>
-TODO drawback: discuss semver hazards from using glob delegations to trait items default bodies. <br>
-TODO: standard derives tend to not generate impls for methods with default bodies (Clone, Hash, Ord, PartialEq, PartialOrd - no defaults, Eq - some defaults).
+Glob delegation may either generate implementations for trait methods having default bodies or not generate them.
+This RFC and implementation in nightly rustc currently use the former alternative.
+
+Pros of including methods with default bodies:
+- If the delegation item type checks, then everything will work correctly. Assuming the typical `struct Wrapper(Inner);` setup, if the `Inner` type explicitly implements some of the default methods (for optimization, or to change behavior), those implementations will correctly propagate to `Wrapper`.
+
+Cons of including methods with default bodies:
+- If a trait adds a new method that has default body, but the method is not delegatable for some reason (e.g. it has something like [`&[Self]`](https://doc.rust-lang.org/stable/std/hash/trait.Hash.html#method.hash_slice) in its signature), it will break code that glob-delegates from that trait.
+  This is somewhat similar to `dyn`-compatible traits accidentally adding new non-`dyn`-compatible methods with default bodies.
+- The behavior of delegation becomes different from other features already familiar to users, like derives. For example, none of the standard derive macros (`Clone`, `Hash`, `Ord`, `PartialEq`, `PartialOrd`) generates implementations for any default methods, only `Eq` generates some of them for internal reasons.
+
+We may strongly consider changing the defaults here, and avoid the semver hazards and behavior different from existing features like derives.
+This will also make the `reuse impl` syntax usable in more cases.
+
+In the future we may introduce a different flavor of glob delegation (with an attribute or first-class syntax), that includes methods with default bodies, and explicitly opts into potential breaking changes.
 
 ↩ [_Glob delegation_](#glob-delegation)
 
