@@ -26,9 +26,11 @@ Unix systems with the `ja_JP.sjis` (Shift JIS) locale. The Shift JIS encoding st
 users in Japan, and certain systems may use it to the point of having Shift JIS filenames, or
 environment variables whose value was set to data containing Shift JIS by some program.
 
-An example where this assumption compromises program security is a Rust program with security
-duties running under an untrusted parent process, as might be the case when the program is
-set-user-ID root or has Linux file capabilities.
+The assumption of command-line arguments and environment variables being Unicode can also cause
+denial-of-service issues in Rust programs with privilege-requiring duties running under an
+untrusted parent process, as might be the case when the program is set-user-ID root or has Linux
+file capabilities. It can be remarked that programs where this is actually a security problem are
+very poor programs, but there is no need to make the problem worse.
 
 The distinguishing property of both `std::env::args` and `std::env::vars` is that they call
 `.unwrap()` on a `Result` of a conversion from `OsString` to `String` when the caller could have
@@ -86,11 +88,21 @@ general case.
    is bad and wrong.
 7. Therefore, programs that use `vars` are guaranteed to have behavior that is bad and wrong.
 
-As an aside, even presuming that the hazard described above is somehow okay to have for certain
-(necessarily user-unfriendly) programs, validating UTF-8 of both the key and the value before a
-program knows that the key of the environment block entry is of interest to it is a completely
-unnecessary performance cost. As such, `std::env::vars` is also a minor performance footgun in
-addition to being a significant robustness footgun.
+It is also worth mentioning that, aside from non-UTF-8 data showing up in environment variables
+due to use of obscure text encodings, it may also appear due to programs relying on the ability to
+store non-UTF-8 data in environment variables when it is more convenient or efficient for them. It
+is perfectly valid to write, for instance, `LD_PRELOAD` tools that receive filter script bytecode
+consisting of nonzero bytes, rather than Unicode string data, via environment variables. At
+present, the authors of such programs who are aware of the existence of `vars` are forced to walk
+on eggshells and treat environment variables as if they are not 8-bit-clean, and those who are
+not aware of this deficiency of the Rust standard library are unknowingly writing programs whose
+stable interface has their users set environment variables that cause Rust programs using `vars`
+to crash on startup (or worse, at a later point in their runtime).
+
+As an aside, validating UTF-8 of both the key and the value before a program knows that the key
+of the environment block entry is of interest to it is a completely unnecessary performance cost,
+meaning that `vars` is a minor performance footgun in addition to being a significant robustness
+footgun.
 
 It is also prudent to look at the real-world situation. A
 [GitHub search for uses of `std::env::vars`][gh-search-vars] reveals 21.6k results, of which the
@@ -230,14 +242,39 @@ Furthermore, it is in actuality not common for programs written in other program
 crash if they are invoked by a non-UTF-8 relative path or if their environment contains non-UTF-8
 keys or values. This is discussed in the [*Prior art*][prior-art] section.
 
+> But Unicode is what all platforms are moving towards! Why deprecate interfaces that become less
+> erroneous over time, not less?
+
+The platforms are not in fact moving towards anything; they are standing as still on this matter
+as they could be. Environment block and argument vector strings are still [WTF-16] (sequences
+of nonzero 16-bit integers terminated by zero) on Windows, just as they were in Windows NT, and
+they are still C strings (sequences of nonzero bytes terminated by zero) on Unix systems, just
+as they were in 1st Edition Unix. This data model is a part of the stable interface of those
+platforms' respective kernels: it is a documented feature of Windows that unpaired surrogates can
+be passed in the command-line string and in the environment block, much like it is a documented
+feature of contemporary Unix systems that any byte value above 127 can be present in the strings
+of the argument vector and the environment block with no constraints regarding the values of the
+surrounding bytes, and those features are not subject to any kind of revision.
+
+Those which are moving towards UTF-8 are the userspace components that interpret the contents
+of those strings and ultimately give them meaning. However, as mentioned in the filter script
+bytecode example in [*Motivation*][motivation], no one is being forced to follow this direction,
+and there are reasons why one might want to stray from it: mainly simplicity and convenience
+(which are ironically the only excuses to keep `vars` and `args` around), but also efficiency.
+With base-64 encoding increasing the size of data by 33% and obscuring any interior string
+literals, it is a hard sell for people who don't want to bend over backwards to keep random Rust
+programs working on the systems of their users.
+
+[WTF-16]: https://wtf-8.codeberg.page/#wtf-16
+
 > Too many programs use `vars` and `args`. The deprecation warnings will be everywhere!
 
 That is quite okay. The purpose of deprecation is to conspicuously but not forcefully inform
 people of issues with APIs they are using and discourage them from continuing to do so, and that
 is exactly what is necessary to do with `vars` and `args`.
 
-## Rationale and alternatives
-[rationale-and-alternatives]: #rationale-and-alternatives
+## Alternatives
+[alternatives]: #alternatives
 
 - Additionally, change the behavior of `vars` and `args` in contradiction with their current
   documentation to skip non-UTF-8 environment variable keys and lossily decode non-UTF-8
@@ -337,10 +374,9 @@ took 0.301 seconds
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-If the behavior of `vars` and `args` is to be modified (see
-[*Rationale and alternatives*][rationale-and-alternatives]), what should that change be,
-exactly? Is there a better solution than skipping non-UTF-8 environment variable keys and lossily
-converting environment variable values and argument vector entries?
+If the behavior of `vars` and `args` is to be modified (see [*Alternatives*][alternatives]), what
+should that change be, exactly? Is there a better solution than skipping non-UTF-8 environment
+variable keys and lossily converting environment variable values and argument vector entries?
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
