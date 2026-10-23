@@ -273,6 +273,107 @@ That is quite okay. The purpose of deprecation is to conspicuously but not force
 people of issues with APIs they are using and discourage them from continuing to do so, and that
 is exactly what is necessary to do with `vars` and `args`.
 
+### Precedent of deprecation
+
+A concern that has been raised about this change is that deprecation is an excessively
+heavy-handed tool for `vars` and `args` and that users may misinterpret the deprecation warning
+as an urgent problem with their usage of those iterators, as opposed to an indication of a bad
+practice that should be removed as development time constraints allow. Below is a chronological
+collation of the deprecations in the standard library made hitherto, with broad classes of
+deprecation reasons (renamed, superseded, unusably broken, unidiomatic, causes immediate UB,
+mistakenly exposed implementation detail) specified in bold:
+
+- [`std::mem::{min_align_of, min_align_of_val}`][depr-min-align] in 1.2: **renamed** to `align_of`
+  and `align_of_val`
+- [`<[T]>::connect`][depr-slice-connect] in 1.3: **renamed** to `join`
+- [`str::lines_any` and `std::str::LinesAny`][depr-lines-any] in 1.4: **renamed** to `lines` and
+  `Lines`
+- [`std::thread::sleep_ms`], [`std::thread::park_timeout_ms`],
+  [`std::sync::Condvar::wait_timeout_ms`] in 1.6: **superseded** by `sleep`, `park_timeout`,
+  `wait_timeout`
+- [`std::os::*::MetadataExt::as_raw_stat`] in 1.8: **superseded** by getters and
+  `std::os::unix::MetadataExt`
+- [`f32::abs_sub`], [`f64::abs_sub`] in 1.10: **confusing name**, superseded by
+  `(self - other).max(0.0)`
+- [`std::hash::SipHasher`] in 1.13: **renamed** to `DefaultHasher` to remove the use of SipHash
+  from the stable contract of the type and allow use of other hashing algorithms in the future
+- [`std::net::TcpListener::{only_v6, set_only_v6}`][depr-only-v6] in 1.16: **unusably broken** due
+  to the option having no effect after a socket is bound
+- [`std::fmt::Formatter::flags`] in 1.24: **unidiomatic**, replaced by boolean getter methods
+- [`std::ascii::AsciiExt`] in 1.26: **unidiomatic**, replaced by inherent methods
+- [`std::collections::Bound`] in 1.26: **renamed** (moved) to `std::ops::Bound`
+- [`str::{slice_unchecked, slice_unchecked_mut}`][depr-slice-unchecked] in 1.29: **superseded** by
+  `str::{get_unchecked, get_unchecked_mut}` accepting ranges
+- [x86 EFLAGS access intrinsics][depr-eflags] in 1.29: **unusably broken**, `__writeeflags` in
+  particular **causes immediate UB**
+- [`std::error::Error::cause`] in 1.33: **superseded** by `source`
+- [`str::trim_*` with reference to "left" and "right"][depr-trim-left-right] in 1.33: **renamed**
+  to refer to "start" and "end"
+- [legacy atomic initializers][depr-atomic-init] in 1.34: **superseded** by `const fn new`
+- [`std::os::unix::process::CommandExt::before_exec`] in 1.37: **unsound**, superseded by
+  `pre_exec`
+- [`std::once::ONCE_INIT`] in 1.38: **superseded** by `const fn new`
+- [`std::mem::uninitialized`] in 1.39: **causes immediate UB**, superseded by
+  `std::mem::MaybeUninit`
+- [`std::try`] in 1.39: **superseded** by `?` syntax
+- [`std::error::Error::description`] in 1.42: **superseded** by `Display`/`to_string` (not that
+  anything about the two changed to allow this to happen)
+- [atomic `compare_and_swap`][depr-compare-and-swap] in 1.50: **superseded** by `compare_exchange`
+- [`std::sync::atomic::spin_loop_hint`] in 1.51: **renamed** (moved) to `std::hint::spin_loop`
+- [`std::alloc::LayoutErr`] in 1.52: **renamed** to `LayoutError`
+- [`std::array::IntoIter::new`] in 1.59: **superseded** by `<[T; N] as IntoIterator>::into_iter`
+- [x86 MXCSR access intrinsics][depr-mxcsr] in 1.75: **unusably broken** (`_mm_setcsr` in particular
+  **causes immediate UB**), due to directly accessing a CPU register that is also freely read and
+  written by the compiler
+- [`core::panic::PanicInfo::payload`] in 1.81: **useless** due to only existing as a compatibility
+  wart for the splitting of `std::panic::PanicHookInfo` from `core::panic::PanicInfo`
+- [`std::panic::PanicInfo`] in 1.82: **renamed** to `PanicHookInfo`
+- [`std::cmp::Eq::assert_receiver_is_total_eq`] in 1.95: **mistakenly exposed implementation
+  detail**
+- [`fetch_update`] in 1.99: **renamed** to `try_update`
+- [numeric constants in numeric modules][depr-std-ixx-fxx] in 1.99: **renamed** (moved) all constants
+  to be associated constants of the numeric types
+
+[depr-min-align]: https://doc.rust-lang.org/std/mem/fn.min_align_of.html
+[depr-slice-connect]: https://doc.rust-lang.org/std/primitive.slice.html#method.connect
+[depr-lines-any]: https://doc.rust-lang.org/std/primitive.str.html#method.lines_any
+[`std::thread::sleep_ms`]: https://doc.rust-lang.org/std/thread/fn.sleep_ms.html
+[`std::thread::park_timeout_ms`]: https://doc.rust-lang.org/std/thread/fn.park_timeout_ms.html
+[`std::sync::Condvar::wait_timeout_ms`]: https://doc.rust-lang.org/std/sync/struct.Condvar.html#method.wait_timeout_ms
+[`std::os::*::MetadataExt::as_raw_stat`]: https://doc.rust-lang.org/std/os/linux/fs/trait.MetadataExt.html#tymethod.as_raw_stat
+[`f32::abs_sub`]: https://doc.rust-lang.org/std/primitive.f32.html#method.abs_sub
+[`f64::abs_sub`]: https://doc.rust-lang.org/std/primitive.f64.html#method.abs_sub
+[`std::hash::SipHasher`]: https://doc.rust-lang.org/std/hash/struct.SipHasher.html
+[depr-only-v6]: https://doc.rust-lang.org/std/net/struct.TcpListener.html#method.only_v6
+[`std::fmt::Formatter::flags`]: https://doc.rust-lang.org/std/fmt/struct.Formatter.html#method.flags
+[`std::ascii::AsciiExt`]: https://doc.rust-lang.org/std/ascii/trait.AsciiExt.html
+[`std::collections::Bound`]: https://doc.rust-lang.org/std/ops/enum.Bound.html
+[depr-slice-unchecked]: https://doc.rust-lang.org/std/primitive.str.html#method.slice_unchecked
+[depr-eflags]: https://doc.rust-lang.org/src/core/stdarch/crates/core_arch/src/x86/eflags.rs.html
+[`std::error::Error::cause`]: https://doc.rust-lang.org/std/error/trait.Error.html#method.cause
+[depr-trim-left-right]: https://doc.rust-lang.org/std/primitive.str.html#method.trim_left
+[depr-atomic-init]: https://doc.rust-lang.org/std/sync/atomic/constant.ATOMIC_BOOL_INIT.html
+[`std::os::unix::process::CommandExt::before_exec`]: https://doc.rust-lang.org/std/os/unix/process/trait.CommandExt.html#method.before_exec
+[`std::once::ONCE_INIT`]: https://doc.rust-lang.org/std/sync/constant.ONCE_INIT.html
+[`std::mem::uninitialized`]: https://doc.rust-lang.org/std/mem/fn.uninitialized.html
+[`std::try`]: https://doc.rust-lang.org/std/macro.try.html
+[`std::error::Error::description`]: https://doc.rust-lang.org/std/error/trait.Error.html#method.description
+[depr-compare-and-swap]: https://doc.rust-lang.org/core/sync/atomic/type.AtomicUsize.html#method.compare_and_swap
+[`std::sync::atomic::spin_loop_hint`]: https://doc.rust-lang.org/core/sync/atomic/fn.spin_loop_hint.html
+[`std::array::IntoIter::new`]: https://doc.rust-lang.org/std/array/struct.IntoIter.html#method.new
+[depr-mxcsr]: https://doc.rust-lang.org/core/arch/x86/fn._mm_setcsr.html
+[`std::alloc::LayoutErr`]: https://doc.rust-lang.org/std/alloc/type.LayoutErr.html
+[`core::panic::PanicInfo::payload`]: https://doc.rust-lang.org/core/panic/struct.PanicInfo.html#method.payload
+[`std::panic::PanicInfo`]: https://doc.rust-lang.org/std/panic/type.PanicInfo.html
+[`std::cmp::Eq::assert_receiver_is_total_eq`]: https://doc.rust-lang.org/src/core/cmp.rs.html
+[`fetch_update`]: https://doc.rust-lang.org/core/sync/atomic/type.AtomicUsize.html#method.fetch_update
+[depr-std-ixx-fxx]: https://doc.rust-lang.org/std/usize/index.html
+
+Hopefully, it is clear from the above wealth of examples that, both historically and
+contemporarily, the majority of standard library deprecations are either renamings with no
+functional changes or delineation of newly possible, better ways of doing things, where the old
+way continues to be functional and not immanently problematic.
+
 ## Alternatives
 [alternatives]: #alternatives
 
