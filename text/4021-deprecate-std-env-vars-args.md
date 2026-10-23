@@ -137,14 +137,25 @@ will senselessly panic on non-UTF-8 argument 0.
 `std::env::vars` and `std::env::args` are deprecated and should not be used in new code. Their
 existing usage is to be replaced with `std::env::vars_os` and `std::env::args_os` respectively,
 and it is additionally prudent to audit call sites of the former for potential conversion to a
-call to `std::env::var_os`, or, in certain cases, `std::env::var`. The following conversion
-patterns are to be applied:
+call to `std::env::var_os`, or, in certain cases, `std::env::var`. The following are some of the
+conversion patterns that can be applied:
 ```rs
 // before
 let environment = std::env::vars().collect::<Vec<_>>();
 
 // after
 let environment = std::env::vars_os().collect::<Vec<_>>();
+```
+```rs
+// before
+let vars = std::env::vars().collect::<HashMap<_, _>>();
+let var = vars.get("FOO");
+
+// after (option 1)
+let var = std::env::var_os("FOO");
+
+// after (option 2)
+let var = std::env::var("FOO");
 ```
 ```rs
 // before
