@@ -452,6 +452,24 @@ Strings in Go are not guaranteed to be UTF-8. Accordingly, the standard library 
 argument vector or environment block for UTF-8 validity, and programs proceed as normal until they
 attempt to do something with the strings that requires them to be UTF-8.
 
+### Perl
+Strings in Perl are arrays of 32-bit integers. String input has Unix platform strings be
+reinterpreted bytewise as Latin-1 codepoints that are each then stored as characters of the
+resultant Perl string; the reverse is done when printing.
+```
+[I] goat@CHARA /tmp> cat hi.pl
+use Env;
+my $a = substr(@ARGV[0], 0, 1);
+my $e = substr(%ENV{A}, 0, 1);
+printf("%02x %s\n%02x %s\n", ord($a), $a, ord($e), $e)
+[I] goat@CHARA /tmp> env A=(printf '\xc0') perl hi.pl (printf '\xc0')
+c0 
+c0 
+[I] goat@CHARA /tmp> env A=ф perl hi.pl ф
+d1 �
+d1 �
+```
+
 ### Java
 For both the argument vector and the environment block, performs the equivalent of
 `String::from_utf8_lossy` (converts into �):
