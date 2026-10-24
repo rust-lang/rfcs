@@ -17,7 +17,7 @@ Disallow `extern` without an explicit ABI in a new edition. Write `extern "C"` (
 
 ## Motivation
 
-Originally, `"C"` was a very reasable default for `extern`.
+Originally, `"C"` was a very reasonable default for `extern`.
 However, with work ongoing to add other ABIs to Rust, it is no longer obvious that `"C"` should forever stay the default.
 
 By making the ABI explicit, it becomes much clearer that `"C"` is just one of the possible choices, rather than the "standard" way for external functions.
