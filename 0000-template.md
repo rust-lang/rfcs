@@ -17,7 +17,9 @@ This section should explain this problem in detail, including necessary backgrou
 It should also contain several specific use cases where this feature can help a user, and explain how it helps.
 This can then be used to guide the design of the feature.
 
-This section is one of the most important sections of any RFC, and can be lengthy.
+It can be tempting to confuse *motivation* with *rationale*.
+The motivation helps you understand what the problem is, and the explanation is the *proposed* solution.
+After the solution is explained, you should take care to explain why *this* solution is the best one, in the rationale.
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -44,16 +46,18 @@ This is the technical portion of the RFC. Explain the design in sufficient detai
 
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
 
-## Drawbacks
-[drawbacks]: #drawbacks
+## Drawbacks and limitations
+[drawbacks-and-limitations]: #drawbacks-and-limitations
 
-Why should we *not* do this?
+- What are the downsides to this particular approach?
+- How will this change limit future changes?
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Why is this design the best in the space of possible designs?
 - What other designs have been considered and what is the rationale for not choosing them?
+- Note that the *lack* of a change is one of the possible designs.
 - What is the impact of not doing this?
 - If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
 
