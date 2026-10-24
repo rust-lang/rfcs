@@ -248,7 +248,7 @@ While such things might make sense in a `no_std` world, spawning threads (like
 panic hooks) is an `std` only feature, where we can use global state and allocations.
 
 The only potential advantage of such an approach might be a small reduction in overhead,
-but this potential overhead is insignificant compared to the overall cost of spwaning a thread.
+but this potential overhead is insignificant compared to the overall cost of spawning a thread.
 
 The downsides are plenty, including limitations on what your hook can do and return,
 needing a macro or special syntax to register a hook, potential issues with dynamic linking,

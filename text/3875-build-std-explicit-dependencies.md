@@ -11,7 +11,7 @@ Allow users to add explicit dependencies on standard library crates in the
 required by the crate graph without `build-std.crates` being set and for
 different crates to require different standard library crates.
 
-**This RFC is is part of the [build-std project goal] and a series of build-std
+**This RFC is part of the [build-std project goal] and a series of build-std
 RFCs:**
 
 1. build-std context ([rfcs#3873])
@@ -94,7 +94,7 @@ Cargo feature.
 >
 > Explicit dependencies are passed to rustc without the `noprelude` modifier
 > ([?][rationale-explicit-noprelude]) (`noprelude` refers to the compiler's
-> notion of the "extern prelude", not the prelude in the the user-facing
+> notion of the "extern prelude", not the prelude in the user-facing
 > sense of `std::prelude::*`).
 >
 > When adding an explicit dependency, users may need to adjust their code

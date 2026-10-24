@@ -472,7 +472,7 @@ Ruby
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Blocking for stablization
+Blocking for stabilization
 - Are we still comfortable with our schema choice?
 - Are we still comfortable with our precedence choice?
 - Can we fingerprint only the lints for the tool being run?
@@ -559,7 +559,7 @@ open this up in the future for the package to override lints from the
 workspace.  This would not be a breaking change as we'd be changing an error
 case into a working case.  We should consider the possibility of adding
 configurable lints in the future and what that would look like with
-overridin of lints.
+overriding of lints.
 
 ### Extending the syntax to `.cargo/config.toml`
 

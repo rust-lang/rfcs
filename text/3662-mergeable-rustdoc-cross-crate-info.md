@@ -241,7 +241,7 @@ The existing cross-crate information files, like `search-index.js`, all are list
 
 ### New flag: `--merge=none|shared|finalize`
 
-This flag corresponds to the three modes of invoking rustdoc described in 'Suggested workflows'. It controls two internal paramaters: `read_rendered_cci`, and `write_rendered_cci`. It also gates whether the user is allowed to provide the `--parts-out-dir` and `--include-parts-dir` flags. It can be provided at most once.
+This flag corresponds to the three modes of invoking rustdoc described in 'Suggested workflows'. It controls two internal parameters: `read_rendered_cci`, and `write_rendered_cci`. It also gates whether the user is allowed to provide the `--parts-out-dir` and `--include-parts-dir` flags. It can be provided at most once.
 
 When `write_rendered_cci` is active, rustdoc outputs the rendered parts to the doc root (`--out-dir`). Rustdoc will generate files like `doc/search-index.js`, `doc/search.desc`, `doc/index.html`, etc if and only if this parameter is true.
 

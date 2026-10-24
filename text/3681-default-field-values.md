@@ -791,7 +791,7 @@ from constants.
 
 When generating an implementation of `Default` for a `struct` named `$s` on
 which `#[derive(Default)]` has been attached, the compiler will omit all fields
-which have default values provided in the `struct`. The the associated function
+which have default values provided in the `struct`. The associated function
 `default` shall then be defined as (where `$f_i` denotes the `i`-th field of
 `$s`):
 
@@ -907,7 +907,7 @@ In Rust, one example of such an inversion is expressions and patterns.
 
 Expressions are used to *build up* and patterns *break apart*;
 While it doesn't hold generally, a principle of language design both in Rust
-and other languages with with pattern matching has been that the syntax for
+and other languages with pattern matching has been that the syntax for
 patterns should, to the extent possible, follow that of expressions.
 
 For example:
@@ -983,7 +983,7 @@ There are many reasons for this restriction:
 
   [reasoning footprint]: https://blog.rust-lang.org/2017/03/02/lang-ergonomics.html#implicit-vs-explicit
 
-  _By requring default field values to be `const` contexts, global reasoning
+  _By requiring default field values to be `const` contexts, global reasoning
   can be avoided. Thus, the [reasoning footprint] for `Foo { .. }` is reduced._
 
 + By restricting ourselves to `const` contexts, you can be sure that default

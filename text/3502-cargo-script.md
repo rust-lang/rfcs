@@ -760,7 +760,7 @@ fn main() {
 
 Multi-file packages default the edition to `2015`, effectively requiring every
 project to override it for a modern rust experience.
-We could set it the edition the feature is stablized in (2021?) but that is just kicking the can down the road.
+We could set it the edition the feature is stabilized in (2021?) but that is just kicking the can down the road.
 People are likely to get this by running `cargo new` and could easily forget it
 otherwise.
 ````rust

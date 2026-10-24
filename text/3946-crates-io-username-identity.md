@@ -213,7 +213,7 @@ Resurrection attacks are a subset of impersonation, where a user named `carols10
 example, renames away from that username or deletes their account and another user claims the
 `carols10cents` username to appear to be that person to users who don't know about the rename or
 deletion. We plan to limit the re-use of usernames, using a similar mechanism that we have today
-that prevents re-use of a deleted crate name, so that no one could claim an abandonded username
+that prevents re-use of a deleted crate name, so that no one could claim an abandoned username
 for, say, 30 days. We will allow the person who changed away from a username to reclaim/"revert to"
 that username within the re-use prevention period.
 
@@ -377,7 +377,7 @@ of `cratesio:some_user` will only query `users.username` and not any other table
 specification of `github:some_user` will only query `oauth_github.login` and not any other table.
 As other services are added, we will add a prefix that can be used to only look up usernames in
 that service's table. If the username isn't found in the specified table (say, the `cratesio`
-prefix that specfies the `users` table), the request will return an error even if the username is
+prefix that specifies the `users` table), the request will return an error even if the username is
 in another table (such as the `oauth_github` table, for this example).
 
 [^1]: The `cratesio` prefix may possibly be `crates.io`, `crates_io`, `crates-io`, or all of them,
@@ -415,7 +415,7 @@ If this is not the account you want to add, verify the crates.io username of the
 }
 ```
 
-This maintains backwards compatibilty with existing `cargo` versions. We could do additional work
+This maintains backwards compatibility with existing `cargo` versions. We could do additional work
 on Cargo and add more fields if a newer version of Cargo is making the request, to support a
 "confirmation" flow as presented in the "Prior Art" section under Keybase.
 

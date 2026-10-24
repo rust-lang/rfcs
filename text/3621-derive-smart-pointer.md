@@ -22,7 +22,7 @@ Currently, the standard library types `Rc` and `Arc` are special. It's not
 possible for third-party libraries to define custom smart pointers that work
 with trait objects.
 
-It is generally desireable to make std less special, but this particular RFC is
+It is generally desirable to make std less special, but this particular RFC is
 motived by use-cases in the Linux Kernel. In the Linux Kernel, we need
 reference counted objects often, but we are not able to use the standard
 library `Arc`. There are several reasons for this:

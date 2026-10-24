@@ -177,7 +177,7 @@ fn foo<T: Trait>(arg: T) {
 }
 ```
 
-The only difference is that you can't use turbo-fish syntax for the first definition (as turbo-fish syntax only works with explicit generic type parameters). Thus, it's worth being mindful that switching between `impl Trait` and generic type parameters can consistute a breaking change for users of your code.
+The only difference is that you can't use turbo-fish syntax for the first definition (as turbo-fish syntax only works with explicit generic type parameters). Thus, it's worth being mindful that switching between `impl Trait` and generic type parameters can constitute a breaking change for users of your code.
 
 ### Return-position
 ```rust

@@ -64,7 +64,7 @@ specified:
 * **C-Like Enum Type**: If no variants have fields, then the enum is considered "C-Like". The user
   is able to specify discriminant values in this case, and the return value would be equivalent to
   the result of casting the variant to a `u64`.
-* **ADT Enum Type**: If any variant has a field, then the enum is conidered to be an "ADT" enum. The
+* **ADT Enum Type**: If any variant has a field, then the enum is considered to be an "ADT" enum. The
   user is not able to specify the discriminant value in this case. The precise values are
   unspecified, but have the following characteristics:
 

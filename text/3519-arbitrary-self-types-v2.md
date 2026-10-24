@@ -300,7 +300,7 @@ To be precise, the compiler will:
 * Search for the best autorefmut pick
 * For each pair from the above list, consider the first to be the 'shadowing' pick and the second to be the 'shadowed' pick. Show an error if:
   * The same number of autoderefs has been applied (confirming the `self` type is identical, aside from any autoreffing)
-  * One is further along the chain of `Receiver` than another (confirms that it's arbitrary self types causing the conflcit)
+  * One is further along the chain of `Receiver` than another (confirms that it's arbitrary self types causing the conflict)
   * The shadowing pick is an inherent impl (we are concerned about the case that a smart pointer is adding inherent methods shadowing inner types, not cases where traits bring further methods into play)
   * The picks don't refer to the same resulting item (which could happen with things like blanket impls for any type)
 * Otherwise, choose the pick in order of by-value, autoreffered, autorefmut, or const ptr as it does now.

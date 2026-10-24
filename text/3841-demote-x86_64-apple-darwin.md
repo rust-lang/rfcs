@@ -148,7 +148,7 @@ These users will be stuck on an old compiler version.
 `x86_64-apple-darwin` could be demoted to Tier 3 or support completely removed.
 There's no strong technical or financial reason to do this at this point in time.
 Should further demotions be proposed,
-those will be evaluated separately and on thier own merits,
+those will be evaluated separately and on their own merits,
 using the [target tier policy][tier-policy] as guidance.
 
 [tier-policy]: https://doc.rust-lang.org/stable/rustc/target-tier-policy.html

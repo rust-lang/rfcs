@@ -167,7 +167,7 @@ By not implementing this proposal, the module system remains more complex for th
 - Inner attributes occupy the same syntactic space as items and view items, and are currently
   also forced into a given order by needing to be written first.
   This is also potentially confusing or restrictive for the same reasons as for the view items
-  mentioned above, especially in regard to the build-in crate attributes, and has one big issue:
+  mentioned above, especially in regard to the built-in crate attributes, and has one big issue:
   It is currently not possible to load a syntax extension
   that provides an crate-level attribute, as with the current macro system this would have to be written like this:
 
