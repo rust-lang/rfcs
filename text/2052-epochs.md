@@ -162,7 +162,7 @@ needed. To make this work, we use the roadmap process:
 
 - As today, each year has a [roadmap setting out that year's vision]. Some
   years---like 2017---the roadmap is mostly about laying down major new
-  groundwork. Some years, however, they roadmap explicitly proposes to produce a
+  groundwork. Some years, however, the roadmap explicitly proposes to produce a
   new edition during the year.
 
 - Edition years are focused primarily on *stabilization*, *polish*, and
