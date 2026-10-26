@@ -887,6 +887,10 @@ The feature may potentially introduce a number of semver hazards:
 - Delegating from a public function to a private function could lead to unintended breaking changes in public interfaces, but this can be caught by a lint ([_more_](#should-the-visibility-of-the-delegation-item-be-restricted)).
 - Adding a non-delegatable method with default body to a trait may become a breaking change, [_depending on the design_](#why-are-methods-with-default-bodies-included-in-glob-delegation).
 - Changing between `Self` type alias and `Struct` in function signatures inside `impl Struct { ... }` may become a breaking change, [_depending on the design_](#why-are-effective-self-types-not-detected-through-type-aliases-or-type-equality).
+- Starting to use anything with "identity" (items, closures, anonymous constants) in a macro is a breaking change if that macro is used in an ignored target block ([_more_](#why-can-target-blocks-be-allowed-without-effective-self-parameters)).
+
+The function body generated for delegation items may produce type checking errors, and reporting good errors from generated code is hard.
+Ideally we'd need to pretty-print the generated code and point the diagnostic spans to that pretty-printed code.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -1724,8 +1728,29 @@ In feedback on [rust-lang/rfcs#1406](https://github.com/rust-lang/rfcs/pull/1406
 
 #### Why can target blocks be allowed without effective self parameters?
 
-TODO important: explain the rationale. <br>
-TODO drawback: discuss future compatibility issues with identity in target blocks
+Imagine an impl delegation or glob delegation, reusing all methods from some trait and delegating them to `self.inner`.
+```rust
+reuse impl Trait for Wrapper { self.inner }
+```
+
+It would be silly for this to break if `Trait` contains any "static methods" without `self`.
+In that case you'd have to have to write delegation for such methods manually and separately from methods with `self`, and `reuse impl` wouldn't be usable at all.
+```rust
+impl Trait for Wrapper {
+    reuse Trait::{no_self1, no_self2}; // no target block
+    reuse Trait::* { self.inner }
+}
+```
+
+To avoid this sillyness the target block is simply ignored when such a method without `self` is delegated as a part of a glob (or list), and no conversion happens.
+
+However, we need to make sure that the block is used by at least some generated functions in the glob or list.
+Otherwise, any compiler checks after name resolution wouldn't be performed on it, including stability checks in particular.
+This would create a semver hazard when some unstable API is removed and the target block stops compiling.
+
+The compiler also cannot currently remove any code having "identity" (items, closures, anonymous constants) during AST lowering, where the delegation desugaring happens.
+So we also have to report an error when we attempt to ignore a target block with items/closures/etc in it.
+This creates another semver hazard when some macro (e.g. `println!`) starts using closures or anonymous constants internally, and it breaks any code using it in ignored target blocks.
 
 ↩ [_Target block_](#target-block)
 
