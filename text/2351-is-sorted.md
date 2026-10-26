@@ -28,7 +28,7 @@ basic premise: we want such a function.
 
 Having `is_sorted()` and friends in the standard library would:
 - prevent people from spending time on writing their own,
-- improve readbility of the code by clearly showing the author's intent,
+- improve readability of the code by clearly showing the author's intent,
 - and encourage to write more unit tests and/or pre-/post-condition checks.
 
 Another proof of this functions' usefulness is the inclusion in the

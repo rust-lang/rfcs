@@ -345,7 +345,7 @@ variety of use-cases.
 Currently path bases only support being declared in the configuration, and not
 the manifest. While it would be possible to add support for declaring path bases
 in the manifest in the future (which would require specifying if the declaration
-in the manifest or configuration is prefered, and how workspace versus members
+in the manifest or configuration is preferred, and how workspace versus members
 declarations work), it is hard to justify the additional complexity of adding of
 adding this capability to the initial implementation of the feature.
 

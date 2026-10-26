@@ -120,7 +120,7 @@ There are a few downsides to this approach:
 * `String`-keyed hash maps are very common, so newcomers are likely to run
   headlong into the problem. First, `find` will fail to work in the expected
   way. But the signature of `find_equiv` is more difficult to understand than
-  `find`, and it it's not immediately obvious that it solves the problem.
+  `find`, and it's not immediately obvious that it solves the problem.
 
 * It is the right API for `HashMap`, but not helpful for e.g. `TreeMap`, which
   would want an analog for `Ord`.

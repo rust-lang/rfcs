@@ -304,7 +304,7 @@ which the `#[must_use]` attribute would be inappropriate).
 
 Another important factor is the error message when `?` is used in a
 function whose return type is not suitable. The current error message
-in this scenario is quite opaque and directly references the `Carrer`
+in this scenario is quite opaque and directly references the `Carrier`
 trait. A better message would consider various possible cases.
 
 **Source type does not implement Try.** If `?` is applied to a value

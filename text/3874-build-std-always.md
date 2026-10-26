@@ -17,7 +17,7 @@ This proposal limits the ways the built standard library can be customised (such
 as by settings in the profile) and intends that the build standard library
 matches the prebuilt one (if available) as closely as possible.
 
-**This RFC is is part of the [build-std project goal] and a series of build-std
+**This RFC is part of the [build-std project goal] and a series of build-std
 RFCs:**
 
 1. build-std context ([rfcs#3873])

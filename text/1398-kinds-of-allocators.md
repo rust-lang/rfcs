@@ -124,7 +124,7 @@ individual sections of code.)
 
      * Any sized type `T` can be mapped to its `Layout`, via `Layout::new::<T>()`,
 
-     * Heterogenous structure; e.g. `layout1.extend(layout2)`,
+     * Heterogeneous structure; e.g. `layout1.extend(layout2)`,
 
      * Homogeneous array types: `layout.repeat(n)` (for `n: usize`),
 
@@ -446,7 +446,7 @@ And that's all to the demo, folks.
 #### What about standard library containers?
 
 The intention of this RFC is that the Rust standard library will be
-extended with parameteric allocator support: `Vec`, `HashMap`, etc
+extended with parametric allocator support: `Vec`, `HashMap`, etc
 should all eventually be extended with the ability to use an
 alternative allocator for their backing storage.
 

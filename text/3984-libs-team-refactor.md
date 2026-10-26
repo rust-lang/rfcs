@@ -63,7 +63,7 @@ The libs, libs-api, and libs-contributors teams will be consolidated into only t
 
 The top-level team consists of all members of any team previously under the libs team family. That is, all former members of libs, libs-api, and libs-contributors are to be consolidated into a new libs team. Members of the crate-maintainers team are automatically extended an invitation to join the new libs team should they so desire. Members are granted *umbrella privileges* as above, with the possibility of adding themselves to *review rotation*. The existing crate-maintainers, regex, portable SIMD project group, and allocator working group are left unaffected.
 
-The libs team should hold at least one weekly meeting, with its scheduling determined by [libs-fcp][libs-fcp-team], wherein at least items nominated for the libs team are discussed. The libs-fcp team is free to decide internally when these meetings are held, their duration, and which topics are or are not relevant to any given meeting, so long as they are held on a consistent schedule which reasonably accomodates for the availabilities of all libs-fcp members and enables participation from other libs members. All meetings are to be open to the public unless the libs-fcp team decides by consensus to restrict attendance for some particular meeting. Minutes and agendas from public meetings must also be posted publicly on Zulip.
+The libs team should hold at least one weekly meeting, with its scheduling determined by [libs-fcp][libs-fcp-team], wherein at least the items nominated for the libs team are discussed. The libs-fcp team is free to decide internally when these meetings are held, their duration, and which topics are or are not relevant to any given meeting, so long as they are held on a consistent schedule which reasonably accommodates for the availabilities of all libs-fcp members and enables participation from other libs members. All meetings are to be open to the public unless the libs-fcp team decides by consensus to restrict attendance for some particular meeting. Minutes and agendas from public meetings must also be posted publicly on Zulip.
 
 #### Selection process
 
@@ -79,11 +79,11 @@ If on the contrary, 20 days after a nomination, no seconds are outstanding and/o
 
 #### Expected activities
 
-Libs team members should make an effort to remain engaged with the Rust project in some capacity, but such criteria are to be interpeted loosely. Engagement in pull request or issue discussions, being on *review rotation*, activity in team meetings, and/or activity on Zulip or other official platforms of the project in matters relevant to the standard library and related crates all constitute relevant engagement with the project.
+Libs team members should make an effort to remain engaged with the Rust project in some capacity, but such criteria are to be interpreted loosely. Engagement in pull request or issue discussions, being on *review rotation*, activity in team meetings, and/or activity on Zulip or other official platforms of the project in matters relevant to the standard library and related crates all constitute relevant engagement with the project.
 
 More broadly, members of the libs team constitute a core part of the Rust project and thus are bound by the expectations placed upon such members, including upholding both [the spirit and the letter of the Code of Conduct][coc].
 
-After some member of libs has been inactive for at least twelve months, they may be asked if they wish to remain on the team; otheriwse, they may be moved into alumni, with privileges revoked. An alum may at any point self-nominate to be reinstated, requiring a second and 10 day period without any objections as if they had been nominated by a team member in order to be reinstated.
+After some member of libs has been inactive for at least twelve months, they may be asked if they wish to remain on the team; otherwise, they may be moved into alumni, with privileges revoked. An alum may at any point self-nominate to be reinstated, requiring a second and 10 day period without any objections as if they had been nominated by a team member in order to be reinstated.
 
 #### ACP process
 
@@ -161,7 +161,7 @@ The libs team may have, at any given time, at least one and at most two team lea
 
 #### Selection process
 
-Should a team lead wish to step down, members of the libs team may self-nominate for the postion. The former team lead may select a candidate for succession from the list of nominees; this process is mandatory if the lead stepping down is the only extant lead. If only one team lead exists at a given time, they are encouraged to trigger the above mechanism to select a second team lead. In either case, approval of a new team lead requires there be no outstanding objection to the nominated new team lead from any member of the libs team for a continuous period of 10 days.
+Should a team lead wish to step down, members of the libs team may self-nominate for the position. The former team lead may select a candidate for succession from the list of nominees; this process is mandatory if the lead stepping down is the only extant lead. If only one team lead exists at a given time, they are encouraged to trigger the above mechanism to select a second team lead. In either case, approval of a new team lead requires there be no outstanding objection to the nominated new team lead from any member of the libs team for a continuous period of 10 days.
 
 #### Expected activities
 

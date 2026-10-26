@@ -342,7 +342,7 @@ NP-complete problem -- a frightening prospect for a lint! However, note that
 worst-case execution is exponential in *the number of variables* (i.e.,
 primitive `cfg` constraints), not the number/complexity of clauses, and most
 comparisons should involve a very small number of variables. We can likely get
-away with a naive SAT implementation, perhaps with a handful of optimiziations
+away with a naive SAT implementation, perhaps with a handful of optimizations
 specific to our use-case. In the limit, there are also many well-known
 techniques for solving SAT efficiently even on very large examples that arise in
 real-world usage.

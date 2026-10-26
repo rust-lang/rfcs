@@ -297,7 +297,7 @@ While `SendBackend` may be convenient most of the time, it is also stricter than
 
 ### Design axioms
 
-* **Minimal bounds in trait defintion, consumers apply the bounds they need.** Rust's typical pattern is to have traits with minimal bounds (e.g., `IntoIterator` declares only that its `IntoIter` type will be an `Iterator`) and then to have consumers apply additional bounds when they need them (e.g., that `IntoIter: DoubleEndedIterator`). This makes for widely reusable traits.
+* **Minimal bounds in trait definition, consumers apply the bounds they need.** Rust's typical pattern is to have traits with minimal bounds (e.g., `IntoIterator` declares only that its `IntoIter` type will be an `Iterator`) and then to have consumers apply additional bounds when they need them (e.g., that `IntoIter: DoubleEndedIterator`). This makes for widely reusable traits.
 * **Just say "async fn".** We want simply writing `async fn foo(&self)` to result in a maximally reusable trait (just as it results in a maximally reusable free function today); "best practice" trait definitions should still be simple to read and should not limit the trait's consumers or future uses.
 * **Support both async fn and `-> impl Trait`.** The most pressing user need is for send bounds on async fns, but we want to add a primitive that will also address the limitations of `-> impl Trait` methods (both in traits and, eventually, outside of them).
 

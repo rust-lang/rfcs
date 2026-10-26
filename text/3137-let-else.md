@@ -608,7 +608,7 @@ let A(x) | B(x) = foo() else bar() else { return; };
 
 #### let-else-match
 
-Where the `match` must cover all patters which are not the let assignment pattern.
+Where the `match` must cover all patterns which are not the let assignment pattern.
 
 ```rust
 let Ok(a) = x else match {

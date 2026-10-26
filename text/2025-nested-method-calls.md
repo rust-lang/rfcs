@@ -391,7 +391,7 @@ reasons to think this will be not be a very big deal in practice:
 
 Nonetheless, this change slightly widens the gap between the surface
 language and the underlying "desugared" view that MIR takes, and in
-general that is to be avoided. The Alternatives section discuses some
+general that is to be avoided. The Alternatives section discusses some
 possible future extensions that could be used to remove that gap.
 
 ## Alternatives
@@ -692,7 +692,7 @@ that the `'w` regions of every `&mut` borrow is disjoint from the `'r`
 regions of every other borrow (and from shared borrows).
 
 This proposal has a lot of potential applications, but each of them
-introduces some complications, and would require singificant further
+introduces some complications, and would require significant further
 thought. Let's cover them in more detail.
 
 #### Discontinuous borrows
