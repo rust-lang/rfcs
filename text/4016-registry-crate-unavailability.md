@@ -307,8 +307,7 @@ We prefer `availability` to `available` because `"available": "available"` is we
 PyPI's quarantine and npm's publish-time scanning both remove
 or never write a line. For a version that someone has already locked,
 omission produces confusing resolution failures with no indication of why.
-This is indistinguishable from a version that never existed. Both registries
-have [seen complaints](https://github.com/orgs/community/discussions/203413)
+Both registries have [seen complaints](https://github.com/orgs/community/discussions/203413)
 for this. PyPI has since added status markers, and npm plans to.
 
 Writing the index entry lets Cargo explain that the version is unavailable and give
