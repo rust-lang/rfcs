@@ -74,7 +74,7 @@ versions may be subsequently released or withdrawn.
 marking the removed version.
 
 `available` is equivalent to a value of `null` and indicates that the index row has no availability
-restrictions.
+restrictions. crates.io will not rewrite its index proactively to include `availability = "available"`.
 
 Cargo never selects an unavailable version. On fresh resolution, it will pick a different compatible version, so
 most people never encounter it. The only time you encounter unavailable versions is when pinned in a lockfile,
