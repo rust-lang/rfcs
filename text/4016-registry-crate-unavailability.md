@@ -105,7 +105,6 @@ Fetching unavailable bytes via Cargo may be covered in a future RFC.
 
 For maintainers, Cargo will avoid unavailable versions of crate dependencies while generating a lockfile.
 If a lockfile is committed and includes an unavailable version, the publication fails with a useful errors.
-`cargo publish --exclude-lockfile` skips this evaluation as before.
 
 docs.rs does not build unavailable versions and shows a status badge instead.
 
