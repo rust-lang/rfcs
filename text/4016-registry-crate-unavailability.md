@@ -5,9 +5,9 @@
 ## Summary
 [summary]: #summary
 
-This RFC adds a new, optional registry index field, `availability` (`available | quarantined | withdrawn`).
+This RFC adds a new, optional registry index field, `availability` (`available | unavailable`).
 
-It also specifies how Cargo avoids resolving unavailable versions and instead displays status-aware errors.
+It also specifies how Cargo avoids resolving unavailable versions and reports their unavailability in errors.
 
 This is part of the proposed [crates.io supply chain hardening Project Goal](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html).
 
@@ -21,21 +21,21 @@ malicious bytes for pre-release reviews. The big-picture plan [is in the crates.
 During security investigations, crates.io operators are slow to take destructive actions like
 blanket-deleting all crates of an account. They could move more rapidly, with less risk of collateral
 damage, if they could "freeze" that account: something that prevents users from installing malicious
-crates while still being easy to reverse if it turns out to be a false alarm. That same capability will also be needed for any sort of automated defense. The next RFC
-adds an `unreleased` state to cover publish-time holds.
+crates while still being easy to reverse if it turns out to be a false alarm. That same capability will also be needed for any sort of automated defense.
+Publish-time holds will be addressed in a separate RFC.
 
 To accomplish this goal, we add a middle ground between "available" and "erased from the index" via the
 new `availability` field. We have "yanked", but yanked does not indicate a malicious release. Yanked releases are also 
 still resolvable via an existing `Cargo.lock`, and, worse, their bytes are freely downloaded by default. We instead
 want a way to say, "this release is being quarantined, and its bytes are not served via the normal download path". And 
 similarly, if we ultimately delete a release, we'd like the option to leave a tombstone showing that it used to be 
-there. Unavailable bytes are retained for research purposes. Registries can opt to serve them, but Cargo has no way
-to fetch them until the next RFC.
+there. Registries may retain and serve unavailable bytes for research purposes. This RFC does not add Cargo support
+for fetching them.
 
 A key tradeoff of this approach, unavailable crates staying in the index, is that it breaks the invariant that every
-indexed version is downloadable from `dl`. We accept this because omitting the index entry would cause pinned
-versions to fail with no explanation, and it is indistinguishable from a version that was never published. Other 
-ecosystems (PyPI, npm) that started with omission have since added explanatory markers or plan to.
+indexed version is downloadable from `dl`. We accept this because omitting the index entry can cause pinned
+versions to fail with no useful explanation. Other registries (PyPI, npm) that started with omission have
+since added explanatory markers or plan to.
 
 The security boundary that we are focused on here is fresh acquisition, with a cold cache. Cargo avoids unavailable bytes 
 whenever its view of the index is fresh, but the combination of a warm crate cache and a stale, cached view of the 
@@ -43,8 +43,8 @@ index that is missing a newer `availability` marker, will allow continued use of
 deletion today.
 
 Out of scope for this RFC:
-- publish-time `unreleased` state (which does not imply misuse, for instance publish-time review)
-- publishing against unavailable versions (mainly a concern for `unreleased`)
+- publish-time holds (which does not imply misuse, for instance publish-time review)
+- publishing against unavailable versions (mainly a concern for publish-time holds)
 - fetching unavailable bytes via Cargo, for forensic or publish-time builds, with a registry-advertised location
 to access those bytes
 - end-user-triggered quarantine
@@ -52,6 +52,8 @@ to access those bytes
 - evicting unavailable versions or index data from local caches
 - new criteria for manual crates.io administrator action beyond the existing policies for administrator yanks and deletions
 - crates.io automated detection and withholding systems
+- reason index fields such as `availability_reason` and `yanked_reason`
+- a general mechanism for registries to advertise pages with version information like availability context
 
 The following will be implemented as a result of this RFC, but design specifics are deferred to a crates.io-side discussion:
 - crates.io implementation of manual withholding
@@ -60,18 +62,14 @@ The following will be implemented as a result of this RFC, but design specifics 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`availability` is an optional new index field. When it is present, and its value is not `available`,
+`availability` is an optional new index field. When it is present, and its value is neither `available` nor `null`,
 tools should ignore the version and only consider the index row for display in error messages.
-This RFC defines three possible values, `quarantined`, `withdrawn`, and `available`.
-Other values may be added in future RFC's, and client should be forward compatible with this by
-treating unknown values as `quarantined`.
+This RFC defines two possible values, `available` and `unavailable`.
+Other values may be added in future RFCs, and clients should be forward compatible by
+treating unknown values as `unavailable`.
 
-`quarantined` is set when the registry froze a version. It is not available to select during
-dependency resolution and its bytes are not served via the normal download path. `quarantined`
-versions may subsequently be restored to `available` or withdrawn.
-
-`withdrawn` is a permanently unavailable version, whose index row is a tombstone
-marking the removed version.
+`unavailable` means the registry does not serve the version's `.crate` file via the normal download path.
+This covers both temporary quarantine and permanent withdrawal; the index does not distinguish them.
 
 `available` is equivalent to a value of `null` and indicates that the index row has no availability
 restrictions. crates.io will not rewrite its index proactively to include `availability = "available"`.
@@ -81,13 +79,18 @@ most people never encounter it. The only time you encounter unavailable versions
 or if no other version satisfies the requirement:
 
 ```
-error: failed to select a version for the requirement `base64squatter = "=1.0.0"`
-  version 1.0.0 is quarantined
+error: failed to select a version for the requirement `base64squatter = "^1.0.0"`
+  version 1.0.0 is unavailable
+  |
+  = note: for more information, see https://crates.io/crates/base64squatter/1.0.0
 location searched: crates.io index
 required by package `myapp v0.1.0 (/home/user/myapp)`
   |
   = note: this version is pinned by Cargo.lock; run `cargo update base64squatter` to select a different version, or change the requirement in Cargo.toml if no other version satisfies it
 ```
+
+For crates.io, Cargo includes a link to the affected version's page, where crates.io explains
+the version's status and any possibility of restoration.
 
 Registries also mark unavailable versions with `yanked: true`, so older Cargo and other tools route around them.
 If non-status-aware tools fetch the version anyway, for instance due to a pinned lockfile, they should get a 404,
@@ -98,14 +101,13 @@ The reverse is not true: Direct yanking, whether by author or registry administr
 does not imply that the crate is made unavailable.
 
 For researchers, unavailable versions are in the index, and a registry may document a way to fetch unavailable bytes.
-Fetching unavailable bytes via Cargo is in the next RFC.
+Fetching unavailable bytes via Cargo may be covered in a future RFC.
 
 For maintainers, Cargo will avoid unavailable versions of crate dependencies while generating a lockfile.
 If a lockfile is committed and includes an unavailable version, the publication fails with a useful errors.
 `cargo publish --exclude-lockfile` skips this evaluation as before.
 
-docs.rs does not build unavailable versions and shows a status badge instead. It instead builds them when they are 
-restored.
+docs.rs does not build unavailable versions and shows a status badge instead.
 
 
 ## Reference-level explanation
@@ -113,35 +115,32 @@ restored.
 
 ### Added to [Registry Index / JSON schema](https://doc.rust-lang.org/cargo/reference/registry-index.html#json-schema)
 
-*Amended, new "unavailable" field after "yanked"*
+*Amended, new "availability" field after "yanked"*
 
 ```javascript
 {
     [...]
     // Boolean of whether or not this version has been yanked.
-    "yanked": false,
+    "yanked": true,
     // The availability status of this package version (optional).
     //
     // If set to a value besides "available" or null, Cargo skips this
     // version when choosing dependency versions. If the version is pinned
-    // in a `Cargo.lock`, Cargo fails builds with an error explaining the
-    // version's status.  
-    // 
-    // If not set, Cargo treats this version as "available".
+    // in a `Cargo.lock`, Cargo fails builds with an error explaining that
+    // the version is unavailable.
+    //
+    // If omitted or null, Cargo treats this version as "available".
     //
     // For unavailable versions, a `.crate` file is not served from a registry's `dl` endpoint
     // while the package version is unavailable.
     //
     // The current values are:
-    // * "quarantined": The registry has frozen this package version because it
-    //   suspects misuse. The package version may later transition to "withdrawn"
-    //   or to "available" (making it installable again).
-    // * "withdrawn": The registry has permanently removed this package version.
-    //   The entry remains as a tombstone and the version number cannot be reused.
-    // * "available": Available with no restrictions
+    // * "unavailable": The registry does not serve this package version's
+    //   `.crate` file from its `dl` endpoint. This may be temporary or permanent.
+    // * "available": Available without restrictions.
     //
-    // All unknown values are treated as "quarantined".
-    "availability": "quarantined",
+    // All unknown values are treated as "unavailable".
+    "availability": "unavailable",
     [...]
 }
 ```
@@ -155,7 +154,7 @@ The JSON objects should not be modified after they are added, except for the
 Elsewhere in this RFC:
 - Drawbacks: [A second mutable index field](#a-second-mutable-index-field)
 - Rationale: [Why no index protocol bump?](#why-no-index-protocol-bump)
-- Rationale: [Why `availability` instead of (further) overloading `yanked`?](#why-unavailable-instead-of-further-overloading-yanked)
+- Rationale: [Why `availability` instead of (further) overloading `yanked`?](#why-availability-instead-of-further-overloading-yanked)
 - Rationale: [Why write unavailable releases to the index?](#why-write-unavailable-releases-to-the-index)
 - Rationale: [Why no reason text in the index?](#why-no-reason-text-in-the-index)
 
@@ -164,14 +163,14 @@ Elsewhere in this RFC:
 *New section after "Version uniqueness":*
 
 A registry may withhold a package version by setting the `availability` field
-in its index entry to a value besides `available` and also setting `"yanked": true`,
+in its index entry to `unavailable` and also setting `"yanked": true`,
 so that tools unaware of `availability` avoid the version. Yanking a package directly
 does not change the value of `availability`.
 
-An unavailable package version's `.crate` file is not served. The endpoint should
-respond 404 and serve a body explaining the status and linking to a webpage about
-the crate's status and/or registry policies. The body should not not name an 
-alternative  download location.
+An unavailable package version's `.crate` file is not served from the registry's `dl` endpoint. The endpoint should
+respond 404 and serve a body explaining the status and/or linking to a webpage about
+the crate's status and/or registry policies. The body should not name an
+alternative download location.
 
 When a period of unavailability ends, the registry restores the author's requested
 yank state. A yank or unyank requested while the package version is unavailable
@@ -182,7 +181,7 @@ The value of `pubtime` is not impacted by changes to the `availability` field.
 ---
 
 Elsewhere in this RFC:
-- Rationale: [Why `availability` instead of (further) overloading `yanked`?](#why-unavailable-instead-of-further-overloading-yanked)
+- Rationale: [Why `availability` instead of (further) overloading `yanked`?](#why-availability-instead-of-further-overloading-yanked)
 
 ### Added to [Dependency Resolution / Unavailable versions](https://doc.rust-lang.org/cargo/reference/resolver.html#unavailable-versions)
 
@@ -191,16 +190,20 @@ Elsewhere in this RFC:
 [Unavailable releases][unavailable] are those that a registry has marked as
 not available for use. When the resolver is building the graph, and it is
 not restricted by a `Cargo.lock` file, it will ignore all unavailable versions
-and report a status-aware error if no other version satisfies the requirement.
+and report an error explaining the unavailability if no other version satisfies the requirement.
 If resolution requires an unavailable version pinned in `Cargo.lock`, it
-fails with a status-aware error.
+fails with an error explaining that the version is unavailable.
+
+For crates.io, the error includes a link to `https://crates.io/crates/{crate}/{version}`
+for more information. Cargo constructs this URL without an additional registry request.
+For other registries, Cargo reports the unavailability without a version-page link.
 
 [unavailable]: registry-index.md#unavailable-versions
 
 ---
 
 The error for a locked unavailable version suggests `cargo update <crate>`, which re-resolves
-that crate and keeps every other lock entry. Once the version is restored, the same
+that crate and keeps every other lock entry. If the version is restored, the same
 lockfile resolves again unchanged.
 
 Cache lifecycles are unchanged. an unavailable version keeps building if it was last seen
@@ -215,17 +218,17 @@ Elsewhere in this RFC:
 
 ### docs.rs
 
-docs.rs does not build unavailable versions. `crates-index-diff`, `docs_rs_crates_io`, and the pending crates.io event 
-feed ([crates.io#14188](https://github.com/rust-lang/crates.io/pull/14188)) expose the `availability` field along with `yanked`.
+docs.rs uses availability status information and any additional context provided by crates.io
+to determine build and display behavior.
 
-On seeing an unavailable version, docs.rs skips the version's build and shows a badge stating its status. Documentation built before withholding
-stays below the badge. For `withdrawn`, documentation is deleted, leaving behind
-a placeholder page indicating status.
+On seeing an unavailable version, docs.rs skips the version's build and shows a badge stating its status.
+Any retained documentation appears below the badge.
 
-When the `availability` field is subsequently set to `available` or removed, docs.rs drops the badge but does not trigger
+When availability is restored, docs.rs drops the badge but does not trigger
 a rebuild unless manually requested.
 
-crates.io displays a similar badge indicating availability status for states besides `available`, matching the `docs.rs` display.
+For unavailable versions, crates.io displays the version's availability and provides any additional context
+about the reason for the version's status.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -252,7 +255,7 @@ be nice to have a better solution at least for the install case.
 - For alternatives, see: Future possibilities: [Warm cache invalidation enhancements](#warm-cache-invalidation-enhancements)
 
 #### Prevents reuse of withdrawn version numbers
-- If an attacker publishes malicious versions, a `withdrawn` tombstone could occupy "good" versions
+- If an attacker publishes malicious versions, an `unavailable` tombstone could occupy "good" versions
 and prevent the author from re-using them.
 - This is an acceptable drawback to prevent end-user confusion, particularly if the version has a RUSTSEC
 notice published against it.
@@ -274,7 +277,7 @@ resolution rules to decide what to fetch (Yocto, registry mirrors, etc)
 version is treated the same by tools as one which was never unavailable
 5. Index followers such as docs.rs handle a version while unavailable and once restored
 6. Mirrors and index signing keep working unchanged
-7. Unavailable versions and their status are discoverable from the index, without additional requests
+7. Unavailable versions are discoverable from the index, without additional requests
 
 Preferred:
 1. Reuse the existing index, version model, synchronization, and release flow (especially, no index protocol bump)
@@ -283,16 +286,9 @@ Preferred:
 
 #### Why indicate status with an enum rather than a bool?
 
-A bool is all we need to strictly tell Cargo that bytes are unavailable and to avoid resolving.
-But, an enum allows Cargo to share additional semantic meaning that is clearer to readers
-(for quarantined vs withdrawn, is it a temporary hold or not?).
-
-It also sets up better for future variants that might need additional special handling,
-for instance related to publishing and release trains (see [Future Possibilities](#future-possibilities)).
-
-Migrating from a bool to an enum later would be awkward and confusing. We arguably would
-prefer for `yanked` to be part of this same status enum, rather than a bool, but are stuck
-with it for backwards compatibility reasons.
+An enum leaves room for future states that require different handling, such as access through
+an alternate download path, without changing the field's type.
+Clients that do not recognize a new value treat it as `unavailable`.
 
 #### Why include `availability` (with `available`) rather than `withheld`?
 
@@ -302,8 +298,8 @@ open for alternative, softer statuses, without the negative implication.
 
 The downside of this is slightly more complexity for downstream tooling, which now needs
 to check the enum rather than assuming presence of the field indicates unavailbility. This
-is partially mitigated by defining everything besides `available` or `null` as unavailable, and
-equivalent to `quarantined` if unknown. This allows tools that are uninterested in more granular
+is partially mitigated by defining everything besides `available` or `null` as inaccessible, and
+equivalent to `unavailable` if unknown. This allows tools that are uninterested in more granular
 status to handle this field with a straightforward equivalence check.
 
 We prefer `availability` to `available` because `"available": "available"` is weird looking.
@@ -317,16 +313,16 @@ This is indistinguishable from a version that never existed. Both registries
 have [seen complaints](https://github.com/orgs/community/discussions/203413)
 for this. PyPI has since added status markers, and npm plans to.
 
-Writing the line lets Cargo explain the status, point at `notice-page`, and give
-guidance to the user (such as `cargo update`). It also lets
-us set `withdrawn` tombstones that transparently reserves package versions, unlike omission.
+Writing the index entry lets Cargo explain that the version is unavailable and give
+guidance to the user (such as `cargo update`). For crates.io, Cargo also links to the version's page.
+Keeping entries marked `unavailable` as tombstones transparently reserves package versions, unlike omission.
 It still lets older Cargo fall back to yanked behavior that avoids resolving to the unfetchable version.
 
 This fits the values of the project around transparency and
 accountability. If we are making it easier for administrators to take new
 curation actions on the index, we want transparency logs and auditability.
 Showing the unavailable package versions also makes it possible for researchers to
-obtain unavailable bytes (though this RFC defers this as a registry decision).
+discover and access unavailable bytes (though this RFC defers this as a registry decision).
 
 We could address these needs with other side channels (a status feed, a query API, etc).
 But they add significant complexity to our systems while producing
@@ -340,15 +336,14 @@ good direction by setting `yanked: true`. The worst case (mirrors that fetch eve
 and loudly fail on missing bytes) still continue to new lines and can trivially add logic to skip
 fetching `availability` lines.
 
-Whether `unreleased` versions (held with no misuse implied) should have a similar
-treatment is deferred to a subsequent RFC as they have different tradeoffs and
-systems involved.
+Whether versions held at publish time (with no misuse implied) should receive similar
+treatment is deferred to a subsequent RFC, as they involve different tradeoffs and systems.
 
 #### Why not add raw.crates.io and make crates.io a mirror of it that only serves non-unavailable versions?
 
 This is still omission from the consumer's point of view, with all the same downsides around
 legibility and clear build tool behavior. It has advantages in comparison to omission in that it preserves
-an audit log, and that it makes it possible for researchers to enumerate quarantined versions.
+an audit log, and that it makes it possible for researchers to enumerate unavailable versions.
 But, writing the `availability` line to the index offers the same benefits.
 
 In exchange, it requires building a second index, which adds a systems complexity
@@ -361,9 +356,8 @@ unavailable bytes that instead is scoped to explicitly requested bytes.
 `yanked` currently means two things: an author saying, "probably don't use this" for an unspecified
 reason, and an administrator's soft mitigation during an investigation. Making a yank also mean "and the bytes are gone"
 makes the semantics even more confusing and makes clean handling by build tools more difficult
-since they cannot distinguish a broken release from an unavailable one. `availability` also enables
-`withdrawn` which signals that the state is terminal, which `yanked` currently does not imply.
-We do still set `yanked: true` when `availability` as a compatibility shim for old tools.
+since they cannot distinguish a broken release from an unavailable one.
+We do still set `yanked: true` for unavailable versions as a compatibility shim for old tools.
 
 Adding a second field with a small enum allows build tools to understand the state of crate bytes
 without making additional fetches or adding further fallbacks. It also gives us a path to clean
@@ -374,12 +368,13 @@ is *not* due to administrator action.
 
 #### Why no reason text in the index?
 
-In this RFC, the reason for withholding is stored registry-side. It can be made available on the user-facing
-page that is advertised via `notice-page`. This mirrors crates.io's handling of yanked reasons; we could
-also use `notice-page` to display yanked reasons once frontend support for them is built.
+The reason for withholding, including whether a version may be restored, is stored registry-side.
+For crates.io, Cargo links to the affected version's page for more information. This is a
+crates.io-specific diagnostic and does not add a registry metadata field or require another request.
 
-Putting reasons on the wire is being considered for `yanked` as well, and both should be addressed
-in the same future RFC. See Future possibilities: [Better display of reasons for withholding](#better-display-of-reasons-for-withholding).
+Reason fields such as `availability_reason` and `yanked_reason`, and a general mechanism for registries
+to advertise version-page URLs, are deferred. See Future possibilities:
+[Better display of reasons for withholding](#better-display-of-reasons-for-withholding).
 
 #### Why no index protocol bump?
 
@@ -451,7 +446,7 @@ the core registry level.
 deletes by removing a crate's index file entirely. It temporarily reserves the crate name upon deletion.
 
 `availability` is a non-destructive counterpart to this, operating on the per-release
-rather than per-crate level. `withdrawn` is the terminal, non-destructive equivalent.
+rather than per-crate level.
 
 #### PyPI
 
@@ -513,18 +508,8 @@ can offer explanations.
 [unresolved-questions]: #unresolved-questions
 
 ### To resolve before merge
-- Is the yanked handling of pubtime correct for quarantined and withdrawn packages? IE, totally
+- Is the yanked handling of pubtime correct for unavailable packages? IE, totally
 orthogonal, no impact on pubtime (which is set on initial publish only)
-- Do we need to also extend the registry spec to allow advertising a URL with which to
-retrieve information about withdrawal reasons (or eventually, yanked)? This could
-provide human-friendlier error messages, but it is a bit of scope creep. For instance:
-```
-{
-  "web": {
-    "version": "https://crates.io/crates/{crate}/{version}"
-  }
-}
-```
 - Do we care to trigger fresh docs.rs builds for unavailable-at-publish-time releases that
 never had docs? This is technically a reachable state today, if a registry freezes
 an entire account and quarantines on release instead of locking, but it seems more
@@ -532,20 +517,18 @@ likely to be encountered in the later RFC on publish-time withholding.
 
 ### To resolve during implementation
 - Is `availability` a good field name in the index, or something more generic like `status`?
-   - `status` reads more naturally, but it might invite registries to add other states
-   that DO still allow installs, and then it blurs the lines of whether this field
-   always connotes uninstallable
-
+   - `status` reads more naturally, but it might invite registries to overload it to
+   to indicate statuses where bytes are still available via `dl`, which breaks the "unknown
+   means unavailable" invariant.
 - Exact errors and prose notes, documentation notes, documentation URLs
 
 ### Related problems this RFC leaves open
-- Dependents of an unavailable version are published and installable but broken until it is restored. Propagation,
-linking, or docs.rs re-processing are registry- and docs.rs-side problems for a later RFC once we add `unreleased`
-publish-time holds.
+- Dependents of an unavailable version are published and installable but broken unless it is restored. Propagation,
+linking, or docs.rs re-processing are registry- and docs.rs-side problems for a future RFC on publish-time holds.
 - Warm-cache exposure (stale index + cached crate bytes) is pre-existing and un-addressed here
-- Tombstones for author-deleted crates: we could use `withdrawn` for this (and probably
+- Tombstones for author-deleted crates: we could use `unavailable` for this (and probably
 should) but that should be a separate RFC since it has other implications related to
-author privacy.
+author privacy and version reusability.
 - What to name a crates.io researcher download location (to be discussed in
 subsequent crates.io-side issue/PR)
 
@@ -557,14 +540,23 @@ subsequent crates.io-side issue/PR)
 with a marker, since the index has that state.
 
 #### Better display of reasons for withholding
-- A registry endpoint could serve machine-readable reasons that Cargo shows in errors, or reasons on the index
-line itself
-- This should be designed along with `yanked` reason improvements
+- Reason fields such as `availability_reason` and `yanked_reason` could let Cargo display explanations
+without requiring users to visit the registry's website. They should be designed together.
+- A registry endpoint could also serve machine-readable reasons.
+- A general mechanism for registries to advertise version-page URLs could extend the crates.io-specific link
+to other registries.
 
-#### Additional variants like "unreleased"
-- We probably want to indicate "held at publish time but not necessarily misuse"
-- This would need additional handling to support release trains (ie, opt-in way to access held bytes via Cargo)
-- This will come in a subsequent RFC to avoid scope creep
+#### Publishes against unavailable crates
+- If we want to add systems that might hold releases at publish time, we
+need a way to avoid breaking release trains, including via separate `cargo publish` invocations.
+- A possible solution to this problem would be to reuse Cargo's workspace publish index overlay machinery
+to allow a publish invocation to request that crate paths be included in an overlay. 
+- This will come in a subsequent RFC to avoid scope creep.
+
+#### Additional variants like "quarantined"
+- We might want to indicate that bytes are unavailable via `dl` but are available via an alternate download
+location, for instance for forensic builds.
+- This deserves its own discussion since it has implications around registry policy, Cargo handling, and more.
 
 #### Warm cache invalidation enhancements
 
