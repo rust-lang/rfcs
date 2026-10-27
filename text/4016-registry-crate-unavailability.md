@@ -192,13 +192,13 @@ and report an error explaining the unavailability if no other version satisfies 
 If resolution requires an unavailable version pinned in `Cargo.lock`, it
 fails with an error explaining that the version is unavailable.
 
-For crates.io, the error includes a link to `https://crates.io/crates/{crate}/{version}`
-for more information. Cargo constructs this URL without an additional registry request.
-For other registries, Cargo reports the unavailability without a version-page link.
-
 [unavailable]: registry-index.md#unavailable-versions
 
 ---
+
+For crates.io, the error includes a link to `https://crates.io/crates/{crate}/{version}`
+for more information. Cargo constructs this URL without an additional registry request.
+For other registries, Cargo reports the unavailability without a version-page link.
 
 The error for a locked unavailable version suggests `cargo update <crate>`, which updates
 that crate and only changes its transitive dependencies when necessary. If the version is restored, the same
