@@ -248,7 +248,7 @@ arguably an improvement because now we have better error messages, but it would
 be nice to have a better solution at least for the install case.
 
 #### Warm caches keep unavailable versions buildable
-- True of any design without cache evictions.
+- True of any design without cache invalidations.
 - Already the case for current crate deletion practices
 - For alternatives, see: Future possibilities: [Warm cache invalidation enhancements](#warm-cache-invalidation-enhancements)
 
