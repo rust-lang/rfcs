@@ -200,9 +200,11 @@ For crates.io, the error includes a link to `https://crates.io/crates/{crate}/{v
 for more information. Cargo constructs this URL without an additional registry request.
 For other registries, Cargo reports the unavailability without a version-page link.
 
-The error for a locked unavailable version suggests `cargo update <crate>`, which updates
-that crate and only changes its transitive dependencies when necessary. If the version is restored, the same
-lockfile resolves again unchanged.
+A possible error for a locked unavailable version is in the guide section. Ideally
+we would like to suggest `cargo update <crate>`, though that might not make it into the
+initial release.
+
+Even without a `cargo update`, if a version is restored, the same lockfile resolves again unchanged.
 
 Cache lifecycles are unchanged. An unavailable version keeps building if it was last seen
 not-unavailable, and has its bytes and index file cached.
