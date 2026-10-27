@@ -122,9 +122,12 @@ released.
     "yanked": false,
     // The availability status of this package version (optional).
     //
-    // If set to a value besides "available", Cargo does not select this version, even if it
-    // is pinned in `Cargo.lock`, and errors if no other
-    // version satisfies the requirement. If not set, Cargo treats this version as "available".
+    // If set to a value besides "available" or null, Cargo skips this
+    // version when choosing dependency versions. If the version is pinned
+    // in a `Cargo.lock`, Cargo fails builds with an error explaining the
+    // version's status.  
+    // 
+    // If not set, Cargo treats this version as "available".
     //
     // For unavailable versions, a `.crate` file is not served from a registry's `dl` endpoint
     // while the package version is unavailable.
@@ -186,10 +189,11 @@ Elsewhere in this RFC:
 *New section after "Yanked versions":*
 
 [Unavailable releases][unavailable] are those that a registry has marked as
-not accessible for usage. When the resolver is building the graph, it will
-ignore all unavailable versions, including those that already exist
-in the `Cargo.lock` file, and report an error if no other
-version satisfies the requirement.
+not available for use. When the resolver is building the graph, and it is
+not restricted by a `Cargo.lock` file, it will ignore all unavailable versions
+and report a status-aware error if no other version satisfies the requirement.
+If resolution requires an unavailable version pinned in `Cargo.lock`, it
+fails with a status-aware error.
 
 [unavailable]: registry-index.md#unavailable-versions
 
