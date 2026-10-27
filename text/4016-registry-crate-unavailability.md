@@ -201,8 +201,8 @@ For other registries, Cargo reports the unavailability without a version-page li
 
 ---
 
-The error for a locked unavailable version suggests `cargo update <crate>`, which re-resolves
-that crate and keeps every other lock entry. If the version is restored, the same
+The error for a locked unavailable version suggests `cargo update <crate>`, which updates
+that crate and only changes its transitive dependencies when necessary. If the version is restored, the same
 lockfile resolves again unchanged.
 
 Cache lifecycles are unchanged. an unavailable version keeps building if it was last seen
