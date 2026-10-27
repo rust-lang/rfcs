@@ -362,6 +362,8 @@ The grammar is generally modeled after `use` items, with two major differences: 
 
 A delegation item starts with the `reuse` keyword ([?](#why-reuse)) and consists of a path prefix, which may be either simple or qualified, a suffix, and an optional block expression. Their roles are discussed in the following sections.
 
+`reuse` is conditionally reserved (most similarly to `union`), at least on the existing editions, it is not treated as a keyword in non-item positions, and sometimes even in item positions, when it's required for backward compatibility (e.g. in `reuse::my_macro!();`).
+
 Suffixes come in three flavors: individual delegation, list delegation ([?](#why-is-list-delegation-supported)), and glob delegation ([?](#why-is-glob-delegation-supported)). The optional `as IDENTIFIER` clause allows the delegated function to be defined with a different name ([?](#why-is-renaming-supported)).
 
 A delegation item intentionally does not provide syntax for introducing its own generics ([?](#why-doesnt-a-delegation-item-provide-syntax-for-introducing-its-own-generics)). A delegation item intentionally does not provide syntax for argument or return-value transformations, besides the target block ([?](#why-doesnt-a-delegation-item-provide-syntax-for-argument-or-return-value-transformations)).
@@ -1756,7 +1758,20 @@ This creates another semver hazard when some macro (e.g. `println!`) starts usin
 
 #### Why is `self` the implicit target expression?
 
-TODO: explain the rationale.
+Typically, if a block doesn't have a trailing expression, a unit expression `()` is implicitly added as trailing.
+
+But for delegation target blocks mapping `self` into `()` almost never make sense.
+So they instead do some other thing that may be actually useful for them - adding `self` as the trailing expression and therefore avoiding the argument conversion.
+```rust
+reuse print_what_is_mapped { dbg!(&self.inner); }
+
+// (Partially) desugars into
+reuse print_what_is_mapped { dbg!(&self.inner); self }
+```
+
+So the target block can be used purely for its side effects instead of the argument conversion.
+
+The main alternative is to simply prohibit target blocks without a trailing expression.
 
 ↩ [_Target block_](#target-block)
 
