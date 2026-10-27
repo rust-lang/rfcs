@@ -33,7 +33,7 @@ there. Unavailable bytes are retained for research purposes. Registries can opt 
 to fetch them until the next RFC.
 
 A key tradeoff of this approach, unavailable crates staying in the index, is that it breaks the invariant that every
-indexed version is downloadable from `dl`. We accept this because omitting the line would cause pinned
+indexed version is downloadable from `dl`. We accept this because omitting the index entry would cause pinned
 versions to fail with no explanation, and it is indistinguishable from a version that was never published. Other 
 ecosystems (PyPI, npm) that started with omission have since added explanatory markers or plan to.
 
