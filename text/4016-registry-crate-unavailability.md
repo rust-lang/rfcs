@@ -210,7 +210,7 @@ not-unavailable, and has its bytes and index file cached.
 Elsewhere in this RFC:
 - Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
 - Drawbacks: [Warm caches keep unavailable versions buildable](#warm-caches-keep-unavailable-versions-buildable)
-- Prior Art: [Cache invalidation for verifiable mirrors](#cache-invalidation-for-verifiable-mirrors)
+- Future possibilities: [Warm cache invalidation enhancements](#warm-cache-invalidation-enhancements)
 
 
 ### docs.rs
