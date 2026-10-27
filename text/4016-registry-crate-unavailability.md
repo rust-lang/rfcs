@@ -351,16 +351,15 @@ unavailable bytes that instead is scoped to explicitly requested bytes.
 
 #### Why `availability` instead of (further) overloading `yanked`?
 
-`yanked` currently means two things: an author saying, "probably don't use this" for an unspecified
-reason, and an administrator's soft mitigation during an investigation. Making a yank also mean "and the bytes are gone"
-makes the semantics even more confusing and makes clean handling by build tools more difficult
-since they cannot distinguish a broken release from an unavailable one.
-We do still set `yanked: true` for unavailable versions as a compatibility shim for old tools.
+A yanked version remains downloadable and usable through existing lockfiles. Making `yanked` also mean
+that the bytes might be unavailable would leave clients unable to distinguish those cases.
 
-Adding a second field with a small enum allows build tools to understand the state of crate bytes
-without making additional fetches or adding further fallbacks. It also gives us a path to clean
-up the semantics of `yanked` to at least be clearer that a standalone yank (with no `availability`)
-is *not* due to administrator action.
+`availability` makes that distinction explicit, so Cargo can reject unavailable versions even when pinned
+in a lockfile. Registries also set `yanked: true` for unavailable versions so older clients avoid them during
+new dependency resolutions.
+
+A registry could also adopt a policy of reserving standalone yanks for author actions and using
+`availability` for administrator withholding.
 
 ### Other decisions
 
