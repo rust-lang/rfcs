@@ -1786,7 +1786,22 @@ The more detailed discussion of the choice can be found in [this github comment]
 
 #### Why are method-call adjustments applied to effective self parameters?
 
-TODO important: explain the rationale.
+If we have a list or glob delegation, it is good if we can reuse the same target block even if the types of remapped self parameters are slightly different.
+```rust
+reuse Trait::{self_by_value, self_by_ref, self_by_mut_ref} { self.inner }
+```
+
+If method-call adjustments are applied, `self.inner` will automatically turn into `&self.inner` for `self_by_ref`, or into `&mut self.inner` for `self_by_mut_ref`, or stay as is for `self_by_value`.
+
+If the adjustments weren't applied, we'd have to write the code above like
+```rust
+reuse Trait::self_by_value { self.inner }
+reuse Trait::self_by_ref { &self.inner }
+reuse Trait::self_by_mut_ref { &mut self.inner }
+```
+and glob and impl delegation would be very rarely usable in practice.
+
+The same logic applies to effective self parameters that are not literally `self`, like in the `BinOpLike` case.
 
 ↩ [_Body desugaring_](#body-desugaring)
 
