@@ -206,8 +206,7 @@ that crate and only changes its transitive dependencies when necessary. If the v
 lockfile resolves again unchanged.
 
 Cache lifecycles are unchanged. an unavailable version keeps building if it was last seen
-not-unavailable, and has its bytes and index file cached. Once Cargo integrates with
-verifiable mirrors, it will invalidate caches on any upstream change for verified mirrors.
+not-unavailable, and has its bytes and index file cached.
 
 Elsewhere in this RFC:
 - Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
