@@ -47,13 +47,15 @@ Out of scope for this RFC:
 - publishing against unavailable versions (mainly a concern for `unreleased`)
 - fetching unavailable bytes via Cargo, for forensic or publish-time builds, with a registry-advertised location
 to access those bytes
-- crates.io criteria for and implementation of withholding
-- crates.io frontend display of unavailable statuses
-- crates.io automated withholding systems
-- crates.io API exposure of unavailable statuses, for the frontend or other consumers
 - end-user-triggered quarantine
 - withholding newly published versions by default
 - evicting unavailable versions or index data from local caches
+- new criteria for manual crates.io administrator action beyond the existing policies for administrator yanks and deletions
+- crates.io automated detection and withholding systems
+
+The following will be implemented as a result of this RFC, but design specifics are deferred to a crates.io-side discussion:
+- crates.io implementation of manual withholding
+- crates.io frontend display of unavailable statuses (they will be displayed in the UI in some form, similar to docs.rs display)
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -218,6 +220,8 @@ a placeholder page indicating status.
 
 When the `availability` field is subsequently set to `available` or removed, docs.rs drops the badge but does not trigger
 a rebuild unless manually requested.
+
+crates.io displays a similar badge indicating availability status for states besides `available`, matching the `docs.rs` display.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
