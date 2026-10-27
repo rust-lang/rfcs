@@ -24,7 +24,7 @@ damage, if they could "freeze" that account: something that prevents users from 
 crates while still being easy to reverse if it turns out to be a false alarm. That same capability will also be needed for any sort of automated defense. The next RFC
 adds an `unreleased` state to cover publish-time holds.
 
-To accomplish this goal, we add a middle ground between "released" and "erased from the index" via the
+To accomplish this goal, we add a middle ground between "available" and "erased from the index" via the
 new `availability` field. We have "yanked", but yanked does not indicate a malicious release. Yanked releases are also 
 still resolvable via an existing `Cargo.lock`, and, worse, their bytes are freely downloaded by default. We instead
 want a way to say, "this release is being quarantined, and its bytes are not served via the normal download path". And 
@@ -68,7 +68,7 @@ treating unknown values as `quarantined`.
 
 `quarantined` is set when the registry froze a version. It is not available to select during
 dependency resolution and its bytes are not served via the normal download path. `quarantined`
-versions may be subsequently released or withdrawn.
+versions may subsequently be restored to `available` or withdrawn.
 
 `withdrawn` is a permanently unavailable version, whose index row is a tombstone
 marking the removed version.
@@ -105,7 +105,7 @@ If a lockfile is committed and includes an unavailable version, the publication 
 `cargo publish --exclude-lockfile` skips this evaluation as before.
 
 docs.rs does not build unavailable versions and shows a status badge instead. It instead builds them when they are 
-released.
+restored.
 
 
 ## Reference-level explanation
@@ -175,7 +175,7 @@ alternative  download location.
 
 When a period of unavailability ends, the registry restores the author's requested
 yank state. A yank or unyank requested while the package version is unavailable
-is recorded and takes effect on release.
+is recorded and takes effect when the version is restored.
 
 The value of `pubtime` is not impacted by changes to the `availability` field.
 
@@ -200,7 +200,7 @@ fails with a status-aware error.
 ---
 
 The error for a locked unavailable version suggests `cargo update <crate>`, which re-resolves
-that crate and keeps every other lock entry. Once the version is released, the same
+that crate and keeps every other lock entry. Once the version is restored, the same
 lockfile resolves again unchanged.
 
 Cache lifecycles are unchanged. an unavailable version keeps building if it was last seen
@@ -262,9 +262,9 @@ both for Cargo, and for other tools, including ones that do not consult full ind
 resolution rules to decide what to fetch (Yocto, registry mirrors, etc)
 2. Existing Cargo releases have a safe default behavior with no code changes
 3. Tools can differentiate unavailable releases on the wire from other statuses like yanked, deleted, and never-published
-4. Withholding is reversible without requiring a fresh publication, loses no information, and a released
+4. Withholding is reversible without requiring a fresh publication, loses no information, and a restored
 version is treated the same by tools as one which was never unavailable
-5. Index followers such as docs.rs handle a version while unavailable and once released
+5. Index followers such as docs.rs handle a version while unavailable and once restored
 6. Mirrors and index signing keep working unchanged
 7. Unavailable versions and their status are discoverable from the index, without additional requests
 
@@ -531,7 +531,7 @@ likely to be encountered in the later RFC on publish-time withholding.
 - Exact errors and prose notes, documentation notes, documentation URLs
 
 ### Related problems this RFC leaves open
-- Dependents of an unavailable version are published and installable but broken until it is released. Propagation, 
+- Dependents of an unavailable version are published and installable but broken until it is restored. Propagation,
 linking, or docs.rs re-processing are registry- and docs.rs-side problems for a later RFC once we add `unreleased`
 publish-time holds.
 - Warm-cache exposure (stale index + cached crate bytes) is pre-existing and un-addressed here
