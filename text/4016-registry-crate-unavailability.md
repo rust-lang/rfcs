@@ -382,8 +382,9 @@ A higher `v` makes it ignore the entry entirely. Cargo already skips unknown fie
 If `availability` is ignored, Cargo will produce the same build outcome, just with worse error messages.
 It still avoids resolving unavailable versions via the `yanked: true` shim. If it is forced
 to resolve an unavailable version via a lockfile, it sees an explanatory 404 from the registry.
-The one gap is if unavailable crate bytes are cached locally, which are accepted regardless of `yanked: true`.
-This is an acceptable risk given that this RFC only makes security claims around cold cache usage.
+The main gap is that older Cargo can still use locally cached bytes for an unavailable
+version pinned in `Cargo.lock`, despite `yanked: true`. This is an acceptable risk given that this RFC only
+makes security claims around cold cache usage.
 
 The cost of bumping `v` is effectively the same as omission for older versions of Cargo, which
 seems strictly worse ("version not found" rather than an explanatory error). The unstabilized experimental
