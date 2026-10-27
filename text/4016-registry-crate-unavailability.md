@@ -40,7 +40,7 @@ ecosystems (PyPI, npm) that started with omission have since added explanatory m
 The security boundary that we are focused on here is fresh acquisition, with a cold cache. Cargo avoids unavailable bytes 
 whenever its view of the index is fresh, but the combination of a warm crate cache and a stale, cached view of the 
 index that is missing a newer `availability` marker, will allow continued use of unavailable bytes. This problem also affects
-deletion today. This gap will mostly be addressed by verified mirrors using the upcoming TUF signing work.
+deletion today.
 
 Out of scope for this RFC:
 - publish-time `unreleased` state (which does not imply misuse, for instance publish-time review)
