@@ -251,6 +251,14 @@ be nice to have a better solution at least for the install case.
 - Already the case for current crate deletion practices
 - For alternatives, see: Future possibilities: [Warm cache invalidation enhancements](#warm-cache-invalidation-enhancements)
 
+#### Prevents reuse of withdrawn version numbers
+- If an attacker publishes malicious versions, a `withdrawn` tombstone could occupy "good" versions
+and prevent the author from re-using them.
+- This is an acceptable drawback to prevent end-user confusion, particularly if the version has a RUSTSEC
+notice published against it.
+- Registry administrators remain able to apply conventional deletes that free up a version for reuse,
+based on registry policy.
+
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
