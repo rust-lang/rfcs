@@ -43,7 +43,7 @@ index that is missing a newer `availability` marker, will allow continued use of
 deletion today.
 
 Out of scope for this RFC:
-- publish-time holds (which does not imply misuse, for instance publish-time review)
+- publish-time holds (which do not imply misuse, for instance publish-time review)
 - publishing against unavailable versions (mainly a concern for publish-time holds)
 - fetching unavailable bytes via Cargo, for forensic or publish-time builds, with a registry-advertised location
 to access those bytes
@@ -204,7 +204,7 @@ The error for a locked unavailable version suggests `cargo update <crate>`, whic
 that crate and only changes its transitive dependencies when necessary. If the version is restored, the same
 lockfile resolves again unchanged.
 
-Cache lifecycles are unchanged. an unavailable version keeps building if it was last seen
+Cache lifecycles are unchanged. An unavailable version keeps building if it was last seen
 not-unavailable, and has its bytes and index file cached.
 
 Elsewhere in this RFC:
@@ -294,7 +294,7 @@ necessarily indicate malicious activity. A neutral field name like `availability
 open for alternative, softer statuses, without the negative implication.
 
 The downside of this is slightly more complexity for downstream tooling, which now needs
-to check the enum rather than assuming presence of the field indicates unavailbility. This
+to check the enum rather than assuming presence of the field indicates unavailability. This
 is partially mitigated by defining everything besides `available` or `null` as inaccessible, and
 equivalent to `unavailable` if unknown. This allows tools that are uninterested in more granular
 status to handle this field with a straightforward equivalence check.
@@ -516,7 +516,7 @@ likely to be encountered in the later RFC on publish-time withholding.
 ### To resolve during implementation
 - Is `availability` a good field name in the index, or something more generic like `status`?
    - `status` reads more naturally, but it might invite registries to overload it to
-   to indicate statuses where bytes are still available via `dl`, which breaks the "unknown
+   indicate statuses where bytes are still available via `dl`, which breaks the "unknown
    means unavailable" invariant.
 - Exact errors and prose notes, documentation notes, documentation URLs
 
