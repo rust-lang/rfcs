@@ -70,7 +70,7 @@ treating unknown values as `unavailable`.
 This covers both temporary quarantine and permanent withdrawal; the index does not distinguish them.
 
 `available` is equivalent to a value of `null` and indicates that the index row has no availability
-restrictions. crates.io will not rewrite its index proactively to include `availability = "available"`.
+restrictions.
 
 Cargo skips unavailable versions when choosing new dependency versions. If no other version satisfies the
 requirement, or if Cargo needs the contents of an unavailable version pinned in `Cargo.lock`, it reports an error:
@@ -144,6 +144,8 @@ The JSON objects should not be modified after they are added, except for the
 `yanked` and `availability` fields, whose value may change at any time.
 
 ---
+
+For compactness, crates.io will not rewrite its index proactively to include `availability = "available"`.
 
 Elsewhere in this RFC:
 - Drawbacks: [A second mutable index field](#a-second-mutable-index-field)
@@ -520,6 +522,8 @@ likely to be encountered in the later RFC on publish-time withholding.
    indicate statuses where bytes are still available via `dl`, which breaks the "unknown
    means unavailable" invariant.
 - Exact errors and prose notes, documentation notes, documentation URLs
+- Whether crates.io will set mark versions as `availability: available` when restoring from `availability: unavailable`,
+or drop the `availability` field from their index entry
 
 ### Related problems this RFC leaves open
 - An unavailable version can leave dependent packages published but unable to build. Propagation,
