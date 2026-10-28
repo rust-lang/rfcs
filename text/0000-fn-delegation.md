@@ -1154,7 +1154,31 @@ List delegations list all their names explicitly, so they don't need any similar
 
 #### Why can names from glob delegations be overridden by explicit items?
 
-TODO: explain the rationale.
+If most methods in a trait are delegatable, but one of them is not delegatable, then it's good to provide a possibility to implement such method explicitly while delegating everything else.
+
+At least with the current restrictions explicit overrides for glob delegation are also required when delegating a trait with associated types or constants.
+If not overridden they will produce errors on delegation attempts.
+
+```rust
+trait Trait {
+    type Type;
+    const CONST: u8;
+    fn foo(&self);
+}
+
+impl Trait for Wrapper {
+    reuse Trait::*; // ERROR attempting to delegate a constant or type
+}
+impl Trait for Wrapper {
+    type Type = u8;
+    const CONST: u8 = 10;
+    reuse Trait::*; // OK, only `fn foo` is delegated
+}
+```
+
+It also doesn't seem generally right to provide a glob feature without any opportunity to override something explicity if the glob default doesn't fit.
+Specific examples are welcome.
+Regular `use` items support such "overriding" as well, because explicit names shadow glob imported names.
 
 ↩ [_Glob delegation_](#glob-delegation)
 
