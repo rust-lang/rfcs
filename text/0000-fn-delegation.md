@@ -1535,7 +1535,20 @@ Also see [_Future possibilities: More sophisticated inference of generic paramet
 
 #### Why are effective self types identified beyond the receiver?
 
-TODO: explain the rationale.
+This is primarily done to support delegating `BinOp`-like and `Clone`-like traits.
+One popular example would be delegation of arithmetic traits for newtypes wrapping integers.
+
+```rust
+trait BinOpLike {
+    // Both `self` and `rhs` need to be mapped using the target block.
+    fn bin_op(&self, rhs: &Self);
+}
+
+trait CloneLike {
+    // `self` needs to be mapped using the target block, and the return value needs to be wrapped.
+    fn clowne(&self) -> Self;
+}
+```
 
 ↩ [_Effective self type identification_](#effective-self-type-identification)
 
