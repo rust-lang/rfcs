@@ -323,7 +323,7 @@ The benefit here would be two-fold:
 + No keyword `try` would need to be introduced as `do` already is a keyword.
   Therefore, the `try!` macro would not break.
 
-+ An association with monads due to `do`. This can be considered a benfit since
++ An association with monads due to `do`. This can be considered a benefit since
   `try` can be seen as sugar for the family of error monads
   (modulo kinks wrt. imperative flow), and thus,
   the `do` prefix leads to a path of generality if more monads are introduced.

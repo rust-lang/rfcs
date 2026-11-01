@@ -586,7 +586,7 @@ where
 }
 ```
 
-However, the stabilization of the assoicated type did not actually enable new things to be expressed, and instead `FnOnce::Output` just serves as a type alias for an existing type that may already be named.
+However, the stabilization of the associated type did not actually enable new things to be expressed, and instead `FnOnce::Output` just serves as a type alias for an existing type that may already be named.
 
 This is because uniquely to `Fn*` trait bounds (compared to the other `std::ops::*` traits that define `Output` associated types, like `Add`), the associated type for `FnOnce::Output` is always constrained by the parenthesized generic syntax. In other words, given `F: Fn*() -> T`, `F::Output` can always be replaced by some type `T`, since `T` is necessary to complete the parenthesized trait bound syntax[^higher]. In that way, naming a type via the `Output` associated type is not more general or flexible than just naming the type itself:
 

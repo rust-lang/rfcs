@@ -569,7 +569,7 @@ Open flags / system calls:
 - Windows: flags `FILE_FLAG_SEQUENTIAL_SCAN` and `FILE_FLAG_RANDOM_ACCESS`
 - Linux, FreeBSD, NetBSD: `posix_fadvise()` with the flags
   `POSIX_FADV_SEQUENTIAL` and `POSIX_FADV_RANDOM`
-- OS X: `fcntl()` with with `F_RDAHEAD 0` for random (there is no special mode
+- OS X: `fcntl()` with `F_RDAHEAD 0` for random (there is no special mode
   for sequential).
 
 

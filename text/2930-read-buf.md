@@ -272,7 +272,7 @@ impl<'a> ReadBuf<'a> {
 
     /// Creates a new `ReadBuf` from a fully uninitialized buffer.
     ///
-    /// Use `assume_init` if part of the buffer is known to be already inintialized.
+    /// Use `assume_init` if part of the buffer is known to be already initialized.
     #[inline]
     pub fn uninit(buf: &'a mut [MaybeUninit<u8>]) -> ReadBuf<'a> { ... }
 

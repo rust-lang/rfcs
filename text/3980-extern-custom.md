@@ -187,7 +187,7 @@ None currently.
 A return type of `-> !` indicates that the function diverges.
 
 That a function diverges is useful to know, and relevant for the very low-level use cases for `extern "custom"`. However, like
-arbirary argument and return types (see below), the type is never actually validated, and the signature might go out of sync with
+arbitrary argument and return types (see below), the type is never actually validated, and the signature might go out of sync with
 the implementation.
 
 So far, no actual use of `-> !` has come up, so we leave it as a future possibility.

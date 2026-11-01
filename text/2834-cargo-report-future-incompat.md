@@ -145,7 +145,7 @@ forms this additional guidance could take.
 [guide-level-explanation]: #guide-level-explanation
 
 After cargo finishes compiling a crate and its upstream dependencies,
-it may include a final warning about *future incompatibilties*.
+it may include a final warning about *future incompatibilities*.
 
 A future incompatibility is a pattern of code that is scheduled to be
 removed from the Rust language in some future release. Such code patterns
@@ -281,7 +281,7 @@ brash % cargo build
 brash %
 ```
 
-And as you might expect, if there are no future-incompatibilty warnings issused, then the output of `cargo` is unchanged from today.
+And as you might expect, if there are no future-incompatibility warnings issued, then the output of `cargo` is unchanged from today.
 Example:
 
 ```
@@ -385,7 +385,7 @@ The responsibilities of Cargo:
 
 ### Implementation strategy: Leverage JSON error-format
 
-The cleanest way to implement the above division of responsbilities
+The cleanest way to implement the above division of responsibilities
 without perturbing *non-cargo* uses of `rustc` is probably to make 
 the following change:
 
@@ -669,7 +669,7 @@ I have not explicitly addressed nor seriously investigated this.
     we could use the `--json CONFIG` option to `rustrc` as a way for
     `cargo` to opt into the feature.
     This way, clients already using `--error-format=json`
-    would not need to know abot this change.
+    would not need to know about this change.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
@@ -765,7 +765,7 @@ For ease of reference, here is the text located at the gist url above:
 
 Further refinement of this idea: If we did start suggesting bug report
 templates, then Cargo might also be able to *search* for issues with
-descriptions that match the template on that crate's repostory, and
+descriptions that match the template on that crate's repository, and
 advise the user to inspect that bug report to see its current status,
 rather than file a new bug with the upstream crate, which might be
 otherwise annoying for those maintainers.

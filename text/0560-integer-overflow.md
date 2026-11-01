@@ -274,7 +274,7 @@ pure) functions may be optimized away entirely by LLVM. Therefore, it
 always makes sense to run tests in both modes. This situation is not
 unique to Rust; most major projects do something similar. Moreover, in
 most languages, `debug_assert!` is in fact the only (or at least
-predominant) kind of of assertion, and hence the need to run tests
+predominant) kind of assertion, and hence the need to run tests
 both with and without assertions enabled is even stronger.
 
 **Benchmarking.** Someone may conduct a benchmark of Rust with

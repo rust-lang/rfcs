@@ -25,7 +25,7 @@ similarly baffled.
 This change helps humans limit the scope of their search and avoid looking for
 definitions inside other functions or items, without missing any relevant
 definitions. If in the future we manage to forbid it entirely within a
-subsequent Rust edtion, tools will be able to rely on this as well.
+subsequent Rust edition, tools will be able to rely on this as well.
 
 ## Explanation
 [explanation]: #explanation

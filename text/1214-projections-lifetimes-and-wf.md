@@ -875,7 +875,7 @@ is not referenced there.
 Implied bounds can be derived from the WF and outlives relations.  The
 implied bounds from a type `T` are given by expanding the requirements
 that `T: WF`. Since we currently limit ourselves to implied region
-bounds, we we are interesting in extracting requirements of the form:
+bounds, we are interesting in extracting requirements of the form:
 
 - `'a:'r`, where two regions must be related;
 - `X:'r`, where a type parameter `X` outlives a region; or,

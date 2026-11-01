@@ -222,7 +222,7 @@ The signaling/quiet distinction also basically does not matter since floating-po
 However, there is one operation in C that can sometimes produce a non-NaN result on *quiet* NaN inputs specifically: [`pow`](https://en.cppreference.com/w/c/numeric/math/pow). For instance, "`pow(+1, exponent)` returns `1` for any `exponent`, even when `exponent` is `NaN`".
 C also says "This specification does not define the behavior of signaling NaNs", and in practice, `pow(1, sNaN)` returns a NaN.
 In other words, `pow` *does* [make a difference](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=5a0855c2cb6630256e4407624650c4c9) between quiet and signaling NaN.
-So, if we say that any operation can arbitrairly produce signaling NaNs, then it becomes impossible to rely on `pow`'s property that "`pow(+1, exponent)` returns `1` for any `exponent`".
+So, if we say that any operation can arbitrarily produce signaling NaNs, then it becomes impossible to rely on `pow`'s property that "`pow(+1, exponent)` returns `1` for any `exponent`".
 Since the quiet/signaling distinction matters, we provide a guarantee which ensures that programs will almost always only ever deal with quiet NaNs (the only safe way to get a signaling NaN is to use `from_bits`).
 
 #### Alternative: no strict semantic guarantees
@@ -241,7 +241,7 @@ Given all these caveats, it seems preferable to have explicit opt-in for such se
 
 This RFC proposes that we accept, for the first time, that a `const fn` can behave non-deterministically at run-time, and produce target/version/flag-specific results at compile-time. It can also produce different results when called at compile-time and at run-time.
 [Another proposed RFC](https://github.com/rust-lang/rfcs/pull/3352) gathers some general arguments for why we should allow such behavior in a `const fn`.
-The gist of it is that the benefits of forbidding such behavior are speculative (unsafe code *could* exploit that a `const fn` is deterministic, even at runtime, but there is no known practial example that would actually do that -- and it would unnecessarily limit the function to things that are possible at compile-time).
+The gist of it is that the benefits of forbidding such behavior are speculative (unsafe code *could* exploit that a `const fn` is deterministic, even at runtime, but there is no known practical example that would actually do that -- and it would unnecessarily limit the function to things that are possible at compile-time).
 On the other hand, the downsides of requiring determinism are big: given the non-deterministic spec for floating-point operations, we cannot allow floating-point operations in `const fn` until we either have a deterministic spec for them or allow `const fn` to behave non-deterministically when called at runtime.
 (See above for why the RFC does not propose a fully deterministic spec for floating-point operations.)
 

@@ -395,7 +395,7 @@ maintainers.
   contributors rather than elected positions, and there are no rotations or term
   limits.
 
-  In this RFC's proposal, it is expected that activites are shared amongst a
+  In this RFC's proposal, it is expected that activities are shared amongst a
   group of team members, and that team members do less of other activities
   so that their workload is sustainable, but this isn't enforced. Team leads are
   instead responsible for ensuring that the team is large enough to perform each

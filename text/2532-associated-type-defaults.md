@@ -818,7 +818,7 @@ There are a few interesting things to note here:
 
 4. However, we *must* explicitly state that we are overriding `baz`.
 
-5. If we change the definition of of `override type Bar` to `Double`,
+5. If we change the definition of `override type Bar` to `Double`,
    the Scala compiler will reject it.
 
 ## Unresolved questions

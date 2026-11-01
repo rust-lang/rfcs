@@ -561,7 +561,7 @@ might need to be done over an edition or linker-change boundary.
 ### Use of the lint mechanism
 
 In theory, mitigation enforcement could be a collection of lints, accessible via our standard
-lint infrastructure, and as such e.g. exposed in Cargo via existing lint configuation.
+lint infrastructure, and as such e.g. exposed in Cargo via existing lint configuration.
 
 The problem with this is that lints are designed to be capped - normally, lints are intended
 for cases where a probable bug exists, but generally, for code that is not currently under active

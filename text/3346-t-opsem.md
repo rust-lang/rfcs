@@ -56,7 +56,7 @@ New members will be added to the team using a process identical to one already u
 When considering someone for membership, the qualifications below will all be taken into account:
 
  - Is this person **familiar with the current state of operational semantics** work in Rust?
- - Has this person **contributed signifiantly** to the problem space around operational semantics?
+ - Has this person **contributed significantly** to the problem space around operational semantics?
     - There is no specific area in which this contribution must have taken place - proposing new designs, preparing a formalized version of the spec, writing libraries that make use of the semantics, writing optimizations that make use of the semantics, contributing to miri and related tooling, or preparing documentation and teaching materials are all possibilities.
  - Does this person have a **good understanding of the tradeoffs** that affect operational semantics work?
     - Have they demonstrated a desire and ability to find solutions that balance and support all of these interests?

@@ -247,7 +247,7 @@ _interior_ mutability of a field should avoid exposing it as a public field with
 
 #### `struct` expressions are not allowed
 
-Given that the most common use for for `mut`-restricted fields is to ensure an invariant, it is
+Given that the most common use for `mut`-restricted fields is to ensure an invariant, it is
 important that the invariant be enforced. Consider the previous definition of `Time`. If you could
 write
 

@@ -519,7 +519,7 @@ As in Ruby, generators in D are built on top of a more general [`Fiber`][dlang-f
 
 ### Dart
 
-In Dart, there are both synchronous and asynchronous [generator functions][dart-generators].  Synchronous generator functions return an `Iteratable`.  E.g.:
+In Dart, there are both synchronous and asynchronous [generator functions][dart-generators].  Synchronous generator functions return an `Iterable`.  E.g.:
 
 ```dart
 Iterable<int> oddDup(Iterable<int> xs) sync* {
