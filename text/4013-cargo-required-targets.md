@@ -1,7 +1,7 @@
 - Feature Name: `required-targets`
 - Start Date: 2026-10-02
 - RFC PR: [rust-lang/rfcs#4013](https://github.com/rust-lang/rfcs/pull/4013)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/cargo#17671](https://github.com/rust-lang/cargo/issues/17671)
 
 # Summary
 
