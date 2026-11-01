@@ -1,6 +1,7 @@
 - Feature Name: N/A
 - Start Date: 2022-01-19
 - RFC PR: [rust-lang/rfcs#3373](https://github.com/rust-lang/rfcs/pull/3373)
+- RFC PR #2: [rust-lang/rfcs#3581](https://github.com/rust-lang/rfcs/pull/3581)
 - Tracking Issue: [rust-lang/rust#120363](https://github.com/rust-lang/rust/issues/120363)
 
 ## Summary
@@ -20,7 +21,23 @@ to find potential definitions corresponding to uses within another function, or
 not cross-reference those definitions at all.
 
 Humans cross-referencing such uses and definitions may find themselves
-similarly baffled.
+similarly baffled by code such as the following:
+```rust
+trait Trait<T> {
+    fn method(&self) {}
+}
+
+struct Foo;
+
+fn _foo() {
+    struct Bar;
+    impl Trait<Bar> for Foo {}
+}
+
+fn main() {
+    Foo.method();
+}
+```
 
 This change helps humans limit the scope of their search and avoid looking for
 definitions inside other functions or items, without missing any relevant
@@ -30,23 +47,43 @@ subsequent Rust edtion, tools will be able to rely on this as well.
 ## Explanation
 [explanation]: #explanation
 
-The following types of items, "expression-containing items", can contain
-expressions, including the definitions of other items:
+An "expression-containing item" is defined as any
+[expression](https://doc.rust-lang.org/reference/expressions.html) where an
+[item](https://doc.rust-lang.org/reference/items.html) may be defined. For
+example:
 - Functions
 - Closures
 - The values assigned to `static` items or non-anonymous `const` items.
 - The discriminant values assigned to `enum` variants
 
-Rust will emit a warn-by-default lint for all of the following cases:
-- An item nested inside an expression-containing item (through any level of
-  nesting) may not define an `impl Type` block unless the `Type` is also nested
-  inside the same expression-containing item.
-- An item nested inside an expression-containing item (through any level of
-  nesting) may not define an `impl Trait for Type` unless either the `Trait` or
-  the `Type` is also nested inside the same expression-containing item.
-- An item nested inside an expression-containing item (through any level of
-  nesting) may not define an exported macro visible outside the
-  expression-containing item (e.g. using `#[macro_export]`).
+As an exception, anonymous `const` items are excluded from this
+definition for the purposes of this RFC (see [unresolved-questions]),
+as they're currently commonly used to define items within macros.
+
+Rust will emit a warn-by-default lint when encountering an `impl` nested inside
+an expression-containing item (through any level of nesting), unless any of the
+following are true:
+- For `impl T` or `impl TraitPath for T`, the definition of type `T` is also
+  nested inside the same expression-containing item.
+- For `impl T<X, Y, ..>` or `impl TraitPath for T<X, Y, ..>`, the definition of
+  at least one of `T`, `X`, `Y`, .. is also nested inside the same expression-
+  containing item.
+- For `impl Trait for TypePath` or `impl Trait<X, Y, ..> for TypePath`, the
+  definition of `Trait` is also nested inside the same expression-containing
+  item.
+- For `impl Trait<X, Y, ..> for TypePath`, the definition of at least one of
+  `X`, `Y`, .. is also nested inside the same expression-containing item, *and*
+  the full path `Trait<X, Y, ..>` may not be inferred from outside the
+  expression-containing item, and further that such inferences on `Trait` would
+  not be permitted even in the absense of all impls nested in expression-
+  containing items.
+
+For the purposes of the above rules, fundamental types such as `&X` and `&mut X`
+are considered parameterized types (`T<X>`).
+
+Rust will emit a warn-by-default lint when encountering an exported macro (e.g.
+using `#[macro_export]`) nested inside an expression-containing item (through
+any level of nesting).
 
 In a future edition, we may consider making this lint deny-by-default, or
 eventually making it a hard error. We'll evaluate the impact on the ecosystem
@@ -74,11 +111,11 @@ the signature without reflecting those properties in the signature.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-We'll need a crater run to look at how widespread this pattern is in existing
-code.
+Should we flag these definitions in anonymous `const` items as well? This is
+used in some macro expansions for
+[compatibility reasons](https://github.com/rust-lang/rfcs/pull/3373#issuecomment-1885307786).
 
-Should we flag these definitions in anonymous `const` items as well, or would
-that produce unwanted warnings?
+Is the last rule regarding parameterized trait `impl` items viable to implement?
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
