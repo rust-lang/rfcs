@@ -169,14 +169,14 @@ the additional library is checked separately against its own compilation target.
 
 ### Example: proc-macro packages
 
-Consider a workspace where a library can compile for both Linux and macOS which uses a. proc-macro that uses macOS APIs:
+Consider a workspace where a library can compile for both Linux and macOS which uses a proc-macro that uses macOS APIs:
 - `foo`
   - `required-targets`: unspecified
   - depends on: `foo-gen`
 - `foo-gen`
   - `required-targets = 'cfg(target_os = "macos")'`
 
-*Note: generally proc-macros and build scrip should be more general than the library using them; this is purely for illustrative purposes*
+*Note: generally proc-macros and build scripts should be more general than the library using them; this is purely for illustrative purposes*
 
 The outcomes of `cargo check --package <package> --target <target>` are:
 
