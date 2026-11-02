@@ -514,14 +514,6 @@ can offer explanations.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-### To resolve before merge
-- Is the yanked handling of pubtime correct for unavailable packages? IE, totally
-orthogonal, no impact on pubtime (which is set on initial publish only)
-- Do we care to trigger fresh docs.rs builds for unavailable-at-publish-time releases that
-never had docs? This is technically a reachable state today, if a registry freezes
-an entire account and quarantines on release instead of locking, but it seems more
-likely to be encountered in the later RFC on publish-time withholding.
-
 ### To resolve during implementation
 - Is `availability` a good field name in the index, or something more generic like `status`?
    - `status` reads more naturally, but it might invite registries to overload it to
@@ -541,7 +533,7 @@ linking, or docs.rs re-processing are registry- and docs.rs-side problems for a 
 - Tombstones for author-deleted crates: we could use `unavailable` for this (and probably
 should) but that should be a separate RFC since it has other implications related to
 author privacy and version reusability.
-- What to name a crates.io researcher download location (to be discussed in
+- What to name a crates.io researcher download location (to be discussed in a
 subsequent crates.io-side issue/PR)
 
 ## Future possibilities
