@@ -408,7 +408,7 @@ baz().await; // Deadlock!
 #### Concurrent streams
 
 After a concurrent stream yields an item, nothing drives its other child
-streams until the next item is requested. Here we'll use [`merge`] for
+streams until the next item is requested.[^concurrent_stream] Here we'll use [`merge`] for
 concurrency ([playground link][concurrent_for_each_deadlock]), but we could do
 the same thing with [`buffered`] streams ([playground link][buffered_deadlock])
 or [`FuturesUnordered`] ([playground link][futures_unordered_deadlock]):[^fair]
@@ -416,6 +416,13 @@ or [`FuturesUnordered`] ([playground link][futures_unordered_deadlock]):[^fair]
 [`merge`]: https://docs.rs/tokio-stream/latest/tokio_stream/trait.StreamExt.html#method.merge
 [`buffered`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.buffered
 [`for_each`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.for_each
+
+[^concurrent_stream]: Note that the [`ConcurrentStream`] trait from the
+    [`futures-concurrency`] crate is a possible _solution_ to this problem, not
+    an example of a broken pattern.
+
+[`ConcurrentStream`]: https://docs.rs/futures-concurrency/latest/futures_concurrency/concurrent_stream/index.html
+[`futures-concurrency`]: https://crates.io/crates/futures-concurrency
 
 [^fair]: Note that in this case (though not in any of the examples before
     this), the deadlock happens because the lock we're using is "fair". The
