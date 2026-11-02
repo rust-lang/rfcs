@@ -88,7 +88,7 @@ For crates.io, Cargo includes a link to the affected version's page, where crate
 the version's status and any possibility of restoration.
 
 Registries also mark unavailable versions with `yanked: true`, so older Cargo and other tools route around them.
-If non-status-aware tools fetch the version anyway, for instance due to a pinned lockfile, they should get a 404,
+If non-status-aware tools fetch the version anyway, for instance due to a pinned lockfile, they should get an error response (410, 451, or 404),
 which should include an explanation of the version's state in the body. Cargo
 displays this body on fetch failure.
 
