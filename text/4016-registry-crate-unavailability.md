@@ -216,8 +216,13 @@ Elsewhere in this RFC:
 docs.rs uses availability status information and any additional context provided by crates.io
 to determine build and display behavior.
 
-On seeing an unavailable version, docs.rs skips the version's build and shows a badge stating its status.
-Any retained documentation appears below the badge.
+On seeing an unavailable version, docs.rs skips the version's build, stops serving any retained
+documentation and source, and shows a badge stating its status. Retained documentation is served
+again once availability is restored.
+
+Built documentation includes the crate's source code, so continuing to serve it would undermine
+the unavailability. This matters in particular for DMCA disputes, where hosted copies need to be
+taken down completely but may later need to be restored.
 
 When availability is restored, docs.rs drops the badge but does not trigger
 a rebuild unless manually requested.
