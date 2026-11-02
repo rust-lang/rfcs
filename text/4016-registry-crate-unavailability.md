@@ -170,8 +170,7 @@ serve. The response body should explain the status and/or link to a webpage abou
 status and/or registry policies.
 
 When a period of unavailability ends, the registry restores the author's requested
-yank state. A yank or unyank requested while the package version is unavailable
-is recorded and takes effect when the version is restored.
+yank state. Registries may reject yank state changes while a version is unavailable.
 
 The value of `pubtime` is not impacted by changes to the `availability` field.
 
