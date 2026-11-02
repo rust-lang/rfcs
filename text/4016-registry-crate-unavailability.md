@@ -163,10 +163,11 @@ in its index entry to `unavailable` and also setting `"yanked": true`,
 so that tools unaware of `availability` avoid the version. Yanking a package directly
 does not change the value of `availability`.
 
-An unavailable package version's `.crate` file is not served from the registry's `dl` endpoint. The endpoint should
-respond 404 and serve a body explaining the status and/or linking to a webpage about
-the crate's status and/or registry policies. The body should not name an
-alternative download location.
+An unavailable package version's `.crate` file is not served from the registry's `dl` endpoint.
+The endpoint should respond with 410 "Gone", or 451 "Unavailable For Legal Reasons" where
+appropriate. Registries may respond with 404 "Not Found" instead if those are impractical to
+serve. The response body should explain the status and/or link to a webpage about the crate's
+status and/or registry policies.
 
 When a period of unavailability ends, the registry restores the author's requested
 yank state. A yank or unyank requested while the package version is unavailable
