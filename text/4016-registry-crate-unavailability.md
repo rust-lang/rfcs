@@ -530,6 +530,9 @@ likely to be encountered in the later RFC on publish-time withholding.
 - Exact errors and prose notes, documentation notes, documentation URLs
 - Whether crates.io will set mark versions as `availability: available` when restoring from `availability: unavailable`,
 or drop the `availability` field from their index entry
+- Whether other registry-hosted derivatives of the crate contents, such as the source zip
+used by the crates.io code viewer or the rendered README, follow `availability`. crates.io
+should withhold the source zip, since it is a hosted copy of the contents, and optionally the README depending on the content.
 
 ### Related problems this RFC leaves open
 - An unavailable version can leave dependent packages published but unable to build. Propagation,
