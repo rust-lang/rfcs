@@ -159,9 +159,10 @@ Elsewhere in this RFC:
 *New section after "Version uniqueness":*
 
 A registry may withhold a package version by setting the `availability` field
-in its index entry to `unavailable` and also setting `"yanked": true`,
-so that tools unaware of `availability` avoid the version. Yanking a package directly
-does not change the value of `availability`.
+in its index entry to `unavailable`. Registries should also set `"yanked": true`
+on unavailable versions so that tools unaware of `availability` avoid selecting them.
+Once support for `availability` is widespread, registries may stop setting `yanked`
+for this purpose. Yanking a package directly does not change the value of `availability`.
 
 An unavailable package version's `.crate` file is not served from the registry's `dl` endpoint.
 The endpoint should respond with 410 "Gone", or 451 "Unavailable For Legal Reasons" where
