@@ -7,7 +7,7 @@
 
 This RFC adds a new, optional registry index field, `availability` (`available | unavailable`).
 
-It also specifies how Cargo handles unavailable versions during dependency resolution and reports their unavailability in errors.
+It also specifies how Cargo avoids resolving unavailable versions and reports their unavailability in errors.
 
 This is part of the proposed [crates.io supply chain hardening Project Goal](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html).
 
@@ -62,7 +62,9 @@ The following will be implemented as a result of this RFC, but design specifics 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`availability` is an optional index field with two values: `available` and `unavailable`.
+`availability` is an optional new index field. When it is present, and its value is neither `available` nor `null`,
+tools should ignore the version and only consider the index row for display in error messages.
+This RFC defines two possible values, `available` and `unavailable`.
 Other values may be added in future RFCs, and clients should be forward compatible by
 treating unknown values as `unavailable`.
 
@@ -72,13 +74,16 @@ This covers both temporary quarantine and permanent withdrawal; the index does n
 `available` is equivalent to a value of `null` and indicates that the index row has no availability
 restrictions.
 
-Cargo skips unavailable versions when choosing new dependency versions. If no other version satisfies the
-requirement, or if Cargo needs the contents of an unavailable version pinned in `Cargo.lock`, it reports an error:
+Cargo never selects an unavailable version. On fresh resolution, it will pick a different compatible version, so
+most people never encounter it. The only time you encounter unavailable versions is when pinned in a lockfile,
+or if no other version satisfies the requirement:
 
 ```
-error: package `base64squatter v1.0.0` is unavailable
+error: failed to select a version for the requirement `base64squatter = "^1.0.0"`
+  version 1.0.0 is unavailable
   |
   = note: for more information, see https://crates.io/crates/base64squatter/1.0.0
+location searched: crates.io index
 required by package `myapp v0.1.0 (/home/user/myapp)`
   |
   = note: this version is pinned by Cargo.lock; run `cargo update base64squatter` to select a different version, or change the requirement in Cargo.toml if no other version satisfies it
@@ -98,8 +103,8 @@ does not imply that the crate is made unavailable.
 For researchers, unavailable versions are in the index, and a registry may document a way to fetch unavailable bytes.
 Fetching unavailable bytes via Cargo may be covered in a future RFC.
 
-For maintainers, Cargo excludes unavailable versions when selecting new dependency versions for a lockfile.
-Publication fails with a useful error if it requires an unavailable package’s contents.
+For maintainers, Cargo will avoid unavailable versions of crate dependencies while generating a lockfile.
+If a lockfile is committed and includes an unavailable version, the publication fails with a useful error.
 
 docs.rs does not build unavailable versions and shows a status badge instead.
 
@@ -118,10 +123,9 @@ docs.rs does not build unavailable versions and shows a status badge instead.
     // The availability status of this package version (optional).
     //
     // If set to a value besides "available" or null, Cargo skips this
-    // version when choosing new dependency versions. Cargo reports an
-    // error explaining the unavailability if no other version satisfies
-    // the requirement, or if this version is pinned in `Cargo.lock`
-    // and its contents are needed.
+    // version when choosing dependency versions. If the version is pinned
+    // in a `Cargo.lock`, Cargo fails builds with an error explaining that
+    // the version is unavailable.
     //
     // If omitted or null, Cargo treats this version as "available".
     //
@@ -184,9 +188,12 @@ Elsewhere in this RFC:
 
 *New section after "Yanked versions":*
 
-Cargo skips [unavailable releases][unavailable] when choosing new dependency versions.
-If no other version satisfies the requirement, it reports an error explaining the unavailability.
-If an unavailable version is pinned in `Cargo.lock`, Cargo reports an error only if its contents are requested.
+[Unavailable releases][unavailable] are those that a registry has marked as
+not available for use. When the resolver is building the graph, and it is
+not restricted by a `Cargo.lock` file, it will ignore all unavailable versions
+and report an error explaining the unavailability if no other version satisfies the requirement.
+If resolution requires an unavailable version pinned in `Cargo.lock`, it
+fails with an error explaining that the version is unavailable.
 
 [unavailable]: registry-index.md#unavailable-versions
 
@@ -200,7 +207,7 @@ A possible error for a locked unavailable version is in the guide section. Ideal
 we would like to suggest `cargo update <crate>`, though that might not make it into the
 initial release.
 
-If a version is restored, builds can use it again without changing `Cargo.lock`.
+Even without a `cargo update`, if a version is restored, the same lockfile resolves again unchanged.
 
 Cache lifecycles are unchanged. An unavailable version keeps building if it was last seen
 not-unavailable, and has its bytes and index file cached.
@@ -208,6 +215,8 @@ not-unavailable, and has its bytes and index file cached.
 Elsewhere in this RFC:
 - Drawbacks: [Existing lockfiles can break without a local change](#existing-lockfiles-can-break-without-a-local-change)
 - Drawbacks: [Warm caches keep unavailable versions buildable](#warm-caches-keep-unavailable-versions-buildable)
+- Drawbacks: [Resolution can fail for inactive dependencies](#resolution-can-fail-for-inactive-dependencies)
+- Rationale: [Why reject pinned unavailable versions during resolution?](#why-reject-pinned-unavailable-versions-during-resolution)
 - Future possibilities: [Warm cache invalidation enhancements](#warm-cache-invalidation-enhancements)
 
 
@@ -262,11 +271,12 @@ notice published against it.
 - Registry administrators remain able to apply conventional deletes that free up a version for reuse,
 based on registry policy.
 
-#### Fresh resolution can fail for inactive dependencies
-- Unavailable dependencies of disabled workspace features or other targets can still prevent fresh resolution.
+#### Resolution can fail for inactive dependencies
+- Unavailable dependencies of disabled workspace features or other targets can prevent resolution,
+including for versions pinned in `Cargo.lock` whose contents are never needed.
 - Avoiding this would require a new resolver policy allowing unavailable versions as a fallback and removing the yank shim.
-- For now, Cargo follows yank behavior for new selections. Pinned unavailable versions cause an error
-only when their contents are requested.
+- This is not a new problem; the same behavior affects deleted versions. See Rationale:
+[Why reject pinned, unavailable, inactive versions during resolution?](#why-reject-pinned-unavailable-inactive-versions-during-resolution)
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -380,14 +390,27 @@ Reason fields such as `availability_reason` and `yanked_reason`, and a general m
 to advertise version-page URLs, are deferred. See Future possibilities:
 [Better display of reasons for withholding](#better-display-of-reasons-for-withholding).
 
+#### Why reject pinned, unavailable, inactive versions during resolution?
+
+For dependency resolution, unavailable versions are treated as if they do not exist. This matches
+the case where the registry deleted the version but left a tombstone.
+
+Erroring only when the contents of a pinned unavailable version are needed would leave a confusing
+mix of behaviors, depending on whether Cargo happens to download the version, including during
+feature resolution.
+
+This is the more restrictive option, so it can be relaxed later based on feedback. The cost is that
+existing lockfiles can break for unavailable versions whose contents are never needed. See Drawbacks:
+[Resolution can fail for inactive dependencies](#resolution-can-fail-for-inactive-dependencies)
+
 #### Why no index protocol bump?
 
 `v` exists for changes that older Cargo would misinterpret in a way that causes incorrect behavior.
 A higher `v` makes it ignore the entry entirely. Cargo already skips unknown fields.
 
 If `availability` is ignored, Cargo will produce the same build outcome, just with worse error messages.
-The `yanked: true` shim still excludes unavailable versions from new selections. If Cargo needs to download
-an unavailable version pinned in `Cargo.lock`, it sees an explanatory 404 from the registry.
+It still avoids resolving unavailable versions via the `yanked: true` shim. If it is forced
+to resolve an unavailable version via a lockfile, it sees an explanatory error response from the registry.
 The main gap is that older Cargo can still use locally cached bytes for an unavailable
 version pinned in `Cargo.lock`, despite `yanked: true`. This is an acceptable risk given that this RFC only
 makes security claims around cold cache usage.
