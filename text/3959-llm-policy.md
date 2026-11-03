@@ -553,6 +553,8 @@ Note: thank you to Jane Losare-Lusby (@yaahc) for [collecting these summaries](h
 
 [NLnet](https://nlnetlabs.nl/llm-policy/) forbids LLM-generated code and requires disclosure of LLM usage, with an exception for LLM-authored critical bug fixes.
 
+[Lix](https://lix.systems/ai-policy/) forbids all LLM-generated contributions, requiring that any usage of the technology explicitly leave creative control to the author (assistive tech, documentation summaries, and debugging).
+
 #### Partially restrictive
 
 [Astral (OpenAI-owned)](https://github.com/astral-sh/.github/blob/main/AI_POLICY.md) explicitly forbids AI-generated comments and autonomous contributions, and requires that any AI output in comments be explicitly labeled. They also recommend this for machine translation as well; include your native language first, then add the translation as an explicitly labeled bit.
