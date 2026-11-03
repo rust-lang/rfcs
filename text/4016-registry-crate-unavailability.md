@@ -169,9 +169,8 @@ Once support for `availability` is widespread, registries may stop setting `yank
 for this purpose. Yanking a package directly does not change the value of `availability`.
 
 An unavailable package version's `.crate` file is not served from the registry's `dl` endpoint.
-The endpoint should respond with 410 "Gone", or 451 "Unavailable For Legal Reasons" where
-appropriate. Registries may respond with 404 "Not Found" instead if those are impractical to
-serve. The response body should explain the status and/or link to a webpage about the crate's
+The endpoint should respond with 404 "Not Found", 410 "Gone", or 451 "Unavailable For Legal Reasons" where
+appropriate. The response body should explain the status and/or link to a webpage about the crate's
 status and/or registry policies.
 
 When a period of unavailability ends, the registry restores the author's requested
