@@ -108,7 +108,9 @@ Using this flag looks like this:
 $ rustdoc src/lib.rs --crate-name mycrate --crate-list-heading="Dependencies"
 ```
 
-By default, the crate appears under a catch-all "Crates" heading.
+When this option is used, a sub-section underneath the "Crates" heading is added
+if it doesn't already exist, and the crate is listed there.
+By default, the crate appears in the list directly under the "Crates" heading.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -168,3 +170,5 @@ site that isn't connected to a crate. There's already `--enable-index-page`, whi
 but would be better if you could put text documentation on top of it.
 
 Besides headers, we could add a way to manually control the order of the sidebar entries.
+We could also add a way to manually control the order of the headers,
+perhaps by adding a CLI option to manually specify the sort key.
