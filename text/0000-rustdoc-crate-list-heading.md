@@ -158,9 +158,11 @@ about what it's supposed to do.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Does `--crate-list-heading=""` work?
+Does `--crate-list-heading=""` work? I suppose it should act as a way to manually specify
+the same behavior as not having the option at all.
 
 What happens when you compile the same doc twice, once with a heading and once without?
+I suppose it should move the crate.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
