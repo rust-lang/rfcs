@@ -1,7 +1,7 @@
 - Feature Name: `associated_const_underscore`
 - Start Date: 2023-11-12
 - RFC PR: [rust-lang/rfcs#3527](https://github.com/rust-lang/rfcs/pull/3527)
-- Rust Issue:
+- Rust Issue: [rust-lang/rust#158944](https://github.com/rust-lang/rust/issues/158944)
 
 # Summary
 [summary]: #summary
