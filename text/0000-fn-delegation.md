@@ -433,12 +433,10 @@ Glob delegations are semantically allowed only inside implementations, and the p
 
 The set of names for which individual delegation items are produced is determined as follows:
 - The full set of names defined by the target trait in all namespaces is considered.
+- Names of functions with default bodies are filtered out from value namespace ([?](#why-are-methods-with-default-bodies-excluded-from-glob-delegation)).
 - Names already explicitly defined inside the glob delegation's parent context (the impl) are filtered out ([?](#why-can-names-from-glob-delegations-be-overridden-by-explicit-items)). "Explicitly" here means not by another glob delegation.
 - If any of the remaining names refers to an associated type or constant, an error is reported for future compatibility with associated type and const delegation (see [_Future possibilities: Support for delegating types and consts_](#support-for-delegating-types-and-consts)).
 - Note: the above rules mean that a glob delegation can only be expanded after all macro invocations in its target trait and its parent impl have been expanded, except perhaps other glob delegations.
-
-Note that individual delegations are still generated for functions with default bodies in the target trait definition.
-This ensures that manual implementations of functions with default bodies are correctly forwarded to ([?](#why-are-methods-with-default-bodies-included-in-glob-delegation)).
 
 As with list delegations, target blocks, generic arguments, and other components are copied at the token-stream level, making glob delegation a macro feature.
 
@@ -464,7 +462,7 @@ expands to
 ```rust
 impl Trait<Args> for Type {
     fn c() {} // explicitly defined name, not delegated
-    reuse prefix::<Args>::a { target } // delegated, despite the default body
+    // fn a() {} // not delegated, due to the default body
     reuse prefix::<Args>::b { target }
 }
 ```
@@ -887,7 +885,7 @@ Language features reducing the amount of boilerplate code are less important now
 
 The feature may potentially introduce a number of semver hazards:
 - Delegating from a public function to a private function could lead to unintended breaking changes in public interfaces, but this can be caught by a lint ([_more_](#should-the-visibility-of-the-delegation-item-be-restricted)).
-- Adding a non-delegatable method with default body to a trait may become a breaking change, [_depending on the design_](#why-are-methods-with-default-bodies-included-in-glob-delegation).
+- Adding a non-delegatable method with default body to a trait may become a breaking change, [_depending on the design_](#why-are-methods-with-default-bodies-excluded-from-glob-delegation).
 - Changing between `Self` type alias and `Struct` in function signatures inside `impl Struct { ... }` may become a breaking change, [_depending on the design_](#why-are-effective-self-types-not-detected-through-type-aliases-or-type-equality).
 - Starting to use anything with "identity" (items, closures, anonymous constants) in a macro is a breaking change if that macro is used in an ignored target block ([_more_](#why-can-target-blocks-be-allowed-without-effective-self-parameters)).
 
@@ -1182,10 +1180,10 @@ Regular `use` items support such "overriding" as well, because explicit names sh
 
 ↩ [_Glob delegation_](#glob-delegation)
 
-#### Why are methods with default bodies included in glob delegation?
+#### Why are methods with default bodies excluded from glob delegation?
 
 Glob delegation may either generate implementations for trait methods having default bodies or not generate them.
-This RFC and implementation in nightly rustc currently use the former alternative.
+This RFC uses the latter alternative, but implementation in nightly rustc still uses the former alternative at the moment.
 
 Pros of including methods with default bodies:
 - If the delegation item type checks, then everything will work correctly. Assuming the typical `struct Wrapper(Inner);` setup, if the `Inner` type explicitly implements some of the default methods (for optimization, or to change behavior), those implementations will correctly propagate to `Wrapper`.
@@ -1195,10 +1193,18 @@ Cons of including methods with default bodies:
   This is somewhat similar to `dyn`-compatible traits accidentally adding new non-`dyn`-compatible methods with default bodies.
 - The behavior of delegation becomes different from other features already familiar to users, like derives. For example, none of the standard derive macros (`Clone`, `Hash`, `Ord`, `PartialEq`, `PartialOrd`) generates implementations for any default methods, only `Eq` generates some of them for internal reasons.
 
-We may strongly consider changing the defaults here, and avoid the semver hazards and behavior different from existing features like derives.
-This will also make the `reuse impl` syntax usable in more cases.
+If a method has a well-behaving signature and is delegatable, despite its default body, then we can introduce an attribute like `#[delegate_me]` that will explicitly include such a method into glob delegations. It will be the trait author's resonsibility to avoid semver breakage when adding such attribute.
 
 In the future we may introduce a different flavor of glob delegation (with an attribute or first-class syntax), that includes methods with default bodies, and explicitly opts into potential breaking changes.
+
+If all methods from a trait are reused from an inherent impl, to bring them into scope automatically,
+```rust
+impl Type {
+    reuse Trait::*; // no target block
+}
+```
+then it makes more sense to include even method with default bodies into the glob, because typically they want to be brought into scope as well, and without a target block there's much smaller (zero?) chance for some specific method to be non-delegatable, because the self type doesn't change and all arguments are just passed through.
+So we can make the set of names delegated by the glob dependent on the presence of target block, but it may be too subtle, and explicitly using a different glob delegation flavor may be preferable.
 
 ↩ [_Glob delegation_](#glob-delegation)
 
