@@ -55,7 +55,7 @@ Below is a non-exhaustive list of activities that the team is expected to perfor
 - Responsibly manage the available budget and the funds from the Rust Foundation Maintainers Fund, to ensure long-term sustainable funding for Rust Project contributors.
 - Communicate with the [goals][t-goals] teams to ensure that maintainers are properly supported to provide reviews and maintenance of accepted Rust [Project Goals][goals].
 - Serve as a point of contact for various funding initiatives related to Rust Project maintenance.
-- Regularly evauate the effectiveness of applied funding to determine whether it still serves the best interests of the Rust Project.
+- Regularly evaluate the effectiveness of applied funding to determine whether it still serves the best interests of the Rust Project.
 - Work in the open, unless the discussion requires privacy (for example personal or hiring, funders' interests, etc.), by sharing its meeting notes publicly and proactively sharing their plans with Rust Project members.
 - Publicly document its decision-making processes, funding decision rationale and funding program details.
 - Be open to feedback about their processes and funding decisions, in particular from other Rust Project members.
