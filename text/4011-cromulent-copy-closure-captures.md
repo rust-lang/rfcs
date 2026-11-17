@@ -549,7 +549,9 @@ Compared to other proposals to reform closure capturing, this one is a lot small
 
 ### Compare: comprehensive changes
 
-We could consider more aggressive designs, over an edition migration. For example, we could say that, in the next edition, the special case for `Copy` is entirely removed. However, this would add a massive footgun to the language:
+- We could say that captures can be inferred as `ByCopy` even behind a dereference. However, this would lead to more by-value captures in situations where they may be unwanted.
+
+- We could consider more aggressive designs, over an edition migration. For example, we could say that, in the next edition, the special case for `Copy` is entirely removed. However, this would add a massive footgun to the language:
 
 ```rust
 fn main() {
@@ -563,7 +565,7 @@ fn main() {
 }
 ```
 
-We could also consider increasing the precedence of `ByCopy` to be between `ImmBorrow` and `UniqueImmborrow`, resulting in a capture mode precedence order of `ImmBorrow < ByCopy < UniqueImmBorrow < MutBorrow < ByValue`. This would be a smaller breaking change compared to the previous suggestion, only affecting closures which examine the address of their captures, but still too breaking to do without an edition. I also think such behavior would be quite surprising for people who do run into problems with it.
+- We could also consider increasing the precedence of `ByCopy` to be between `ImmBorrow` and `UniqueImmborrow`, resulting in a capture mode precedence order of `ImmBorrow < ByCopy < UniqueImmBorrow < MutBorrow < ByValue`. This would be a smaller breaking change compared to the previous suggestion, only affecting closures which examine the address of their captures, but still too breaking to do without an edition. I also think such behavior would be quite surprising for people who do run into problems with it.
 
 ## Chronicle
 [prior-art]: #prior-art
@@ -579,7 +581,7 @@ None known. C++ does not have Rust-style capture mode inference, they make every
 ## Coming chance circumstances
 [future-possibilities]: #future-possibilities
 
-- We could introduce an explicit capturing syntax, e.g. [RFC 3968](https://github.com/rust-lang/rfcs/pull/3968). This would be particularly useful for capturing clones of values. [RFC 3680](https://github.com/rust-lang/rfcs/pull/3680) or some other [ergonomic clones](https://goals.rust-lang.org/2024h2/ergonomic-rc.html) design would also be helpful here. Note that neither of these would subsume this RFC, which aims to allow users to specify their captures *without* dedicated syntax.
+- We could introduce an explicit capturing syntax, e.g. [RFC 3968](https://github.com/rust-lang/rfcs/pull/3968). This would be particularly useful for capturing clones of values. [RFC 3680](https://github.com/rust-lang/rfcs/pull/3680), my [proposed reform of that feature](https://github.com/rust-lang/rust/pull/165111), or some other [ergonomic clones](https://goals.rust-lang.org/2024h2/ergonomic-rc.html) design would also be helpful here. Note that neither of these would subsume this RFC, which aims to allow users to specify their captures *without* dedicated syntax.
 - In future editions, we could choose to go all-in on the `let` shadow trick, and deprecate having by-move captures implicitly take precedence over by-reference captures for non-`Copy` types. We could also add a lint for older editions. This would mitigate the issue that implementing `Copy` is technically a breaking change. But it would not completely eliminate the semver hazard (because old editions would remain supported forever) so it's unclear that it would be worth the churn.
 - There is an additional minor `Copy` semver hazard remaining, due to the different treatment of `Copy` vs non-`Copy` captures via union fields. We could resolve this by introducing a special "copy as `MaybeUninit`" mode for such cases.
 - We could introduce a `ByReborrow` capture mode, to fit with the ongoing work on the `Reborrow` and `CoerceShared` traits. This should let us fix the lifetime-annotations-affect-closure-captures issue for mutable references.
@@ -686,9 +688,11 @@ If we combine this with a `ByReborrow` capture mode, the result is a set of seve
 
 |                  | **Immutable** | **Mutable**                         | **Owning**  |
 |------------------|---------------|-------------------------------------|-------------|
-| **By value**     | `ByCopy`      | `ByReborrow`                        | `ByMove`    |
-| **By reference** | `ImmBorrow`   | `MutBorrow` (`UniqueImmBorrow`)[^1] | `OwnBorrow` |
+| **By value**     | `ByCopy`[^1]  | `ByReborrow`                        | `ByMove`    |
+| **By reference** | `ImmBorrow`   | `MutBorrow` (`UniqueImmBorrow`)[^2] | `OwnBorrow` |
 
 Captures would be inferred to use the top-left-most mode that is compatible with how the capture is used in the closure body.
 
-[^1]: Mutable by-reference use results in the `MutBorrow` mode, while combining immutable by-reference and mutable by-value use results in the `UniqueImmBorrow` mode.
+[^1]: In my [proposed reform of `feature(ergonomic_clones)`](https://github.com/rust-lang/rust/pull/165111),
+the `ByUse` mode would also belong to this cell of the table.
+[^2]: Mutable by-reference use results in the `MutBorrow` mode, while combining immutable by-reference and mutable by-value use results in the `UniqueImmBorrow` mode.
