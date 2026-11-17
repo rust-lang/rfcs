@@ -4,6 +4,8 @@ on:
     branches:
       - main
 
+permissions: {}
+
 env:
   # renovate: datasource=crate depName=mdbook versioning=semver
   MDBOOK_VERSION: 0.5.4
