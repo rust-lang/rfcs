@@ -212,7 +212,7 @@ At [`type.closure.capture`](https://doc.rust-lang.org/reference/types/closure.ht
 > };
 > ```
 >
-> As an exception to the exception, if the value is itself a shared reference, it will be captured by `ByCopy` even behind other references.
+> As an exception to the exception, if the value is itself a shared reference or raw pointer, it will be captured by `ByCopy` even behind other references.
 >
 > ```rust
 > let x = &(&false,);
@@ -463,7 +463,7 @@ We modify the rules for auto trait inference, to state that, for the purposes of
 
 ### Comparison correction
 
-To fix the comparison operator issue mentioned in the motivation section, we need another special case. We declare that, when a captured value is a shared reference, and its capture path does not include any dereferences, using the capture as an argument to one of the comparison operators (`==`, `!=`, `<`, `<=`, `>`, or `>=`) results in an inferred `ByCopy` capture mode. (Without this rule, the inferred capture mode would be `ImmBorrow` due to the implicit reference that these operators apply.)
+To fix the comparison operator issue mentioned in the motivation section, we need another special case. We declare that, when a captured value is a shared reference or raw pointer, and its capture path does not include any dereferences, using the capture as an argument to one of the comparison operators (`==`, `!=`, `<`, `<=`, `>`, or `>=`) results in an inferred `ByCopy` capture mode. (Without this rule, the inferred capture mode would be `ImmBorrow` due to the implicit reference that these operators apply.)
 
 For example:
 
