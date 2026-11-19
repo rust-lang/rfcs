@@ -321,6 +321,21 @@ reuse impl<T: Clone> Clone for BTreeSet<T> { self.map }
 
 This form is purely syntactic sugar for the previous form.
 
+### Relationship to `derive`
+
+If derive macro for the given trait exists, then it is usually more convenient and preferable to derive the trait impl instead of `reuse`ing it.
+
+However, in some cases derives produce overly conservative bounds for the impl's generic parameters, in such cases the impl can be delegated instead.
+
+```rust
+struct RcWrapper<T> {
+    field: std::rc::Rc<T>
+}
+
+// Avoids the `: Clone` bound on `T`, unlike derive.
+reuse impl<T> Clone for RcWrapper<T> { self.field }
+```
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -391,7 +406,7 @@ List, glob, and impl delegations are three kinds of higher-level syntactic sugar
 
 List delegation defines several items at once from a shared path prefix. It desugars to one individual delegation item per name.
 
-Target blocks, generic arguments, and other components are copied at the token-stream level, making list delegation a macro feature.
+Target blocks, generic arguments, and other components are copied at the token-stream level (or rather "unidentified AST" level, but the difference shouldn't be externally observable), making list delegation a macro feature.
 
 ```rust
 reuse prefix::<Args>::{a, b, c} { target }
@@ -425,6 +440,8 @@ reuse prefix::b {
 
 Empty list delegations are currently prohibited (see [_Future possibilities: Empty list delegation_](#empty-list-delegation)).
 
+Macro attributes on the list delegation item expand before the item itself, so they see the list tokens as they are written in the source code, not their expanded form. This is most similar to [macro attributes on out-of-line `mod foo;` items](https://doc.rust-lang.org/reference/procedural-macros.html#r-macro.proc.attribute.outline-mod).
+
 #### Glob delegation
 
 Glob delegation allows all methods of a trait to be delegated at once. It desugars to one individual delegation item per "glob-imported" name.
@@ -433,14 +450,18 @@ Glob delegations are semantically allowed only inside implementations, and the p
 
 The set of names for which individual delegation items are produced is determined as follows:
 - The full set of names defined by the target trait in all namespaces is considered.
-- Names of functions with default bodies are filtered out from value namespace ([?](#why-are-methods-with-default-bodies-excluded-from-glob-delegation)).
+- Names of functions with default bodies (including `final` functions) are filtered out from value namespace ([?](#why-are-methods-with-default-bodies-excluded-from-glob-delegation)).
 - Names already explicitly defined inside the glob delegation's parent context (the impl) are filtered out ([?](#why-can-names-from-glob-delegations-be-overridden-by-explicit-items)). "Explicitly" here means not by another glob delegation.
 - If any of the remaining names refers to an associated type or constant, an error is reported for future compatibility with associated type and const delegation (see [_Future possibilities: Support for delegating types and consts_](#support-for-delegating-types-and-consts)).
 - Note: the above rules mean that a glob delegation can only be expanded after all macro invocations in its target trait and its parent impl have been expanded, except perhaps other glob delegations.
+- Note: stability is not considered when determining the set of glob-delegated items.
+- Note: super-traits of the `Trait` in `reuse Trait::*` are also not considered, only the trait itself.
 
 As with list delegations, target blocks, generic arguments, and other components are copied at the token-stream level, making glob delegation a macro feature.
 
 Empty glob delegations are currently prohibited (see [_Future possibilities: Empty list delegation_](#empty-list-delegation)).
+
+Macro attributes on the glob delegation item expand before the item itself, so they see the glob tokens as they are written in the source code, not their expanded form.
 
 <details>
 
@@ -485,6 +506,8 @@ impl Trait<Args> for Type {
 ```
 
 All restrictions on regular glob delegations also apply to glob delegations produced by impl delegations.
+
+Macro attributes on the impl delegation item expand before the item itself, so they see the impl tokens as they are written in the source code, not their expanded form.
 
 ### Paths and name resolution
 
@@ -556,6 +579,8 @@ WhereClause
 ```
 
 - Outer attributes (`#[attrs]`) are exactly those specified by the user at the delegation site, if any, plus [_default attributes_](#default-attributes).
+  - Note: stability of delegation items is specified at the delegation site, since the stability attributes are not inherited. It cannot be accidentally missed because all externally reachable items must be annotated with stability attributes. A usual stability error will also be reported on attempt to delegate to some unstable function without enabling its corresponding feature.
+  - Note: doc comments and `doc` attributes are also not inherited, so delegation items should have their own documentation.
 - Visibility (`pub(vis)`) is exactly as specified by the user at the delegation site. Also see [_Unresolved questions: Should the visibility of the delegation item be restricted?_](#should-the-visibility-of-the-delegation-item-be-restricted)
 - Function qualifiers (`FunctionQualifiers`: safety, constness, asyncness, and ABI) are copied unchanged from the delegation resolution.
   - None of these qualifiers can be overridden ([?](#why-are-function-qualifiers-copied-unchanged)).
@@ -896,6 +921,7 @@ Language features reducing the amount of boilerplate code are less important now
 
 The feature may potentially introduce a number of semver hazards:
 - Delegating from a public function to a private function could lead to unintended breaking changes in public interfaces, but this can be caught by a lint ([_more_](#should-the-visibility-of-the-delegation-item-be-restricted)).
+- Delegating from a stable function to an unstable function could also lead to unintended breaking changes, this is very similar to the public-to-private delegation case above, and can be covered by the same or similar lint.
 - Adding a non-delegatable method with default body to a trait may become a breaking change, [_depending on the design_](#why-are-methods-with-default-bodies-excluded-from-glob-delegation).
 - Changing between `Self` type alias and `Struct` in function signatures inside `impl Struct { ... }` may become a breaking change, [_depending on the design_](#why-are-effective-self-types-not-detected-through-type-aliases-or-type-equality).
 - Starting to use anything with "identity" (items, closures, anonymous constants) in a macro is a breaking change if that macro is used in an ignored target block ([_more_](#why-can-target-blocks-be-allowed-without-effective-self-parameters)).
@@ -2055,6 +2081,9 @@ Closing this gap fully would require the macro to see type information during ex
 An alternative approach to delegation in Rust would be some form of compile-time reflection. Given the ability to inspect type information such as function signatures during macro expansion, delegation could be implemented as a third-party library, removing the need for dedicated language support.
 
 However, reflection is a large and complex feature that may take years to implement and stabilize. Even if it becomes available, it is not clear that it would be a suitable mechanism for delegation.
+
+Reflection should also support a number of advanced capabilities to enable delegation features like remapping of generics, or detection of effective self types.
+To support delegation reflection should also work on items from the current crate, and do that early enough in compilation.
 
 Work in this direction is already being explored. See the [reflection project goal](https://github.com/rust-lang/rust-project-goals/issues/406).
 
