@@ -889,6 +889,10 @@ The feature may potentially introduce a number of semver hazards:
 - Changing between `Self` type alias and `Struct` in function signatures inside `impl Struct { ... }` may become a breaking change, [_depending on the design_](#why-are-effective-self-types-not-detected-through-type-aliases-or-type-equality).
 - Starting to use anything with "identity" (items, closures, anonymous constants) in a macro is a breaking change if that macro is used in an ignored target block ([_more_](#why-can-target-blocks-be-allowed-without-effective-self-parameters)).
 
+Absolute paths cannot be used after reuse due to backward compatibility (`reuse ::my_crate::foo`), since `reuse` is only conditionally reserved.
+Our suggested solution is to turn `reuse` into a full keyword on the next edition.
+In the meantime workarounds like using qualified paths or local imports can be used when possible.
+
 The function body generated for delegation items may produce type checking errors, and reporting good errors from generated code is hard.
 Ideally we'd need to pretty-print the generated code and point the diagnostic spans to that pretty-printed code.
 
