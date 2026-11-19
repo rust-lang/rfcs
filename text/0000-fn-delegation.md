@@ -726,6 +726,12 @@ reuse Struct::method;
 In the generated function body, effective self parameters are converted using the delegation's target block, and self return types are converted using newtype wrapping.
 See the [_body desugaring chapter_](#desugaring-of-individual-delegation-body) for details.
 
+> [!MINIMAL]
+>
+> We could avoid all the questions related to effective self types, and conversions for non-`self` parameters and return types at cost of reduced usefulness.
+> For that initially stabilized version of the feature could report an error or a feature gate when the delegation resolution's signature contains any types equal to `Self` (before and after normalization, up to lifetimes) outside of the `self` parameter.
+> Any of the more useful alternatives could then be introduced backward-compatibly in the future.
+
 ### Desugaring of individual delegation: body
 
 #### Target block
@@ -796,6 +802,11 @@ impl BinOpLike for Wrapper {
 </details>
 
 `ADJ` denotes the same set of adjustments as for an ordinary [method call](https://doc.rust-lang.org/reference/expressions/method-call-expr.html) receiver: a sequence of autoderefs, an optional autoref, and coercions ([?](#why-are-method-call-adjustments-applied-to-effective-self-parameters)). The difference is that the callee has already been resolved through the path, so these adjustments are not needed for method resolution. Instead, they are applied to the arguments to make them match the callee's signature.
+
+> [!MINIMAL]
+>
+> We could avoid all the questions about the target block "disassembling" at cost of somewhat reduced usefulness.
+> For that initially stabilized version of the feature could report an error or a feature gate when the target block after expansion contains anything other than a single trailing expression.
 
 <details>
 
