@@ -6,15 +6,7 @@
 ## Summary
 [summary]: #summary
 
-This RFC proposes a new group, `security`, which houses three subgroups (`security-response`, `project-security`, `ecosystem-security`). This builds on @emilyalbini's [earlier proposal][emily-proposal].
-
-Initially it can live under `launching-pad`, though we could discuss making it a top-level group depending on level of engagement.
-
-This proposal also includes a `security-advisors` group, along the lines of `funding-advisors`, to give broad-spectrum cross-team feedback during security responses or when evaluating new policies, both of which need to be private sometimes.
-
-Note that `wg-security-response` already exists, but team members asked me to draft a charter for them while I was at it, since they don't have one currently.
-
-[emily-proposal]: https://rust-lang.zulipchat.com/#narrow/channel/613087-security-chat/topic/Should.20we.20make.20t-security.3F/with/625820751
+This RFC establishes a new `security` group under `launching-pad`, with three subgroups (`security-response`, `project-security`, `ecosystem-security`) and a private `security-advisors` pool. It does so by defining the charters of each group, including a first charter for the existing `security-response` team, which does not currently have one.
 
 ## Motivation
 [motivation]: #motivation
@@ -28,9 +20,9 @@ Today, we have `wg-security-response`. They have a good handle on incident respo
 > I think increasing hc on the team is something we should do anyway but "don't make the people driving security response manage all security work" is what I'm saying here
 > Emily proposed a T-security ages ago and I think we should do that. I would even love to help with that work once I'm off the council. But security-response shouldn't _become_ T-security
 
-I agree with this sentiment. Security response is important and deserves a working group in its own right. But, as we see an increase in the number and severity of security incidents (most recently [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), I'm concerned about excessive strain on the security response group. We also need to make investments in our forward security posture.
+Security response is important and deserves a working group in its own right. But, as we see an increase in the number and severity of security incidents (most recently [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response group. We also need to make investments in our forward security posture.
 
-My observation is, security engineers with the Rust Foundation are already doing some interesting and promising things on the proactive security front: typosquatting checks, dependency graph analysis, and various detection systems. But, it would be great for it to be easier for Project members to participate in or build on this work.
+Security engineers with the Rust Foundation are already doing some interesting and promising things on the proactive security front: typosquatting checks, dependency graph analysis, and various detection systems. But, it should be easier for Project members to participate in or build on this work.
 
 Similarly [we have goals to apply crates.io security controls](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html) that will ultimately rely on some amount of consensus since they make opinionated choices. And, some of these choices will need to be semi-private given the "cat and mouse" of security controls. So, having a group of people that can be delegated to make these decisions, under a more broadly agreed-upon framework, seems important.
 
@@ -616,7 +608,7 @@ extra-teams = [
 
 ### Alternative: broaden `security-response` instead of creating a new group
 
-Rather than a new umbrella group, the existing `security-response` working group could take on proactive and ecosystem security work as well. But, as we see an increase in the number and severity of security incidents, I'm concerned about excessive strain on the security response group. As @Manishearth put it, "don't make the people driving security response manage all security work"; security-response shouldn't _become_ T-security.
+Rather than a new umbrella group, the existing `security-response` working group could take on proactive and ecosystem security work as well. But, as we see an increase in the number and severity of security incidents, there is a risk of excessive strain on the security response group. As @Manishearth put it, "don't make the people driving security response manage all security work"; security-response shouldn't _become_ T-security.
 
 This leaves the obvious question of why not just bring more people into `security-response`. At the end of the day, `security-response` didn't sign up for this, and incident response is a different way of working than proactive measures. People can already do cross-cutting things in `security`, so let's not mess up what's working by trying to refactor the existing group.
 
