@@ -119,7 +119,7 @@ docs.rs does not build unavailable versions and shows a status badge instead.
     "yanked": true,
     // The availability status of this package version (optional).
     //
-    // If set to a value besides "available" or null, Cargo skips this
+    // If set to a value besides "available" or not present, Cargo skips this
     // version when choosing dependency versions. If the version is pinned
     // in a `Cargo.lock`, Cargo fails builds with an error explaining that
     // the version is unavailable.
