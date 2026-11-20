@@ -46,7 +46,6 @@ Below is a non-exhaustive list of activities that the team is expected to perfor
 - Communicate with Rust Project members to learn about their funding needs and other kinds of desired support.
 - Distribute available funds to financially support Rust Project contributors, based on evaluating the most pressing maintenance needs of Rust Project teams.
 - Ensure the success of, and run, the Maintainer in Residence program, as defined by [RFC #3931][rfc-3931].
-- Support Rust Project contributors via [grants].
 - Ensure that Rust Project contributors funded by this team are satisfied with their arrangement, are not blocked from doing their designed work, and are not under undue pressure from funders.
 - Promote the work of Rust Project contributors funded by this team and its positive effect on the Rust Project to attract more funding, for example by writing blog posts or recording podcasts or videos.
 - Communicate with funders (both companies and individuals) to find new funding opportunities and ensure that they are satisfied with the way their provided funds are being spent.
@@ -60,8 +59,6 @@ Below is a non-exhaustive list of activities that the team is expected to perfor
 - Publicly document its decision-making processes, funding decision rationale and funding program details.
 - Be open to feedback about their processes and funding decisions, in particular from other Rust Project members.
 - Work actively, to ensure that funding opportunities are not wasted unnecesarily, and that Rust Project members are not unnecessarily delayed from receiving funds that were already allocated for their support. But also be mindful of waiting for potentially better opportunities, rather than spending all available funds as soon as possible.
-
-[grants]: https://github.com/rust-lang/leadership-council/issues/301
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
