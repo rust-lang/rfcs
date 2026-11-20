@@ -6,7 +6,7 @@
 ## Summary
 [summary]: #summary
 
-This RFC establishes a new `security` group under `launching-pad`, with three subgroups (`security-response`, `project-security`, `ecosystem-security`) and a private `security-advisors` pool. It does so by defining the charters of each group, including a first charter for the existing `security-response` team, which does not currently have one.
+This RFC establishes a new `security` team under `launching-pad`, with three subteams (`security-response`, `project-security`, `ecosystem-security`) and a private `security-advisors` pool. It does so by defining the charters of each team, including a first charter for the existing `security-response` team, which does not currently have one.
 
 ## Motivation
 [motivation]: #motivation
@@ -20,24 +20,24 @@ Today, we have `wg-security-response`. They have a good handle on incident respo
 > I think increasing hc on the team is something we should do anyway but "don't make the people driving security response manage all security work" is what I'm saying here
 > Emily proposed a T-security ages ago and I think we should do that. I would even love to help with that work once I'm off the council. But security-response shouldn't _become_ T-security
 
-Security response is important and deserves a working group in its own right. But, as we see an increase in the number and severity of security incidents (most recently [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response group. We also need to make investments in our forward security posture.
+Security response is important and deserves a working group in its own right. But, as we see an increase in the number and severity of security incidents (most recently [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response team. We also need to make investments in our forward security posture.
 
 Security engineers with the Rust Foundation are already doing some interesting and promising things on the proactive security front: typosquatting checks, dependency graph analysis, and various detection systems. But, it should be easier for Project members to participate in or build on this work.
 
-Similarly [we have goals to apply crates.io security controls](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html) that will ultimately rely on some amount of consensus since they make opinionated choices. And, some of these choices will need to be semi-private given the "cat and mouse" of security controls. So, having a group of people that can be delegated to make these decisions, under a more broadly agreed-upon framework, seems important.
+Similarly [we have goals to apply crates.io security controls](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html) that will ultimately rely on some amount of consensus since they make opinionated choices. And, some of these choices will need to be semi-private given the "cat and mouse" of security controls. So, having a team of people that can be delegated to make these decisions, under a more broadly agreed-upon framework, seems important.
 
-The charters of the `security` group and its subgroups will be formed by the Reference-level explanation part of this RFC. They will be located in the repository of the `security` group, once created. Significant changes to the charters that would impact the scope of other groups, or go beyond the spirit of the initial RFC, will require a new RFC directed to `t-leadership-council`. Other changes to the charters, including creating new subgroups that do not impact the scope of other teams, will be handled internal to `security`.
+The charters of the `security` team and its subteams will be formed by the Reference-level explanation part of this RFC. They will be located in the repository of the `security` team, once created. Significant changes to the charters that would impact the scope of other teams, or go beyond the spirit of the initial RFC, will require a new RFC directed to `t-leadership-council`. Other changes to the charters, including creating new subteams that do not impact the scope of other teams, will be handled internal to `security`.
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `security` group is a thin coordination layer over three working subteams and a private advisory pool.
+The `security` team is a thin coordination layer over three working subteams and a private advisory pool.
 
 ### `security`
 
-Coordinate the Rust Project's security work across its subgroups, act as an entry point for people who want to get involved in security, and keep track of the big picture of the Project's overall security posture (reactive, proactive, and ecosystem-facing).
+Coordinate the Rust Project's security work across its subteams, act as an entry point for people who want to get involved in security, and keep track of the big picture of the Project's overall security posture (reactive, proactive, and ecosystem-facing).
 
-The top-level group is intentionally thin. Beyond owning and integrating the Project threat model, it does not do the hands-on security work itself; that happens in the subgroups. Its job is coordination, routing, and representation.
+The top-level team is intentionally thin. Beyond owning and integrating the Project threat model, it does not do the hands-on security work itself; that happens in the subteams. Its job is coordination, routing, and representation.
 
 `security` starts with three working subteams. See each subteam's charter for more information.
 
@@ -51,11 +51,11 @@ Triage and respond to incoming vulnerability reports for the Rust Project, coord
 
 The team is the reactive arm of the Project's security programs. It handles reports that arrive at `security@rust-lang.org` and drives them to resolution and public disclosure.
 
-The team is intentionally *not* responsible for proactive security work or for wider ecosystem security beyond narrow situations. Those are the scope of the sibling `project-security` and `ecosystem-security` groups under the `security` umbrella.
+The team is intentionally *not* responsible for proactive security work or for wider ecosystem security beyond narrow situations. Those are the scope of the sibling `project-security` and `ecosystem-security` teams under the `security` umbrella.
 
 ### `project-security`
 
-Proactively protect Project-owned repositories and infrastructure and improve the forward security posture of Rust Project contributors. Success for this group means that fewer incidents ever reach `security-response`.
+Proactively protect Project-owned repositories and infrastructure and improve the forward security posture of Rust Project contributors. Success for this team means that fewer incidents ever reach `security-response`.
 
 The team produces guidance, tooling, training, and threat-model input that Project teams and contributors are encouraged to adopt, and works alongside t-infra to harden the Project's own resources.
 
@@ -67,15 +67,15 @@ Improve the security posture of the wider Rust ecosystem, including crates publi
 
 This spans proactive work (tooling, detection, information feeds, community guidance) and response work (coordinating action on malicious or vulnerable crates).
 
-To accomplish these goals, the group will consider the health of ecosystem maintainers and burn-out avoidance both of team members and ecosystem maintainers as a key strategic consideration in all approaches.
+To accomplish these goals, the team will consider the health of ecosystem maintainers and burn-out avoidance both of team members and ecosystem maintainers as a key strategic consideration in all approaches.
 
 ### `security-advisors`
 
-The group also includes an advisory pool of trusted people in a private Zulip channel, `security-advisors`. This channel acts as a rendezvous point for security operators to reach contributors from across Rust Project teams — t-compiler, t-infra, crates.io, cargo, libs, lang, the Foundation, etc. — and individuals with relevant expertise. This allows operators to pull people into private response threads quickly, without widening an embargo to a whole team.
+The team also includes an advisory pool of trusted people in a private Zulip channel, `security-advisors`. This channel acts as a rendezvous point for security operators to reach contributors from across Rust Project teams — t-compiler, t-infra, crates.io, cargo, libs, lang, the Foundation, etc. — and individuals with relevant expertise. This allows operators to pull people into private response threads quickly, without widening an embargo to a whole team.
 
 The channel also offers an opportunity to privately seek feedback and a thumbs up on whether security measures meet Project norms and published policies. This is necessary because security efforts involve some amount of cat-and-mouse tactics where public discussion of methods undermines efficacy.
 
-The group is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml). [Proposed initial members](#security-advisors-team-definition).
+The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml). [Proposed initial members](#security-advisors-team-definition).
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -85,62 +85,62 @@ The group is modeled on [`funding-advisors`](https://github.com/rust-lang/team/b
 
 #### Mission
 
-Coordinate the Rust Project's security work across its subgroups, act as an entry point for people who want to get involved in security, and keep track of the big picture of the Project's overall security posture (reactive, proactive, and ecosystem-facing).
+Coordinate the Rust Project's security work across its subteams, act as an entry point for people who want to get involved in security, and keep track of the big picture of the Project's overall security posture (reactive, proactive, and ecosystem-facing).
 
-The top-level group is intentionally thin. Beyond owning and integrating the Project threat model, it does not do the hands-on security work itself; that happens in the subgroups. Its job is coordination, routing, and representation.
+The top-level team is intentionally thin. Beyond owning and integrating the Project threat model, it does not do the hands-on security work itself; that happens in the subteams. Its job is coordination, routing, and representation.
 
 #### How does this further the Rust Project goals?
 
-Security work in the Project is currently spread across security-response, Rust Foundation security engineers, RustSec maintainers, and t-infra, with no single place that connects them or that a newcomer can approach. As the number and severity of supply-chain incidents grows (e.g. [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/), [spearphishing attacks on Project members](https://blog.rust-lang.org/2026/09/17/targeted-attacks/)), the Project benefits from a group that can coordinate these efforts and surface issues and needs to the relevant teams. It also offers an on-ramp for new contributors.
+Security work in the Project is currently spread across security-response, Rust Foundation security engineers, RustSec maintainers, and t-infra, with no single place that connects them or that a newcomer can approach. As the number and severity of supply-chain incidents grows (e.g. [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/), [spearphishing attacks on Project members](https://blog.rust-lang.org/2026/09/17/targeted-attacks/)), the Project benefits from a team that can coordinate these efforts and surface issues and needs to the relevant teams. It also offers an on-ramp for new contributors.
 
 #### Responsibilities & Commitments
 
 ##### Decision Maker
 
-The top-level group is the decision maker on:
+The top-level team is the decision maker on:
 
-- Its own internal coordination: meeting cadence, how subgroups keep each other informed, and how cross-subgroup questions are routed.
-- Proposing the creation, naming, and scope boundaries of subgroups within `security`.
-    - As a group under `launching-pad`, creating or re-scoping subgroups is proposed to the Council/parent team for approval; the group does not have authority to create teams on its own.
+- Its own internal coordination: meeting cadence, how subteams keep each other informed, and how cross-subteam questions are routed.
+- Proposing the creation, naming, and scope boundaries of subteams within `security`.
+    - As a team under `launching-pad`, creating or re-scoping subteams is proposed to the Council/parent team for approval; the team does not have authority to create teams on its own.
 - Which cross-cutting security needs to surface (e.g. to the Council, to the Foundation for funding, or to owning teams via the Project Goals process) and how to represent them.
-- The Project threat model: the top-level group is its single owner. It decides the model's overall structure and integrates the components maintained by each subteam.
+- The Project threat model: the top-level team is its single owner. It decides the model's overall structure and integrates the components maintained by each subteam.
 
 It is explicitly not the decision maker on any other team's purview: infrastructure, crates.io, and cargo decisions remain with those teams.
 
 ##### Accountable for results
 
-The group is primarily responsible for coordination:
+The team is primarily responsible for coordination:
 
-- Running the coordination touchpoints between subgroups.
-- Maintaining the group's public-facing "how do I get involved in Rust security?" entry point.
+- Running the coordination touchpoints between subteams.
+- Maintaining the team's public-facing "how do I get involved in Rust security?" entry point.
 - Keeping the integrated Project threat model current: collecting each subteam's component and connecting them into one up-to-date model.
-- Surfacing and escalating gaps, i.e. noticing when the subgroups collectively leave part of the intended security scope unowned, and raising it to the Council/parent team.
+- Surfacing and escalating gaps, i.e. noticing when the subteams collectively leave part of the intended security scope unowned, and raising it to the Council/parent team.
 
-It is explicitly not accountable for the subgroups' actual outcomes (incident response times, ecosystem coverage, hardening adoption).
+It is explicitly not accountable for the subteams' actual outcomes (incident response times, ecosystem coverage, hardening adoption).
 
 ##### Responsible for work
 
-Hands-on work is done by the subgroups, not here. The top-level group's own "work" is limited to:
+Hands-on work is done by the subteams, not here. The top-level team's own "work" is limited to:
 
-- Running coordination touchpoints between subgroups.
-- Highlighting cross-cutting security needs and, where the group chooses, helping the Foundation and funding team seek funding for security work (including work that mostly happens in other teams, e.g. build-script sandboxing).
-- Maintaining the group's public-facing "how do I get involved in Rust security?" entry point.
+- Running coordination touchpoints between subteams.
+- Highlighting cross-cutting security needs and, where the team chooses, helping the Foundation and funding team seek funding for security work (including work that mostly happens in other teams, e.g. build-script sandboxing).
+- Maintaining the team's public-facing "how do I get involved in Rust security?" entry point.
 - Integrating the subteams' threat-model components into the single Project threat model
 
 ##### Consulted for input
 
-The group should be consulted on:
+The team should be consulted on:
 
-- Cross-team decisions with broad security implications where no single subgroup is the obvious owner.
+- Cross-team decisions with broad security implications where no single subteam is the obvious owner.
 - Proposals to fund, staff (e.g. Maintainers in Residence), or restructure security work in the Project.
 
 ##### Informed for awareness
 
-The group should be informed of significant security-relevant activity in any subgroup or adjacent team (major hardening initiatives, ecosystem takedowns, incidents) so it can keep the overall picture current and keep subgroups in sync **but only at a post-disclosure / non-embargoed level of detail.**
+The team should be informed of significant security-relevant activity in any subteam or adjacent team (major hardening initiatives, ecosystem takedowns, incidents) so it can keep the overall picture current and keep subteams in sync **but only at a post-disclosure / non-embargoed level of detail.**
 
-Because the top-level group has open membership, embargoed incident details, in-progress advisories, and any secrets remain confined to the relevant subgroup's access-controlled channels and are never shared into the coordination group or `#security-chat`.
+Because the top-level team has open membership, embargoed incident details, in-progress advisories, and any secrets remain confined to the relevant subteam's access-controlled channels and are never shared into the coordination team or `#security-chat`.
 
-#### Subgroups
+#### Subteams
 
 `security` starts with three working subteams. See each subteam's charter for more information.
 - security-response - reactive - [charter](#security-response-team-charter)
@@ -149,49 +149,49 @@ Because the top-level group has open membership, embargoed incident details, in-
 
 #### security-advisors
 
-The group also includes an advisory pool of trusted people in a private Zulip channel, `security-advisors`. This channel acts as a rendezvous point for security operators to reach contributors from across Rust Project teams — t-compiler, t-infra, crates.io, cargo, libs, lang, the Foundation, etc. — and individuals with relevant expertise. This allows operators to pull people into private response threads quickly, without widening an embargo to a whole team.
+The team also includes an advisory pool of trusted people in a private Zulip channel, `security-advisors`. This channel acts as a rendezvous point for security operators to reach contributors from across Rust Project teams — t-compiler, t-infra, crates.io, cargo, libs, lang, the Foundation, etc. — and individuals with relevant expertise. This allows operators to pull people into private response threads quickly, without widening an embargo to a whole team.
 
 The channel also offers an opportunity to privately seek feedback and a thumbs up on whether security measures meet Project norms and published policies. This is necessary because security efforts involve some amount of cat-and-mouse tactics where public discussion of methods undermines efficacy.
 
-The group is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml). [Proposed initial members](#security-advisors-team-definition).
+The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml). [Proposed initial members](#security-advisors-team-definition).
 
-#### How does this group make decisions?
+#### How does this team make decisions?
 
-By consensus among its members, who include the group's lead(s), once determined, plus at least one delegate from each subgroup.
+By consensus among its members, who include the team's lead(s), once determined, plus at least one delegate from each subteam.
 
-Most substantive decisions belong to a subgroup or another team; where a public Project decision is needed the group uses the standard RFC / FCP process.
+Most substantive decisions belong to a subteam or another team; where a public Project decision is needed the team uses the standard RFC / FCP process.
 
-New members of `security-advisors` are nominated by members of this group or its subteams, then approved by this group's lead(s).
+New members of `security-advisors` are nominated by members of this team or its subteams, then approved by this team's lead(s).
 
-#### What work is not specifically part of this group's remit?
+#### What work is not specifically part of this team's remit?
 
-- Doing incident response, proactive Project hardening, or ecosystem tooling itself. Those belong to subgroups.
-- Making decisions inside crates.io / cargo / infra purviews. The group can surface needs and offer help, but does not decide for those teams.
+- Doing incident response, proactive Project hardening, or ecosystem tooling itself. Those belong to subteams.
+- Making decisions inside crates.io / cargo / infra purviews. The team can surface needs and offer help, but does not decide for those teams.
 
 #### Team Processes
 
 ##### Contact Point
 
-`@jlizen` can be point of contact until group discusses further leadership processes. General discussion happens in the `#security-chat` Zulip channel.
+`@jlizen` can be point of contact until the team discusses further leadership processes. General discussion happens in the `#security-chat` Zulip channel.
 
 ##### Team Membership
 
-Members: the lead(s) once determined, at least one delegate from each subgroup (so that each subgroup stays looped in), and anyone else who wants to help coordinate. Membership is intended to stay small.
+Members: the lead(s) once determined, at least one delegate from each subteam (so that each subteam stays looped in), and anyone else who wants to help coordinate. Membership is intended to stay small.
 
 Proposed initial members, along with subteam nominees: @jlizen, @Manishearth, @LawnGnome, @m-ou-se, @Eh2406, @walterhpearce
 
 Members are expected to:
 
-- Represent their subgroup's status and needs in coordination, and carry information back.
+- Represent their subteam's status and needs in coordination, and carry information back.
 - Help route interested contributors and surface cross-cutting needs.
 
 ##### How is team membership managed?
 
-Each subgroup nominates its delegate(s). Additional coordinating members join by consensus of the group.
+Each subteam nominates its delegate(s). Additional coordinating members join by consensus of the team.
 
-##### Where does this group work?
+##### Where does this team work?
 
-Coordination happens in the `#security-chat` Zulip channel and, as needed, in the security group's repository/tracker.
+Coordination happens in the `#security-chat` Zulip channel and, as needed, in the `security` team's repository/tracker.
 
 ### Security Response Team Charter
 [security-response-team-charter]: #security-response-team-charter
@@ -202,7 +202,7 @@ Triage and respond to incoming vulnerability reports for the Rust Project, coord
 
 The team is the reactive arm of the Project's security programs. It handles reports that arrive at `security@rust-lang.org` and drives them to resolution and public disclosure.
 
-The team is intentionally *not* responsible for proactive security work or for wider ecosystem security beyond narrow situations. Those are the scope of the sibling `project-security` and `ecosystem-security` groups under the `security` umbrella.
+The team is intentionally *not* responsible for proactive security work or for wider ecosystem security beyond narrow situations. Those are the scope of the sibling `project-security` and `ecosystem-security` teams under the `security` umbrella.
 
 #### How does this further the Rust Project goals?
 
@@ -220,8 +220,8 @@ The team is the final decision maker on:
 - The handling and disclosure plan for a given report: embargo timelines, the disclosure date, whether a private/pre-notified release is warranted, and coordination with reporters and downstream distributors (e.g. `distros@`, `oss-security@`).
 - The content and timing of security advisories and announcements published through Project channels (security mailing list, blog, users.rust-lang.org, GitHub Security Advisories).
 - The contents of the incident-response component of the Project threat model.
-    - The integrated threat model is owned by the top-level `security` group.
-    - security-response is responsible for the response/incident portion and brings it to the top-level group.
+    - The integrated threat model is owned by the top-level `security` team.
+    - security-response is responsible for the response/incident portion and brings it to the top-level team.
 
 Fixes to the underlying vulnerable code are ultimately decided by the team that owns that code (e.g. the compiler, libs, cargo, or crates.io teams). security-response coordinates and is accountable for the response process around them, but does not override those teams' technical decisions.
 
@@ -243,14 +243,14 @@ The team members do the hands-on work of:
 - Setting up per-incident private Zulip streams and running the investigation and response with the reporter.
 - Coordinating the fix, arranging point releases/patches, and distributing patch files (signed with the security key).
 - Writing and publishing advisories and announcements across the required channels, and sending the pre-disclosure notifications to `distros@lists.openwall.com` / `oss-security@lists.openwall.com`.
-- Authoring and maintaining the incident-response component of the Project threat model, and feeding it to the parent group.
+- Authoring and maintaining the incident-response component of the Project threat model, and feeding it to the parent team.
 
 ##### Consulted for input
 
 The team should be consulted on:
 
 - Changes to Project infrastructure, release processes, repository policies, or security scope that would materially affect the Project's ability to respond to or contain a security incident
-- Sibling `security` subgroups' proactive work where it intersects with incident handling (e.g. `project-security` guidance on repo hardening, `ecosystem-security` handling of malicious/vulnerable crates that may generate reports into this team's inbox).
+- Sibling `security` subteams' proactive work where it intersects with incident handling (e.g. `project-security` guidance on repo hardening, `ecosystem-security` handling of malicious/vulnerable crates that may generate reports into this team's inbox).
 - Designs of security-relevant features by owning teams (e.g. crates.io trusted publishing, cargo build-script sandboxing) where the response team's incident experience is relevant.
 - ecosystem-security handling of security incidents for projects outside of `rust-lang`
     - This is a desired state, but initially, security-response is responsible for leading the handling of high-impact ecosystem vulnerabilities according to its existing processes, until ecosystem-security has the process and capacity to handle them.
@@ -262,7 +262,7 @@ The team should be informed of:
 - Security-relevant changes shipping in `rust-lang`/`rust-lang-nursery` repositories significant enough to warrant mention in release notes or advisories.
 - Ecosystem incidents handled by `ecosystem-security` (e.g. malicious-crate takedowns) so that response and ecosystem work stay coordinated even when the response team is not the one acting.
 
-#### How does this group make decisions?
+#### How does this team make decisions?
 
 Response decisions are made by team consensus, typically in the private per-incident Zulip stream, given the confidential nature of the work.
 
@@ -300,11 +300,11 @@ These decisions are made via team consensus in private channels.
 This team is the existing Security Response working group. Its team entry in [rust-lang/team](https://github.com/rust-lang/team) is named `security-response` (already under `launching-pad`), while its repo and Zulip presence still carry the older `wg-security-response` name.
 This charter uses "security-response" for the team and "wg-security-response" only for those existing artifacts. No rename is proposed here unless current team members prefer it.
 
-This team is proposed to sit as a subgroup of the new `security` group (initially under `launching-pad`), alongside `project-security` and `ecosystem-security`.
+This team is proposed to sit as a subteam of the new `security` team (initially under `launching-pad`), alongside `project-security` and `ecosystem-security`.
 
-The team is *invited* to send a delegate to the thin top-level `security` coordination group so that response and proactive work stay in sync. Given the team is small (three members), this is best-effort and optional rather than an obligation.
+The team is *invited* to send a delegate to the thin top-level `security` coordination team so that response and proactive work stay in sync. Given the team is small (three members), this is best-effort and optional rather than an obligation.
 
-Any coordination across subgroups happens at a non-embargoed level. The private security-advisors Zulip channel offers a venue for sensitive cross-group communication.
+Any coordination across subteams happens at a non-embargoed level. The private security-advisors Zulip channel offers a venue for sensitive cross-team communication.
 
 ##### Where does this team work?
 
@@ -319,7 +319,7 @@ General (non-incident) coordination happens in the `#security-chat` Zulip channe
 
 #### Mission
 
-Proactively protect Project-owned repositories and infrastructure and improve the forward security posture of Rust Project contributors. Success for this group means that fewer incidents ever reach `security-response`.
+Proactively protect Project-owned repositories and infrastructure and improve the forward security posture of Rust Project contributors. Success for this team means that fewer incidents ever reach `security-response`.
 
 The team produces guidance, tooling, training, and threat-model input that Project teams and contributors are encouraged to adopt, and works alongside t-infra to harden the Project's own resources.
 
@@ -329,7 +329,7 @@ This is the complement to `security-response`: response is reactive, project-sec
 
 The recent rise in targeted attacks and supply-chain incidents shows that the Project's own repos, CI, and publishing flows are high-value targets. Today, proactive hardening happens ad hoc (some under t-infra, some via the Foundation).
 
-A dedicated group that develops shared best-practice guidance, training, and enforcement tooling raises the baseline security of Project resources while respecting each owning team's autonomy.
+A dedicated team that develops shared best-practice guidance, training, and enforcement tooling raises the baseline security of Project resources while respecting each owning team's autonomy.
 
 #### Responsibilities & Commitments
 
@@ -342,7 +342,7 @@ The team is the decision maker on:
 - The Project-infrastructure-and-contributors component of the threat model
      - project-security is responsible for authoring and maintaining it
      - Covers both Project-owned infrastructure (repos, CI, publishing) and the forward security posture of Project contributors themselves (contributors as high-value targets, account/credential and device hygiene, spearphishing).
-     - The overall threat model is owned by the parent `security` group, but project-security decides the content of its portion.
+     - The overall threat model is owned by the parent `security` team, but project-security decides the content of its portion.
 
 The team *does not decide* whether other teams adopt its recommendations, and does not hold decision authority over infrastructure, crates.io, or cargo. Adoption is at each owning team's discretion. These are recommendations with supporting tooling, not requirements (per @Mark-Simulacrum's feedback). This mirrors how t-infra already operates with the teams whose systems it touches.
 
@@ -380,11 +380,11 @@ The team should be informed of:
 - Incidents handled by security-response, so its preventive guidance can learn from real failures.
 - Infrastructure changes across the Project with security relevance.
 
-#### How does this group make decisions?
+#### How does this team make decisions?
 
 By team consensus; where a public Project decision or a broadly-scoped recommendation is involved, via the standard RFC/FCP process.
 
-#### What work is not specifically part of this group's remit?
+#### What work is not specifically part of this team's remit?
 
 - Reactive incident response: belongs to security-response.
 - Ecosystem-facing security (crates.io-wide scanning, RustSec, malicious-crate response): belongs to ecosystem-security.
@@ -414,9 +414,9 @@ Members are expected to:
 
 ##### Relationship to the `security` umbrella
 
-A subgroup of `security` (initially under `launching-pad`). Expected to send at least one delegate to the top-level coordination group.
+A subteam of `security` (initially under `launching-pad`). Expected to send at least one delegate to the top-level coordination team.
 
-##### Where does this group work?
+##### Where does this team work?
 
 Discussion in the `#security-chat` Zulip channel. It ultimately may create its own subchannel.
 
@@ -429,11 +429,11 @@ Improve the security posture of the wider Rust ecosystem, including crates publi
 
 This spans proactive work (tooling, detection, information feeds, community guidance) and response work (coordinating action on malicious or vulnerable crates).
 
-To accomplish these goals, the group will consider the health of ecosystem maintainers and burn-out avoidance both of team members and ecosystem maintainers as a key strategic consideration in all approaches.
+To accomplish these goals, the team will consider the health of ecosystem maintainers and burn-out avoidance both of team members and ecosystem maintainers as a key strategic consideration in all approaches.
 
 #### How does this further the Rust Project goals?
 
-Rust's value depends heavily on a trustworthy crate ecosystem, but, at the time of writing, ecosystem security is fragmented: RustSec/advisory-db lives outside the Project with maintainers coordinating partially through wg-secure-code, malicious-crate response falls implicitly on the crates.io oncall and Foundation security engineers, and proactive tooling is scattered. Consolidating this into one group gives the ecosystem a coherent home, a sustainable path for response, and an accessible entry point for the growing set of contributors interested in this space.
+Rust's value depends heavily on a trustworthy crate ecosystem, but, at the time of writing, ecosystem security is fragmented: RustSec/advisory-db lives outside the Project with maintainers coordinating partially through wg-secure-code, malicious-crate response falls implicitly on the crates.io oncall and Foundation security engineers, and proactive tooling is scattered. Consolidating this into one team gives the ecosystem a coherent home, a sustainable path for response, and an accessible entry point for the growing set of contributors interested in this space.
 
 In the process, this gives us an opportunity to re-examine ecosystem practices around security handling that may or may not be working:
 - What kinds of author outreach, if any, make sense as a standard approach? Is it effective in improving remediation? Does it contribute to team member or ecosystem maintainer burnout? Should this team handle initial reachout, or the reporters?
@@ -459,8 +459,8 @@ The team is **not** the decision maker on crates.io or cargo behavior. Actions t
 The team is accountable for:
 
 - Ecosystem-security tooling and feeds it commits to remaining maintained and useful to consumers.
-- Malicious/vulnerable-crate situations having an owner for the parts within this group's remit: coordinating responses to high-impact malicious or vulnerable crates, which may include reaching out to affected/at-risk authors and publishing advisories. Actioning crates on crates.io (yank/quarantine/delete) stays with crates.io (see "Responsible for work" for more on delegation).
-    - The group will set standards for which cases the group will take action on. The group does not assume responsibility for resolving all cases.
+- Malicious/vulnerable-crate situations having an owner for the parts within this team's remit: coordinating responses to high-impact malicious or vulnerable crates, which may include reaching out to affected/at-risk authors and publishing advisories. Actioning crates on crates.io (yank/quarantine/delete) stays with crates.io (see "Responsible for work" for more on delegation).
+    - The team will set standards for which cases the team will take action on. The team does not assume responsibility for resolving all cases.
     - This is a desired state, but initially, security-response is responsible for this outcome, until ecosystem-security has the process and capacity to handle it
 - Ecosystem vulnerability reports and advisories being triaged and published in a timely way (RustSec operations). `[Once RustSec is placed here via separate proposal.]`
 - Improving the overall sustainability of the ecosystem's security handling processes, including preventing maintainer burnout
@@ -469,15 +469,15 @@ The team is accountable for:
 
 The team members do the work of:
 
-- Authoring and maintaining the ecosystem component of the Project threat model (crates ecosystem / supply-chain threats), contributed to the parent `security` group to include in the broader Project threat model.
+- Authoring and maintaining the ecosystem component of the Project threat model (crates ecosystem / supply-chain threats), contributed to the parent `security` team to include in the broader Project threat model.
 - Building and running detection/scanning (e.g. typosquatting checks, dependency-graph analysis, publish-time checks that route suspicious uploads to a manual review queue, continuous scanning of published crates to enrich feeds).
 - Creating a response/triage sub-group, rotation, or similar
   - This is a desired state, but initially, security-response is responsible for this outcome, with ecosystem-security consulted for input, until ecosystem-security has the process and capacity to handle it
-  - Working out their own delegations for this group, that are compatible with the threat model
+  - Working out their own delegations for this team, that are compatible with the threat model
   - Setting a limit on the size of the *actively involved* people *for each delegation*
   - **Coordinating** with the crates.io team on clearly-malicious crates, providing evidence and recommendations.
   - Where relevant, author outreach for vulnerable crates.
-  - The group starts with no delegated authority on crates.io. Down the road, the crates.io team may choose to delegate some operational authority to this group. If they do, it happens only under an explicit, revocable program that spells out audit logging, review for destructive actions (deletion), and who is accountable.
+  - The team starts with no delegated authority on crates.io. Down the road, the crates.io team may choose to delegate some operational authority to this team. If they do, it happens only under an explicit, revocable program that spells out audit logging, review for destructive actions (deletion), and who is accountable.
 - Producing consumer-facing security tooling/guidance (e.g. nicer GitHub Actions around cargo audit/deny/vet-style checks)
     - Note that formal Project adoption of external tools is a separate proposal.
 - (If the team chooses to establish it) staffing an opt-in, trained ecosystem-security oncall operating under crates.io-delegated access. This needs more design and is explicitly *not* part of the initial chartering request.
@@ -497,25 +497,25 @@ The team should be informed of:
 
 - Relevant Foundation security-engineering work, to align and avoid duplication.
 
-#### How does this group make decisions?
+#### How does this team make decisions?
 
 By team consensus, with a clear internal understanding of who leads response vs. proactive work. Advisory publication follows RustSec/advisory-db's existing process; broader Project decisions use the standard RFC/FCP process. `[TODO: confirm with initial members and with RustSec maintainers.]`
 
-#### What work is not specifically part of this group's remit?
+#### What work is not specifically part of this team's remit?
 
 - Project-internal hardening (Project repos/CI/publishing): belongs to project-security.
 - Reactive response to vulnerabilities in Project-owned code: belongs to security-response.
 - Deciding crates.io / cargo policy or operating their systems outside delegated actions: stays with those teams.
 - Formal Project adoption of external tooling (cargo audit/vet/deny, etc.) as governed by Rustlang
     - Individual contribution is fine.
-    - This group may raise proposals for adoption of tools to the broader Project.
-    - The RustSec/advisory-db placement is an example of tooling that will require a process beyond this group's initial charter.
+    - This team may raise proposals for adoption of tools to the broader Project.
+    - The RustSec/advisory-db placement is an example of tooling that will require a process beyond this team's initial charter.
 
 #### Team Processes
 
 ##### Contact Point
 
-`@jlizen` can be point of contact until group discusses further leadership processes. General discussion happens in the `#security-chat` Zulip channel.
+`@jlizen` can be point of contact until the team discusses further leadership processes. General discussion happens in the `#security-chat` Zulip channel.
 
 ##### Team Membership
 
@@ -532,11 +532,11 @@ Members are expected to:
 
 ##### Relationship to the `security` umbrella, RustSec, and wg-secure-code
 
-- security: ecosystem-security is a subgroup of `security` (initially under `launching-pad`), expected to send at least one delegate to the top-level coordination group.
-- RustSec: we think it should live in `ecosystem-security` or a new subgroup, but whether to move RustSec inside the Project at all will be discussed in a separate RFC which @djc intends to drive following the chartering of `security` and `ecosystem-security`.
+- security: ecosystem-security is a subteam of `security` (initially under `launching-pad`), expected to send at least one delegate to the top-level coordination team.
+- RustSec: we think it should live in `ecosystem-security` or a new subteam, but whether to move RustSec inside the Project at all will be discussed in a separate RFC which @djc intends to drive following the chartering of `security` and `ecosystem-security`.
 - wg-secure-code: almost certainly belongs here, but we want to have further discussions before moving forward.
 
-##### Where does this group work?
+##### Where does this team work?
 
 Primarily async, on Zulip. We can use the `#security-chat` Zulip channel until the throughput of the channel becomes overwhelming, at which point we can split.
 
@@ -606,15 +606,15 @@ extra-teams = [
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-### Alternative: broaden `security-response` instead of creating a new group
+### Alternative: broaden `security-response` instead of creating a new team
 
-Rather than a new umbrella group, the existing `security-response` working group could take on proactive and ecosystem security work as well. But, as we see an increase in the number and severity of security incidents, there is a risk of excessive strain on the security response group. As @Manishearth put it, "don't make the people driving security response manage all security work"; security-response shouldn't _become_ T-security.
+Rather than a new umbrella team, the existing `security-response` working group could take on proactive and ecosystem security work as well. But, as we see an increase in the number and severity of security incidents, there is a risk of excessive strain on the security response team. As @Manishearth put it, "don't make the people driving security response manage all security work"; security-response shouldn't _become_ T-security.
 
-This leaves the obvious question of why not just bring more people into `security-response`. At the end of the day, `security-response` didn't sign up for this, and incident response is a different way of working than proactive measures. People can already do cross-cutting things in `security`, so let's not mess up what's working by trying to refactor the existing group.
+This leaves the obvious question of why not just bring more people into `security-response`. At the end of the day, `security-response` didn't sign up for this, and incident response is a different way of working than proactive measures. People can already do cross-cutting things in `security`, so let's not mess up what's working by trying to refactor the existing team.
 
 ### Alternative: a single flat `security` team
 
-Rather than a thin top-level group with subgroups, all security work could live in one team. But, we want to optimize for doing work, and grouping related efforts allows higher communication bandwidth among the people working on them. A single team covering incident response, Project hardening, and the ecosystem would lose that. The top-level group only does what needs a cross-cutting view: coordination, routing, representation, and the integrated threat model.
+Rather than a thin top-level team with subteams, all security work could live in one flat team. But, we want to optimize for doing work, and grouping related efforts allows higher communication bandwidth among the people working on them. A single team covering incident response, Project hardening, and the ecosystem would lose that. The top-level team only does what needs a cross-cutting view: coordination, routing, representation, and the integrated threat model.
 
 ### Why a private `security-advisors` pool rather than public discussion?
 
@@ -622,52 +622,52 @@ Security efforts involve some amount of cat-and-mouse tactics where public discu
 
 ### Why `launching-pad` rather than a top-level team?
 
-Adding a top-level team has broader implications around governance, including Council representation. We want to wait to see how the group operates in practice, and what level of participation we see, before raising that question. Notably, there might be further changes, such as incorporating RustSec, that meaningfully change the group's scope. We propose to revisit this question in 6 months.
+Adding a top-level team has broader implications around governance, including Council representation. We want to wait to see how the team operates in practice, and what level of participation we see, before raising that question. Notably, there might be further changes, such as incorporating RustSec, that meaningfully change the team's scope. We propose to revisit this question in 6 months.
 
 ### Why not include RustSec now?
 
-RustSec / advisory-db lives outside the Rust Project, with its maintainers coordinating partially through wg-secure-code. We think it should live in `ecosystem-security` or a new subgroup, but we first need to discuss moving RustSec inside the Project at all. That deserves its own RFC discussion rather than overloading this one.
+RustSec / advisory-db lives outside the Rust Project, with its maintainers coordinating partially through wg-secure-code. We think it should live in `ecosystem-security` or a new subteam, but we first need to discuss moving RustSec inside the Project at all. That deserves its own RFC discussion rather than overloading this one.
 
 ### Why treat maintainer burnout as a strategic consideration?
 
-It is not sufficient to triage vulnerabilities; we also need a way of shipping fixes. That is not possible today with the amount of pressure on upstream maintainers. So it is critical to this group's goals that we find alternatives that do not burn out maintainers. We also need to consider responder burnout: RustSec maintainers are stretched thin, and `security-response` is a small group today.
+It is not sufficient to triage vulnerabilities; we also need a way of shipping fixes. That is not possible today with the amount of pressure on upstream maintainers. So it is critical to this team's goals that we find alternatives that do not burn out maintainers. We also need to consider responder burnout: RustSec maintainers are stretched thin, and `security-response` is a small team today.
 
 ### Why recommendations rather than requirements?
 
-Existing groups own these areas and are the subject matter experts on them. The Rust Project does not charter teams that reduce other teams' scope without explicit consensus on both sides. We're best off operating in an advisory way, and perhaps seeing over time what a group might prefer to hand off.
+Existing teams own these areas and are the subject matter experts on them. The Rust Project does not charter teams that reduce other teams' scope without explicit consensus on both sides. We're best off operating in an advisory way, and perhaps seeing over time what a team might prefer to hand off.
 
 ### Why no delegated crates.io authority at the start?
 
-Finding the right delegation model takes care and consensus seeking, even if the crates.io team is not interested in being the frontline for security issues in the long term. The group therefore starts with no delegated authority on crates.io.
+Finding the right delegation model takes care and consensus seeking, even if the crates.io team is not interested in being the frontline for security issues in the long term. The team therefore starts with no delegated authority on crates.io.
 
 ### Why does security-response keep ecosystem incidents initially?
 
 security-response is handling high-impact ecosystem incidents today, and we need to transition mindfully to avoid dropping the ball. security-response therefore remains responsible for them until ecosystem-security has the process and capacity to handle them.
 
-### Why does the top-level group own the threat model?
+### Why does the top-level team own the threat model?
 
-Threat models work best when there is one owner. The top-level group is also responsible for creating new subgroups, which will be informed by the threat model.
+Threat models work best when there is one owner. The top-level team is also responsible for creating new subteams, which will be informed by the threat model.
 
-### Why an open top-level group alongside confidential subgroups?
+### Why an open top-level team alongside confidential subteams?
 
-We care about having an accessible front door for people who want to get involved in Rust security, and a place for external sponsors and collaborators to plug in to. The top-level group shouldn't be discussing sensitive topics, so we optimize for openness and transparency until there is a reason to segment. Embargoed incident details, in-progress advisories, and any secrets remain confined to the relevant subgroup's access-controlled channels and are never shared into the coordination group or `#security-chat`.
+We care about having an accessible front door for people who want to get involved in Rust security, and a place for external sponsors and collaborators to plug in to. The top-level team shouldn't be discussing sensitive topics, so we optimize for openness and transparency until there is a reason to segment. Embargoed incident details, in-progress advisories, and any secrets remain confined to the relevant subteam's access-controlled channels and are never shared into the coordination team or `#security-chat`.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-The following are left open in the charters and are expected to be resolved by the initial members after the groups exist, rather than through this RFC:
+The following are left open in the charters and are expected to be resolved by the initial members after the teams exist, rather than through this RFC:
 
 - Lead / point person for `project-security`.
 - How membership is managed for `project-security` and `ecosystem-security` (the latter in coordination with RustSec maintainers).
 - Decision-making process for `ecosystem-security`, to be confirmed with initial members and with RustSec maintainers.
-- RustSec: we think it should live in `ecosystem-security` or a new subgroup, but whether to move RustSec inside the Project at all will be discussed in a separate RFC which @djc intends to drive following the chartering of `security` and `ecosystem-security`.
+- RustSec: we think it should live in `ecosystem-security` or a new subteam, but whether to move RustSec inside the Project at all will be discussed in a separate RFC which @djc intends to drive following the chartering of `security` and `ecosystem-security`.
 - wg-secure-code: almost certainly belongs under `ecosystem-security`, but we want to have further discussions before moving forward.
 - Whether the existing `wg-security-response` repo and Zulip presence are renamed to `security-response`. No rename is proposed here unless current team members prefer it.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Making `security` a top-level group depending on level of engagement.
+- Making `security` a top-level team depending on level of engagement.
 - An opt-in, trained ecosystem-security oncall operating under crates.io-delegated access. This needs more design and is explicitly *not* part of the initial chartering request.
 - The crates.io team may choose to delegate some operational authority to `ecosystem-security`. If they do, it happens only under an explicit, revocable program that spells out audit logging, review for destructive actions (deletion), and who is accountable.
-- Formal Project adoption of external tooling (cargo audit/vet/deny, etc.). This group may raise proposals for adoption of tools to the broader Project.
+- Formal Project adoption of external tooling (cargo audit/vet/deny, etc.). This team may raise proposals for adoption of tools to the broader Project.
