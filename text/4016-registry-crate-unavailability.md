@@ -71,7 +71,7 @@ treating unknown values as `unavailable`.
 `unavailable` means the registry does not serve the version's `.crate` file via the normal download path.
 This covers both temporary quarantine and permanent withdrawal; the index does not distinguish them.
 
-`available` is equivalent to a value of `null` and indicates that the index row has no availability
+`available` is equivalent to a value of not present and indicates that the index row has no availability
 restrictions.
 
 Cargo never selects an unavailable version. On fresh resolution, it will pick a different compatible version, so
