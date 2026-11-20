@@ -103,9 +103,6 @@ does not imply that the crate is made unavailable.
 For researchers, unavailable versions are in the index, and a registry may document a way to fetch unavailable bytes.
 Fetching unavailable bytes via Cargo may be covered in a future RFC.
 
-For maintainers, Cargo will avoid unavailable versions of crate dependencies while generating a lockfile.
-If a lockfile is committed and includes an unavailable version, the publication fails with a useful error.
-
 docs.rs does not build unavailable versions and shows a status badge instead.
 
 ## Reference-level explanation
