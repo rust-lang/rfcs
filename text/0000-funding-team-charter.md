@@ -146,9 +146,9 @@ For more details about affiliation limits, see the [Leadership Council Affiliati
 ### Conflicts of interest
 [conflicts-of-interest]: #conflicts-of-interest
 
-Members of the Funding team and members of the Rust Leadership Council might also be interested in asking for being funded by the Funding team. That support could either be for performing work inside the Funding team or the Leadership Council (both can be quite time intensive), but also for unrelated Rust work in other teams. We will use the term "conflicted candidate" in the rest of this section to refer to Funding team or Council members asking for being funded by the Funding team.
+Members of the Funding team and members of the Rust Leadership Council might also be interested in being funded by the Funding team. That support could either be for performing work inside the Funding team or the Leadership Council (both can be quite time intensive), but also for unrelated Rust work in other teams. We will use the term "conflicted candidate" in the rest of this section to refer to Funding team or Council members asking to be funded by the Funding team.
 
-Conflicted candidates are also Rust Project members, and deserve the possibility to ask for being funded for their work. However, this of course also constitutes a clear conflict of interest.
+Conflicted candidates are also Rust Project members, and deserve the possibility to ask to be funded for their work. However, this of course also constitutes a clear conflict of interest.
 
 Conflicted candidates may ask to be financially supported by the Funding team for a specific role (e.g. being a Maintainer in Residence for a specific team). However, we instate the following rules to lessen (though not completely remove) the conflict of interest that would arise from this:
 
