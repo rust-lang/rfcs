@@ -165,13 +165,11 @@ New members of `security-advisors` are nominated by members of this team or its 
 
 ##### Contact Point
 
-`@jlizen` can be point of contact until the team discusses further leadership processes. General discussion happens in the `#security-chat` Zulip channel.
+General discussion happens in the `#security-chat` Zulip channel.
 
 ##### Team Membership
 
 Members: the lead(s) once determined, at least one delegate from each subteam (so that each subteam stays looped in), and anyone else who wants to help coordinate. Membership is intended to stay small.
-
-Proposed initial members, along with subteam nominees: @jlizen, @Manishearth, @LawnGnome, @m-ou-se, @Eh2406, @walterhpearce
 
 Members are expected to:
 
@@ -274,8 +272,6 @@ Response decisions are made by team consensus, typically in the private per-inci
 Reports and contact go through security@rust-lang.org per the [Rust security policy](https://www.rust-lang.org/policies/security). Do not open public issues for vulnerabilities.
 
 ##### Team Membership
-
-Current members: @cuviper, @emilyalbini, @Manishearth, @mark-simulacrum, @walterhpearce. Alumni: @alexcrichton, @nikomatsakis, @steveklabnik.
 
 Team members are expected to:
 
@@ -390,11 +386,9 @@ By team consensus; where a public Project decision or a broadly-scoped recommend
 
 ##### Contact Point
 
-`[TODO: figure out a lead / point person.]` General discussion happens in the `#security-chat` Zulip channel.
+General discussion happens in the `#security-chat` Zulip channel.
 
 ##### Team Membership
-
-Proposed initial members (all pending confirmation): @Mark-Simulacrum, @LawnGnome, @m-ou-se, @teor2345, @walterhpearce
 
 Members are expected to:
 
@@ -403,7 +397,7 @@ Members are expected to:
 
 ##### How is team membership managed?
 
-`[TODO: to be defined by the initial members.]`
+This will be defined following chartering by initial members.
 
 ##### Relationship to the `security` umbrella
 
@@ -492,7 +486,7 @@ The team should be informed of:
 
 #### How does this team make decisions?
 
-By team consensus, with a clear internal understanding of who leads response vs. proactive work. Advisory publication follows RustSec/advisory-db's existing process; broader Project decisions use the standard RFC/FCP process. `[TODO: confirm with initial members and with RustSec maintainers.]`
+By team consensus, with a clear internal understanding of who leads response vs. proactive work. Advisory publication follows RustSec/advisory-db's existing process; broader Project decisions use the standard RFC/FCP process.
 
 #### What work is not specifically part of this team's remit?
 
@@ -512,8 +506,6 @@ By team consensus, with a clear internal understanding of who leads response vs.
 
 ##### Team Membership
 
-Proposed initial members (all pending confirmation): @jlizen, @djc, @LawnGnome, @walterhpearce, @amousset, @tarcieri, @Eh2406, @mendymm, @teor2345
-
 Members are expected to:
 
 - Contribute recurring work to advisory operations, tooling/detection, or ecosystem response.
@@ -521,7 +513,7 @@ Members are expected to:
 
 ##### How is team membership managed?
 
-`[TODO: to be defined by the initial members, in coordination with RustSec maintainers]`
+This will be defined following chartering by initial members.
 
 ##### Relationship to the `security` umbrella, RustSec, and wg-secure-code
 
