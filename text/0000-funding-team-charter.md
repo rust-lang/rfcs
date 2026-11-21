@@ -63,7 +63,8 @@ Below is a non-exhaustive list of activities that the team is expected to perfor
 #### Be accountable
 - Work in the open, unless the discussion requires privacy (for example personal or hiring, funders' interests, etc.), by sharing its meeting notes publicly and proactively sharing their plans with Rust Project members.
 - Publicly document its decision-making processes, funding decision rationale and funding program details.
-- Be open to feedback about their processes and funding decisions, in particular from other Rust Project members.
+  Actively solicit feedback about their processes and funding decisions from candidates, recipients, and other Rust Project members.
+- Actively solicit feedback about their public communication and funding effectiveness from sponsors and potential sponsors.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -73,9 +74,10 @@ Below is a non-exhaustive list of activities that the team is expected to perfor
 There are a lot of possible areas that can be funded, but the Funding team cannot possibly be in charge of all of them. The team is expected to be rather small, it will be mostly handling funds gathered for a specific purpose, and same as for many other teams, some of its members might be volunteers, so we have to be mindful of the expected scope, so that the team is able to handle it in a reasonable way.
 
 As an example, here are some areas that are explicitly out of scope for the Funding team:
-- Paying for costs unrelated to supporting contributors, e.g. funding Rust infrastructure. This is completely out of scope for the team, as it is handled by the Rust Foundation.
+- Paying for costs unrelated to financially supporting contributors, e.g. funding Rust infrastructure. This is completely out of scope for the team, as it is handled by the Rust Foundation.
 - Financially supporting contributions to Rust code outside of repositories managed by the Rust Project, e.g. third-party crates.
-- Financially supporting contributors that are not a part of the Rust Project. Vetting and interviewing people whom the Funding team is not already familiar with would be a lot of additional work. We usually expect to have enough Project Members to fund before it would be necessary to look for people outside the Project for a given position.
+- Financially supporting contributors that are not a part of the Rust Project.
+  - Vetting and interviewing people whom the Funding team is not already familiar with would be a lot of additional work. We usually expect to have enough Project Members to fund before it would be necessary to look for people outside the Project for a given position.
   - That being said, the start of funding someone could coincide with them joining the Rust Project.
 
 What is in scope, and should be the Funding team's primary focus, is financially supporting Rust Project members who contribute to the Rust language and its toolchain, in order to make their contributions sustainable.
