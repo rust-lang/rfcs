@@ -13,7 +13,7 @@ This RFC establishes a new `security` team under `launching-pad`, with three sub
 
 Today, we have `wg-security-response`. They have a good handle on incident response. However, they are focused on *reactive* security.
 
-Security response is important and deserves a working group in its own right. But, as we see an increase in the number and severity of security incidents (most recently [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response team. We also need to make investments in our forward security posture.
+Security response is important and deserves a working group in its own right. But, as we encounter more and more high-impact security incidents (for instance: [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response team. We also need to make investments in our forward security posture.
 
 Security engineers with the Rust Foundation are already doing some interesting and promising things on the proactive security front: typosquatting checks, dependency graph analysis, and various detection systems. But, it should be easier for Project members to participate in or build on this work.
 
