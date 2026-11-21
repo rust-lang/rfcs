@@ -11,14 +11,7 @@ This RFC establishes a new `security` team under `launching-pad`, with three sub
 ## Motivation
 [motivation]: #motivation
 
-Today, we have `wg-security-response`. They have a good handle on incident response, including with the recent arrayref attack. However, they are focused on *reactive* security. As @Manishearth [recently put it](https://rust-lang.zulipchat.com/#narrow/channel/146229-wg-secure-code/topic/who.20can.20merge.20rustsec.20advisories/near/618065077):
-
-> we do not do any proactive security work
->
-> we do not manage wider ecosystem security except in narrow situations
->
-> I think increasing hc on the team is something we should do anyway but "don't make the people driving security response manage all security work" is what I'm saying here
-> Emily proposed a T-security ages ago and I think we should do that. I would even love to help with that work once I'm off the council. But security-response shouldn't _become_ T-security
+Today, we have `wg-security-response`. They have a good handle on incident response. However, they are focused on *reactive* security.
 
 Security response is important and deserves a working group in its own right. But, as we see an increase in the number and severity of security incidents (most recently [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response team. We also need to make investments in our forward security posture.
 
@@ -71,7 +64,7 @@ To accomplish these goals, the team will consider the health of ecosystem mainta
 
 ### `security-advisors`
 
-The team also includes an advisory pool of trusted people in a private Zulip channel, `security-advisors`. This channel acts as a rendezvous point for security operators to reach contributors from across Rust Project teams — t-compiler, t-infra, crates.io, cargo, libs, lang, the Foundation, etc. — and individuals with relevant expertise. This allows operators to pull people into private response threads quickly, without widening an embargo to a whole team.
+A marker team of trusted people in a private Zulip channel, `security-advisors`. This channel acts as a rendezvous point for security operators to reach contributors from across Rust Project teams — t-compiler, t-infra, crates.io, cargo, libs, lang, the Foundation, etc. — and individuals with relevant expertise. This allows operators to pull people into private response threads quickly, without widening an embargo to a whole team.
 
 The channel also offers an opportunity to privately seek feedback and a thumbs up on whether security measures meet Project norms and published policies. This is necessary because security efforts involve some amount of cat-and-mouse tactics where public discussion of methods undermines efficacy.
 
