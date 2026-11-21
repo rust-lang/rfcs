@@ -41,7 +41,7 @@ The top-level team is intentionally thin. Beyond owning and integrating the Proj
 
 `security` starts with three working subteams. See each subteam's charter for more information.
 
-- security-response - reactive - [charter](#security-response-team-charter)
+- security-response - reactive, Project-internal - [charter](#security-response-team-charter)
 - project-security - proactive, Project-internal - [charter](#project-security-team-charter)
 - ecosystem-security - crates.io crates and ecosystem - [charter](#ecosystem-security-team-charter)
 
