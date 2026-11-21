@@ -520,7 +520,7 @@ This leaves the obvious question of why not just bring more people into `securit
 
 ### Alternative: a single flat `security` team
 
-Rather than a thin top-level team with subteams, all security work could live in one flat team. But, we want to optimize for doing work, and grouping related efforts allows higher communication bandwidth among the people working on them. A single team covering incident response, Project hardening, and the ecosystem would lose that. The top-level team only does what needs a cross-cutting view: coordination, routing, representation, and the integrated threat model.
+We could have one big team rather than a parent team for coordination and subteams. But, we want to optimize for doing work, and grouping related efforts allows higher communication bandwidth among the people working on them. Not to mention, `security-response` already exists and is working well, so we don't want to change that unnecessarily.
 
 ### Why a private `security-advisors` pool rather than public discussion?
 
@@ -534,11 +534,7 @@ Adding a top-level team has broader implications around governance, including Co
 
 RustSec / advisory-db lives outside the Rust Project, with its maintainers coordinating partially through wg-secure-code. We think it should live in `ecosystem-security` or a new subteam, but we first need to discuss moving RustSec inside the Project at all. That deserves its own RFC discussion rather than overloading this one.
 
-### Why treat maintainer burnout as a strategic consideration?
-
-It is not sufficient to triage vulnerabilities; we also need a way of shipping fixes. That is not possible today with the amount of pressure on upstream maintainers. So it is critical to this team's goals that we find alternatives that do not burn out maintainers. We also need to consider responder burnout: RustSec maintainers are stretched thin, and `security-response` is a small team today.
-
-### Why recommendations rather than requirements?
+### Why does `project-security` make recommendations rather than requirements?
 
 Existing teams own these areas and are the subject matter experts on them. The Rust Project does not charter teams that reduce other teams' scope without explicit consensus on both sides. We're best off operating in an advisory way, and perhaps seeing over time what a team might prefer to hand off.
 
@@ -574,6 +570,6 @@ The following are left open in the charters and are expected to be resolved by t
 [future-possibilities]: #future-possibilities
 
 - Making `security` a top-level team depending on level of engagement.
-- An opt-in, trained ecosystem-security oncall operating under crates.io-delegated access. This needs more design and is explicitly *not* part of the initial chartering request.
-- The crates.io team may choose to delegate some operational authority to `ecosystem-security`. If they do, it happens only under an explicit, revocable program that spells out audit logging, review for destructive actions (deletion), and who is accountable.
+- An opt-in ecosystem-security oncall operating under crates.io-delegated access. This needs more design and is explicitly *not* part of the initial chartering request.
+- The crates.io team may choose to delegate some operational authority to `ecosystem-security`. This requires more discussion and would need to be explicitly scoped and revokable.
 - Formal Project adoption of external tooling (cargo audit/vet/deny, etc.). This team may raise proposals for adoption of tools to the broader Project.
