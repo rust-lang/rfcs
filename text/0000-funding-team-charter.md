@@ -31,10 +31,10 @@ The Funding team charter will be formed by the Guide-level and Reference-level e
 The goal of the Funding team is to improve the overall health and long-term sustainability of the Rust Project and its teams, primarily by financially supporting Project team members for maintaining the Rust language and its toolchain.
 
 Its high-level duties are to:
-- Communicate with Rust Project teams and maintainers to figure out their maintenance and funding needs.
-- Distribute available funds to financially support Rust Project maintainers.
-- Communicate with funders and promote the work of supported maintainers to help find and keep sustainable funding.
-- Work transparently and in public as much as possible, unless the discussion cannot be made public due to private details being involved.
+- Listen: communicate with Rust Project teams and maintainers to figure out their maintenance and funding needs.
+- Deliver: distribute available funds to financially support Rust Project maintainers.
+- Sustain: communicate with funders and promote the work of supported maintainers to help find and keep sustainable funding.
+- Be accountable: work transparently and in public as much as possible, unless the discussion cannot be made public due to private details being involved.
 
 The Funding team has to make difficult choices about whom to financially support, as often there are several great choices, but not enough funds to support all of them. It should strive to make decisions that will be the best for the overall health of the Rust Project and its teams, including the long-term sustainability of the funding program itself.
 
@@ -42,23 +42,28 @@ The Funding team has to make difficult choices about whom to financially support
 
 Below is a non-exhaustive list of activities that the team is expected to perform to fulfill the duties described above.
 
+#### Listen
 - Communicate with Rust Project teams to learn about their maintenance needs and other kinds of desired support.
 - Communicate with Rust Project members to learn about their funding needs and other kinds of desired support.
+- Communicate with the [goals][t-goals] team to ensure that maintainers are properly supported to provide reviews and maintenance of accepted Rust [Project Goals][goals].
+- Regularly evaluate the effectiveness of applied funding to determine whether it still serves the best interests of the Rust Project.
+
+#### Deliver
 - Distribute available funds to financially support Rust Project contributors, based on evaluating the most pressing maintenance needs of Rust Project teams.
 - Ensure the success of, and run, the Maintainer in Residence program, as defined by [RFC #3931][rfc-3931].
 - Ensure that Rust Project contributors funded by this team are satisfied with their arrangement, are not blocked from doing their designed work, and are not under undue pressure from funders.
+- Provide funding suggestions to external maintainer funds or companies interested to hire maintainers themselves, to help steer funds not managed by the Funding team itself towards the betterment of the Rust Project. This could include co-funding maintainers with third-party funds.
+- Work actively, to ensure that funding opportunities are not wasted unnecesarily, and that Rust Project members are not unnecessarily delayed from receiving funds that were already allocated for their support. But also be mindful of waiting for potentially better opportunities, rather than spending all available funds as soon as possible.
+
+#### Sustain
 - Promote the work of Rust Project contributors funded by this team and its positive effect on the Rust Project to attract more funding, for example by writing blog posts or recording podcasts or videos.
-- Communicate with funders (both companies and individuals) to find new funding opportunities and ensure that they are satisfied with the way their provided funds are being spent.
-- Provide funding suggestions to external maintainer funds or companies interested to hire maintainers themselves, to help steer funds not managed by the Funding team itself towards the betterment of the Rust Project. The Funding team may also pool funds with such funding entities to co-fund Rust Project contributors.
-- Help finding long-term sustainable funding and new funding sources to sustain Rust Project contributors, for example by coordinating promotional fundraisers together with the Rust Foundation.
+- Communicate with funders (both companies and individuals) to find new funding opportunities and ensure that they are satisfied with the way their provided funds are being spent. Work with the Rust Foundation to find new sources of funding, for example by coordinating promotional fundraisers.
 - Responsibly manage the available budget and the funds from the Rust Foundation Maintainers Fund, to ensure long-term sustainable funding for Rust Project contributors.
-- Communicate with the [goals][t-goals] teams to ensure that maintainers are properly supported to provide reviews and maintenance of accepted Rust [Project Goals][goals].
-- Serve as a point of contact for various funding initiatives related to Rust Project maintenance.
-- Regularly evaluate the effectiveness of applied funding to determine whether it still serves the best interests of the Rust Project.
+
+#### Be accountable
 - Work in the open, unless the discussion requires privacy (for example personal or hiring, funders' interests, etc.), by sharing its meeting notes publicly and proactively sharing their plans with Rust Project members.
 - Publicly document its decision-making processes, funding decision rationale and funding program details.
 - Be open to feedback about their processes and funding decisions, in particular from other Rust Project members.
-- Work actively, to ensure that funding opportunities are not wasted unnecesarily, and that Rust Project members are not unnecessarily delayed from receiving funds that were already allocated for their support. But also be mindful of waiting for potentially better opportunities, rather than spending all available funds as soon as possible.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
