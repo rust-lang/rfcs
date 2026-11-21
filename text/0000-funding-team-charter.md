@@ -159,7 +159,7 @@ Conflicted candidates are also Rust Project members, and deserve the possibility
 
 Conflicted candidates may ask to be financially supported by the Funding team for a specific role (e.g. being a Maintainer in Residence for a specific team). However, we instate the following rules to lessen (though not completely remove) the conflict of interest that would arise from this:
 
-- They must not vote on themselves, and "leave the room" when any decisions about them being funded are made.
+- They must not vote on themselves, and leave the (virtual) room when any decisions about them being funded are made or discussed.
 - They must not privately discuss the role that they are actively applying for (or being considered for) with the Funding team, Funding team advisers, or the Leadership Council.
 - They must abstain from all decisions made about the role that they are actively applying (or being considered) for. This includes decisions whether the given role (or supported team) should be prioritized against other considered roles.
 
