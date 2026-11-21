@@ -117,7 +117,7 @@ Given the amount of influence that the Funding team has, it has a special relati
 - The Leadership Council determines the [membership](#team-membership) of the Funding team.
 - The Leadership Council has to approve any funding that the team allocates to a member of the Funding team itself or to a member of the Leadership Council (see [Conflicts of interest](#conflicts-of-interest)).
 
-The Funding team reports its budget (i.e. how much money it has and expects to spend in the following year) and general status (how are funded maintainers happy with their role, what is the status of finding new funding sources, etc.), along with additional context periodically to the Council, at least once a year. This is so that the Council can evaluate the effectiveness of the funding, and make informed decisions when planning its own Project Priorities budget.
+The Funding team reports its budget (i.e. how much money it has and expects to spend in the following year) and general status (how are funded maintainers happy with their role, what is the status of finding new funding sources, etc.), along with additional context periodically to the Council, at least four times a year. This is so that the Council can evaluate the effectiveness of the funding, and make informed decisions when planning its own Project Priorities budget.
 
 ### Team membership
 [team-membership]: #team-membership
