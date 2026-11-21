@@ -24,6 +24,8 @@ The charters of the `security` team and its subteams will be formed by the Refer
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+![A visualization of the groups described in the body that follows.](4032-security-team/t-security.png)
+
 The `security` team is a thin coordination layer over three working subteams and a private advisory pool.
 
 ### `security`
