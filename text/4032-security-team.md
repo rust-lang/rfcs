@@ -282,7 +282,7 @@ Reports and contact go through security@rust-lang.org per the [Rust security pol
 
 ##### Team Membership
 
-Current members: @cuviper, @emilyalbini, @Manishearth. Alumni: alexcrichton, nikomatsakis, steveklabnik.
+Current members: @cuviper, @emilyalbini, @Manishearth, @mark-simulacrum, @walterhpearce. Alumni: @alexcrichton, @nikomatsakis, @steveklabnik.
 
 Team members are expected to:
 
