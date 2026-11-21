@@ -66,7 +66,7 @@ A marker team of trusted people in a private Zulip channel, `security-advisors`.
 
 The channel also offers an opportunity to privately seek feedback and a thumbs up on whether security measures meet Project norms and published policies. This is necessary because security efforts involve some amount of cat-and-mouse tactics where public discussion of methods undermines efficacy.
 
-The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml). [Proposed initial members](#security-advisors-team-definition).
+The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml).
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -137,7 +137,8 @@ A marker team of trusted people in a private Zulip channel, `security-advisors`.
 
 The channel also offers an opportunity to privately seek feedback and a thumbs up on whether security measures meet Project norms and published policies. This is necessary because security efforts involve some amount of cat-and-mouse tactics where public discussion of methods undermines efficacy.
 
-The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml). [Proposed initial members](#security-advisors-team-definition).
+The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml).
+
 
 #### How does this team make decisions?
 
@@ -448,66 +449,6 @@ By consensus of existing members.
 Primarily async, on Zulip. We use the `#security-chat` Zulip channel until the throughput of the channel becomes overwhelming, at which point we can split.
 
 Synchronous meetings are scheduled, with a preference for breakouts rather than full-group meetings.
-
-
-### `security-advisors` team definition
-[security-advisors-team-definition]: #security-advisors-team-definition
-
-Proposed `rust-lang/team` entry for `security-advisors`:
-
-```toml
-name = "security-advisors"
-subteam-of = "security"
-
-[people]
-leads = []
-members = [
-    "Manishearth",
-    "emilyalbini",
-    "cuviper",
-    "Mark-Simulacrum",
-    "jlizen",
-    "LawnGnome",
-    "m-ou-se",
-    "teor2345",
-    "djc",
-    "walterhpearce",
-    "amousset",
-    "alex",
-    "tarcieri",
-    "Eh2406",
-    "nia-e",
-    "obi1kenobi",
-    "joshlf",
-    "jdno",
-    "marcoieni",
-    "ubiratansoares",
-    "davidtwco",
-    "saethlin",
-    "Turbo87",
-    "clarfonthey",
-    "joshtriplett"
-]
-alumni = []
-
-[website]
-name = "Security advisors"
-description = "A small group of members cutting across Project teams that are available for private consultation for security concerns."
-
-[[zulip-groups]]
-name = "T-security-advisors"
-
-[[zulip-streams]]
-name = "security/with-advisors"
-extra-teams = [
-    "security-response",
-    "foundation-board-project-directors",
-    "crates-io-admins",
-    "crates-io-on-call",
-    "leadership-council",
-    "infra-admins",
-]
-```
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
