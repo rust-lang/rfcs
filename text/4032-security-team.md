@@ -636,11 +636,11 @@ It is not sufficient to triage vulnerabilities; we also need a way of shipping f
 
 Existing teams own these areas and are the subject matter experts on them. The Rust Project does not charter teams that reduce other teams' scope without explicit consensus on both sides. We're best off operating in an advisory way, and perhaps seeing over time what a team might prefer to hand off.
 
-### Why no delegated crates.io authority at the start?
+### Why not start off with crates.io delegating security work to ecosystem-security?
 
 Finding the right delegation model takes care and consensus seeking, even if the crates.io team is not interested in being the frontline for security issues in the long term. The team therefore starts with no delegated authority on crates.io.
 
-### Why does security-response keep ecosystem incidents initially?
+### Why does security-response initially keep primary responsibility for ecosystem incidents?
 
 security-response is handling high-impact ecosystem incidents today, and we need to transition mindfully to avoid dropping the ball. security-response therefore remains responsible for them until ecosystem-security has the process and capacity to handle them.
 
