@@ -141,7 +141,9 @@ Generally by consensus, but via RFC for changes that impact the broader Rust pro
 
 ##### Contact Point
 
-The #security channel is the primary contact point. `security@rustlang.org` is not intended as a contact point, but relevant communications to this inbox will be routed to `security` by `security-response` and `ecosystem-security` reviewers. 
+The `seurity-chat` channel is the primary contact point. Team lead(s) are also available for direct outreach.
+
+`security@rustlang.org` is not intended as a contact point, but relevant communications to this inbox will be routed to `security` by `security-response` and `ecosystem-security` reviewers. 
 
 ##### Team Membership
 
@@ -157,7 +159,7 @@ The team reaches out to and invites new members based on internal consensus.
 
 ##### Where does this team work?
 
-Primarily the #security channel, with synchronous meetings announced in this channel.
+Primarily the `security-chat` channel, with synchronous meetings announced in this channel. For extended discussions, the team uses subchannels.
 
 #### security-advisors
 
