@@ -6,20 +6,22 @@
 ## Summary
 [summary]: #summary
 
-This RFC establishes a new `security` team under `launching-pad`, with three subteams (`security-response`, `project-security`, `ecosystem-security`) and a private `security-advisors` pool. It does so by defining the charters of each team, including a first charter for the existing `security-response` team, which does not currently have one.
+This RFC establishes a new `security` team under `launching-pad`, with three subteams (`security-response`, `project-security`, `ecosystem-security`) and a private `security-advisors` pool. It does so by defining the charters of each team, including a charter for the existing `security-response` team, which does not currently have one.
+
+Significant changes to the charters that would impact the scope of other teams, or go beyond the spirit of the initial RFC, will require a new RFC directed to `t-leadership-council`. Other changes to the charters, including creating new subteams that do not impact the scope of other teams, will be handled internal to `security`.
 
 ## Motivation
 [motivation]: #motivation
 
-Today, we have `wg-security-response`. They have a good handle on incident response. However, they are focused on *reactive* security.
+Today, we have `wg-security-response`. They have a good handle on incident response. However, they are focused on reactive security and are not interested in expanding scope to proactive security or broader ecosystem security. As we encounter urgent security incidents (for instance: [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response team. It does not operate an oncall or make specific guarantees on response time. To keep that approach practical, we need to make build our capacity in other ways and make investments in our forward security posture.
 
-Security response is important and deserves a working group in its own right. But, as we encounter more and more high-impact security incidents (for instance: [arrayref](https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/)), there is a risk of excessive strain on the security response team. We also need to make investments in our forward security posture.
+On the capacity-building front, security engineers with the Rust Foundation are already doing some interesting and promising things on the proactive security front: typosquatting checks, dependency graph analysis, and various detection systems. This is not as visible to the Project as it could be, nor is it especially easy to build on top of. Moving this work into a Project team will make it more accessible to collaborators.
 
-Security engineers with the Rust Foundation are already doing some interesting and promising things on the proactive security front: typosquatting checks, dependency graph analysis, and various detection systems. But, it should be easier for Project members to participate in or build on this work.
+More broadly, we could use a "front door" for security-oriented collaborators. It is not appropriate for them to join the "trust circle" of response groups that operate under embargo during incidents. But, there is plenty of system-building, guidance-writing, training, and other work that is not as sensitive. By creating Project teams tackling this work, we improve our ability to attract new contributors and build trust with them.
 
-Similarly [we have goals to apply crates.io security controls](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html) that will ultimately rely on some amount of consensus since they make opinionated choices. And, some of these choices will need to be semi-private given the "cat and mouse" of security controls. So, having a team of people that can be delegated to make these decisions, under a more broadly agreed-upon framework, seems important.
+Related to trust and forward posture, [we have goals to apply crates.io security controls](https://goals.rust-lang.org/2026/crates-io-supply-chain-hardening.html) that will ultimately rely on some amount of consensus since they make opinionated choices. And, some of these choices will need to be semi-private given the "cat and mouse" of security controls. So, having a team of people that can be delegated to make these decisions, under a more broadly agreed-upon framework, seems important.
 
-The charters of the `security` team and its subteams will be formed by the Reference-level explanation part of this RFC. They will be located in the repository of the `security` team, once created. Significant changes to the charters that would impact the scope of other teams, or go beyond the spirit of the initial RFC, will require a new RFC directed to `t-leadership-council`. Other changes to the charters, including creating new subteams that do not impact the scope of other teams, will be handled internal to `security`.
+Because this is such a multi-faceted set of goals, covering different areas of focus and levels of trust, this RFC proposes creating multiple groups and relationships between the groups. Refer to the "Alternatives" section for a deeper discussion of this structure.
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
