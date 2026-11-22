@@ -455,7 +455,7 @@ The team should be informed of:
 
 #### How does this team make decisions?
 
-By team consensus. Broader Project decisions, for instance substantial contributions to crates.io, follow the standard RFC process.
+By team consensus. Broader Project decisions, for instance substantial contributions to crates.io, or significant decisions that benefit from explicit team consensus, follow the standard RFC process.
 
 #### What work is not specifically part of this team's remit?
 
@@ -468,7 +468,7 @@ By team consensus. Broader Project decisions, for instance substantial contribut
 
 ##### Contact Point
 
-General discussion happens in the `#security` Zulip channel. Subchannels will be created for directed work as needed.
+General discussion happens in the `#security-chat` Zulip channel.
 
 Ecosystem-scoped security reports requiring a reactive response are routed to `security@rustlang.org`. This inbox is shared with `security-response`, with coordination across groups to ensure that the relevant team is driving actionable reports.
 
@@ -481,13 +481,15 @@ Members are expected to:
 
 ##### How is team membership managed?
 
-By consensus of existing members.
+Existing team members may nominate new members, who are approved by team consensus.
 
 ##### Where does this team work?
 
-Primarily async, on Zulip. We use the `#security-chat` Zulip channel until the throughput of the channel becomes overwhelming, at which point we can split.
+Primarily async, on Zulip, in the `#security-chat` Zulip channel. Subchannels will be created for directed discussions as needed.
 
-Synchronous meetings are scheduled, with a preference for breakouts rather than full-group meetings.
+Synchronous meetings are announced in `#security-chat`, with a preference for breakouts rather than full-group meetings.
+
+The team will additional publish recommendations, tooling, and other durable records, to `rustlang/ecosystem-security` on GitHub. 
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
