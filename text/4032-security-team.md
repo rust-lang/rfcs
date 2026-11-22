@@ -502,7 +502,9 @@ The team will additional publish recommendations, tooling, and other durable rec
 
 Rather than a new umbrella team, the existing `security-response` working group could take on proactive and ecosystem security work as well. But, as we see an increase in the number and severity of security incidents, there is a risk of excessive strain on the security response team. As @Manishearth put it, "don't make the people driving security response manage all security work"; security-response shouldn't _become_ T-security.
 
-This leaves the obvious question of why not just bring more people into `security-response`. At the end of the day, `security-response` didn't sign up for this, and incident response is a different way of working than proactive measures. People can already do cross-cutting things in `security`, so let's not mess up what's working by trying to refactor the existing team.
+This leaves the obvious question of why not just bring more people into `security-response`. At the end of the day, `security-response` didn't sign up for this, and incident response is a different way of working than proactive measures. `security-response` has explicitly requested that its scope not be expanded. Under this plan, can already do cross-cutting things in `security`, so let's not mess up what's working by trying to refactor the existing team.
+
+Consolidating teams to handle already-chartered scope can re-evaluated following chartering without a new `council`-facing RFC.
 
 ### Alternative: a single flat `security` team
 
