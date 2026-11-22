@@ -354,7 +354,7 @@ The team should be informed of:
 
 #### How does this team make decisions?
 
-Generally, by team consensus. Where a broadly-scoped recommendation is involved that requires agreement by other teams, via the standard RFC/FCP process.
+Generally by consensus, but via RFC for recommendations or infrastructure changes that impact the broader Rust process or would benefit from explicit team approval.
 
 #### What work is not specifically part of this team's remit?
 
@@ -368,7 +368,9 @@ Generally, by team consensus. Where a broadly-scoped recommendation is involved 
 
 ##### Contact Point
 
-Via the `#security-chat` channel.
+The team communicates with the public via `#security-chat` or via direct outreach to the team's leads(s).
+
+`security@rustlang.org` is not intended as a contact point, but relevant communications to this inbox will be routed to `project-security` by `security-response` and `ecosystem-security` reviewers. 
 
 ##### Team Membership
 
@@ -379,11 +381,15 @@ Members are expected to:
 
 ##### How is team membership managed?
 
-By consensus of existing members.
+Existing team members may nominate new members, who are approved by team consensus.
 
 ##### Where does this team work?
 
-Discussion in the `#security-chat` Zulip channel, and synchronous meetings if scheduled.
+Discussion in the `#security-chat` Zulip channel, with subchannels for directed work as needed.
+
+If synchronous meetings are desired, they will be announced in `#security-chat`.
+
+The team will additional publish recommendations, tooling, and other durable records, to `rustlang/project-security` on GitHub. 
 
 ### Ecosystem Security Team Charter
 [ecosystem-security-team-charter]: #ecosystem-security-team-charter
