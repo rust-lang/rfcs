@@ -380,6 +380,7 @@ Members are expected to:
 
 - Contribute to guidance, tooling, training, or threat-model work on a recurring basis.
 - Engage with owning teams (especially t-infra) collaboratively, respecting their authority.
+- Engage with any RFCs directed to `project-security` in a timely way
 
 ##### How is team membership managed?
 
@@ -470,7 +471,7 @@ By team consensus. Broader Project decisions, for instance substantial contribut
 
 ##### Contact Point
 
-General discussion happens in the `#security-chat` Zulip channel.
+General discussion happens in the `#security-chat` Zulip channel. The team lead(s) are also available for direct contact.
 
 Ecosystem-scoped security reports requiring a reactive response are routed to `security@rustlang.org`. This inbox is shared with `security-response`, with coordination across groups to ensure that the relevant team is driving actionable reports.
 
@@ -480,6 +481,7 @@ Members are expected to:
 
 - Contribute recurring work to advisory operations, tooling/detection, or ecosystem response.
 - When acting on crates.io, operate strictly within crates.io-delegated authority and access.
+- Engage with any RFCs directed to `ecosystem-security` in a timely way
 
 ##### How is team membership managed?
 
