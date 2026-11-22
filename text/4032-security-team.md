@@ -163,7 +163,6 @@ The channel also offers an opportunity to privately seek feedback and a thumbs u
 
 The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/blob/master/teams/funding-advisors.toml).
 
-
 #### How does this team make decisions?
 
 This team generally does not make decisions, besides its own membership, which is discussed in a following section.
@@ -186,7 +185,7 @@ Members are expected to:
 
 ##### How is team membership managed?
 
-The primary decision is admitting new members. For this, new members are nominated by current members and security subteams, and approved by the team's lead(s).
+New members are nominated by current members and security subteams, and approved by the team's lead(s).
 
 ##### Where does this team work?
 
