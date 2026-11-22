@@ -24,8 +24,6 @@ The charters of the `security` team and its subteams will be formed by the Refer
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-![A visualization of the groups described in the body that follows.](4032-security-team/t-security.png)
-
 ### `security`
 
 Coordinate the Rust Project's security work across its subteams, act as an entry point for people who want to get involved in security, and keep track of the big picture of the Project's overall security posture (reactive, proactive, and ecosystem-facing).
