@@ -80,6 +80,8 @@ Coordinate the Rust Project's security work across its subteams, act as an entry
 
 This group is mostly a thin coordination layer. It doesn't do hands on work itself, besides owning the threat model and integrating the subteams' contributions to it. It will highlight gaps in what its subteams are covering and propose charter expansions or new subteams.
 
+If major changes to charters are needed that impact the broader project, this group writes the RFCs, in consultation with impacted subteams.
+
 #### How does this further the Rust Project goals?
 
 The Project benefits from a team that can coordinate security concerns across different front-line teams. It also offers an on-ramp for new contributors.
@@ -106,6 +108,7 @@ The team is NOT responsible for outcomes of subteams' work, such as success of s
 ##### Responsible for work
 
 - Holding meetings and other coordination points between subteams
+- Tracking #security-chat and other security-related channels to highlight ideas and trends that would benefit from direct discussion
 - Identifying and proposing a home for new security-related work that is not currently being handled
 - Surfacing security related needs, such as funding or new coordination, to external parties such as the Leadership Council, the Rust Foundation, or other Project teams
 - Regularly reviewing the Project threat model and making changes, most commonly integrating new inputs from subteams
@@ -122,16 +125,37 @@ The team should be consulted on:
 
 The team should be informed about significant security-related developments encountered by subteams. This will generally be post-disclosure or otherwise involving non-embargoed information, unless members are consulted as part of `security-advisors` discussions.
 
+#### How does this team make decisions?
 
-#### Subteams
+Generally by consensus, but via RFC for changes that impact the broader Rust process or would benefit from explicit subteam approval.
 
-`security` starts with three working subteams. See each subteam's charter for more information.
-- security-response - reactive - [charter](#security-response-team-charter)
-- project-security - proactive, Project-internal - [charter](#project-security-team-charter)
-- ecosystem-security - crates.io crates and ecosystem - [charter](#ecosystem-security-team-charter)
+#### What work is not specifically part of this team's remit?
+
+- Line work on addressing any proactive or reactive security issues, which is owned by subteams
+
+#### Team Processes
+
+##### Contact Point
+
+The #security channel is the primary contact point. `security@rustlang.org` is not intended as a contact point, but relevant communications to this inbox will be routed to `security` by `security-response` and `ecosystem-security` reviewers. 
+
+##### Team Membership
+
+Team members are expected to:
+
+- Regularly provide input into a discussions of the group, asynchronous or synchronous
+- Engage with any RFCs directed to `security` in a timely way
+- Actively route interested contributors to relevant workstream and public channels, to grow the Project's security contributor base
+
+##### How is team membership managed?
+
+The team reaches out to and invites new members based on internal consensus.
+
+##### Where does this team work?
+
+Primarily the #security channel, with synchronous meetings announced in this channel.
 
 #### security-advisors
-
 
 A marker team of trusted people in a private Zulip channel, `security-advisors`. The channel allows the security subteams to loop in relevant contributors across different Rust Project teams and the broader ecosystem to advise on security responses. For instance, if there is an issue in the standard library, representatives of the `t-libs` will be in the channel to consult or to route responders to specific experts in the team.
 
