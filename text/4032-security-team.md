@@ -26,17 +26,17 @@ Because this is such a multi-faceted set of goals, covering different areas of f
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+The guide provides brief descriptions of the proposed teams. Refer the "Reference" section for full charters per team.
+
 ### `security`
 
 Coordinate the Rust Project's security work across its subteams, act as an entry point for people who want to get involved in security, and keep track of the big picture of the Project's overall security posture (reactive, proactive, and ecosystem-facing).
 
 This group is mostly a thin coordination layer. It doesn't do hands on work itself, besides owning the threat model and integrating the subteams' contributions to it. It will highlight gaps in what its subteams are covering and propose charter expansions or new subteams.
 
-`security` starts with three working subteams. See each subteam's charter for more information.
+In practice, this means holding synchronous or asynchronous discussions on some cadence and generally providing a venue for discussing security incidents. Think of this as along the lines of the #security-chat Zulip stream but that more actively recommends new work if there is general interest.
 
-- security-response - reactive, Project-internal - [charter](#security-response-team-charter)
-- project-security - proactive, Project-internal - [charter](#project-security-team-charter)
-- ecosystem-security - crates.io crates and ecosystem - [charter](#ecosystem-security-team-charter)
+This group also would author RFCs proposing major shifts in charters, as needed, in collaboration with impacted subteams.
 
 ### `security-response`
 
