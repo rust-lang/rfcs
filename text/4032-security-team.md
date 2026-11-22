@@ -8,8 +8,6 @@
 
 This RFC establishes a new `security` team under `launching-pad`, with three subteams (`security-response`, `project-security`, `ecosystem-security`) and a private `security-advisors` pool. It does so by defining the charters of each team, including a charter for the existing `security-response` team, which does not currently have one.
 
-Significant changes to the charters that would impact the scope of other teams, or go beyond the spirit of the initial RFC, will require a new RFC directed to `t-leadership-council`. Other changes to the charters, including creating new subteams that do not impact the scope of other teams, will be handled internal to `security`.
-
 ## Motivation
 [motivation]: #motivation
 
@@ -74,6 +72,8 @@ The pool is modeled on [`funding-advisors`](https://github.com/rust-lang/team/bl
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+Significant changes to the charters that would impact the scope of other teams, or go beyond the spirit of the initial RFC, will require a new RFC directed to `t-leadership-council`. Other changes to the charters, including creating new subteams that do not impact the scope of other teams, will be handled internal to `security`.
 
 ### Security Team Charter
 [security-team-charter]: #security-team-charter
