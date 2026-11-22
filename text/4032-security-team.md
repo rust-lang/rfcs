@@ -42,6 +42,8 @@ This group also would author RFCs proposing major shifts in charters, as needed,
 
 Triage and respond to incoming vulnerability reports for the Rust Project, coordinate the development and disclosure of fixes, and maintain the Project's ability to respond to security incidents in a timely, confidential, and trustworthy manner. It handles reports that arrive at `security@rust-lang.org` and drives them to resolution and public disclosure.
 
+The primary contact point for this team is the `security@rustlang.org` inbox, shared with trusted members of `ecosystem-security`.
+
 The team is *not* responsible for work around forward security posture. It is largely not responsible for responding to vulnerabilities on ecosystem crates, besides ones owned directly by the Rust Project. Those are the scope of the sibling `project-security` and `ecosystem-security` teams under the `security` umbrella.
 
 ### `project-security`
@@ -57,6 +59,8 @@ This is the complement to `security-response`: response is reactive, project-sec
 Improve the security posture of the wider Rust ecosystem, including crates published on crates.io, and other non-Rust Project software.
 
 This spans proactive work (tooling, detection, information feeds, community guidance) and response work (coordinating action on malicious or vulnerable crates).
+
+The primary contact point for this team for ecosystem-scope response work is the `security@rustlang.org` inbox, shared `security-response`.
 
 To accomplish these goals, the team will consider the health of ecosystem maintainers and burn-out avoidance both of team members and ecosystem maintainers as a key strategic consideration in all approaches.
 
@@ -196,7 +200,7 @@ Full-team communication happens in a private #security-advisors channel. Additio
 
 #### Mission
 
-Triage and respond to incoming vulnerability reports for the Rust Project, coordinate the development and disclosure of fixes, and maintain the Project's ability to respond to security incidents in a timely, confidential, and trustworthy manner. It handles reports that arrive at `security@rust-lang.org` and drives them to resolution and public disclosure.
+Triage and respond to incoming vulnerability reports for the Rust Project, coordinate the development and disclosure of fixes, and maintain the Project's ability to respond to security incidents in a timely, confidential, and trustworthy manner. It handles reports that arrive at `security@rust-lang.org` related to Project-impact security concerns and drives them to resolution and public disclosure. It routes communications that do not require a reactive Project-scope security response to relevant teams (`ecosystem-security` or `security`, generally).
 
 The team is *not* responsible for work around forward security posture. It is largely not responsible for responding to vulnerabilities on ecosystem crates, besides ones owned directly by the Rust Project. Those are the scope of the sibling `project-security` and `ecosystem-security` teams under the `security` umbrella.
 
@@ -218,7 +222,7 @@ The team does NOT decide the actual fixes to vulnerabilities. It also does not o
 
 ##### Accountable for results
 
-- Every report sent to `security@rust-lang.org` is ultimately acknowledged and driven to resolution (which includes closing it as not actionable)
+- Every report sent to `security@rust-lang.org` is ultimately acknowledged and driven to resolution (which includes closing it as not actionable or rerouting it)
    - This does not involve a specific timeline for this triage and remediation
 - If a coordinated disclosure is agreed upon, it is carried out as planned
 - The incident response content for the threat model is kept current
@@ -424,6 +428,10 @@ The team members do the work of:
 - Building and running detection/scanning/mitigation systems to reduce the incidence of malware on crates.io.
 - Producing consumer-facing security tooling/guidance (e.g. nicer GitHub Actions around cargo audit/deny/vet-style checks)
     - Note that formal Project adoption of external tools is a separate proposal.
+- Monitoring and triaging the `security@rust-lang.org` inbox (including decrypting GPG-encrypted reports).
+  - Flagging `security@rust-lang.org` reports related to Project incidents for `security-response` processes.
+  - This is a desired state, but `security-response` will initially be responsible for this work, until `ecosystem-security` as the process, capacity, and trust model to handle it.
+
 
 ##### Consulted for input
 
@@ -454,7 +462,9 @@ By team consensus. Broader Project decisions, for instance substantial contribut
 
 ##### Contact Point
 
-General discussion happens in the `#security-chat` Zulip channel.
+General discussion happens in the `#security` Zulip channel. Subchannels will be created for directed work as needed.
+
+Ecosystem-scoped security reports requiring a reactive response are routed to `security@rustlang.org`. This inbox is shared with `security-response`, with coordination across groups to ensure that the relevant team is driving actionable reports.
 
 ##### Team Membership
 
