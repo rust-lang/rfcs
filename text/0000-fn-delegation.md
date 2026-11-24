@@ -554,6 +554,10 @@ Type-relative paths are also supported, although support for them on nightly rus
 >
 > `Struct::to_string` resolves to `Trait::to_string`. However, since we cannot perform trait selection during lowering, we report an error. This limitation could potentially be addressed in the future, the current workaround is to use `Trait::to_string`. See [_Future possibilities: Supporting type-relative paths_](#supporting-type-relative-paths).
 
+> [!MINIMAL]
+>
+> We could avoid all the issues related to type-relative paths (including inferring their parent generics) at cost of significantly reduced usefulness, by excluding them from the initial stabilization.
+
 ### Desugaring of individual delegation: signature
 
 All other delegation forms desugar into individual delegations as specified above. Here, we describe how individual delegations desugar further into regular functions.
@@ -2424,6 +2428,8 @@ Several extensions could be added on top of the core feature without changing it
 ### Name-based resolution as sugar
 
 A shorter syntax that infers the callee from a bare method name could be layered on top of fully qualified paths.
+
+The "delegate by method name rather than path" approach initially came from the previous RFCs, but gradually went into the background as implementation for this RFC progressed. Now we'd prefer to just settle on paths and never go in that direction.
 
 ↩ [_Paths and name resolution_](#paths-and-name-resolution)
 
