@@ -398,6 +398,8 @@ Impl delegation items have the form:
 This is the same syntax as for regular `impl` items, except that the block containing associated items is replaced with a block expression.
 Impl delegation items are accepted in all contexts where regular impl are accepted.
 
+Also see [_Alternative syntax_](#alternative-syntax).
+
 ### List, glob, and impl delegation
 
 List, glob, and impl delegations are three kinds of higher-level syntactic sugar that expand to individual function delegations at macro expansion time.
@@ -1173,6 +1175,55 @@ There are several transformations one might reasonably want from the delegation 
 - Input arguments: reordering arguments or calling a method like `.as_ref()`, etc.
 
 To support these transformations in their most general form, delegation items would need something closer to preprocessing and postprocessing closures. We do not support these in the RFC, in accordance with our [_guiding principles_](#design-guiding-principles).
+
+↩ [_Syntax_](#syntax)
+
+#### Alternative syntax
+
+[One of the feedback posts](https://blog.yoshuawuyts.com/a-by-based-delegation-notation#conclusion) to this RFC argues that the function delegation syntax should be based on `fn` items rather than `use` items. Parts of the function header that are still present in delegation items should be in the same places as they are in function items, and the function body should be replaced with what we are delegating to. Impl delegation should also be based on the `impl` syntax in the same way.
+
+Here we'll try to resyntax this proposal while keeping the semantics (the linked post changes the semantics significantly by determining delegation resolutions based on the target expression rather than a path, besides other changes).
+
+The syntax tries to avoid duplication in cases when no renaming happens by splitting the target path into two parts - the prefix and the final segment, separated by the keyword `from`.
+
+```rust
+// Single delegation without renaming.
+fn foo from Trait { self.inner }
+
+// Single delegation with renaming.
+fn foo = bar from Trait { self.inner }
+
+// List delegation with some renaming.
+fn {foo = bar, goo} from Trait { self.inner }
+
+// Glob delegation.
+// Drawback: bad when delegation for `const` and `type` items is also supported.
+fn * from Trait { self.inner }
+
+// Impl delegation
+// Drawback: have to use a different keyword, `from` doesn't fit here.
+impl Trait for Wrapper by { self.inner }
+
+// Generic arguments
+// fn foo<u8> from Trait { self.inner } // cannot do this, ambiguous with regular fn items
+fn foo = foo<u8> from Trait { self.inner } // suboptimal, `foo` is duplicated
+fn foo = bar from Trait<u8> { self.inner }
+fn foo from <Type as Trait> { self.inner }
+```
+
+Additional syntax without the path splitting can be introduced to address the suboptimal cases with renaming above, and some impossible cases as well.
+```rust
+fn foo = Trait::bar { self.inner }
+fn foo = Trait::foo<u8> { self.inner } // still suboptimal, `foo` is duplicated
+fn foo = Trait<u8>::bar { self.inner }
+// Not possible with `from` (current scope or an absolute path)
+fn foo = bar { self.inner }
+fn foo = ::bar { self.inner }
+fn foo = foo { self.inner } // still suboptimal, `foo` is duplicated (should be rare)
+```
+
+The main drawback of the syntax above is probably its non-extendability to `const` and `type` items.
+In comparison, `reuse` is less specific and can reuse anything, similarly to `use` that can import anything.
 
 ↩ [_Syntax_](#syntax)
 
