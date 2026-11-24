@@ -40,7 +40,7 @@ This group also would author RFCs proposing major shifts in charters, as needed,
 
 Triage and respond to incoming vulnerability reports for the Rust Project, coordinate the development and disclosure of fixes, and maintain the Project's ability to respond to security incidents in a timely, confidential, and trustworthy manner. It handles reports that arrive at `security@rust-lang.org` and drives them to resolution and public disclosure.
 
-The primary contact point for this team is the `security@rustlang.org` inbox, shared with trusted members of `ecosystem-security`.
+The primary contact point for this team is the `security@rust-lang.org` inbox, shared with trusted members of `ecosystem-security`.
 
 The team is *not* responsible for work around forward security posture. It is largely not responsible for responding to vulnerabilities on ecosystem crates, besides ones owned directly by the Rust Project. Those are the scope of the sibling `project-security` and `ecosystem-security` teams under the `security` umbrella.
 
