@@ -58,7 +58,7 @@ Improve the security posture of the wider Rust ecosystem, including crates publi
 
 This spans proactive work (tooling, detection, information feeds, community guidance) and response work (coordinating action on malicious or vulnerable crates).
 
-The primary contact point for this team for ecosystem-scope response work is the `security@rustlang.org` inbox, shared `security-response`.
+The primary contact point for this team for ecosystem-scope response work is the `security@rustlang.org` inbox, shared with `security-response`.
 
 To accomplish these goals, the team will consider the health of ecosystem maintainers and burn-out avoidance both of team members and ecosystem maintainers as a key strategic consideration in all approaches.
 
