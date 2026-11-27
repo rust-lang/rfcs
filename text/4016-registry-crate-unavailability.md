@@ -1,6 +1,9 @@
 - Feature Name: `registry_crate_unavailability`
 - Start Date: 2026-10-07
 - RFC PR: [rust-lang/rfcs#4016](https://github.com/rust-lang/rfcs/pull/4016)
+- Cargo issue: [rust-lang/cargo#17821](https://github.com/rust-lang/cargo/issues/17821)
+- docs.rs issue: [rust-lang/docs.rs#3749](https://github.com/rust-lang/docs.rs/issues/3749)
+- crates.io issue: [rust-lang/crates.io#15315](https://github.com/rust-lang/crates.io/issues/15315)
 
 ## Summary
 [summary]: #summary
