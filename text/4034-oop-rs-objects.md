@@ -2,7 +2,7 @@
 
 - Feature Name: `oop_rs_objects`
 - Start Date: 2026-11-28
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#4034](https://github.com/rust-lang/rfcs/pull/4034)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 ## Summary
